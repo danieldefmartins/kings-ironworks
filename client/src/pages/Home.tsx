@@ -63,6 +63,10 @@ export default function Home() {
                 <CheckCircle2 className="w-5 h-5 text-accent" />
                 <span>State-of-the-Art Shop</span>
               </div>
+              <div className="flex items-center gap-2 px-3 py-1 bg-accent/20 border-2 border-accent">
+                <span className="text-2xl">🇺🇸</span>
+                <span className="font-display font-bold text-sidebar-foreground">PROUD TO BE AMERICAN</span>
+              </div>
             </div>
           </div>
         </div>

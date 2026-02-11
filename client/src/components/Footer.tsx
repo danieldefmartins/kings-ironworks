@@ -13,10 +13,14 @@ export default function Footer() {
               alt="Kings Ironworks" 
               className="h-16 w-auto object-contain mb-4"
             />
-            <p className="text-sidebar-foreground/70 text-sm leading-relaxed">
+            <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-4">
               Boston's premier historic ironwork restoration and fire escape specialists since 2004. 
               20+ years of craftsmanship and safety excellence.
             </p>
+            <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent inline-flex">
+              <span className="text-xl">🇺🇸</span>
+              <span className="font-display font-bold text-sidebar-foreground text-xs">PROUD TO BE AMERICAN</span>
+            </div>
           </div>
 
           {/* Quick Links */}
