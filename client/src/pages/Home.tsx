@@ -107,7 +107,7 @@ export default function Home() {
                   Emergency services available.
                 </p>
               </div>
-              <Link href="/services#fire-escape">
+              <Link href="/fire-escape">
                 <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
                   LEARN MORE
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -127,7 +127,7 @@ export default function Home() {
                   Boston's landmark buildings.
                 </p>
               </div>
-              <Link href="/services#historic">
+              <Link href="/building-restoration">
                 <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
                   LEARN MORE
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -147,7 +147,7 @@ export default function Home() {
                   and installed in-house.
                 </p>
               </div>
-              <Link href="/services#custom">
+              <Link href="/structural-steel">
                 <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
                   LEARN MORE
                   <ArrowRight className="ml-2 w-4 h-4" />
