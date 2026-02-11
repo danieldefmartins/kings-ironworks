@@ -21,37 +21,37 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link href="/services">
-                  <a className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     Services
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/portfolio">
-                  <a className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     Portfolio
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/locations">
-                  <a className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     Locations
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/about">
-                  <a className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     About Us
-                  </a>
+                  </span>
                 </Link>
               </li>
               <li>
                 <Link href="/contact">
-                  <a className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     Contact
-                  </a>
+                  </span>
                 </Link>
               </li>
             </ul>
