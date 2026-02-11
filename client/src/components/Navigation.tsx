@@ -47,7 +47,7 @@ export default function Navigation() {
                     }
                   `}
                 >
-                  <span className="text-xs font-display font-bold tracking-wider [writing-mode:vertical-lr] rotate-180">
+                  <span className="text-xs font-display font-bold tracking-wider [writing-mode:vertical-lr] rotate-180 whitespace-nowrap">
                     {item.label}
                   </span>
                 </div>
