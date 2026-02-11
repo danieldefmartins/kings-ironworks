@@ -9,9 +9,9 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <img 
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/opWyPxvBgZUOicKz.jpg" 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
               alt="Kings Ironworks" 
-              className="h-16 w-auto object-contain mb-4 brightness-0 invert"
+              className="h-16 w-auto object-contain mb-4"
             />
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed">
               Boston's premier historic ironwork restoration and fire escape specialists since 2004. 
