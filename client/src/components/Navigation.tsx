@@ -23,8 +23,12 @@ export default function Navigation() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <Link href="/">
-            <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors">
-              <span className="text-sidebar-foreground font-display font-black text-2xl">K</span>
+            <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors p-2">
+              <img 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/opWyPxvBgZUOicKz.jpg" 
+                alt="Kings Ironworks" 
+                className="h-12 w-auto object-contain"
+              />
             </div>
           </Link>
 
@@ -65,10 +69,12 @@ export default function Navigation() {
       <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b-4 border-border z-50">
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <span className="text-sidebar-foreground font-display font-black text-xl">
-                KINGS IRONWORKS
-              </span>
+            <div className="flex items-center cursor-pointer">
+              <img 
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/opWyPxvBgZUOicKz.jpg" 
+                alt="Kings Ironworks" 
+                className="h-10 w-auto object-contain"
+              />
             </div>
           </Link>
 

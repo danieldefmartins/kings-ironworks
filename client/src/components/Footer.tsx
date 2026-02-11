@@ -8,7 +8,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div>
-            <h3 className="text-display text-2xl mb-4">KINGS IRONWORKS</h3>
+            <img 
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/opWyPxvBgZUOicKz.jpg" 
+              alt="Kings Ironworks" 
+              className="h-16 w-auto object-contain mb-4 brightness-0 invert"
+            />
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed">
               Boston's premier historic ironwork restoration and fire escape specialists since 2004. 
               20+ years of craftsmanship and safety excellence.
