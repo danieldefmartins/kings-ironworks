@@ -12,12 +12,18 @@ import Portfolio from "./pages/Portfolio";
 import Locations from "./pages/Locations";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import FireEscapeLanding from "./pages/FireEscapeLanding";
+import StructuralSteelLanding from "./pages/StructuralSteelLanding";
+import BuildingRestorationLanding from "./pages/BuildingRestorationLanding";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/services" component={Services} />
+      <Route path="/fire-escape" component={FireEscapeLanding} />
+      <Route path="/structural-steel" component={StructuralSteelLanding} />
+      <Route path="/building-restoration" component={BuildingRestorationLanding} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />
