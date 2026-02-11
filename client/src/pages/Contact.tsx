@@ -248,6 +248,19 @@ export default function Contact() {
               </Card>
 
               <Card className="p-6 border-4 border-accent bg-accent/5">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-3xl">🎖️</span>
+                  <h3 className="text-heading text-lg">MILITARY DISCOUNT</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  <strong>10% OFF for active duty military, veterans, and their families.</strong>
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Thank you for your service. Mention this discount when requesting a quote.
+                </p>
+              </Card>
+              
+              <Card className="p-6 border-4 border-border bg-card">
                 <h3 className="text-heading text-lg mb-2">EMERGENCY SERVICES</h3>
                 <p className="text-sm text-muted-foreground">
                   Fire escape emergency repairs available. Call our main line for urgent assistance.

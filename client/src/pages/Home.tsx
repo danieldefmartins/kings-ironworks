@@ -50,7 +50,7 @@ export default function Home() {
             </div>
 
             {/* Trust Badges */}
-            <div className="mt-12 flex flex-wrap gap-6 text-sm text-sidebar-foreground/70">
+            <div className="mt-12 flex flex-wrap gap-4 text-sm text-sidebar-foreground/70">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
                 <span>Licensed Installer</span>
@@ -63,9 +63,21 @@ export default function Home() {
                 <CheckCircle2 className="w-5 h-5 text-accent" />
                 <span>State-of-the-Art Shop</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-accent/20 border-2 border-accent">
+            </div>
+            
+            {/* American Pride Badges */}
+            <div className="mt-6 flex flex-wrap gap-4">
+              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
                 <span className="text-2xl">🇺🇸</span>
-                <span className="font-display font-bold text-sidebar-foreground">PROUD TO BE AMERICAN</span>
+                <span className="font-display font-bold text-sidebar-foreground text-sm">PROUD TO BE AMERICAN</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
+                <span className="text-2xl">🎖️</span>
+                <span className="font-display font-bold text-sidebar-foreground text-sm">MILITARY DISCOUNT AVAILABLE</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
+                <span className="text-2xl">⚙️</span>
+                <span className="font-display font-bold text-sidebar-foreground text-sm">MADE IN USA</span>
               </div>
             </div>
           </div>

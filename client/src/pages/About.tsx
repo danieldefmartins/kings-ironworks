@@ -64,6 +64,34 @@ export default function About() {
       <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">OUR VALUES</h2>
+          
+          {/* American Pride Banner */}
+          <div className="max-w-4xl mx-auto mb-12 p-8 bg-accent/20 border-4 border-accent text-center">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <span className="text-5xl">🇺🇸</span>
+              <h3 className="text-display text-3xl">AMERICAN MADE, AMERICAN PROUD</h3>
+              <span className="text-5xl">🇺🇸</span>
+            </div>
+            <p className="text-lg mb-4">
+              All fabrication done in our Everett, MA facility. We support American workers, 
+              American manufacturing, and American values.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 mt-6">
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary border-2 border-accent">
+                <span className="text-2xl">🎖️</span>
+                <span className="font-display font-bold">10% MILITARY DISCOUNT</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary border-2 border-accent">
+                <span className="text-2xl">💂</span>
+                <span className="font-display font-bold">VETERAN OWNED & OPERATED</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-secondary border-2 border-accent">
+                <span className="text-2xl">⭐</span>
+                <span className="font-display font-bold">SUPPORTING OUR TROOPS</span>
+              </div>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mx-auto mb-4">

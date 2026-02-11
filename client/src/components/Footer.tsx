@@ -15,11 +15,17 @@ export default function Footer() {
             />
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-4">
               Boston's premier historic ironwork restoration and fire escape specialists since 2004. 
-              20+ years of craftsmanship and safety excellence.
+              20+ years of American craftsmanship and safety excellence.
             </p>
-            <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent inline-flex">
-              <span className="text-xl">🇺🇸</span>
-              <span className="font-display font-bold text-sidebar-foreground text-xs">PROUD TO BE AMERICAN</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent inline-flex">
+                <span className="text-xl">🇺🇸</span>
+                <span className="font-display font-bold text-sidebar-foreground text-xs">PROUD TO BE AMERICAN</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent inline-flex">
+                <span className="text-xl">🎖️</span>
+                <span className="font-display font-bold text-sidebar-foreground text-xs">10% MILITARY DISCOUNT</span>
+              </div>
             </div>
           </div>
 
