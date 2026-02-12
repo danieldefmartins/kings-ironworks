@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, Building2, Ruler, Zap, Phone, Award, Shield } from "lucide-react";
+import GHLFormPlaceholder from "@/components/GHLFormPlaceholder";
 
 /**
  * DESIGN PHILOSOPHY: Industrial Heritage Brutalism
@@ -214,6 +215,12 @@ export default function StructuralSteelLanding() {
               Free consultation, detailed engineering drawings, and competitive pricing. 
               Serving Boston, Cambridge, Somerville, and all of Massachusetts.
             </p>
+            
+            {/* Go High Level Form Integration */}
+            <div className="max-w-2xl mx-auto mb-8">
+              <GHLFormPlaceholder service="Structural Steel" />
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">

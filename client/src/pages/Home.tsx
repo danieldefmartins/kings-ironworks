@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, Shield, Wrench, Building2, MapPin, Phone, CheckCircle2 } from "lucide-react";
+import Testimonials from "@/components/Testimonials";
 
 export default function Home() {
   return (
@@ -259,6 +260,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Testimonials Section - Lead Generation Optimization */}
+      <Testimonials />
 
       {/* Locations CTA */}
       <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">

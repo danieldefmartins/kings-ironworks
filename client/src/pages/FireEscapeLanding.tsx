@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, Shield, Clock, Award, Phone, AlertTriangle, Wrench } from "lucide-react";
+import GHLFormPlaceholder from "@/components/GHLFormPlaceholder";
 
 /**
  * DESIGN PHILOSOPHY: Industrial Heritage Brutalism
@@ -200,7 +201,12 @@ export default function FireEscapeLanding() {
               Licensed inspection, detailed quote, and compliance guidance—all at no cost. 
               Serving Boston, Cambridge, Somerville, and surrounding areas.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {/* Go High Level Form Integration */}
+            <div className="max-w-2xl mx-auto mt-8">
+              <GHLFormPlaceholder service="Fire Escape" />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <Link href="/contact">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
                   REQUEST FREE ASSESSMENT

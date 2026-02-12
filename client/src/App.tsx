@@ -16,6 +16,7 @@ import Contact from "./pages/Contact";
 import FireEscapeLanding from "./pages/FireEscapeLanding";
 import StructuralSteelLanding from "./pages/StructuralSteelLanding";
 import BuildingRestorationLanding from "./pages/BuildingRestorationLanding";
+import StickyMobileCTA from "./components/StickyMobileCTA";
 
 function Router() {
   const [location] = useLocation();
@@ -58,6 +59,9 @@ function App() {
               <Router />
               <Footer />
             </main>
+            
+            {/* Sticky Mobile CTA - Lead Generation Optimization */}
+            <StickyMobileCTA />
           </div>
         </TooltipProvider>
       </ThemeProvider>

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, Landmark, Palette, History, Phone, Award, Shield } from "lucide-react";
+import GHLFormPlaceholder from "@/components/GHLFormPlaceholder";
 
 /**
  * DESIGN PHILOSOPHY: Industrial Heritage Brutalism
@@ -301,6 +302,12 @@ export default function BuildingRestorationLanding() {
               Free consultation and project assessment. We'll review your historic property, 
               discuss restoration options, and provide detailed proposals.
             </p>
+            
+            {/* Go High Level Form Integration */}
+            <div className="max-w-2xl mx-auto mb-8">
+              <GHLFormPlaceholder service="Building Restoration" />
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
