@@ -168,21 +168,35 @@
   
   /* Industrial Heritage Brutalism Components */
   .diagonal-cut-top {
-    clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%);
-    margin-top: -5rem;
-    padding-top: 10rem;
+    /* Remove diagonal cut on mobile to prevent text cutoff */
+    clip-path: none;
+    margin-top: 0;
+    padding-top: 4rem;
   }
   
   @media (min-width: 768px) {
     .diagonal-cut-top {
+      /* Add diagonal cut on desktop where there's more space */
+      clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%);
+      margin-top: -5rem;
       padding-top: 12rem;
     }
   }
   
   .diagonal-cut-bottom {
-    clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
-    margin-bottom: -5rem;
-    padding-bottom: 8rem;
+    /* Remove diagonal cut on mobile to prevent text cutoff */
+    clip-path: none;
+    margin-bottom: 0;
+    padding-bottom: 4rem;
+  }
+  
+  @media (min-width: 768px) {
+    .diagonal-cut-bottom {
+      /* Add diagonal cut on desktop where there's more space */
+      clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
+      margin-bottom: -5rem;
+      padding-bottom: 8rem;
+    }
   }
   
   .thick-border {
