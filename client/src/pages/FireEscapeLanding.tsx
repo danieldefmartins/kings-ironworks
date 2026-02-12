@@ -36,7 +36,7 @@ export default function FireEscapeLanding() {
             
             <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
               Licensed fire escape specialists serving Boston for 20+ years. Code-compliant installation, 
-              emergency repairs, and annual certifications. Same-day emergency service available.
+              emergency repairs, and 5-year certifications. Same-day emergency service available.
             </p>
 
             {/* Dual CTA */}
@@ -129,8 +129,8 @@ export default function FireEscapeLanding() {
               },
               {
                 icon: CheckCircle2,
-                title: "Annual Inspections",
-                description: "Required annual fire escape inspections and certifications. Ensure compliance with Boston Fire Department regulations.",
+                title: "5-Year Inspections",
+                description: "Required 5-year fire escape inspections and certifications. Ensure compliance with Boston Fire Department regulations.",
                 cta: "Schedule Inspection"
               },
               {
