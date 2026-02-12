@@ -170,7 +170,13 @@
   .diagonal-cut-top {
     clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%);
     margin-top: -5rem;
-    padding-top: 8rem;
+    padding-top: 10rem;
+  }
+  
+  @media (min-width: 768px) {
+    .diagonal-cut-top {
+      padding-top: 12rem;
+    }
   }
   
   .diagonal-cut-bottom {
