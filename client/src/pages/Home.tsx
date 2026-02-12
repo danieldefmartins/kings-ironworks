@@ -25,11 +25,11 @@ export default function Home() {
               SINCE 2004 • 20+ YEARS OF EXCELLENCE
             </div>
             
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl text-sidebar-foreground mb-6">
+            <h1 className="text-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-sidebar-foreground mb-6 leading-tight">
               WHERE HERITAGE MEETS SAFETY
             </h1>
             
-            <p className="text-xl md:text-2xl text-sidebar-foreground/80 mb-8 leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-sidebar-foreground/80 mb-8 leading-relaxed">
               Boston's premier historic ironwork restoration and licensed fire escape specialists. 
               Custom artisan fabrication meets modern safety standards—all in-house.
             </p>
@@ -67,17 +67,17 @@ export default function Home() {
             
             {/* American Pride Badges */}
             <div className="mt-6 flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-2xl">🇺🇸</span>
-                <span className="font-display font-bold text-sidebar-foreground text-sm">PROUD TO BE AMERICAN</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
+                <span className="text-xl sm:text-2xl">🇺🇸</span>
+                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">PROUD TO BE AMERICAN</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-2xl">🎖️</span>
-                <span className="font-display font-bold text-sidebar-foreground text-sm">MILITARY DISCOUNT AVAILABLE</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
+                <span className="text-xl sm:text-2xl">🎖️</span>
+                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">MILITARY DISCOUNT AVAILABLE</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-2xl">⚙️</span>
-                <span className="font-display font-bold text-sidebar-foreground text-sm">MADE IN USA</span>
+              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
+                <span className="text-xl sm:text-2xl">⚙️</span>
+                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">MADE IN USA</span>
               </div>
             </div>
           </div>
