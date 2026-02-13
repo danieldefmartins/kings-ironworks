@@ -47,9 +47,17 @@ export default function Portfolio() {
     { category: "railings", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/IrppZGXOKBxchPDP.JPG", title: "Balcony Railing", description: "Ornamental exterior ironwork" },
     
     // Restoration
-    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/FXhStnQxPmvbQEEX.JPG", title: "Historic Restoration", description: "Period-accurate ironwork replication" },
-    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/yxcuIXYueJOkJGhy.JPG", title: "Brownstone Restoration", description: "Boston South End project" },
-    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/kwzQFqZjMRfztVnH.jpg", title: "Beacon Hill Restoration", description: "Custom historic replication" }
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/buMcGDTPsdJzspea.jpg", title: "Historic Ironwork Restoration", description: "Detailed restoration of period ironwork" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ZtrYnxwJFDZSmXOw.jpg", title: "Ornamental Iron Restoration", description: "Custom replication of historic designs" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/wFpGlEabFZwcJrgX.jpg", title: "Boston Building Restoration", description: "Period-accurate ironwork fabrication" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/XBlMdPEjsPJdjLFa.jpg", title: "Historic Gate Restoration", description: "Hand-forged restoration work" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/NgBghqHCKpNCJSJs.jpg", title: "Architectural Ironwork", description: "Restoration of landmark building" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/rsujTYOxZArFMYMR.jpg", title: "Victorian Ironwork", description: "Authentic period restoration" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/dgqYFGcJuAYrvKtp.jpg", title: "Historic Railing Restoration", description: "Custom artisan replication" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/DPcQhceaLWuEDbpK.jpg", title: "Brownstone Restoration", description: "Boston South End project" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/SYTGvQjSziYdBQab.jpg", title: "Beacon Hill Restoration", description: "Historic district ironwork" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/GeAuXhLZDbFMhTPk.jpg", title: "Heritage Building Restoration", description: "Period-accurate craftsmanship" },
+    { category: "restoration", src: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/egdmCLWLFeuifEJv.jpg", title: "Custom Restoration Work", description: "Unavailable designs recreated" }
   ];
 
   const filteredProjects = activeCategory === "all" 
