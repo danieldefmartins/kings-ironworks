@@ -210,40 +210,116 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {/* Fire Escape Installation */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-2_1770786313000_na1fn_ZmlyZS1lc2NhcGUtaW5zdGFsbGF0aW9u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTJfMTc3MDc4NjMxMzAwMF9uYTFmbl9abWx5WlMxbGMyTmhjR1V0YVc1emRHRnNiR0YwYVc5dS5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=J1wZIAXxJ5CYN3sWatRc2VXAW4bHXz4LVVZATKfrELWV6IcprfJ2mAwYjhUN6ce1Utg-C0bXWRw759qTZs5QMgT2puBjtEm6oIKy7rBCdwdvWGx5o-2Dw7XKE80k4aM628hNrLxihPa9xwxhl1Gvcq7wLeuuocEuwG4WPCvfSeZFt-xKRxGQucaaWubKs0xj2oYMM3M1zd76Fb7NAlAmOGW~FceWOx-bjqmIMFJyicfF0knyxALBBHOSY4O8LbWTPi5SL7slsoSd3T02TOUIoDiCb3bGbbrs-t~rc-gofOZBE57ZQI2gjVg6FMum1zi4ayiyoNRcnSlS9p5LoPFuCQ__"
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/VrmKyMuovdgoFRfz.JPG"
                 alt="Fire escape installation"
-                className="w-full h-[400px] object-cover border-8 border-border"
+                className="w-full h-[350px] object-cover border-8 border-border"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-8 border-8 border-transparent group-hover:border-accent">
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
                 <div>
-                  <h3 className="text-heading text-2xl text-sidebar-foreground mb-2">
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
                     FIRE ESCAPE INSTALLATION
                   </h3>
-                  <p className="text-sidebar-foreground/80">
-                    Code-compliant installation on historic Boston building
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Code-compliant installation on Boston building
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Historic Building */}
+            {/* Custom Gate */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-5_1770786318000_na1fn_Ym9zdG9uLWhpc3RvcmljLWJ1aWxkaW5n.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTVfMTc3MDc4NjMxODAwMF9uYTFmbl9ZbTl6ZEc5dUxXaHBjM1J2Y21sakxXSjFhV3hrYVc1bi5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=ujSROZ8t8b1pzboiP7I949WrwNZ8frVGTVkd3pksEu6pzlPPDHRRAS8yPyzycuFUuCDQyj1SnjlmpZScXhCNidraw3V8rcAbbvB84Yn48NUuluMI2p7olqNkCsW3JbjN3CPCxadpCaYxIU0ArzDi5IQb~-47PH9z30Zra5PW1Qf9U6xZhPZjhdkfzp7iJqSaQAyqkOTASks4lcK23OxslxlduyffBbicM~4DMy34n59-sBOBmDNNLyrLyLtc-ywooB9ljD4BQC-ZJeHyYG74C1HN5WH99YuVkgJu8zGNih2cRWBJ3BwVx2YyEv~ODrwVs88dcsTNZLYCkZlL2bhesg__"
-                alt="Historic building restoration"
-                className="w-full h-[400px] object-cover border-8 border-border"
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ldKpYAFGAsEGkCVX.JPG"
+                alt="Custom ornamental gate"
+                className="w-full h-[350px] object-cover border-8 border-border"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-8 border-8 border-transparent group-hover:border-accent">
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
                 <div>
-                  <h3 className="text-heading text-2xl text-sidebar-foreground mb-2">
-                    SOUTH END RESTORATION
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
+                    CUSTOM ORNAMENTAL GATE
                   </h3>
-                  <p className="text-sidebar-foreground/80">
-                    Complete ironwork restoration on Victorian brownstone
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Hand-crafted wrought iron gate design
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Interior Railing */}
+            <div className="relative group overflow-hidden">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/apLcldtAeVXzDTCh.JPG"
+                alt="Interior iron railing"
+                className="w-full h-[350px] object-cover border-8 border-border"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
+                <div>
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
+                    INTERIOR RAILING
+                  </h3>
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Custom staircase railing installation
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Exterior Railing */}
+            <div className="relative group overflow-hidden">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/KVrQsNoDvGzMAnwj.JPG"
+                alt="Exterior railing"
+                className="w-full h-[350px] object-cover border-8 border-border"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
+                <div>
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
+                    EXTERIOR RAILING
+                  </h3>
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Durable outdoor railing system
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Before & After */}
+            <div className="relative group overflow-hidden">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/FXhStnQxPmvbQEEX.JPG"
+                alt="Restoration project"
+                className="w-full h-[350px] object-cover border-8 border-border"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
+                <div>
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
+                    HISTORIC RESTORATION
+                  </h3>
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Period-accurate ironwork restoration
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Gate Detail */}
+            <div className="relative group overflow-hidden">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/aoFXjvosIbfREama.JPG"
+                alt="Ornamental gate detail"
+                className="w-full h-[350px] object-cover border-8 border-border"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
+                <div>
+                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
+                    ORNAMENTAL IRONWORK
+                  </h3>
+                  <p className="text-sidebar-foreground/80 text-sm">
+                    Intricate custom metalwork design
                   </p>
                 </div>
               </div>
