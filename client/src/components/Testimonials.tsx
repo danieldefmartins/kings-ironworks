@@ -11,7 +11,7 @@ const testimonials = [
     name: "Michael Chen",
     location: "Beacon Hill, Boston",
     rating: 5,
-    text: "Kings Ironworks restored the historic railings on our 1890s brownstone. The craftsmanship is absolutely stunning—you can't tell the difference from the original. They're true artisans.",
+    text: "King Iron Works restored the historic railings on our 1890s brownstone. The craftsmanship is absolutely stunning—you can't tell the difference from the original. They're true artisans.",
     service: "Historic Restoration"
   },
   {
@@ -32,7 +32,7 @@ const testimonials = [
     name: "Jennifer Walsh",
     location: "Cape Cod, MA",
     rating: 5,
-    text: "As a property manager, I've worked with many contractors. Kings Ironworks stands out for their reliability, fair pricing, and exceptional work. They're my go-to for all ironwork needs.",
+    text: "As a property manager, I've worked with many contractors. King Iron Works stands out for their reliability, fair pricing, and exceptional work. They're my go-to for all ironwork needs.",
     service: "Commercial Projects"
   }
 ];
@@ -46,7 +46,7 @@ export default function Testimonials() {
             TRUSTED BY BOSTON HOMEOWNERS
           </h2>
           <p className="text-xl text-secondary-foreground/80 max-w-2xl mx-auto">
-            See why property owners across Massachusetts choose Kings Ironworks for their historic restoration and fire escape needs
+            See why property owners across Massachusetts choose King Iron Works for their historic restoration and fire escape needs
           </p>
         </div>
 

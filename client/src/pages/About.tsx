@@ -33,7 +33,7 @@ export default function About() {
             <h2 className="text-display text-4xl md:text-5xl mb-8">OUR STORY</h2>
             <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
               <p>
-                Kings Ironworks was founded in 2004 with a simple mission: to preserve Boston's 
+                King Iron Works was founded in 2004 with a simple mission: to preserve Boston's 
                 architectural heritage while providing modern safety solutions. What started as a 
                 small operation has grown into one of the region's most trusted names in ironwork 
                 and fire escape services.
@@ -211,7 +211,7 @@ export default function About() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">WORK WITH US</h2>
             <p className="text-xl text-sidebar-foreground/80 mb-8">
-              Experience the Kings Ironworks difference on your next project
+              Experience the King Iron Works difference on your next project
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">

@@ -27,7 +27,7 @@ export default function Navigation() {
             <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors p-2">
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-                alt="Kings Ironworks" 
+                alt="King Iron Works" 
                 className="h-12 w-auto object-contain"
               />
             </div>
@@ -73,7 +73,7 @@ export default function Navigation() {
             <div className="flex items-center cursor-pointer">
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-                alt="Kings Ironworks" 
+                alt="King Iron Works" 
                 className="h-10 w-auto object-contain"
               />
             </div>

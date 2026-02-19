@@ -1,5 +1,5 @@
 /**
- * Kings Ironworks - Business Constants
+ * King Iron Works - Business Constants
  */
 
 export const PHONE_NUMBERS = {

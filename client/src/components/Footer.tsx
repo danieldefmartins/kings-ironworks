@@ -12,7 +12,7 @@ export default function Footer() {
           <div>
             <img 
               src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-              alt="Kings Ironworks" 
+              alt="King Iron Works" 
               className="h-16 w-auto object-contain mb-4"
             />
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-4">
@@ -128,7 +128,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-sidebar-foreground/20">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-sidebar-foreground/50">
-            <p>© 2026 Kings Ironworks. All rights reserved.</p>
+            <p>© 2026 King Iron Works. All rights reserved.</p>
             <p>Licensed Fire Escape Installer | MA State Building Code Compliant</p>
           </div>
         </div>

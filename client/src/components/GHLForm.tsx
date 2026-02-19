@@ -44,7 +44,7 @@ export default function GHLForm() {
         data-height="628"
         data-layout-iframe-id="inline-${GHL_FORM_ID}"
         data-form-id={GHL_FORM_ID}
-        title="Kings Ironworks Contact Form"
+        title="King Iron Works Contact Form"
       />
 
       {/* Custom styling to match Industrial Heritage Brutalism design */}

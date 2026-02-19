@@ -98,7 +98,7 @@ export default function PrivacyPolicy() {
 
             <h3 className="text-heading text-xl mb-3 mt-4">Message & Data Rates</h3>
             <p>
-              Standard message and data rates may apply from your mobile carrier. King Iron Works LLC does not charge for SMS messages, but your carrier may charge based on your mobile plan. Check with your carrier for details.
+              Standard message and data rates may apply from your mobile carrier. King Iron Works LLCC does not charge for SMS messages, but your carrier may charge based on your mobile plan. Check with your carrier for details.
             </p>
 
             <h3 className="text-heading text-xl mb-3 mt-4">How to Opt Out</h3>

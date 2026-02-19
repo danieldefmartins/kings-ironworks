@@ -138,7 +138,7 @@ export default function Locations() {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">READY TO GET STARTED?</h2>
             <p className="text-xl mb-8 opacity-90">
-              Contact your nearest Kings Ironworks location for a free consultation
+              Contact your nearest King Iron Works location for a free consultation
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
