@@ -40,7 +40,22 @@ export default function TermsOfService() {
               By providing your phone number and opting in to receive text messages from King Iron Works LLC, you agree to the following SMS communication terms:
             </p>
             
-            <h3 className="text-heading text-xl mb-3 mt-4">3.1 Description of SMS Use Cases</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.1 Message Type Disclosure</h3>
+            <p className="font-semibold text-lg mb-3">
+              <strong>What types of messages will you receive?</strong>
+            </p>
+            <p>
+              By opting in to receive text messages from King Iron Works LLC, you will receive <strong>two types of messages</strong>:
+            </p>
+            <ul className="list-disc pl-6 space-y-2 my-3">
+              <li><strong>Transactional/Service Messages:</strong> Non-marketing messages related to your service requests, appointments, project updates, and account notifications</li>
+              <li><strong>Marketing/Promotional Messages:</strong> Optional promotional offers, company updates, and educational content (you can opt out of these while still receiving transactional messages)</li>
+            </ul>
+            <p>
+              <strong>Message Content Examples:</strong> "Your fire escape inspection is scheduled for tomorrow at 10 AM" (transactional) or "Special offer: 10% off structural steel fabrication this month" (marketing).
+            </p>
+
+            <h3 className="text-heading text-xl mb-3 mt-4">3.2 Description of SMS Use Cases</h3>
             <p>
               We use SMS text messaging for the following business purposes:
             </p>
@@ -61,7 +76,7 @@ export default function TermsOfService() {
               <li><strong>Educational Content:</strong> Tips for maintaining ironwork, fire escape safety information, or industry updates</li>
             </ul>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">3.2 Opt-Out Instructions</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.3 Opt-Out Instructions</h3>
             <p>
               You have the right to stop receiving SMS messages from us at any time. You can opt out by:
             </p>
@@ -77,7 +92,7 @@ export default function TermsOfService() {
               <strong>Important:</strong> Opting out of marketing messages will not affect transactional messages related to active service projects. To stop all messages including transactional notifications, please contact us directly.
             </p>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">3.3 Customer Support Contact Information</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.4 Customer Support Contact Information</h3>
             <p>
               For questions, concerns, or support regarding SMS messages or our services, contact us:
             </p>
@@ -93,7 +108,7 @@ export default function TermsOfService() {
               For immediate SMS help, reply <strong>HELP</strong> to any text message from us, and you will receive: "King Iron Works LLC - For assistance, call +1 617-404-2589 or email info@kingirongroup.com. Reply STOP to opt out."
             </p>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">3.4 Message Frequency & Data Rate Disclosure</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.5 Message Frequency & Data Rate Disclosure</h3>
             <p>
               <strong>Message Frequency:</strong> The number of messages you receive varies based on your project status and communication preferences:
             </p>
@@ -108,7 +123,7 @@ export default function TermsOfService() {
               <strong>Supported Carriers:</strong> Our SMS service works with all major U.S. carriers including AT&T, Verizon, T-Mobile, Sprint, and most regional carriers. If you experience issues receiving messages, contact your carrier or our support team.
             </p>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">3.5 Carrier Liability Disclaimer</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.6 Carrier Liability Disclaimer</h3>
             <p>
               <strong>No Carrier Liability:</strong> Mobile carriers (AT&T, Verizon, T-Mobile, Sprint, etc.) are not liable for delayed or undelivered messages. Message delivery depends on:
             </p>
@@ -131,7 +146,7 @@ export default function TermsOfService() {
               If you do not receive expected messages, please contact us directly at +1 617-404-2589 or info@kingirongroup.com to ensure you receive important project updates through alternative channels.
             </p>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">3.6 Age Requirement & Consent</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">3.7 Age Requirement & Consent</h3>
             <p>
               You must be at least 18 years of age to consent to receive SMS messages from King Iron Works LLC. By providing your phone number and opting in, you certify that you are 18 years or older and have the authority to consent to SMS communications.
             </p>

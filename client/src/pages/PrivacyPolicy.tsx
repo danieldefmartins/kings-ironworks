@@ -253,9 +253,15 @@ export default function PrivacyPolicy() {
               In the event of a merger, acquisition, or sale of all or part of our business, your mobile information may be transferred to the acquiring entity.
             </p>
 
-            <h3 className="text-heading text-xl mb-3 mt-4">No Sale of Mobile Information</h3>
+            <h3 className="text-heading text-xl mb-3 mt-4">Phone Number Sharing & Sale Disclosure</h3>
+            <p className="font-semibold text-lg mb-2">
+              <strong>We DO NOT sell your phone number.</strong>
+            </p>
             <p>
-              We do not sell, rent, or trade your mobile phone number or SMS communication records to third parties for their marketing purposes.
+              King Iron Works LLC does not sell, rent, lease, or trade your mobile phone number to third parties for their marketing purposes. Your phone number is only shared with trusted service providers (such as our SMS platform Go High Level) who are contractually obligated to protect your information and use it solely to provide services on our behalf.
+            </p>
+            <p className="mt-3">
+              <strong>Summary:</strong> Your phone number is NOT sold to advertisers, data brokers, or other third parties. We only share it with essential service providers to deliver the services you've requested.
             </p>
           </section>
 
