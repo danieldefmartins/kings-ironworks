@@ -61,15 +61,21 @@ export function getLocationCode(geoLocation: GeoLocation | null): LocationCode {
     return 'cape-cod';
   }
 
-  // Miami/South Florida detection
+  // Florida detection - route ALL Florida visitors to Miami landing page
+  // Since Miami is the only Florida location, serve all FL visitors
+  if (regionLower.includes('florida') || regionLower.includes('fl')) {
+    return 'miami';
+  }
+  
+  // Specific Miami/South Florida cities for extra certainty
   const miamiCities = [
     'miami', 'miami beach', 'coral gables', 'hialeah', 'homestead',
     'fort lauderdale', 'hollywood', 'pembroke pines', 'boca raton',
-    'west palm beach', 'pompano beach', 'davie', 'plantation'
+    'west palm beach', 'pompano beach', 'davie', 'plantation', 'tampa',
+    'orlando', 'jacksonville', 'tallahassee', 'fort myers', 'naples'
   ];
   
-  if (miamiCities.some(mc => cityLower.includes(mc)) || 
-      regionLower.includes('florida') && (cityLower.includes('miami') || regionLower.includes('dade') || regionLower.includes('broward'))) {
+  if (miamiCities.some(mc => cityLower.includes(mc))) {
     return 'miami';
   }
 
