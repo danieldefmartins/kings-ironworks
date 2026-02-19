@@ -1,3 +1,4 @@
+// A2P Compliance - Updated Feb 19, 2026
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-card">
