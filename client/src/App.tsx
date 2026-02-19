@@ -47,8 +47,8 @@ function Router() {
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
-      <Route path="/privacy-policy" component={PrivacyPolicy} />
-      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
