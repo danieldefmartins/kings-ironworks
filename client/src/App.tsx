@@ -22,6 +22,8 @@ import MiamiLanding from "./pages/MiamiLanding";
 import StickyMobileCTA from "./components/StickyMobileCTA";
 import GHLChatWidget from "./components/GHLChatWidget";
 import GeoRedirect from "./components/GeoRedirect";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 function Router() {
   const [location] = useLocation();
@@ -45,6 +47,8 @@ function Router() {
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

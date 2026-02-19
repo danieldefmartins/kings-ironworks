@@ -18,18 +18,31 @@ export default function Contact() {
 
       {/* Contact Form & Info */}
       <section className="diagonal-cut-top bg-card py-24">
-        <div className="container max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Contact Form - GHL Integration */}
-            <div className="lg:col-span-2">
-              <h2 className="text-display text-3xl mb-6">REQUEST A QUOTE</h2>
-              <div className="w-full">
-                <GHLForm />
-              </div>
+        <div className="w-full px-[3%] max-w-[1800px] mx-auto">
+          <h2 className="text-display text-3xl md:text-4xl mb-8 text-center">REQUEST A QUOTE</h2>
+          
+          {/* Full-width Form */}
+          <div className="w-full mb-12">
+            <GHLForm />
+            <div className="mt-6 text-sm text-muted-foreground text-center">
+              <p>
+                By submitting this form, you agree to our{" "}
+                <a href="/privacy" className="text-accent hover:underline font-medium">
+                  Privacy Policy
+                </a>
+                {" "}and{" "}
+                <a href="/terms" className="text-accent hover:underline font-medium">
+                  Terms of Service
+                </a>
+                .
+              </p>
             </div>
+          </div>
+          
+          {/* Contact Info Cards Below Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
-            {/* Contact Info */}
-            <div className="space-y-6">
+
               <Card className="p-6 border-4 border-border">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 bg-accent/10 flex items-center justify-center flex-shrink-0">
@@ -123,7 +136,6 @@ export default function Contact() {
                   Fire escape emergency repairs available. Call our main line for urgent assistance.
                 </p>
               </Card>
-            </div>
           </div>
         </div>
       </section>

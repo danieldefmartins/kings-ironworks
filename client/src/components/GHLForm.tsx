@@ -30,7 +30,7 @@ export default function GHLForm() {
           width: "100%",
           height: "100%",
           border: "none",
-          minHeight: "600px",
+          minHeight: "900px",
         }}
         id="inline-${GHL_FORM_ID}"
         data-layout="{'id':'INLINE'}"
@@ -79,7 +79,8 @@ export default function GHLForm() {
         iframe#inline-${GHL_FORM_ID} {
           background: transparent;
           width: 100% !important;
-          min-height: 700px !important;
+          min-height: 900px !important;
+          height: 900px !important;
         }
       `}</style>
     </div>
