@@ -52,12 +52,28 @@ export default function GHLForm() {
         .ghl-form-container {
           background: hsl(var(--sidebar));
           border: 8px solid hsl(var(--border));
-          padding: 2rem;
+          padding: 1.5rem;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+        
+        @media (min-width: 640px) {
+          .ghl-form-container {
+            padding: 2.5rem;
+          }
+        }
+        
+        @media (min-width: 768px) {
+          .ghl-form-container {
+            max-width: 800px;
+            padding: 3rem;
+          }
         }
         
         /* Override GHL form styles to match website design */
         iframe#inline-${GHL_FORM_ID} {
           background: transparent;
+          width: 100% !important;
         }
       `}</style>
     </div>
