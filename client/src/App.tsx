@@ -17,6 +17,7 @@ import FireEscapeLanding from "./pages/FireEscapeLanding";
 import StructuralSteelLanding from "./pages/StructuralSteelLanding";
 import BuildingRestorationLanding from "./pages/BuildingRestorationLanding";
 import CapeCodeLanding from "./pages/CapeCodeLanding";
+import WorcesterLanding from "./pages/WorcesterLanding";
 import MiamiLanding from "./pages/MiamiLanding";
 import StickyMobileCTA from "./components/StickyMobileCTA";
 import GHLChatWidget from "./components/GHLChatWidget";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/structural-steel" component={StructuralSteelLanding} />
       <Route path="/building-restoration" component={BuildingRestorationLanding} />
       <Route path="/cape-cod" component={CapeCodeLanding} />
+      <Route path="/worcester" component={WorcesterLanding} />
       <Route path="/miami" component={MiamiLanding} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/locations" component={Locations} />

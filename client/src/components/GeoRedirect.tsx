@@ -23,7 +23,7 @@ export default function GeoRedirect() {
     // 3. Not already on a location-specific page
     const isHomePage = location === '/';
     const alreadyRedirected = hasGeoRedirected();
-    const isLocationPage = location === '/cape-cod' || location === '/miami';
+    const isLocationPage = location === '/cape-cod' || location === '/worcester' || location === '/miami';
 
     if (!isHomePage || alreadyRedirected || isLocationPage) {
       return;

@@ -13,6 +13,11 @@ export const PHONE_NUMBERS = {
     tel: "15089555006",
     label: "Cape Cod"
   },
+  WORCESTER: {
+    display: "+1 508-955-5006",
+    tel: "15089555006",
+    label: "Worcester"
+  },
   MIAMI: {
     display: "+1 754-240-0082",
     tel: "17542400082",
@@ -49,7 +54,7 @@ export const LOCATIONS = [
     name: "Worcester, MA",
     subtitle: "Central Massachusetts Coverage",
     address: "Worcester, Massachusetts",
-    phone: PHONE_NUMBERS.BOSTON, // Using Boston number for Worcester
+    phone: PHONE_NUMBERS.WORCESTER,
     hours: "By Appointment",
     description: "Full-service ironwork and fire escape solutions for Worcester and surrounding Central Massachusetts communities.",
     image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&h=600&fit=crop"

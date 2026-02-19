@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 interface LocationSEOProps {
-  location: 'cape-cod' | 'miami' | 'boston';
+  location: 'cape-cod' | 'miami' | 'boston' | 'worcester';
 }
 
 /**
@@ -25,6 +25,11 @@ export default function LocationSEO({ location }: LocationSEOProps) {
         title: 'Boston Ironwork & Fire Escape Services | Kings Ironworks',
         description: 'Boston\'s premier historic ironwork restoration and licensed fire escape specialists. Custom artisan fabrication for over 20 years. Serving Greater Boston, Worcester, and Cape Cod. Call +1 617-404-2589',
         keywords: 'boston ironwork, fire escape boston, historic restoration boston, custom ironwork massachusetts, licensed fire escape installer',
+      },
+      'worcester': {
+        title: 'Worcester Ironwork & Fire Escape Services | Kings Ironworks',
+        description: 'Central Massachusetts\' trusted ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration. Serving Worcester and surrounding areas. Call +1 508-955-5006',
+        keywords: 'worcester ironwork, fire escape worcester, custom gates worcester, railings worcester, historic restoration worcester, ironwork central massachusetts',
       },
     };
 

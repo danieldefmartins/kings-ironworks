@@ -3,7 +3,7 @@
  * Detects user location and routes to appropriate landing page
  */
 
-export type LocationCode = 'boston' | 'cape-cod' | 'miami' | 'default';
+export type LocationCode = 'boston' | 'cape-cod' | 'worcester' | 'miami' | 'default';
 
 export interface GeoLocation {
   city?: string;
@@ -73,11 +73,22 @@ export function getLocationCode(geoLocation: GeoLocation | null): LocationCode {
     return 'miami';
   }
 
+  // Worcester/Central Massachusetts detection
+  const worcesterCities = [
+    'worcester', 'auburn', 'shrewsbury', 'westborough', 'northborough',
+    'southborough', 'marlborough', 'framingham', 'natick', 'milford',
+    'grafton', 'millbury', 'leicester', 'spencer', 'oxford'
+  ];
+  
+  if (worcesterCities.some(wc => cityLower.includes(wc))) {
+    return 'worcester';
+  }
+
   // Boston/Greater Boston detection (default for Massachusetts)
   const bostonCities = [
     'boston', 'cambridge', 'somerville', 'brookline', 'newton', 'quincy',
     'waltham', 'medford', 'malden', 'everett', 'revere', 'chelsea',
-    'worcester', 'lowell', 'lynn', 'salem'
+    'lowell', 'lynn', 'salem'
   ];
   
   if (bostonCities.some(bc => cityLower.includes(bc)) || 
@@ -95,6 +106,7 @@ export function getLocationLandingPage(locationCode: LocationCode): string {
   const routes: Record<LocationCode, string> = {
     'boston': '/',
     'cape-cod': '/cape-cod',
+    'worcester': '/worcester',
     'miami': '/miami',
     'default': '/',
   };
