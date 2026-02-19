@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+
+import { PHONE_NUMBERS } from "@/lib/constants";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, CheckCircle2, Shield, Clock, Award, Phone, AlertTriangle, Wrench } from "lucide-react";
@@ -41,10 +43,10 @@ export default function FireEscapeLanding() {
 
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <a href="tel:8578881468">
+              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
                 <Button size="lg" className="bg-destructive hover:bg-destructive/90 text-lg px-8 py-6 thick-border group">
                   <Phone className="mr-2 w-6 h-6 group-hover:animate-bounce" />
-                  CALL NOW: (857) 888-1468
+                  CALL NOW: {PHONE_NUMBERS.MAIN.display}
                 </Button>
               </a>
               <Link href="/contact">
@@ -181,10 +183,10 @@ export default function FireEscapeLanding() {
             Structural failure, rust damage, or safety violations require immediate attention. 
             Our licensed team responds 24/7 to emergency calls.
           </p>
-          <a href="tel:8578881468">
+          <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
             <Button size="lg" variant="outline" className="border-destructive-foreground text-destructive-foreground hover:bg-destructive-foreground hover:text-destructive text-xl px-12 py-8 thick-border">
               <Phone className="mr-3 w-8 h-8" />
-              CALL EMERGENCY LINE: (857) 888-1468
+              CALL EMERGENCY LINE: {PHONE_NUMBERS.MAIN.display}
             </Button>
           </a>
         </div>
@@ -213,10 +215,10 @@ export default function FireEscapeLanding() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href="tel:8578881468">
+              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
                 <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
-                  (857) 888-1468
+                  {PHONE_NUMBERS.MAIN.display}
                 </Button>
               </a>
             </div>

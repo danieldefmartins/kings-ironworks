@@ -17,6 +17,7 @@ import FireEscapeLanding from "./pages/FireEscapeLanding";
 import StructuralSteelLanding from "./pages/StructuralSteelLanding";
 import BuildingRestorationLanding from "./pages/BuildingRestorationLanding";
 import StickyMobileCTA from "./components/StickyMobileCTA";
+import GHLChatWidget from "./components/GHLChatWidget";
 
 function Router() {
   const [location] = useLocation();
@@ -62,6 +63,9 @@ function App() {
             
             {/* Sticky Mobile CTA - Lead Generation Optimization */}
             <StickyMobileCTA />
+            
+            {/* GHL Chat Widget - Real-time SMS/Email Communication */}
+            <GHLChatWidget />
           </div>
         </TooltipProvider>
       </ThemeProvider>

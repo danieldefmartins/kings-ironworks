@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+
+import { PHONE_NUMBERS } from "@/lib/constants";
 import { useState } from "react";
 
 /**
@@ -145,9 +147,9 @@ export default function Portfolio() {
                 GET FREE QUOTE
               </Button>
             </a>
-            <a href="tel:8578881468">
+            <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
               <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
-                CALL (857) 888-1468
+                CALL {PHONE_NUMBERS.MAIN.display}
               </Button>
             </a>
           </div>

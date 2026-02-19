@@ -1,4 +1,6 @@
 import { Link } from "wouter";
+
+import { PHONE_NUMBERS } from "@/lib/constants";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 export default function Footer() {
@@ -97,11 +99,11 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="tel:8578881468"
+                  href={`tel:${PHONE_NUMBERS.MAIN.tel}`}
                   className="flex items-center gap-2 text-sidebar-foreground/70 hover:text-accent transition-colors text-sm"
                 >
                   <Phone className="w-4 h-4" />
-                  (857) 888-1468
+                  {PHONE_NUMBERS.MAIN.display}
                 </a>
               </li>
               <li>

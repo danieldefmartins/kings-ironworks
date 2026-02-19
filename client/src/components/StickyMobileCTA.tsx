@@ -1,4 +1,6 @@
 import { Phone } from "lucide-react";
+
+import { PHONE_NUMBERS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -23,7 +25,7 @@ export default function StickyMobileCTA() {
           size="lg"
           className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-black text-base px-6 shadow-lg"
         >
-          <a href="tel:8578881468" className="flex items-center gap-2">
+          <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`} className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
             CALL NOW
           </a>

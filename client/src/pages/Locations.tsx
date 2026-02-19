@@ -2,46 +2,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { MapPin, Phone, Clock, ArrowRight, Building2 } from "lucide-react";
+import { LOCATIONS, PHONE_NUMBERS } from "@/lib/constants";
 
 export default function Locations() {
-  const locations = [
-    {
-      name: "Everett, MA",
-      subtitle: "Headquarters & Fabrication Shop",
-      address: "69 Norman St, Unit 20\nEverett, MA 02149",
-      phone: "(857) 888-1468",
-      hours: "Monday - Friday: 7:00 AM - 5:00 PM\nSaturday: By Appointment\nSunday: Closed",
-      description: "Our state-of-the-art fabrication facility houses all our custom ironwork operations. Visit our shop to see our capabilities and discuss your project in person.",
-      featured: true,
-    },
-    {
-      name: "Cape Cod, MA",
-      subtitle: "Residential & Commercial Services",
-      address: "Cape Cod, Massachusetts",
-      phone: "(857) 888-1468",
-      hours: "By Appointment",
-      description: "Serving all of Cape Cod with custom ironwork, fire escape services, and historic restoration for coastal properties.",
-      featured: false,
-    },
-    {
-      name: "Worcester, MA",
-      subtitle: "Central Massachusetts Coverage",
-      address: "Worcester, Massachusetts",
-      phone: "(857) 888-1468",
-      hours: "By Appointment",
-      description: "Full-service ironwork and fire escape solutions for Worcester and surrounding Central Massachusetts communities.",
-      featured: false,
-    },
-    {
-      name: "Miami, FL",
-      subtitle: "Florida Operations",
-      address: "Miami, Florida",
-      phone: "(857) 888-1468",
-      hours: "By Appointment",
-      description: "Bringing our 20+ years of ironwork expertise to South Florida with custom fabrication and installation services.",
-      featured: false,
-    },
-  ];
+  const locations = LOCATIONS.map((loc, index) => ({
+    ...loc,
+    featured: index === 0 // First location (Everett) is featured
+  }));
 
   return (
     <div className="min-h-screen">
@@ -96,10 +63,10 @@ export default function Locations() {
                       <div>
                         <div className="font-heading text-sm mb-1">PHONE</div>
                         <a
-                          href={`tel:${location.phone.replace(/[^0-9]/g, "")}`}
+                          href={`tel:${location.phone.tel}`}
                           className="text-accent hover:underline"
                         >
-                          {location.phone}
+                          {location.phone.display}
                         </a>
                       </div>
                     </div>
@@ -180,7 +147,7 @@ export default function Locations() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href="tel:8578881468">
+              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
                 <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   CALL NOW
