@@ -52,20 +52,25 @@ export default function GHLForm() {
         .ghl-form-container {
           background: hsl(var(--sidebar));
           border: 8px solid hsl(var(--border));
-          padding: 1.5rem;
-          max-width: 100%;
-          margin: 0 auto;
+          padding: 1rem;
+          width: 100%;
+          margin: 0;
         }
         
         @media (min-width: 640px) {
           .ghl-form-container {
-            padding: 2.5rem;
+            padding: 1.5rem;
           }
         }
         
         @media (min-width: 768px) {
           .ghl-form-container {
-            max-width: 800px;
+            padding: 2rem;
+          }
+        }
+        
+        @media (min-width: 1024px) {
+          .ghl-form-container {
             padding: 3rem;
           }
         }
@@ -74,6 +79,7 @@ export default function GHLForm() {
         iframe#inline-${GHL_FORM_ID} {
           background: transparent;
           width: 100% !important;
+          min-height: 700px !important;
         }
       `}</style>
     </div>

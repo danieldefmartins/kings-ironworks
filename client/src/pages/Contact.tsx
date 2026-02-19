@@ -18,12 +18,14 @@ export default function Contact() {
 
       {/* Contact Form & Info */}
       <section className="diagonal-cut-top bg-card py-24">
-        <div className="container">
+        <div className="container max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Contact Form - GHL Integration */}
             <div className="lg:col-span-2">
               <h2 className="text-display text-3xl mb-6">REQUEST A QUOTE</h2>
-              <GHLForm />
+              <div className="w-full">
+                <GHLForm />
+              </div>
             </div>
 
             {/* Contact Info */}
