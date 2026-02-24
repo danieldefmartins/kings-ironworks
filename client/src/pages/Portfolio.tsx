@@ -30,6 +30,11 @@ const categories = [
 ];
 
 const photos: Photo[] = [
+  // Structural Steel
+  { category: "structural-steel", src: `${LOCAL}/structural-steel-1.jpg`, alt: "Structural steel fabrication" },
+  { category: "structural-steel", src: `${LOCAL}/structural-steel-2.jpg`, alt: "Commercial structural steel installation" },
+  { category: "structural-steel", src: `${LOCAL}/structural-steel-3.jpg`, alt: "Steel beam construction" },
+
   // Cable Railings
   { category: "cable-railing", src: `${LOCAL}/cable-railing-1.jpg`, alt: "Custom cable railing system" },
   { category: "cable-railing", src: `${LOCAL}/cable-railing-2.jpg`, alt: "Cable railing installation" },
