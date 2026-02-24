@@ -14,117 +14,105 @@ interface OGData {
   path: string;
 }
 
+const IMG_BASE = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198";
+
 const locationOG: Record<string, OGData> = {
   "/": {
     title: "King Iron Works - Boston's Premier Historic Ironwork & Fire Escape Specialists",
     description:
       "20+ years of expertise in historic building restoration, licensed fire escape services, and custom ironwork fabrication. Serving Boston, New England, New York, and Florida.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
     path: "/",
   },
   "/cape-cod": {
     title: "Cape Cod Ironwork & Fire Escape Services | King Iron Works",
     description:
       "Cape Cod's premier ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration. Serving all of Cape Cod and the Islands.",
-    image:
-      "https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/IrppZGXOKBxchPDP.JPG`,
     path: "/cape-cod",
   },
   "/worcester": {
     title: "Worcester Ironwork & Fire Escape Services | King Iron Works",
     description:
       "Central Massachusetts' trusted ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration. Serving Worcester and surrounding areas.",
-    image:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/LIIMwNaIvkbuwmQE.JPG`,
     path: "/worcester",
   },
   "/miami": {
     title: "Miami Ironwork & Fire Escape Services | King Iron Works",
     description:
       "South Florida's trusted ironwork specialists. Hurricane-rated gates, railings, fire escapes, and custom fabrication. Serving Miami-Dade and Broward Counties.",
-    image:
-      "https://images.unsplash.com/photo-1506966953602-c20cc11f75e3?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/AzTrmVJOTgNkaNYM.JPG`,
     path: "/miami",
   },
   "/new-hampshire": {
     title: "New Hampshire Ironwork & Fire Escape Services | King Iron Works",
     description:
       "New Hampshire's trusted ironwork specialists. Custom gates, railings, fire escapes, and structural steel. Serving Manchester, Nashua, Concord, and all of NH.",
-    image:
-      "https://images.unsplash.com/photo-1605130284535-11dd9eedc58a?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
     path: "/new-hampshire",
   },
   "/maine": {
     title: "Maine Ironwork & Fire Escape Services | King Iron Works",
     description:
       "Maine's trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Portland, Bangor, Augusta, and all of Maine.",
-    image:
-      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/gujHFKlEnadUYTxL.JPG`,
     path: "/maine",
   },
   "/rhode-island": {
     title: "Rhode Island Ironwork & Fire Escape Services | King Iron Works",
     description:
       "Rhode Island's premier ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Providence, Newport, and all of RI.",
-    image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/NgBghqHCKpNCJSJs.jpg`,
     path: "/rhode-island",
   },
   "/new-york": {
     title: "New York Ironwork & Fire Escape Services | King Iron Works",
     description:
       "New York's trusted ironwork specialists. Fire escapes, structural steel, custom fabrication, and building restoration. Serving NYC, Long Island, and all of NY.",
-    image:
-      "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
     path: "/new-york",
   },
   "/connecticut": {
     title: "Connecticut Ironwork & Fire Escape Services | King Iron Works",
     description:
       "Connecticut's trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Hartford, New Haven, Stamford, and all of CT.",
-    image:
-      "https://images.unsplash.com/photo-1567157577867-05ccb1388e13?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/aoFXjvosIbfREama.JPG`,
     path: "/connecticut",
   },
   "/services": {
     title: "Our Services | King Iron Works",
     description:
       "Comprehensive ironwork solutions: fire escape installation & certification, historic building restoration, custom gates, railings, structural steel, and more.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/aqPLHeShxXujREPn.JPG`,
     path: "/services",
   },
   "/portfolio": {
     title: "Our Work | King Iron Works",
     description:
       "Browse our portfolio of custom ironwork, fire escape installations, historic restorations, and structural steel projects across the Northeast and Florida.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/apLcldtAeVXzDTCh.JPG`,
     path: "/portfolio",
   },
   "/contact": {
     title: "Contact Us | King Iron Works",
     description:
       "Get a free consultation and quote for your ironwork project. Serving Massachusetts, New Hampshire, Maine, Rhode Island, Connecticut, New York, and Florida.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
     path: "/contact",
   },
   "/locations": {
     title: "Our Locations | King Iron Works",
     description:
       "King Iron Works serves the Northeast and Florida with nine locations. Find your nearest office for ironwork, fire escapes, and custom fabrication.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/wFpGlEabFZwcJrgX.jpg`,
     path: "/locations",
   },
   "/about": {
     title: "About Us | King Iron Works",
     description:
       "20+ years of ironwork expertise. Veteran-owned, licensed, and insured. Learn about King Iron Works' history, team, and commitment to quality craftsmanship.",
-    image:
-      "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=1200&h=630&fit=crop",
+    image: `${IMG_BASE}/ZtrYnxwJFDZSmXOw.jpg`,
     path: "/about",
   },
 };

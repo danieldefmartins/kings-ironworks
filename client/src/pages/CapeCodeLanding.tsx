@@ -44,7 +44,7 @@ export default function CapeCodeLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1499092346589-b9b6be3e94b2?w=1600&h=1200&fit=crop')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/IrppZGXOKBxchPDP.JPG')`,
         }}
       >
         <div className="container">
