@@ -162,12 +162,12 @@ export default function Portfolio() {
       {/* Fixed Filter Bar */}
       <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 py-3">
-          <div className="flex flex-wrap gap-2 justify-center">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-1.5 text-[11px] font-bold tracking-wider whitespace-nowrap transition-all rounded-full ${
+                className={`px-4 py-1.5 text-[11px] font-bold tracking-wider whitespace-nowrap transition-all rounded-full flex-shrink-0 ${
                   activeCategory === cat.id
                     ? "bg-accent text-accent-foreground"
                     : photoCounts[cat.id] === 0
