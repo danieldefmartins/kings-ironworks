@@ -14,16 +14,19 @@ interface Photo {
 
 const categories = [
   { id: "all", label: "ALL" },
-  { id: "fire-escape", label: "FIRE ESCAPES" },
+  { id: "cable-railing", label: "CABLE RAILINGS" },
+  { id: "structural-steel", label: "STRUCTURAL STEEL" },
   { id: "gate", label: "GATES" },
-  { id: "interior-railing", label: "INTERIOR RAILINGS" },
-  { id: "exterior-railing", label: "EXTERIOR RAILINGS" },
-  { id: "deck-railing", label: "DECK RAILINGS" },
-  { id: "balcony", label: "BALCONY" },
-  { id: "pipe-handrail", label: "PIPE & HANDRAIL" },
-  { id: "restoration", label: "RESTORATION" },
+  { id: "window-well", label: "WINDOW WELL" },
   { id: "window", label: "WINDOWS" },
+  { id: "balcony", label: "BALCONY" },
+  { id: "interior-railing", label: "INTERIOR RAILINGS" },
+  { id: "fire-escape", label: "FIRE ESCAPES" },
+  { id: "deck-railing", label: "DECK RAILINGS" },
   { id: "before-after", label: "BEFORE & AFTER" },
+  { id: "handrail", label: "HANDRAIL" },
+  { id: "exterior-railing", label: "EXTERIOR RAILINGS" },
+  { id: "restoration", label: "RESTORATION" },
 ];
 
 const photos: Photo[] = [
@@ -78,9 +81,9 @@ const photos: Photo[] = [
   { category: "balcony", src: `${LOCAL}/balcony-3.jpg`, alt: "Residential balcony installation" },
 
   // Pipe & Handrail
-  { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
-  { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
-  { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
+  { category: "handrail", src: `${LOCAL}/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
+  { category: "handrail", src: `${LOCAL}/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
+  { category: "handrail", src: `${LOCAL}/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
 
   // Restoration
   { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail" },
@@ -117,10 +120,11 @@ export default function Portfolio() {
       ? photos
       : photos.filter((p) => p.category === activeCategory);
 
-  // Only show categories that have photos
-  const activeCategories = categories.filter(
-    (c) => c.id === "all" || photos.some((p) => p.category === c.id)
-  );
+  // Count photos per category for badge display
+  const photoCounts = categories.reduce((acc, c) => {
+    acc[c.id] = c.id === "all" ? photos.length : photos.filter((p) => p.category === c.id).length;
+    return acc;
+  }, {} as Record<string, number>);
 
   // Lightbox navigation
   const openLightbox = (index: number) => setLightboxIndex(index);
@@ -159,14 +163,16 @@ export default function Portfolio() {
       <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 py-3">
           <div className="flex flex-wrap gap-2 justify-center">
-            {activeCategories.map((cat) => (
+            {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
                 className={`px-4 py-1.5 text-[11px] font-bold tracking-wider whitespace-nowrap transition-all rounded-full ${
                   activeCategory === cat.id
                     ? "bg-accent text-accent-foreground"
-                    : "bg-transparent text-white/60 hover:text-white hover:bg-white/10 border border-white/20"
+                    : photoCounts[cat.id] === 0
+                      ? "bg-transparent text-white/30 border border-white/10"
+                      : "bg-transparent text-white/60 hover:text-white hover:bg-white/10 border border-white/20"
                 }`}
               >
                 {cat.label}
