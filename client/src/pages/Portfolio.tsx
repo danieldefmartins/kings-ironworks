@@ -30,6 +30,10 @@ const categories = [
 ];
 
 const photos: Photo[] = [
+  // Cable Railings
+  { category: "cable-railing", src: `${LOCAL}/cable-railing-1.jpg`, alt: "Custom cable railing system" },
+  { category: "cable-railing", src: `${LOCAL}/cable-railing-2.jpg`, alt: "Cable railing installation" },
+
   // Fire Escapes
   { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation" },
   { category: "fire-escape", src: `${IMG}/PmBUKqXwdDkeqflj.JPG`, alt: "Fire escape structural repair" },
