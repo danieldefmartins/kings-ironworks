@@ -187,7 +187,7 @@ export default function Portfolio() {
         {filteredPhotos.map((photo, i) => (
           <div
             key={`${activeCategory}-${i}`}
-            className="w-full cursor-pointer group"
+            className="w-full cursor-pointer group mb-2"
             onClick={() => openLightbox(i)}
           >
             <img
