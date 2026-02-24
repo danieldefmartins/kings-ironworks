@@ -1,23 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { useState, useRef, useEffect } from "react";
-import { Phone, ArrowRight, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Phone, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 
 const IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198";
 const LOCAL = "/images/portfolio";
 
-/**
- * Pixieset-inspired masonry portfolio gallery
- * - Hero showcase of ~10 featured photos (full masonry, no filter)
- * - Sticky filter bar with all service categories
- * - Filterable masonry grid below
- */
-
 interface Photo {
   src: string;
   alt: string;
   category: string;
-  featured?: boolean;
 }
 
 const categories = [
@@ -36,9 +28,9 @@ const categories = [
 
 const photos: Photo[] = [
   // Fire Escapes
-  { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation", featured: true },
+  { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation" },
   { category: "fire-escape", src: `${IMG}/PmBUKqXwdDkeqflj.JPG`, alt: "Fire escape structural repair" },
-  { category: "fire-escape", src: `${IMG}/LIIMwNaIvkbuwmQE.JPG`, alt: "Commercial fire escape system", featured: true },
+  { category: "fire-escape", src: `${IMG}/LIIMwNaIvkbuwmQE.JPG`, alt: "Commercial fire escape system" },
   { category: "fire-escape", src: `${IMG}/YgqFSongHOumLnae.JPG`, alt: "Fire escape with landing platform" },
   { category: "fire-escape", src: `${IMG}/aqPLHeShxXujREPn.JPG`, alt: "Precision fire escape welding" },
   { category: "fire-escape", src: `${IMG}/jypAuoqruUncOLCs.JPG`, alt: "Fire escape platform installation" },
@@ -47,20 +39,20 @@ const photos: Photo[] = [
   { category: "fire-escape", src: `${LOCAL}/fire-escape-3.jpg`, alt: "Fire escape stairway fabrication" },
 
   // Gates
-  { category: "gate", src: `${IMG}/ldKpYAFGAsEGkCVX.JPG`, alt: "Ornamental wrought iron gate", featured: true },
+  { category: "gate", src: `${IMG}/ldKpYAFGAsEGkCVX.JPG`, alt: "Ornamental wrought iron gate" },
   { category: "gate", src: `${IMG}/aoFXjvosIbfREama.JPG`, alt: "Hand-forged estate gate" },
   { category: "gate", src: `${IMG}/AzTrmVJOTgNkaNYM.JPG`, alt: "Custom security gate" },
   { category: "gate", src: `${IMG}/ydWQkwicmrXamlMe.JPG`, alt: "Traditional garden gate" },
-  { category: "gate", src: `${IMG}/JjzdorsfDKYfzhbn.JPG`, alt: "Heavy-duty driveway gate", featured: true },
+  { category: "gate", src: `${IMG}/JjzdorsfDKYfzhbn.JPG`, alt: "Heavy-duty driveway gate" },
   { category: "gate", src: `${IMG}/eXGgruXrInmeQsTe.JPG`, alt: "Decorative pedestrian gate" },
   { category: "gate", src: `${LOCAL}/gate-1.jpg`, alt: "Custom iron gate fabrication" },
   { category: "gate", src: `${LOCAL}/gate-2.jpg`, alt: "Ornamental garden gate" },
   { category: "gate", src: `${LOCAL}/gate-3.jpg`, alt: "Residential entry gate" },
 
   // Interior Railings
-  { category: "interior-railing", src: `${IMG}/apLcldtAeVXzDTCh.JPG`, alt: "Custom interior staircase railing", featured: true },
+  { category: "interior-railing", src: `${IMG}/apLcldtAeVXzDTCh.JPG`, alt: "Custom interior staircase railing" },
   { category: "interior-railing", src: `${IMG}/YrJVPkpgGfMkWRdT.JPG`, alt: "Elegant spiral staircase railing" },
-  { category: "interior-railing", src: `${IMG}/qOPbckSMBFnciBif.JPG`, alt: "Modern interior railing", featured: true },
+  { category: "interior-railing", src: `${IMG}/qOPbckSMBFnciBif.JPG`, alt: "Modern interior railing" },
   { category: "interior-railing", src: `${IMG}/jSJklBUsKvwOXBaZ.JPG`, alt: "Residential handrail system" },
   { category: "interior-railing", src: `${LOCAL}/interior-railings-1.jpg`, alt: "Custom staircase railing design" },
   { category: "interior-railing", src: `${LOCAL}/interior-railings-2.jpg`, alt: "Interior iron balustrade" },
@@ -68,7 +60,7 @@ const photos: Photo[] = [
 
   // Exterior Railings
   { category: "exterior-railing", src: `${IMG}/KVrQsNoDvGzMAnwj.JPG`, alt: "Weather-resistant exterior railing" },
-  { category: "exterior-railing", src: `${IMG}/BtcNBKAOOIKUZnLV.JPG`, alt: "Powder-coated deck railing", featured: true },
+  { category: "exterior-railing", src: `${IMG}/BtcNBKAOOIKUZnLV.JPG`, alt: "Powder-coated deck railing" },
   { category: "exterior-railing", src: `${IMG}/gujHFKlEnadUYTxL.JPG`, alt: "Classic New England porch railing" },
   { category: "exterior-railing", src: `${IMG}/IrppZGXOKBxchPDP.JPG`, alt: "Ornamental balcony railing" },
   { category: "exterior-railing", src: `${LOCAL}/exterior-railing-1.jpg`, alt: "Custom exterior porch railing" },
@@ -76,26 +68,26 @@ const photos: Photo[] = [
   { category: "exterior-railing", src: `${LOCAL}/exterior-railing-3.jpg`, alt: "Decorative exterior balustrade" },
 
   // Deck Railings
-  { category: "deck-railing", src: `${LOCAL}/deck-railings-1.jpg`, alt: "Custom deck railing system", featured: true },
+  { category: "deck-railing", src: `${LOCAL}/deck-railings-1.jpg`, alt: "Custom deck railing system" },
   { category: "deck-railing", src: `${LOCAL}/deck-railings-2.jpg`, alt: "Iron deck railing installation" },
   { category: "deck-railing", src: `${LOCAL}/deck-railings-3.jpg`, alt: "Residential deck railing" },
 
   // Balcony
-  { category: "balcony", src: `${LOCAL}/balcony-1.jpg`, alt: "Custom balcony railing", featured: true },
+  { category: "balcony", src: `${LOCAL}/balcony-1.jpg`, alt: "Custom balcony railing" },
   { category: "balcony", src: `${LOCAL}/balcony-2.jpg`, alt: "Ornamental balcony ironwork" },
   { category: "balcony", src: `${LOCAL}/balcony-3.jpg`, alt: "Residential balcony installation" },
 
   // Pipe & Handrail
-  { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-1.jpg`, alt: "Pipe handrail installation", featured: true },
+  { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
   { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
   { category: "pipe-handrail", src: `${LOCAL}/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
 
   // Restoration
-  { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail", featured: true },
+  { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail" },
   { category: "restoration", src: `${IMG}/ZtrYnxwJFDZSmXOw.jpg`, alt: "Ornamental iron restoration" },
   { category: "restoration", src: `${IMG}/wFpGlEabFZwcJrgX.jpg`, alt: "Boston building restoration" },
   { category: "restoration", src: `${IMG}/XBlMdPEjsPJdjLFa.jpg`, alt: "Historic gate restoration" },
-  { category: "restoration", src: `${IMG}/NgBghqHCKpNCJSJs.jpg`, alt: "Landmark architectural ironwork", featured: true },
+  { category: "restoration", src: `${IMG}/NgBghqHCKpNCJSJs.jpg`, alt: "Landmark architectural ironwork" },
   { category: "restoration", src: `${IMG}/rsujTYOxZArFMYMR.jpg`, alt: "Victorian period ironwork" },
   { category: "restoration", src: `${IMG}/dgqYFGcJuAYrvKtp.jpg`, alt: "Historic railing replication" },
   { category: "restoration", src: `${IMG}/DPcQhceaLWuEDbpK.jpg`, alt: "South End brownstone restoration" },
@@ -115,32 +107,10 @@ const photos: Photo[] = [
   { category: "before-after", src: `${LOCAL}/before-after-3.jpg`, alt: "Complete ironwork renovation" },
 ];
 
-const featuredPhotos = photos.filter((p) => p.featured);
-
 export default function Portfolio() {
   const [activeCategory, setActiveCategory] = useState("all");
-  const [lightbox, setLightbox] = useState<string | null>(null);
-  const [filterSticky, setFilterSticky] = useState(false);
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const localPhone = useLocalPhone();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => setFilterSticky(!entry.isIntersecting),
-      { threshold: 0, rootMargin: "-80px 0px 0px 0px" }
-    );
-    if (filterRef.current) observer.observe(filterRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  // Close lightbox on escape
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(null);
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, []);
 
   const filteredPhotos =
     activeCategory === "all"
@@ -152,61 +122,51 @@ export default function Portfolio() {
     (c) => c.id === "all" || photos.some((p) => p.category === c.id)
   );
 
+  // Lightbox navigation
+  const openLightbox = (index: number) => setLightboxIndex(index);
+  const closeLightbox = () => setLightboxIndex(null);
+  const prevPhoto = () => {
+    if (lightboxIndex !== null) {
+      setLightboxIndex(lightboxIndex === 0 ? filteredPhotos.length - 1 : lightboxIndex - 1);
+    }
+  };
+  const nextPhoto = () => {
+    if (lightboxIndex !== null) {
+      setLightboxIndex(lightboxIndex === filteredPhotos.length - 1 ? 0 : lightboxIndex + 1);
+    }
+  };
+
+  // Keyboard navigation for lightbox
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (lightboxIndex === null) return;
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") prevPhoto();
+      if (e.key === "ArrowRight") nextPhoto();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  });
+
+  // Scroll to top when category changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeCategory]);
+
   return (
     <div className="min-h-screen bg-black">
-      {/* Minimal Hero */}
-      <section className="relative flex items-end pb-12 pt-32 lg:pt-24 px-6 lg:px-12">
-        <div>
-          <h1 className="text-display text-5xl md:text-7xl text-white mb-3">
-            OUR WORK
-          </h1>
-          <p className="text-lg text-white/60 max-w-xl">
-            20+ years of craftsmanship. Over 500 projects across the Northeast and Florida.
-          </p>
-        </div>
-      </section>
-
-      {/* Featured Showcase — Masonry, no filter */}
-      <section className="px-3 lg:px-6 pb-4">
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
-          {featuredPhotos.map((photo, i) => (
-            <div
-              key={`feat-${i}`}
-              className="break-inside-avoid mb-3 cursor-pointer group"
-              onClick={() => setLightbox(photo.src)}
-            >
-              <img
-                src={photo.src}
-                alt={photo.alt}
-                loading="eager"
-                className="w-full rounded-sm group-hover:brightness-110 transition-all duration-300"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Filter Anchor (for intersection observer) */}
-      <div ref={filterRef} />
-
-      {/* Sticky Filter Bar */}
-      <div
-        className={`${
-          filterSticky
-            ? "fixed top-16 lg:top-0 lg:left-20 right-0 z-40 shadow-2xl"
-            : ""
-        } bg-zinc-900 border-b border-white/10 py-4 transition-all`}
-      >
-        <div className="px-3 lg:px-6">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+      {/* Fixed Filter Bar */}
+      <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
+        <div className="px-4 py-3">
+          <div className="flex flex-wrap gap-2 justify-center">
             {activeCategories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-5 py-2 text-xs font-display font-bold tracking-wider whitespace-nowrap transition-all rounded-sm ${
+                className={`px-4 py-1.5 text-[11px] font-bold tracking-wider whitespace-nowrap transition-all rounded-full ${
                   activeCategory === cat.id
-                    ? "bg-white text-black"
-                    : "bg-transparent text-white/70 hover:text-white hover:bg-white/10 border border-white/20"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-transparent text-white/60 hover:text-white hover:bg-white/10 border border-white/20"
                 }`}
               >
                 {cat.label}
@@ -216,36 +176,31 @@ export default function Portfolio() {
         </div>
       </div>
 
-      {/* Filtered Masonry Grid */}
-      <section className="px-3 lg:px-6 py-8">
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
-          {filteredPhotos.map((photo, i) => (
-            <div
-              key={`${activeCategory}-${i}`}
-              className="break-inside-avoid mb-3 cursor-pointer group relative"
-              onClick={() => setLightbox(photo.src)}
-            >
-              <img
-                src={photo.src}
-                alt={photo.alt}
-                loading="lazy"
-                className="w-full rounded-sm group-hover:brightness-110 transition-all duration-300"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4 rounded-sm">
-                <p className="text-white text-sm font-medium">{photo.alt}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Full-width Vertical Photo Stream */}
+      <div className="pt-28 lg:pt-16">
+        {filteredPhotos.map((photo, i) => (
+          <div
+            key={`${activeCategory}-${i}`}
+            className="w-full cursor-pointer group"
+            onClick={() => openLightbox(i)}
+          >
+            <img
+              src={photo.src}
+              alt={photo.alt}
+              loading={i < 3 ? "eager" : "lazy"}
+              className="w-full block group-hover:brightness-90 transition-all duration-300"
+            />
+          </div>
+        ))}
 
         {filteredPhotos.length === 0 && (
-          <div className="text-center py-20">
+          <div className="text-center py-40">
             <p className="text-xl text-white/40">
               No projects in this category yet.
             </p>
           </div>
         )}
-      </section>
+      </div>
 
       {/* CTA */}
       <section className="bg-accent text-accent-foreground py-24">
@@ -282,24 +237,48 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Lightbox */}
-      {lightbox && (
+      {/* Lightbox with Navigation */}
+      {lightboxIndex !== null && filteredPhotos[lightboxIndex] && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center cursor-zoom-out"
+          onClick={closeLightbox}
         >
+          {/* Close */}
           <button
-            onClick={() => setLightbox(null)}
+            onClick={closeLightbox}
             className="absolute top-6 right-6 text-white/70 hover:text-white z-50"
           >
             <X className="w-8 h-8" />
           </button>
+
+          {/* Previous */}
+          <button
+            onClick={(e) => { e.stopPropagation(); prevPhoto(); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-50 p-2"
+          >
+            <ChevronLeft className="w-10 h-10" />
+          </button>
+
+          {/* Image */}
           <img
-            src={lightbox}
-            alt="Portfolio photo"
+            src={filteredPhotos[lightboxIndex].src}
+            alt={filteredPhotos[lightboxIndex].alt}
             className="max-h-[90vh] max-w-[90vw] object-contain"
             onClick={(e) => e.stopPropagation()}
           />
+
+          {/* Next */}
+          <button
+            onClick={(e) => { e.stopPropagation(); nextPhoto(); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/50 hover:text-white z-50 p-2"
+          >
+            <ChevronRight className="w-10 h-10" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/50 text-sm">
+            {lightboxIndex + 1} / {filteredPhotos.length}
+          </div>
         </div>
       )}
     </div>
