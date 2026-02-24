@@ -25,11 +25,11 @@ export default function Navigation() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <Link href="/">
-            <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors p-2">
-              <img 
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-                alt="King Iron Works" 
-                className="h-12 w-auto object-contain"
+            <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors p-1">
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg"
+                alt="King Iron Works"
+                className="h-16 w-auto object-contain"
               />
             </div>
           </Link>
@@ -75,7 +75,7 @@ export default function Navigation() {
               <img 
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
                 alt="King Iron Works" 
-                className="h-10 w-auto object-contain"
+                className="h-12 w-auto object-contain"
               />
             </div>
           </Link>
