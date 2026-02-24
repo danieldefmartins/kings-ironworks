@@ -108,6 +108,12 @@ const photos: Photo[] = [
   { category: "restoration", src: `${IMG}/egdmCLWLFeuifEJv.jpg`, alt: "Custom restoration of unavailable designs" },
   { category: "restoration", src: `${LOCAL}/restoration-1.jpg`, alt: "Historic ironwork restoration project" },
 
+  // Window Well
+  { category: "window-well", src: `${LOCAL}/window-well-1.jpg`, alt: "Custom window well cover" },
+  { category: "window-well", src: `${LOCAL}/window-well-2.jpg`, alt: "Iron window well grate" },
+  { category: "window-well", src: `${LOCAL}/window-well-3.jpg`, alt: "Window well guard installation" },
+  { category: "window-well", src: `${LOCAL}/window-well-4.jpg`, alt: "Decorative window well cover" },
+
   // Windows
   { category: "window", src: `${LOCAL}/window-1.jpg`, alt: "Custom iron window guard" },
   { category: "window", src: `${LOCAL}/window-2.jpg`, alt: "Decorative window security grille" },
