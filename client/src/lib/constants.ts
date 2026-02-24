@@ -127,7 +127,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.NEW_YORK,
     hours: "By Appointment",
     description: "Full-service ironwork solutions for New York. Fire escapes, structural steel, custom fabrication, and building restoration.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/VrmKyMuovdgoFRfz.JPG"
+    image: "/images/new-york-ironwork.jpg"
   },
   {
     name: "Connecticut",

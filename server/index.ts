@@ -70,7 +70,7 @@ const locationOG: Record<string, OGData> = {
     title: "New York Ironwork & Fire Escape Services | King Iron Works",
     description:
       "New York's trusted ironwork specialists. Fire escapes, structural steel, custom fabrication, and building restoration. Serving NYC, Long Island, and all of NY.",
-    image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    image: "/images/new-york-ironwork.jpg",
     path: "/new-york",
   },
   "/connecticut": {
@@ -119,17 +119,18 @@ const locationOG: Record<string, OGData> = {
 
 function buildOGTags(og: OGData, baseUrl: string): string {
   const url = `${baseUrl}${og.path}`;
+  const image = og.image.startsWith("http") ? og.image : `${baseUrl}${og.image}`;
   return [
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="King Iron Works" />`,
     `<meta property="og:title" content="${og.title}" />`,
     `<meta property="og:description" content="${og.description}" />`,
-    `<meta property="og:image" content="${og.image}" />`,
+    `<meta property="og:image" content="${image}" />`,
     `<meta property="og:url" content="${url}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
     `<meta name="twitter:title" content="${og.title}" />`,
     `<meta name="twitter:description" content="${og.description}" />`,
-    `<meta name="twitter:image" content="${og.image}" />`,
+    `<meta name="twitter:image" content="${image}" />`,
   ].join("\n    ");
 }
 
