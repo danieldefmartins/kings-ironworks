@@ -108,13 +108,18 @@ export default function NewYorkLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
-                <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-6">
-                  <service.icon className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="text-heading text-2xl mb-4">{service.title}</h3>
-                <p className="text-muted-foreground">{service.description}</p>
-              </Card>
+              <Link href="/services" key={index}>
+                <Card className="p-8 border-4 border-border hover:border-accent transition-colors cursor-pointer h-full">
+                  <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-6">
+                    <service.icon className="w-8 h-8 text-accent" />
+                  </div>
+                  <h3 className="text-heading text-2xl mb-4">{service.title}</h3>
+                  <p className="text-muted-foreground mb-4">{service.description}</p>
+                  <span className="text-accent font-bold text-sm flex items-center gap-1">
+                    LEARN MORE <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
