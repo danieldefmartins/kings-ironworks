@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 interface LocationSEOProps {
-  location: 'cape-cod' | 'miami' | 'boston' | 'worcester';
+  location: 'cape-cod' | 'miami' | 'boston' | 'worcester' | 'new-hampshire' | 'maine' | 'rhode-island' | 'new-york' | 'connecticut';
 }
 
 /**
@@ -30,6 +30,31 @@ export default function LocationSEO({ location }: LocationSEOProps) {
         title: 'Worcester Ironwork & Fire Escape Services | King Iron Works',
         description: 'Central Massachusetts\' trusted ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration. Serving Worcester and surrounding areas. Call +1 508-955-5006',
         keywords: 'worcester ironwork, fire escape worcester, custom gates worcester, railings worcester, historic restoration worcester, ironwork central massachusetts',
+      },
+      'new-hampshire': {
+        title: 'New Hampshire Ironwork & Fire Escape Services | King Iron Works',
+        description: 'New Hampshire\'s trusted ironwork specialists. Custom gates, railings, fire escapes, and structural steel. Serving Manchester, Nashua, Concord, and all of NH. Call +1 603-691-3012',
+        keywords: 'new hampshire ironwork, fire escape new hampshire, custom gates NH, railings new hampshire, structural steel NH, ironwork manchester nh',
+      },
+      'maine': {
+        title: 'Maine Ironwork & Fire Escape Services | King Iron Works',
+        description: 'Maine\'s trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Portland, Bangor, Augusta, and all of Maine. Call +1 207-503-4700',
+        keywords: 'maine ironwork, fire escape maine, custom gates maine, railings maine, historic restoration maine, ironwork portland me',
+      },
+      'rhode-island': {
+        title: 'Rhode Island Ironwork & Fire Escape Services | King Iron Works',
+        description: 'Rhode Island\'s premier ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Providence, Newport, and all of RI. Call +1 401-535-7979',
+        keywords: 'rhode island ironwork, fire escape rhode island, custom gates RI, railings rhode island, historic restoration providence, ironwork newport ri',
+      },
+      'new-york': {
+        title: 'New York Ironwork & Fire Escape Services | King Iron Works',
+        description: 'New York\'s trusted ironwork specialists. Fire escapes, structural steel, custom fabrication, and building restoration. Serving NYC, Long Island, and all of NY. Call +1 917-809-6492',
+        keywords: 'new york ironwork, fire escape new york, custom gates NYC, railings new york, structural steel NY, ironwork manhattan, fire escape nyc',
+      },
+      'connecticut': {
+        title: 'Connecticut Ironwork & Fire Escape Services | King Iron Works',
+        description: 'Connecticut\'s trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Hartford, New Haven, Stamford, and all of CT. Call +1 860-740-4242',
+        keywords: 'connecticut ironwork, fire escape connecticut, custom gates CT, railings connecticut, historic restoration hartford, ironwork stamford ct',
       },
     };
 

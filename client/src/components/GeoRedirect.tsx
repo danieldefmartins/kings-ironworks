@@ -6,7 +6,13 @@ import {
   getLocationLandingPage,
   hasGeoRedirected,
   markGeoRedirected,
+  storeLocationCode,
 } from '@/lib/geoDetection';
+
+const LOCATION_PAGES = [
+  '/cape-cod', '/worcester', '/miami',
+  '/new-hampshire', '/maine', '/rhode-island', '/new-york', '/connecticut'
+];
 
 /**
  * GeoRedirect Component
@@ -23,7 +29,7 @@ export default function GeoRedirect() {
     // 3. Not already on a location-specific page
     const isHomePage = location === '/';
     const alreadyRedirected = hasGeoRedirected();
-    const isLocationPage = location === '/cape-cod' || location === '/worcester' || location === '/miami';
+    const isLocationPage = LOCATION_PAGES.includes(location);
 
     if (!isHomePage || alreadyRedirected || isLocationPage) {
       return;
@@ -35,6 +41,9 @@ export default function GeoRedirect() {
         const geoLocation = await detectUserLocation();
         const locationCode = getLocationCode(geoLocation);
         const targetPage = getLocationLandingPage(locationCode);
+
+        // Store the detected location code for use by other components (nav, contact, etc.)
+        storeLocationCode(locationCode);
 
         // Only redirect if target is different from current page
         if (targetPage !== location && targetPage !== '/') {

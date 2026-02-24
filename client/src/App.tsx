@@ -19,6 +19,11 @@ import BuildingRestorationLanding from "./pages/BuildingRestorationLanding";
 import CapeCodeLanding from "./pages/CapeCodeLanding";
 import WorcesterLanding from "./pages/WorcesterLanding";
 import MiamiLanding from "./pages/MiamiLanding";
+import NewHampshireLanding from "./pages/NewHampshireLanding";
+import MaineLanding from "./pages/MaineLanding";
+import RhodeIslandLanding from "./pages/RhodeIslandLanding";
+import NewYorkLanding from "./pages/NewYorkLanding";
+import ConnecticutLanding from "./pages/ConnecticutLanding";
 import StickyMobileCTA from "./components/StickyMobileCTA";
 import GHLChatWidget from "./components/GHLChatWidget";
 import GeoRedirect from "./components/GeoRedirect";
@@ -43,6 +48,11 @@ function Router() {
       <Route path="/cape-cod" component={CapeCodeLanding} />
       <Route path="/worcester" component={WorcesterLanding} />
       <Route path="/miami" component={MiamiLanding} />
+      <Route path="/new-hampshire" component={NewHampshireLanding} />
+      <Route path="/maine" component={MaineLanding} />
+      <Route path="/rhode-island" component={RhodeIslandLanding} />
+      <Route path="/new-york" component={NewYorkLanding} />
+      <Route path="/connecticut" component={ConnecticutLanding} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />

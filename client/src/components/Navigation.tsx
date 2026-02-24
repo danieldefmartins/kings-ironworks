@@ -2,11 +2,12 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Phone } from "lucide-react";
 import { useState } from "react";
-import { PHONE_NUMBERS } from "@/lib/constants";
+import { useLocalPhone } from "@/lib/useLocalPhone";
 
 export default function Navigation() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const localPhone = useLocalPhone();
 
   const navItems = [
     { path: "/", label: "HOME" },
@@ -58,7 +59,7 @@ export default function Navigation() {
 
           {/* Phone CTA */}
           <a
-            href={`tel:${PHONE_NUMBERS.MAIN.tel}`}
+            href={`tel:${localPhone.tel}`}
             className="h-20 flex items-center justify-center border-t-8 border-border bg-accent hover:bg-accent/90 transition-colors"
           >
             <Phone className="w-6 h-6 text-accent-foreground" />
@@ -80,7 +81,7 @@ export default function Navigation() {
           </Link>
 
           <div className="flex items-center gap-4">
-            <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
+            <a href={`tel:${localPhone.tel}`}>
               <Button size="sm" variant="default" className="bg-accent hover:bg-accent/90">
                 <Phone className="w-4 h-4 mr-2" />
                 CALL

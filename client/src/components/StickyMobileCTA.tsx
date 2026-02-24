@@ -1,7 +1,7 @@
 import { Phone } from "lucide-react";
 
-import { PHONE_NUMBERS } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { useLocalPhone } from "@/lib/useLocalPhone";
 
 /**
  * Sticky Mobile CTA Bar - Lead Generation Optimization
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
  * Increases mobile conversions by 30-50% by keeping CTA always visible
  */
 export default function StickyMobileCTA() {
+  const localPhone = useLocalPhone();
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-primary border-t-4 border-primary-foreground shadow-2xl">
       <div className="container py-3 flex items-center justify-between gap-3">
@@ -25,7 +27,7 @@ export default function StickyMobileCTA() {
           size="lg"
           className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-black text-base px-6 shadow-lg"
         >
-          <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`} className="flex items-center gap-2">
+          <a href={`tel:${localPhone.tel}`} className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
             CALL NOW
           </a>

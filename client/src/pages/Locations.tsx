@@ -17,7 +17,7 @@ export default function Locations() {
         <div className="container">
           <h1 className="text-display text-5xl md:text-7xl mb-6">OUR LOCATIONS</h1>
           <p className="text-xl md:text-2xl text-sidebar-foreground/80 max-w-2xl">
-            Serving Massachusetts and Florida with four convenient locations
+            Serving the Northeast and Florida with nine convenient locations
           </p>
         </div>
       </section>
@@ -107,7 +107,7 @@ export default function Locations() {
       <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-12">SERVICE AREAS</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <div>
               <h3 className="text-heading text-2xl mb-4">MASSACHUSETTS</h3>
               <ul className="space-y-2 text-secondary-foreground/80">
@@ -117,6 +117,51 @@ export default function Locations() {
                 <li>• Cape Cod & Islands</li>
                 <li>• Worcester & Central MA</li>
                 <li>• North Shore & South Shore</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-heading text-2xl mb-4">NEW YORK</h3>
+              <ul className="space-y-2 text-secondary-foreground/80">
+                <li>• New York City (All Boroughs)</li>
+                <li>• Long Island</li>
+                <li>• Westchester County</li>
+                <li>• Upstate New York</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-heading text-2xl mb-4">CONNECTICUT</h3>
+              <ul className="space-y-2 text-secondary-foreground/80">
+                <li>• Hartford & Central CT</li>
+                <li>• New Haven & Shoreline</li>
+                <li>• Stamford & Fairfield County</li>
+                <li>• Bridgeport & Surrounding Areas</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-heading text-2xl mb-4">RHODE ISLAND</h3>
+              <ul className="space-y-2 text-secondary-foreground/80">
+                <li>• Providence & Metro Area</li>
+                <li>• Newport & Aquidneck Island</li>
+                <li>• Warwick, Cranston & Pawtucket</li>
+                <li>• All of Rhode Island</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-heading text-2xl mb-4">NEW HAMPSHIRE</h3>
+              <ul className="space-y-2 text-secondary-foreground/80">
+                <li>• Manchester & Nashua</li>
+                <li>• Concord & Central NH</li>
+                <li>• Seacoast Region</li>
+                <li>• All of New Hampshire</li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-heading text-2xl mb-4">MAINE</h3>
+              <ul className="space-y-2 text-secondary-foreground/80">
+                <li>• Portland & Southern Maine</li>
+                <li>• Bangor & Central Maine</li>
+                <li>• Augusta & Lewiston</li>
+                <li>• All of Maine</li>
               </ul>
             </div>
             <div>
