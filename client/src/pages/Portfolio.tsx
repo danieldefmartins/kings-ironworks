@@ -31,13 +31,13 @@ const categories = [
 
 const photos: Photo[] = [
   // Structural Steel
-  { category: "structural-steel", src: `${LOCAL}/structural-steel-1.jpg`, alt: "Structural steel fabrication" },
-  { category: "structural-steel", src: `${LOCAL}/structural-steel-2.jpg`, alt: "Commercial structural steel installation" },
-  { category: "structural-steel", src: `${LOCAL}/structural-steel-3.jpg`, alt: "Steel beam construction" },
+  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-1.jpg`, alt: "Structural steel fabrication" },
+  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-2.jpg`, alt: "Commercial structural steel installation" },
+  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-3.jpg`, alt: "Steel beam construction" },
 
   // Cable Railings
-  { category: "cable-railing", src: `${LOCAL}/cable-railing-1.jpg`, alt: "Custom cable railing system" },
-  { category: "cable-railing", src: `${LOCAL}/cable-railing-2.jpg`, alt: "Cable railing installation" },
+  { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-1.jpg`, alt: "Custom cable railing system" },
+  { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-2.jpg`, alt: "Cable railing installation" },
 
   // Fire Escapes
   { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation" },
@@ -46,9 +46,9 @@ const photos: Photo[] = [
   { category: "fire-escape", src: `${IMG}/YgqFSongHOumLnae.JPG`, alt: "Fire escape with landing platform" },
   { category: "fire-escape", src: `${IMG}/aqPLHeShxXujREPn.JPG`, alt: "Precision fire escape welding" },
   { category: "fire-escape", src: `${IMG}/jypAuoqruUncOLCs.JPG`, alt: "Fire escape platform installation" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape-1.jpg`, alt: "Fire escape ladder and platform system" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape-2.jpg`, alt: "Residential fire escape installation" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape-3.jpg`, alt: "Fire escape stairway fabrication" },
+  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-1.jpg`, alt: "Fire escape ladder and platform system" },
+  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-2.jpg`, alt: "Residential fire escape installation" },
+  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-3.jpg`, alt: "Fire escape stairway fabrication" },
 
   // Gates
   { category: "gate", src: `${IMG}/ldKpYAFGAsEGkCVX.JPG`, alt: "Ornamental wrought iron gate" },
@@ -57,42 +57,42 @@ const photos: Photo[] = [
   { category: "gate", src: `${IMG}/ydWQkwicmrXamlMe.JPG`, alt: "Traditional garden gate" },
   { category: "gate", src: `${IMG}/JjzdorsfDKYfzhbn.JPG`, alt: "Heavy-duty driveway gate" },
   { category: "gate", src: `${IMG}/eXGgruXrInmeQsTe.JPG`, alt: "Decorative pedestrian gate" },
-  { category: "gate", src: `${LOCAL}/gate-1.jpg`, alt: "Custom iron gate fabrication" },
-  { category: "gate", src: `${LOCAL}/gate-2.jpg`, alt: "Ornamental garden gate" },
-  { category: "gate", src: `${LOCAL}/gate-3.jpg`, alt: "Residential entry gate" },
+  { category: "gate", src: `${LOCAL}/gate/gate-1.jpg`, alt: "Custom iron gate fabrication" },
+  { category: "gate", src: `${LOCAL}/gate/gate-2.jpg`, alt: "Ornamental garden gate" },
+  { category: "gate", src: `${LOCAL}/gate/gate-3.jpg`, alt: "Residential entry gate" },
 
   // Interior Railings
   { category: "interior-railing", src: `${IMG}/apLcldtAeVXzDTCh.JPG`, alt: "Custom interior staircase railing" },
   { category: "interior-railing", src: `${IMG}/YrJVPkpgGfMkWRdT.JPG`, alt: "Elegant spiral staircase railing" },
   { category: "interior-railing", src: `${IMG}/qOPbckSMBFnciBif.JPG`, alt: "Modern interior railing" },
   { category: "interior-railing", src: `${IMG}/jSJklBUsKvwOXBaZ.JPG`, alt: "Residential handrail system" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railings-1.jpg`, alt: "Custom staircase railing design" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railings-2.jpg`, alt: "Interior iron balustrade" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railings-3.jpg`, alt: "Wrought iron staircase handrail" },
+  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-1.jpg`, alt: "Custom staircase railing design" },
+  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-2.jpg`, alt: "Interior iron balustrade" },
+  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-3.jpg`, alt: "Wrought iron staircase handrail" },
 
   // Exterior Railings
   { category: "exterior-railing", src: `${IMG}/KVrQsNoDvGzMAnwj.JPG`, alt: "Weather-resistant exterior railing" },
   { category: "exterior-railing", src: `${IMG}/BtcNBKAOOIKUZnLV.JPG`, alt: "Powder-coated deck railing" },
   { category: "exterior-railing", src: `${IMG}/gujHFKlEnadUYTxL.JPG`, alt: "Classic New England porch railing" },
   { category: "exterior-railing", src: `${IMG}/IrppZGXOKBxchPDP.JPG`, alt: "Ornamental balcony railing" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing-1.jpg`, alt: "Custom exterior porch railing" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing-2.jpg`, alt: "Wrought iron exterior handrail" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing-3.jpg`, alt: "Decorative exterior balustrade" },
+  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-1.jpg`, alt: "Custom exterior porch railing" },
+  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-2.jpg`, alt: "Wrought iron exterior handrail" },
+  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-3.jpg`, alt: "Decorative exterior balustrade" },
 
   // Deck Railings
-  { category: "deck-railing", src: `${LOCAL}/deck-railings-1.jpg`, alt: "Custom deck railing system" },
-  { category: "deck-railing", src: `${LOCAL}/deck-railings-2.jpg`, alt: "Iron deck railing installation" },
-  { category: "deck-railing", src: `${LOCAL}/deck-railings-3.jpg`, alt: "Residential deck railing" },
+  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-1.jpg`, alt: "Custom deck railing system" },
+  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-2.jpg`, alt: "Iron deck railing installation" },
+  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-3.jpg`, alt: "Residential deck railing" },
 
   // Balcony
-  { category: "balcony", src: `${LOCAL}/balcony-1.jpg`, alt: "Custom balcony railing" },
-  { category: "balcony", src: `${LOCAL}/balcony-2.jpg`, alt: "Ornamental balcony ironwork" },
-  { category: "balcony", src: `${LOCAL}/balcony-3.jpg`, alt: "Residential balcony installation" },
+  { category: "balcony", src: `${LOCAL}/balcony/balcony-1.jpg`, alt: "Custom balcony railing" },
+  { category: "balcony", src: `${LOCAL}/balcony/balcony-2.jpg`, alt: "Ornamental balcony ironwork" },
+  { category: "balcony", src: `${LOCAL}/balcony/balcony-3.jpg`, alt: "Residential balcony installation" },
 
   // Pipe & Handrail
-  { category: "handrail", src: `${LOCAL}/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
-  { category: "handrail", src: `${LOCAL}/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
-  { category: "handrail", src: `${LOCAL}/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
+  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
+  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
+  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
 
   // Restoration
   { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail" },
@@ -106,23 +106,23 @@ const photos: Photo[] = [
   { category: "restoration", src: `${IMG}/SYTGvQjSziYdBQab.jpg`, alt: "Beacon Hill historic district" },
   { category: "restoration", src: `${IMG}/GeAuXhLZDbFMhTPk.jpg`, alt: "Heritage building craftsmanship" },
   { category: "restoration", src: `${IMG}/egdmCLWLFeuifEJv.jpg`, alt: "Custom restoration of unavailable designs" },
-  { category: "restoration", src: `${LOCAL}/restoration-1.jpg`, alt: "Historic ironwork restoration project" },
+  { category: "restoration", src: `${LOCAL}/restoration/restoration-1.jpg`, alt: "Historic ironwork restoration project" },
 
   // Window Well
-  { category: "window-well", src: `${LOCAL}/window-well-1.jpg`, alt: "Custom window well cover" },
-  { category: "window-well", src: `${LOCAL}/window-well-2.jpg`, alt: "Iron window well grate" },
-  { category: "window-well", src: `${LOCAL}/window-well-3.jpg`, alt: "Window well guard installation" },
-  { category: "window-well", src: `${LOCAL}/window-well-4.jpg`, alt: "Decorative window well cover" },
+  { category: "window-well", src: `${LOCAL}/window-well/window-well-1.jpg`, alt: "Custom window well cover" },
+  { category: "window-well", src: `${LOCAL}/window-well/window-well-2.jpg`, alt: "Iron window well grate" },
+  { category: "window-well", src: `${LOCAL}/window-well/window-well-3.jpg`, alt: "Window well guard installation" },
+  { category: "window-well", src: `${LOCAL}/window-well/window-well-4.jpg`, alt: "Decorative window well cover" },
 
   // Windows
-  { category: "window", src: `${LOCAL}/window-1.jpg`, alt: "Custom iron window guard" },
-  { category: "window", src: `${LOCAL}/window-2.jpg`, alt: "Decorative window security grille" },
-  { category: "window", src: `${LOCAL}/window-3.jpg`, alt: "Iron window frame installation" },
+  { category: "window", src: `${LOCAL}/window/window-1.jpg`, alt: "Custom iron window guard" },
+  { category: "window", src: `${LOCAL}/window/window-2.jpg`, alt: "Decorative window security grille" },
+  { category: "window", src: `${LOCAL}/window/window-3.jpg`, alt: "Iron window frame installation" },
 
   // Before & After
-  { category: "before-after", src: `${LOCAL}/before-after-1.jpg`, alt: "Ironwork restoration before and after" },
-  { category: "before-after", src: `${LOCAL}/before-after-2.jpg`, alt: "Railing repair transformation" },
-  { category: "before-after", src: `${LOCAL}/before-after-3.jpg`, alt: "Complete ironwork renovation" },
+  { category: "before-after", src: `${LOCAL}/before-after/before-after-1.jpg`, alt: "Ironwork restoration before and after" },
+  { category: "before-after", src: `${LOCAL}/before-after/before-after-2.jpg`, alt: "Railing repair transformation" },
+  { category: "before-after", src: `${LOCAL}/before-after/before-after-3.jpg`, alt: "Complete ironwork renovation" },
 ];
 
 export default function Portfolio() {
