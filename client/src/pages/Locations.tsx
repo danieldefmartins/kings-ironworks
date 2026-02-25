@@ -13,7 +13,7 @@ export default function Locations() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground">
+      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-20 lg:pt-0">
         <div className="container">
           <h1 className="text-display text-5xl md:text-7xl mb-6">OUR LOCATIONS</h1>
           <p className="text-xl md:text-2xl text-sidebar-foreground/80 max-w-2xl">
