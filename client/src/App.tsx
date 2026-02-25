@@ -24,6 +24,16 @@ import MaineLanding from "./pages/MaineLanding";
 import RhodeIslandLanding from "./pages/RhodeIslandLanding";
 import NewYorkLanding from "./pages/NewYorkLanding";
 import ConnecticutLanding from "./pages/ConnecticutLanding";
+import InteriorRailingLanding from "./pages/InteriorRailingLanding";
+import ExteriorRailingLanding from "./pages/ExteriorRailingLanding";
+import FenceLanding from "./pages/FenceLanding";
+import BalconyLanding from "./pages/BalconyLanding";
+import CableRailingLanding from "./pages/CableRailingLanding";
+import DeckRailingLanding from "./pages/DeckRailingLanding";
+import GateLanding from "./pages/GateLanding";
+import HandrailLanding from "./pages/HandrailLanding";
+import WindowLanding from "./pages/WindowLanding";
+import WindowWellLanding from "./pages/WindowWellLanding";
 import StickyMobileCTA from "./components/StickyMobileCTA";
 import GHLChatWidget from "./components/GHLChatWidget";
 import GeoRedirect from "./components/GeoRedirect";
@@ -45,6 +55,16 @@ function Router() {
       <Route path="/fire-escape" component={FireEscapeLanding} />
       <Route path="/structural-steel" component={StructuralSteelLanding} />
       <Route path="/building-restoration" component={BuildingRestorationLanding} />
+      <Route path="/interior-railing" component={InteriorRailingLanding} />
+      <Route path="/exterior-railing" component={ExteriorRailingLanding} />
+      <Route path="/fence" component={FenceLanding} />
+      <Route path="/balcony" component={BalconyLanding} />
+      <Route path="/cable-railing" component={CableRailingLanding} />
+      <Route path="/deck-railing" component={DeckRailingLanding} />
+      <Route path="/gate" component={GateLanding} />
+      <Route path="/handrail" component={HandrailLanding} />
+      <Route path="/window" component={WindowLanding} />
+      <Route path="/window-well" component={WindowWellLanding} />
       <Route path="/cape-cod" component={CapeCodeLanding} />
       <Route path="/worcester" component={WorcesterLanding} />
       <Route path="/miami" component={MiamiLanding} />
