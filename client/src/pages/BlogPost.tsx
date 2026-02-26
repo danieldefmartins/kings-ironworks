@@ -96,7 +96,7 @@ export default function BlogPost() {
       </section>
 
       {/* Article Body */}
-      <section className="diagonal-cut-top bg-card py-8 md:py-24">
+      <section className="bg-card py-8 md:py-16">
         <div className="container">
           <article className="max-w-3xl mx-auto">
             <div
