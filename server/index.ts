@@ -190,6 +190,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/NgBghqHCKpNCJSJs.jpg`,
     path: "/blog/south-end-victorian-ironwork-guide",
   },
+  "fire-escape-installation-commercial-buildings": {
+    title:
+      "Fire Escape Installation for Commercial Buildings: What Property Managers Need to Know | King Iron Works",
+    description:
+      "Need a new fire escape for your apartment building or commercial property? Here's the complete guide to code requirements, the installation process, managing tenants, and what affects cost.",
+    image: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
+    path: "/blog/fire-escape-installation-commercial-buildings",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {

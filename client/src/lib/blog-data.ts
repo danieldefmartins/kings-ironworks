@@ -1054,6 +1054,155 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>If your building's ironwork needs attention, the key is working with a shop that understands the South End's specific Victorian vocabulary, has the capability to recast missing patterns, and knows how to navigate the landmark commission process. That's the work we love to do.</p>
     `,
   },
+  {
+    slug: "fire-escape-installation-commercial-buildings",
+    title:
+      "Fire Escape Installation for Commercial Buildings: What Property Managers Need to Know",
+    excerpt:
+      "Need a new fire escape for your apartment building or commercial property? Here's the complete guide to code requirements, the installation process, managing tenants, and what affects cost.",
+    category: "fire-escapes",
+    featuredImage: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
+    publishedDate: "2026-02-26",
+    readTime: "7 min read",
+    tags: [
+      "fire escapes",
+      "commercial",
+      "property management",
+      "installation",
+      "building code",
+    ],
+    content: `
+      <p>If you manage an apartment building or commercial property in Massachusetts and you've been told you need a new fire escape — whether it's a replacement for one that <a href="/blog/failed-fire-escape-inspection-boston">failed inspection</a>, an addition to bring an older building up to code, or part of a renovation project — you probably have a lot of questions. How long does it take? What does it cost? How much will it disrupt tenants? What are the code requirements?</p>
+
+      <p>These are the exact questions property managers ask us every week. Here's a straightforward guide to the entire process, from the moment you realize you need a fire escape to the day it passes certification.</p>
+
+      <h2>When Is a Fire Escape Required?</h2>
+
+      <p>Massachusetts building code (780 CMR) requires that buildings provide adequate means of egress — essentially, safe paths for occupants to exit during an emergency. For many older buildings, fire escapes serve as the required secondary means of egress.</p>
+
+      <p>You typically need a fire escape (or an equivalent egress solution) when:</p>
+
+      <ul>
+        <li><strong>Your building has residential units above the first floor</strong> and the existing egress doesn't meet current code. This is the most common scenario — older apartment buildings with a single interior stairway that need a secondary exit.</li>
+        <li><strong>You're converting a building's use.</strong> Changing a commercial building to residential, adding dwelling units, or converting a single-family to multi-family often triggers egress requirements that weren't previously applicable.</li>
+        <li><strong>Your existing fire escape has been condemned.</strong> If an inspection determines that your current fire escape is beyond repair and can't be certified, it needs to be replaced.</li>
+        <li><strong>A building renovation triggers code compliance.</strong> Major renovations can require the entire building to be brought up to current egress standards, which may include adding or replacing fire escapes.</li>
+      </ul>
+
+      <p><strong>Important:</strong> Fire escapes are not the only egress solution. Depending on your building's layout and budget, enclosed interior stairways, exterior stairways, or other approved means of egress may be options. A good contractor will evaluate all possibilities and recommend the most practical and cost-effective approach for your specific building.</p>
+
+      <h2>The Code Requirements (In Plain English)</h2>
+
+      <p>Building code can be dense, so here are the key requirements that affect most commercial fire escape installations in Massachusetts:</p>
+
+      <h3>5-Year Certification</h3>
+
+      <p>Per <a href="/blog/massachusetts-fire-escape-inspection-requirements-2026">780 CMR Section 1001.2.2</a>, all fire escapes must be examined, tested, and certified for structural adequacy every five years by a Massachusetts registered professional engineer or a licensed fire escape installer. The certification affidavit must be submitted to the local building official. This isn't optional — it's the law, and your building's Five-Year Inspection Plan depends on it.</p>
+
+      <h3>Structural Requirements</h3>
+
+      <p>Fire escapes must be tied directly into the building's structural system with weather-resistant fasteners and connections. They must support the required occupant loads plus a safety factor. For a new installation, this means the building's existing structure needs to be evaluated to confirm it can handle the load of a fire escape and the people using it in an emergency.</p>
+
+      <h3>Snow and Ice Maintenance</h3>
+
+      <p>Massachusetts code specifically requires that fire escapes be kept free of snow and ice. As a property manager, this is your ongoing responsibility — and it's one that insurance companies pay close attention to. If a tenant or first responder is injured on an icy fire escape, liability exposure is significant.</p>
+
+      <h3>Platform and Stair Dimensions</h3>
+
+      <p>Fire escape platforms must be large enough for occupants to safely transition between the building exit and the stairs. Stairs must meet specific width, tread depth, and riser height requirements. Drop ladders (the counterweighted ladders at the lowest level) must extend to within a specified distance of the ground and operate freely.</p>
+
+      <h3>Protective Coatings</h3>
+
+      <p>Fire escapes constructed of materials that require weather protection (which includes virtually all steel fire escapes) must have <a href="/blog/maintain-iron-railings-new-england-winters">protective coatings applied and maintained</a>. This means priming and painting on a regular cycle, not just at installation.</p>
+
+      <h2>The Installation Process: What to Expect</h2>
+
+      <p>Here's how a commercial fire escape installation typically unfolds from start to finish:</p>
+
+      <h3>Phase 1: Assessment and Engineering (2–4 Weeks)</h3>
+
+      <p>We start with a thorough assessment of your building — its structure, the existing egress plan, and the proposed location for the fire escape. For new installations, a structural engineer evaluates the building's ability to support the fire escape and designs the connection points. We also review any historic district requirements or zoning considerations that may apply.</p>
+
+      <p>At the end of this phase, you'll have engineered drawings, a detailed proposal with clear pricing, and a construction timeline.</p>
+
+      <h3>Phase 2: Permitting (2–6 Weeks)</h3>
+
+      <p>Fire escape installation requires a building permit from your local building department. In some cases (historic districts, certain zoning overlays), additional approvals may be needed. We handle the permit application process and coordinate with the building department to keep things moving.</p>
+
+      <h3>Phase 3: Fabrication (3–6 Weeks)</h3>
+
+      <p>Once permits are in hand, fabrication begins at our Everett facility. Every fire escape we build is custom-fabricated to the specific dimensions and engineering requirements of your building. There's no such thing as an off-the-shelf fire escape that will properly fit a real building — each one is designed and built to order.</p>
+
+      <p>During this phase, we also coordinate with you on the installation schedule, including any tenant communication that needs to happen.</p>
+
+      <h3>Phase 4: Installation (3–10 Days)</h3>
+
+      <p>The on-site installation is the most visible phase and the one that affects your tenants. Here's what's involved:</p>
+
+      <ul>
+        <li>Delivery of pre-fabricated components to the site</li>
+        <li>Setting up staging/scaffolding as needed</li>
+        <li>Anchoring connection points into the building's structure</li>
+        <li>Assembling and welding fire escape components in place</li>
+        <li>Installing platforms, stairs, railings, and drop ladder</li>
+        <li>Applying primer and protective coatings</li>
+        <li>Final inspection and cleanup</li>
+      </ul>
+
+      <p>For a typical 3–4 story apartment building, on-site installation takes 5–7 working days. Larger buildings or complex configurations may take longer.</p>
+
+      <h3>Phase 5: Inspection and Certification</h3>
+
+      <p>Once installation is complete, the fire escape is inspected by the local building department and certified for structural adequacy. We coordinate the inspection, address any items the inspector flags, and ensure you receive the certification affidavit for your records. This certification starts your 5-year clock.</p>
+
+      <h2>Managing Tenant Impact</h2>
+
+      <p>This is often the property manager's biggest concern, and rightfully so. Here's how we help minimize disruption:</p>
+
+      <ul>
+        <li><strong>Advance notice.</strong> We provide a clear timeline that you can share with tenants well before work begins. Knowing what to expect — and when — goes a long way toward managing frustration.</li>
+        <li><strong>Defined work hours.</strong> Installation work happens during normal business hours (typically 7 AM to 4 PM). No weekend or overnight work unless specifically requested and coordinated.</li>
+        <li><strong>Exterior access.</strong> Most of the work happens from the exterior, meaning we rarely need to enter individual units. When interior access is necessary (for example, to install fire escape access windows or egress hardware), we coordinate specific times with affected tenants.</li>
+        <li><strong>Noise management.</strong> There's no getting around it — steel fabrication and anchoring into masonry produces noise. We schedule the loudest work (drilling, welding) strategically to minimize the most disruptive impacts.</li>
+        <li><strong>Clean site.</strong> We clean up daily. No debris left in common areas or on sidewalks overnight.</li>
+      </ul>
+
+      <h2>What Affects the Cost</h2>
+
+      <p>Property managers want to budget accurately, so here are the main factors that drive fire escape installation costs:</p>
+
+      <ul>
+        <li><strong>Building height.</strong> More stories means more platforms, more stairs, and more structural connections. A 6-story installation costs significantly more than a 3-story.</li>
+        <li><strong>Building condition.</strong> If your building's masonry or structural frame needs reinforcement to support the fire escape, that adds to both the engineering and construction cost.</li>
+        <li><strong>Access and logistics.</strong> A building on a narrow South End side street presents different logistical challenges than a building with open access in Everett or Worcester. Staging, equipment placement, and traffic management all factor in.</li>
+        <li><strong>Design complexity.</strong> A straightforward vertical run with standard platforms is less expensive than a configuration that requires turns, extended platforms, or accommodation for building features like bay windows or balconies.</li>
+        <li><strong>Historic district requirements.</strong> Properties in designated historic districts may need fire escapes that meet additional aesthetic requirements, which can affect design and fabrication costs.</li>
+        <li><strong>Removal of the old fire escape.</strong> If you're replacing an existing fire escape, demolition and removal is an additional cost that needs to be factored in.</li>
+      </ul>
+
+      <p>Rather than give you a ballpark that might not apply to your building, we prefer to provide a detailed, accurate estimate based on an actual site assessment. Our estimates are free, they're detailed, and they include everything — engineering, permitting, fabrication, installation, and certification. No surprises.</p>
+
+      <h2>Why One Company Should Handle Everything</h2>
+
+      <p>Some property managers try to save money by hiring an engineer separately, getting the permit themselves, and then finding the cheapest fabricator. In our experience, this approach almost always costs more in the end and takes significantly longer.</p>
+
+      <p>When one company handles the entire process — engineering coordination, permitting, fabrication, installation, and certification — there's a single point of accountability. If the engineer's design needs to be adjusted during fabrication, that happens immediately. If the building inspector has a question, one company can answer it. If a dimension changes on-site, the fabrication team that built it is the same team installing it.</p>
+
+      <p>At King Iron Works, we handle everything under one roof. Our team manages the engineering coordination, pulls the permits, fabricates the fire escape at our Everett facility, installs it with our own crews, and coordinates the final inspection and certification. You deal with one company, one contact, one phone number.</p>
+
+      <h2>Need a Fire Escape for Your Building?</h2>
+
+      <p>Start with a free on-site assessment. We'll evaluate your building, discuss the options, and give you a clear, detailed estimate with a realistic timeline.</p>
+
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to get started.</p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>A fire escape installation is one of those projects that feels overwhelming until you understand the process. The reality is straightforward: assess the building, engineer the solution, get the permits, fabricate the fire escape, install it, and get it certified. With the right contractor, the whole process runs smoothly and predictably.</p>
+
+      <p>The most important decision you'll make isn't which fire escape design to choose — it's choosing a contractor who can handle the entire process from start to finish, who communicates clearly with you and your tenants, and who builds something that will pass certification for the next 20+ years. That's the standard we hold ourselves to.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
