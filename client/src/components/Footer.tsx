@@ -1,22 +1,24 @@
 import { Link } from "wouter";
-
-import { PHONE_NUMBERS } from "@/lib/constants";
 import { Phone, Mail, MapPin } from "lucide-react";
+import { useLocalPhone } from "@/lib/useLocalPhone";
 
 export default function Footer() {
+  const localPhone = useLocalPhone();
+  const isDefaultLocation = localPhone.label === "Main" || localPhone.label === "Boston";
+
   return (
     <footer className="bg-sidebar text-sidebar-foreground border-t-8 border-border">
       <div className="container py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div>
-            <img 
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-              alt="King Iron Works" 
+            <img
+              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg"
+              alt="King Iron Works"
               className="h-16 w-auto object-contain mb-4"
             />
             <p className="text-sidebar-foreground/70 text-sm leading-relaxed mb-4">
-              Boston's premier historic ironwork restoration and fire escape specialists since 2004. 
+              Boston's premier historic ironwork restoration and fire escape specialists since 2004.
               20+ years of American craftsmanship and safety excellence.
             </p>
             <div className="space-y-2">
@@ -59,7 +61,7 @@ export default function Footer() {
               <li>
                 <Link href="/locations">
                   <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
-                    Locations
+                    Our Facility
                   </span>
                 </Link>
               </li>
@@ -80,7 +82,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Locations */}
+          {/* Locations — Everett HQ + Dynamic Local */}
           <div>
             <h4 className="text-heading text-sm tracking-wider mb-4">LOCATIONS</h4>
             <ul className="space-y-3 text-sm">
@@ -88,15 +90,15 @@ export default function Footer() {
                 <div className="font-medium text-sidebar-foreground">Everett, MA</div>
                 <div className="text-xs">Headquarters & Fabrication</div>
               </li>
-              <li className="text-sidebar-foreground/70">
-                <div className="font-medium text-sidebar-foreground">Cape Cod, MA</div>
-              </li>
-              <li className="text-sidebar-foreground/70">
-                <div className="font-medium text-sidebar-foreground">Worcester, MA</div>
-              </li>
-              <li className="text-sidebar-foreground/70">
-                <div className="font-medium text-sidebar-foreground">Miami, FL</div>
-              </li>
+              {!isDefaultLocation && (
+                <li className="text-sidebar-foreground/70">
+                  <div className="font-medium text-sidebar-foreground">{localPhone.label}</div>
+                  <div className="text-xs">Your Local Office</div>
+                  <a href={`tel:${localPhone.tel}`} className="text-xs text-accent hover:underline">
+                    {localPhone.display}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
@@ -106,11 +108,11 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href={`tel:${PHONE_NUMBERS.MAIN.tel}`}
+                  href={`tel:${localPhone.tel}`}
                   className="flex items-center gap-2 text-sidebar-foreground/70 hover:text-accent transition-colors text-sm"
                 >
                   <Phone className="w-4 h-4" />
-                  {PHONE_NUMBERS.MAIN.display}
+                  {localPhone.display}
                 </a>
               </li>
               <li>

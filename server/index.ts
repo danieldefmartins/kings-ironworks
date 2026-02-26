@@ -102,9 +102,9 @@ const locationOG: Record<string, OGData> = {
     path: "/contact",
   },
   "/locations": {
-    title: "Our Locations | King Iron Works",
+    title: "Our Facility | King Iron Works — Everett, MA Fabrication Shop",
     description:
-      "King Iron Works serves the Northeast and Florida with nine locations. Find your nearest office for ironwork, fire escapes, and custom fabrication.",
+      "Tour our 10,000+ sq ft Everett fabrication facility. Custom ironwork, welding, structural steel, and powder coating — built in-house, delivered across the Northeast and Florida.",
     image: `${IMG_BASE}/wFpGlEabFZwcJrgX.jpg`,
     path: "/locations",
   },
