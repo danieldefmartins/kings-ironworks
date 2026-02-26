@@ -166,6 +166,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
     path: "/blog/wrought-iron-vs-steel",
   },
+  "custom-iron-railings-boston-brownstones": {
+    title:
+      "The Complete Guide to Custom Iron Railings for Boston Brownstones | King Iron Works",
+    description:
+      "Planning new railings for your brownstone? From architectural style matching to building code requirements and historic commission approval, here's everything you need to know.",
+    image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    path: "/blog/custom-iron-railings-boston-brownstones",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {

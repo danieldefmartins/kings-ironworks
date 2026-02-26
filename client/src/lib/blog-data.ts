@@ -638,6 +638,140 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The most important decision isn't actually which metal you choose — it's choosing a fabricator who knows how to work with both, understands Boston's climate and building codes, and will give you honest guidance. That's what we've been doing since 2004.</p>
     `,
   },
+  {
+    slug: "custom-iron-railings-boston-brownstones",
+    title:
+      "The Complete Guide to Custom Iron Railings for Boston Brownstones",
+    excerpt:
+      "Planning new railings for your brownstone? From architectural style matching to building code requirements and historic commission approval, here's everything you need to know.",
+    category: "railings",
+    featuredImage: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    publishedDate: "2026-02-26",
+    readTime: "6 min read",
+    tags: [
+      "railings",
+      "brownstones",
+      "boston",
+      "historic restoration",
+      "custom ironwork",
+    ],
+    content: `
+      <p>There's a reason Boston's brownstones are some of the most photographed buildings in the city. The warm masonry, the high stoops, the bay windows — and running alongside all of it, the ironwork. The railings that frame the front steps, line the balconies, and define the street-level boundaries of each property.</p>
+
+      <p>When those railings are original and well-maintained, they add enormous character and value. When they're missing, damaged, or replaced with something generic, the whole building looks different — and not in a good way.</p>
+
+      <p>If you're a brownstone owner thinking about new railings — whether you're replacing what's there, restoring something that's deteriorated, or adding railings where none existed — this guide walks you through the entire process from first thought to final installation.</p>
+
+      <h2>Understanding Your Brownstone's Architectural Style</h2>
+
+      <p>Before you pick a railing design, it helps to understand what era your brownstone comes from. Boston's brownstone neighborhoods span several architectural periods, and each has its own ironwork vocabulary:</p>
+
+      <h3>Federal Period (1790s–1830s)</h3>
+
+      <p>Found primarily on Beacon Hill. Ironwork from this era is restrained and elegant — thin balusters, simple geometric patterns, delicate scrollwork. The emphasis is on proportion and refinement rather than ornamentation. If your building dates from this period and sits in a <a href="/blog/historic-ironwork-restoration-beacon-hill">historic district</a>, your new railings should reflect this understated aesthetic.</p>
+
+      <h3>Greek Revival (1830s–1850s)</h3>
+
+      <p>Common across Beacon Hill and early South End development. Ironwork becomes a bit more structured — anthemion (honeysuckle) motifs, lyre shapes, and slightly heavier proportions. There's a formality to Greek Revival ironwork that pairs beautifully with the columned porticos and pediments of the architecture.</p>
+
+      <h3>Victorian / Italianate (1850s–1890s)</h3>
+
+      <p>This is the signature era for much of the South End and Back Bay. Ironwork becomes more elaborate — ornate cast iron fences, floral and foliate patterns, acorn or urn finials, and the kind of intricate scrollwork that was made possible by industrial casting techniques. The iconic black iron fences you see along Union Park and Commonwealth Avenue are quintessential Victorian ironwork.</p>
+
+      <h3>Late 19th / Early 20th Century</h3>
+
+      <p>Some brownstones, especially those that were renovated or built later, feature simpler ironwork — clean lines, minimal ornamentation, influenced by the Arts and Crafts movement or early modernism. These designs work well with a more contemporary approach.</p>
+
+      <p><strong>Tip:</strong> Don't know your brownstone's era? Look at the neighboring buildings on your block. Brownstone rows were typically built in groups, so the buildings around you are often the best reference for what your railing should look like. Your local historical commission may also have records of original designs.</p>
+
+      <h2>Choosing a Railing Design</h2>
+
+      <p>Once you understand your brownstone's architectural context, the design conversation gets a lot more focused. Here are the key decisions:</p>
+
+      <h3>Matching vs. Complementing</h3>
+
+      <p>If you're in a historic district, you'll likely need to match the original design or a period-appropriate equivalent. The architectural commission will want to see documentation showing that your proposed railing is consistent with the neighborhood's character.</p>
+
+      <p>If you're outside a historic district, you have more flexibility. You might choose to honor the brownstone's era with a traditional design, or you might opt for something more contemporary that complements the building without trying to replicate the past. Both approaches can look stunning — what matters is that the railing feels intentional, not like an afterthought.</p>
+
+      <h3>Stoop Railings vs. Fence Railings vs. Balcony Railings</h3>
+
+      <p>Most brownstone railing projects involve one or more of these:</p>
+
+      <ul>
+        <li><strong>Stoop railings</strong> — the railings running alongside your front steps. These are the most visible and the first thing visitors (and passersby) notice. They need to be code-compliant for height and graspability while also setting the aesthetic tone for the building.</li>
+        <li><strong>Area fence railings</strong> — the low fences that border the sidewalk-level areaway in front of your building. These define your property line and often incorporate a gate. They're where ornamental ironwork really shines.</li>
+        <li><strong>Balcony and window railings</strong> — railings on upper-story balconies or Juliet balconies at French doors. These tend to be simpler in design but still need to coordinate with the rest of your building's ironwork.</li>
+      </ul>
+
+      <h3>Finish and Color</h3>
+
+      <p>For the vast majority of Boston brownstones, the standard finish is satin or semi-gloss black. It's traditional, it's what the historic commissions expect, and it looks right against the warm tones of brownstone masonry. We use a rust-inhibitive primer followed by a high-quality exterior enamel that's rated for New England's climate.</p>
+
+      <p>That said, some buildings — particularly those outside historic districts — can pull off a dark bronze, dark green, or even a raw steel patina finish. It depends on the architecture and the neighborhood context.</p>
+
+      <h2>Building Code Requirements You Should Know</h2>
+
+      <p>Custom railings aren't just about aesthetics — they have to meet Massachusetts building code. Here are the requirements that come up most often on brownstone projects:</p>
+
+      <ul>
+        <li><strong>Height:</strong> Handrails on stairs must be between 34 and 38 inches high, measured from the stair nosing. Guards (the barrier that prevents falls) must be at least 42 inches on residential applications, though there are exceptions for certain historic buildings.</li>
+        <li><strong>Graspability:</strong> Handrails must have a graspable profile — meaning your hand can wrap around them. This is a common issue with ornamental designs where the top rail is too wide or too flat to grip. We design our railings so the top profile is both decorative and functional.</li>
+        <li><strong>Baluster spacing:</strong> The gap between balusters (vertical bars) cannot allow a 4-inch sphere to pass through. This is a child safety requirement and it affects the design more than you might think — especially on ornamental patterns with scrollwork.</li>
+        <li><strong>Structural load:</strong> Railings must withstand a minimum concentrated load of 200 pounds applied in any direction at the top. This isn't usually an issue with <a href="/blog/wrought-iron-vs-steel">iron or steel</a>, but it affects how the railing is anchored to the masonry.</li>
+      </ul>
+
+      <p><strong>Historic district note:</strong> If your brownstone is in a designated historic district, you'll need approval from the local architectural commission BEFORE installation begins. Apply early — the commission meets monthly, and the review process typically takes 60–90 days for standard projects. We can help prepare your application with design drawings and material specifications.</p>
+
+      <h2>Our Process: From Consultation to Installation</h2>
+
+      <p>Here's what working with King Iron Works looks like on a typical brownstone railing project:</p>
+
+      <h3>Step 1: On-Site Consultation (Free)</h3>
+
+      <p>We come to your brownstone, take measurements, photograph the existing conditions, and discuss what you're looking for. If there's existing ironwork we're matching or replacing, we document the design details carefully. If you're starting fresh, we talk through style options based on your building's architecture and your personal preferences. This visit is free and comes with no obligation.</p>
+
+      <h3>Step 2: Design and Proposal</h3>
+
+      <p>Based on our site visit, we create a detailed design and a clear proposal — including materials, finish, timeline, and cost. If you're in a historic district, we can prepare the design documentation needed for your commission application. You'll know exactly what you're getting before we start.</p>
+
+      <h3>Step 3: Fabrication</h3>
+
+      <p>Once the design is approved (by you and, if applicable, the architectural commission), fabrication begins at our Everett facility. Everything is built in-house — we don't outsource. Depending on complexity, fabrication typically takes 3–6 weeks. We'll keep you updated on progress.</p>
+
+      <h3>Step 4: Installation</h3>
+
+      <p>Our installation crew comes to your building with the completed railing, prepared mounting hardware, and everything needed for a clean, professional installation. For brownstones, this means drilling into masonry for anchor points, which requires the right equipment and technique to avoid damaging historic stonework. A typical stoop railing installation takes one day; larger projects with fencing and balcony railings may take two to three days.</p>
+
+      <h3>Step 5: Final Walkthrough</h3>
+
+      <p>We walk the completed work with you to make sure everything looks right, feels solid, and meets your expectations. We're not done until you're happy.</p>
+
+      <h2>What Custom Brownstone Railings Typically Cost</h2>
+
+      <p>We get this question a lot, and the honest answer is: it varies significantly based on the scope and design complexity. A simple, straight stoop railing with a clean contemporary design is going to cost considerably less than an ornamental railing with hand-forged scrollwork, matching area fences, and a custom gate.</p>
+
+      <p>Rather than throw out a number that might not be relevant to your project, we'd rather give you an accurate quote based on an actual site visit. Our estimates are free, detailed, and come with no pressure. What we can tell you is that investing in quality ironwork for a Boston brownstone consistently pays for itself in curb appeal and property value — it's one of the most visible improvements you can make.</p>
+
+      <h2>Why In-House Fabrication Matters</h2>
+
+      <p>A lot of iron shops in the Boston area subcontract their fabrication — they take your order and send it to someone else's shop. That adds cost, removes quality control, and makes it harder to make adjustments if something doesn't fit perfectly on-site.</p>
+
+      <p>At King Iron Works, we design, fabricate, and install everything ourselves at our facility in Everett, MA. That means if your brownstone's stoop isn't perfectly square (and let's be honest, after 150 years, most of them aren't), we can make real-time adjustments during fabrication to ensure a perfect fit. It also means faster turnaround, better communication, and a single point of accountability from start to finish.</p>
+
+      <h2>Ready to Talk About Railings for Your Brownstone?</h2>
+
+      <p>A free on-site consultation is the best way to start. We'll take a look at your building, discuss your vision, and give you a clear picture of what's possible.</p>
+
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your free consultation.</p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>Your brownstone's railings are one of the first things people see — and one of the details that defines whether a building looks cared for or neglected. The right railing, designed with your building's architecture in mind and fabricated with real craftsmanship, transforms the entire front of your property.</p>
+
+      <p>Whether you're restoring what was there originally, replacing something that's seen better days, or starting from scratch with a design that suits your style — we'd love to help. It's the kind of work we got into this business to do.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
