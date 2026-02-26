@@ -23,8 +23,8 @@ export default function Blog() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-20 lg:pt-0">
-        <div className="container relative z-10">
+      <section className="relative bg-sidebar text-sidebar-foreground">
+        <div className="container relative z-10 py-16 md:py-24">
           <div className="inline-block px-4 py-2 bg-accent/10 text-accent text-sm font-display font-bold tracking-wider mb-6">
             INSIGHTS & GUIDES
           </div>
