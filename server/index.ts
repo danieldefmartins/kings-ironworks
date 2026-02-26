@@ -158,6 +158,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
     path: "/blog/failed-fire-escape-inspection-boston",
   },
+  "wrought-iron-vs-steel": {
+    title:
+      "Wrought Iron vs. Steel: Which Is Right for Your Property? | King Iron Works",
+    description:
+      "Choosing between wrought iron and steel for your railings, fences, or gates? Boston's ironwork experts break down durability, cost, aesthetics, and maintenance — especially for New England's climate.",
+    image: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
+    path: "/blog/wrought-iron-vs-steel",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {
