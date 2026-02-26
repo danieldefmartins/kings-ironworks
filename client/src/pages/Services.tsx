@@ -60,12 +60,20 @@ export default function Services() {
                   <span>Structural engineering coordination</span>
                 </div>
               </div>
-              <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 thick-border">
-                  REQUEST INSPECTION
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/fire-escape">
+                  <Button size="lg" className="bg-accent hover:bg-accent/90 thick-border">
+                    LEARN MORE
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button size="lg" variant="outline" className="border-2 border-border hover:border-accent hover:bg-accent hover:text-accent-foreground thick-border">
+                    REQUEST INSPECTION
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
             </div>
             <div>
               <img
@@ -145,12 +153,20 @@ export default function Services() {
                   <span>Historical commission collaboration</span>
                 </div>
               </div>
-              <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 thick-border">
-                  FREE ASSESSMENT
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
+              <div className="flex flex-wrap gap-4">
+                <Link href="/building-restoration">
+                  <Button size="lg" className="bg-accent hover:bg-accent/90 thick-border">
+                    LEARN MORE
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button size="lg" variant="outline" className="border-2 border-border hover:border-accent hover:bg-accent hover:text-accent-foreground thick-border">
+                    FREE ASSESSMENT
+                    <ArrowRight className="ml-2 w-5 h-5" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -171,59 +187,31 @@ export default function Services() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Hammer className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Railings & Stairs</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Interior and exterior railings, straight and spiral staircases, balustrades, 
-                and handrails for residential and commercial properties.
-              </p>
-            </Card>
-
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Building2 className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Gates & Fences</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Custom entry gates, driveway gates, security gates, decorative fencing, 
-                and perimeter enclosures with automated options.
-              </p>
-            </Card>
-
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Wrench className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Ornamental Iron</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Window guards, balcony railings, decorative scrollwork, finials, 
-                and custom architectural metalwork elements.
-              </p>
-            </Card>
-
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Shield className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Security Solutions</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Security gates, window bars, door grilles, and protective barriers 
-                that combine safety with aesthetic appeal.
-              </p>
-            </Card>
-
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Building2 className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Structural Steel</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                I-beams, mezzanines, support columns, and structural steel fabrication 
-                for commercial and industrial applications.
-              </p>
-            </Card>
-
-            <Card className="p-6 border-4 border-border hover:border-accent transition-all">
-              <Hammer className="w-10 h-10 text-accent mb-4" />
-              <h3 className="text-heading text-xl mb-3">Custom Projects</h3>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                Unique architectural metalwork, artistic installations, and specialty 
-                fabrication projects designed to your specifications.
-              </p>
-            </Card>
+            {[
+              { href: "/interior-railing", title: "Interior Railings", desc: "Custom staircase railings, balustrades, and interior handrails for homes and commercial spaces." },
+              { href: "/exterior-railing", title: "Exterior Railings", desc: "Weather-resistant porch, deck, and exterior railings built to withstand New England conditions." },
+              { href: "/cable-railing", title: "Cable Railings", desc: "Modern cable railing systems for decks, balconies, and staircases with sleek, minimalist design." },
+              { href: "/deck-railing", title: "Deck Railings", desc: "Durable iron deck railing systems that combine safety with curb appeal." },
+              { href: "/handrail", title: "Handrails", desc: "ADA-compliant pipe handrails and custom handrail solutions for stairs and ramps." },
+              { href: "/gate", title: "Gates", desc: "Custom entry gates, driveway gates, garden gates, and security gates with optional automation." },
+              { href: "/fence", title: "Fences", desc: "Ornamental iron fencing and perimeter enclosures for residential and commercial properties." },
+              { href: "/balcony", title: "Balconies", desc: "Custom balcony railings and Juliet balconies crafted for safety and style." },
+              { href: "/window", title: "Window Guards", desc: "Decorative and security window grilles, guards, and custom iron window frames." },
+              { href: "/window-well", title: "Window Well Covers", desc: "Custom iron window well grates and covers for basement safety and protection." },
+              { href: "/structural-steel", title: "Structural Steel", desc: "I-beams, mezzanines, support columns, and structural steel fabrication for commercial applications." },
+            ].map((service) => (
+              <Link key={service.href} href={service.href}>
+                <Card className="p-6 border-4 border-border hover:border-accent transition-all cursor-pointer h-full group">
+                  <h3 className="text-heading text-xl mb-3 group-hover:text-accent transition-colors">{service.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                    {service.desc}
+                  </p>
+                  <span className="text-accent font-display font-bold text-sm tracking-wider flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    LEARN MORE <ArrowRight className="w-4 h-4" />
+                  </span>
+                </Card>
+              </Link>
+            ))}
           </div>
 
           <div className="text-center">

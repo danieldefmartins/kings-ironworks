@@ -59,7 +59,7 @@ export default function BlogPost() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[50vh] flex items-end bg-sidebar text-sidebar-foreground pt-20 lg:pt-0 pb-16">
+      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src={post.featuredImage}
