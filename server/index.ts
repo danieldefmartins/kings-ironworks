@@ -152,6 +152,16 @@ async function startServer() {
     console.warn("index.html not found at startup, will retry on request");
   }
 
+  // Reject malformed URLs before they hit any middleware
+  app.use((req, res, next) => {
+    try {
+      decodeURIComponent(req.path);
+      next();
+    } catch {
+      res.status(400).send("Bad Request");
+    }
+  });
+
   // Serve static files (but not index.html for routes - we handle that below)
   app.use(express.static(staticPath, { index: false }));
 
