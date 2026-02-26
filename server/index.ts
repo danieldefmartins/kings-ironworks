@@ -115,6 +115,25 @@ const locationOG: Record<string, OGData> = {
     image: `${IMG_BASE}/ZtrYnxwJFDZSmXOw.jpg`,
     path: "/about",
   },
+  "/blog": {
+    title: "Blog | King Iron Works",
+    description:
+      "Expert insights on fire escapes, ironwork restoration, building codes, and custom fabrication from Boston's premier ironwork specialists.",
+    image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    path: "/blog",
+  },
+};
+
+// Blog post data for server-side OG tags
+const blogPostOG: Record<string, OGData> = {
+  "massachusetts-fire-escape-inspection-requirements-2026": {
+    title:
+      "Massachusetts Fire Escape Inspection Requirements: The Complete 2026 Guide | King Iron Works",
+    description:
+      "Massachusetts law mandates fire escape inspections every five years. Learn what's required, who can inspect, consequences of non-compliance, and how to prepare.",
+    image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    path: "/blog/massachusetts-fire-escape-inspection-requirements-2026",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {
@@ -178,7 +197,15 @@ async function startServer() {
 
     const reqPath = _req.path;
     const baseUrl = `${_req.protocol}://${_req.get("host")}`;
-    const og = locationOG[reqPath] || locationOG["/"];
+
+    // Check for blog post slugs
+    let og: OGData | undefined;
+    const blogMatch = reqPath.match(/^\/blog\/(.+)$/);
+    if (blogMatch && blogPostOG[blogMatch[1]]) {
+      og = blogPostOG[blogMatch[1]];
+    } else {
+      og = locationOG[reqPath] || locationOG["/"];
+    }
 
     const ogTags = buildOGTags(og!, baseUrl);
 

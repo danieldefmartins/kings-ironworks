@@ -50,6 +50,13 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/blog">
+                  <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
+                    Blog
+                  </span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/locations">
                   <span className="text-sidebar-foreground/70 hover:text-accent transition-colors text-sm cursor-pointer">
                     Locations

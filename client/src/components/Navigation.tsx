@@ -13,10 +13,16 @@ export default function Navigation() {
     { path: "/", label: "HOME" },
     { path: "/services", label: "SERVICES" },
     { path: "/portfolio", label: "PORTFOLIO" },
+    { path: "/blog", label: "BLOG" },
     { path: "/locations", label: "LOCATIONS" },
     { path: "/about", label: "ABOUT" },
     { path: "/contact", label: "CONTACT" },
   ];
+
+  const isActive = (path: string) =>
+    path === "/"
+      ? location === "/"
+      : location === path || location.startsWith(path + "/");
 
   return (
     <>
@@ -43,7 +49,7 @@ export default function Navigation() {
                     py-6 flex items-center justify-center cursor-pointer
                     border-l-8 transition-all
                     ${
-                      location === item.path
+                      isActive(item.path)
                         ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
                         : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                     }
@@ -111,7 +117,7 @@ export default function Navigation() {
                     className={`
                       py-4 px-6 border-l-8 cursor-pointer transition-all
                       ${
-                        location === item.path
+                        isActive(item.path)
                           ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
                           : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
                       }

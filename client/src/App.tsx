@@ -39,6 +39,8 @@ import GHLChatWidget from "./components/GHLChatWidget";
 import GeoRedirect from "./components/GeoRedirect";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
 
 function Router() {
   const [location] = useLocation();
@@ -73,6 +75,8 @@ function Router() {
       <Route path="/rhode-island" component={RhodeIslandLanding} />
       <Route path="/new-york" component={NewYorkLanding} />
       <Route path="/connecticut" component={ConnecticutLanding} />
+      <Route path="/blog/:slug" component={BlogPost} />
+      <Route path="/blog" component={Blog} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />
