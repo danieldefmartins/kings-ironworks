@@ -174,6 +174,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
     path: "/blog/custom-iron-railings-boston-brownstones",
   },
+  "maintain-iron-railings-new-england-winters": {
+    title:
+      "How to Maintain Your Iron Railings Through New England Winters | King Iron Works",
+    description:
+      "New England winters are brutal on ironwork. Here's the practical, season-by-season maintenance routine that keeps your railings protected from road salt, freeze-thaw cycles, and rust.",
+    image: `${IMG_BASE}/aqPLHeShxXujREPn.JPG`,
+    path: "/blog/maintain-iron-railings-new-england-winters",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {

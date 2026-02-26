@@ -772,6 +772,166 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>Whether you're restoring what was there originally, replacing something that's seen better days, or starting from scratch with a design that suits your style — we'd love to help. It's the kind of work we got into this business to do.</p>
     `,
   },
+  {
+    slug: "maintain-iron-railings-new-england-winters",
+    title:
+      "How to Maintain Your Iron Railings Through New England Winters",
+    excerpt:
+      "New England winters are brutal on ironwork. Here's the practical, season-by-season maintenance routine that keeps your railings protected from road salt, freeze-thaw cycles, and rust.",
+    category: "guides",
+    featuredImage: `${IMG_BASE}/aqPLHeShxXujREPn.JPG`,
+    publishedDate: "2026-02-26",
+    readTime: "6 min read",
+    tags: [
+      "maintenance",
+      "railings",
+      "winter",
+      "rust prevention",
+      "new england",
+    ],
+    content: `
+      <p>If you own iron railings in Boston — or anywhere in New England — your ironwork faces one of the most punishing climates in the country. Snow and ice sit on surfaces for months. Road salt and de-icing chemicals get kicked up by traffic and settle on every exposed surface within hundreds of feet of the street. Freeze-thaw cycles work moisture into every crack and joint, expanding and contracting dozens of times per season.</p>
+
+      <p>The good news? Iron railings that are properly maintained can handle all of it. We see ironwork in <a href="/blog/historic-ironwork-restoration-beacon-hill">Beacon Hill and the South End</a> that's over a hundred years old and still in excellent condition — because someone, every few years, took the time to keep it protected.</p>
+
+      <p>Here's the practical, no-nonsense maintenance routine we recommend to our customers.</p>
+
+      <h2>Why New England Winters Are Especially Hard on Ironwork</h2>
+
+      <p>It's not just the cold. It's the combination of factors that makes our climate uniquely destructive to iron and steel:</p>
+
+      <ul>
+        <li><strong>Road salt is corrosive.</strong> Sodium chloride (rock salt) and the newer liquid brine solutions that Massachusetts cities use are highly corrosive to metal. Cars kick up a fine salt mist that can travel hundreds of feet from the road surface, coating your railings, fences, and gates — even if they're set back from the street.</li>
+        <li><strong>Freeze-thaw cycles crack protective coatings.</strong> Water seeps into tiny chips and cracks in paint or primer, then freezes and expands. This forces the coating away from the metal surface, creating new entry points for moisture. Over a typical Boston winter with 40+ freeze-thaw cycles, a small paint chip can become a significant exposed area.</li>
+        <li><strong>Snow sits and melts slowly.</strong> Unlike rain, which runs off quickly, snow and ice accumulate on horizontal surfaces — stair treads, railing tops, fence caps — and melt gradually, keeping the metal wet for extended periods. Prolonged moisture contact is the primary driver of rust.</li>
+        <li><strong>Temperature swings stress connections.</strong> Metal expands and contracts with temperature changes. In a single January week, Boston can swing from 5°F to 45°F and back again. Over time, this thermal cycling can loosen anchor bolts and stress welded joints.</li>
+      </ul>
+
+      <h2>Fall: The Most Important Season for Your Railings</h2>
+
+      <p>The best thing you can do for your iron railings is prepare them before winter arrives. October and November are your window. Here's what to do:</p>
+
+      <h3>Inspect Everything</h3>
+
+      <p>Walk your property and look closely at every piece of ironwork. You're looking for:</p>
+
+      <ul>
+        <li>Any areas where paint is chipped, cracked, bubbling, or peeling</li>
+        <li><a href="/blog/warning-signs-fire-escape-needs-repair">Rust spots</a> — even small ones, especially at joints, welds, and where the railing meets masonry</li>
+        <li>Loose anchor bolts or mounting hardware</li>
+        <li>Cracks in welds or connections</li>
+        <li>Areas where the railing contacts the ground or sits in standing water</li>
+      </ul>
+
+      <h3>Touch Up Paint Damage Immediately</h3>
+
+      <p>This is the single most effective thing you can do. Every chip or scratch in the paint is a future rust spot. For small areas:</p>
+
+      <ol>
+        <li>Scrape or sand the damaged area down to clean, bare metal</li>
+        <li>Wipe with a clean cloth dampened with mineral spirits to remove dust and oils</li>
+        <li>Apply a coat of rust-inhibitive metal primer (we recommend a zinc-rich primer for exterior iron)</li>
+        <li>Once the primer is dry, apply one or two coats of high-quality exterior enamel in your railing's color</li>
+      </ol>
+
+      <p><strong>Pro tip:</strong> Don't paint in temperatures below 50°F or when rain is expected within 24 hours. The paint won't cure properly and you'll be doing it again in spring.</p>
+
+      <h3>Tighten Hardware</h3>
+
+      <p>Check every anchor bolt, mounting bracket, and fastener. Anything that's loose should be tightened now. If a bolt is corroded or stripped, replace it before winter — a loose railing in icy conditions is a genuine safety hazard.</p>
+
+      <h3>Apply Protective Wax (Optional but Effective)</h3>
+
+      <p>For an extra layer of protection, apply a coat of paste wax (like automotive paste wax or a product specifically formulated for exterior metal) to clean, painted railings. The wax creates a hydrophobic barrier that repels water and makes it harder for salt to adhere. It won't last the entire winter, but it will provide meaningful protection through the heaviest salt season in December and January.</p>
+
+      <h2>During Winter: Simple Habits That Make a Big Difference</h2>
+
+      <p>You don't need to do anything elaborate during winter — just a few simple practices:</p>
+
+      <h3>Brush Off Snow</h3>
+
+      <p>When it snows, brush accumulated snow off your railing tops and horizontal surfaces with a soft broom or brush. Don't use a metal shovel or anything that could chip the paint. The goal is to prevent snow from sitting and slowly melting against the metal for days.</p>
+
+      <h3>Keep Salt Away From Ironwork</h3>
+
+      <p>This is a big one. When you're salting your steps and sidewalks, try to keep salt and de-icing chemicals from direct contact with your railings. Salt that sits on metal will eat through paint and primer surprisingly fast. If you can't avoid it (your stoop railing is right next to the steps you're salting), try switching to calcium chloride or magnesium chloride for the areas immediately around your ironwork — they're less corrosive than sodium chloride.</p>
+
+      <p><strong>Salt alternative tip:</strong> Sand or non-clumping kitty litter provides traction on icy steps without corroding your railings. For surfaces that absolutely need de-icing (not just traction), calcium magnesium acetate (CMA) is the least corrosive option commercially available.</p>
+
+      <h3>Rinse When You Can</h3>
+
+      <p>On warmer winter days (above 40°F), a quick rinse with a garden hose can wash away accumulated salt residue before it does damage. This is especially valuable in January and February when salt buildup is at its peak. You don't need to scrub — just a rinse to flush the salt off.</p>
+
+      <h2>Spring: The Post-Winter Checkup</h2>
+
+      <p>Once the snow is gone and temperatures are consistently above 50°F, it's time for a thorough spring cleanup:</p>
+
+      <ol>
+        <li><strong>Wash everything.</strong> Use warm water and mild dish soap with a soft brush. Scrub all surfaces to remove salt residue, dirt, and grime. Rinse thoroughly.</li>
+        <li><strong>Inspect for new damage.</strong> Winter often reveals (or creates) problems that weren't visible in the fall. Look for new rust spots, paint damage, loose connections, and any areas where the coating has failed.</li>
+        <li><strong>Address rust immediately.</strong> If you find rust, don't wait. Sand or wire-brush the affected area down to clean metal, prime, and paint. Rust spreads — what's a small spot in April will be a much larger problem by October.</li>
+        <li><strong>Schedule a professional repaint if needed.</strong> If your railings have widespread paint failure or extensive rust, it's time for a full professional repaint. This involves stripping the old coating, treating any rust, applying fresh primer, and finishing with multiple coats of exterior enamel. A professional repaint done right will protect your railings for 5–10 years.</li>
+      </ol>
+
+      <h2>When to Call a Professional</h2>
+
+      <p>Homeowner maintenance handles most of the routine protection. But there are situations where you need a professional:</p>
+
+      <ul>
+        <li><strong>Deep rust at structural connections</strong> — where the railing anchors into masonry or where components are welded together. Surface rust you can handle yourself; rust that's compromising the metal's thickness or the integrity of a weld needs professional assessment.</li>
+        <li><strong>Loose railings that don't tighten</strong> — if tightening the bolts doesn't stop the railing from wobbling, the anchor points in the masonry may be compromised and need to be re-set.</li>
+        <li><strong>Full repaint or refinishing</strong> — stripping an entire railing down to bare metal and applying a professional-grade coating system is a job for a shop with the right equipment and experience.</li>
+        <li><strong>Bent or damaged components</strong> — a bent baluster or a damaged section of railing needs to be repaired or replaced by a fabricator who can match the original design.</li>
+        <li><strong>Historic district requirements</strong> — if your building is in a designated historic district, any visible repair or restoration work may need commission approval. A shop with <a href="/blog/historic-ironwork-restoration-beacon-hill">historic district experience</a> can navigate this process for you.</li>
+      </ul>
+
+      <h2>Annual Iron Railing Maintenance Checklist</h2>
+
+      <h3>Fall (October–November)</h3>
+      <ul>
+        <li>Inspect all ironwork for paint damage, rust, and loose hardware</li>
+        <li>Sand and touch up any chips or scratches with primer + paint</li>
+        <li>Tighten all anchor bolts and fasteners</li>
+        <li>Apply paste wax to clean, painted surfaces (optional)</li>
+        <li>Clear leaves and debris from base of railings and fences</li>
+      </ul>
+
+      <h3>Winter (December–March)</h3>
+      <ul>
+        <li>Brush snow off horizontal surfaces after each storm</li>
+        <li>Minimize salt contact with ironwork (use alternatives near railings)</li>
+        <li>Rinse salt residue on warm days (above 40°F)</li>
+      </ul>
+
+      <h3>Spring (April–May)</h3>
+      <ul>
+        <li>Wash all ironwork with warm soapy water</li>
+        <li>Inspect for winter damage (new rust, paint failure, loose connections)</li>
+        <li>Treat any rust spots immediately (sand, prime, paint)</li>
+        <li>Schedule professional repaint if coating has widespread failure</li>
+      </ul>
+
+      <h3>Summer</h3>
+      <ul>
+        <li>Quick mid-year visual inspection</li>
+        <li>Touch up any new paint chips before they develop rust</li>
+      </ul>
+
+      <h2>Need Help Getting Your Railings Winter-Ready?</h2>
+
+      <p>If your railings need more than a touch-up — whether it's a full repaint, rust repair, or replacement of damaged sections — we can help. Free on-site assessment.</p>
+
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your assessment.</p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>Iron railing maintenance isn't complicated, but it does require consistency. The homeowners who spend 30 minutes in October touching up paint chips and another 30 minutes in April washing off salt are the ones whose railings still look great after 20 years.</p>
+
+      <p>Think of it this way: a can of primer, a can of paint, and a couple hours of your time each year is a tiny investment compared to the cost of replacing railings that were allowed to corrode beyond repair. And if your railings are already showing <a href="/blog/warning-signs-fire-escape-needs-repair">signs of serious deterioration</a>, the sooner you address it, the less expensive the fix.</p>
+
+      <p>Your ironwork was built to last. Help it do its job.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
