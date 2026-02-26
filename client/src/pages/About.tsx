@@ -7,7 +7,7 @@ export default function About() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-20 lg:pt-0">
+      <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-4">
         <div className="absolute inset-0 z-0">
           <img
             src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-3_1770786316000_na1fn_ZmFicmljYXRpb24tc2hvcC1pbnRlcmlvcg.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTNfMTc3MDc4NjMxNjAwMF9uYTFmbl9abUZpY21sallYUnBiMjR0YzJodmNDMXBiblJsY21sdmNnLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=JDgZooaXhv5nFgsJWSDW1wUVM7zH60c0~6732ywzUGi2OGfmW153lUcCXh1xblDEwggiM4wQUwH-k61aa78p6AIBwWtzFwFl-pOGtCAdtS9FGH1kt4D050qUbaSXynO0NaK034oDg7YxMNWqwUFuxQuTO~-IGPI3zkdn8wSzOSN~mH25X1wVgLPBoetHfXfCnJytz5F8Dhyy491QGJjAA1~LQoW3csUqx7sDBQwosSGd6832y~9d~7K5B5A2N44qpkuNJAXEAgbBizFwKqF~nGZnFmROY5uSBhuhCxHoLAblzBRxtGOyPgxqHMxn-oyMOJjL6nWFzGJmBqR6deJi2A__"

@@ -26,36 +26,35 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Desktop Navigation - Fixed Vertical Sidebar */}
-      <nav className="hidden lg:block fixed left-0 top-0 h-screen w-20 bg-sidebar border-r-8 border-border z-50">
-        <div className="flex flex-col h-full">
+      {/* Desktop Navigation - Fixed Horizontal Top Bar */}
+      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-20 bg-sidebar border-b-4 border-border z-50">
+        <div className="container h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
-            <div className="h-20 flex items-center justify-center border-b-8 border-border cursor-pointer hover:bg-sidebar-accent transition-colors p-1">
+            <div className="flex items-center cursor-pointer">
               <img
                 src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg"
                 alt="King Iron Works"
-                className="h-16 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             </div>
           </Link>
 
           {/* Nav Items */}
-          <div className="flex-1 flex flex-col py-8">
+          <div className="flex items-center gap-1">
             {navItems.map((item) => (
               <Link key={item.path} href={item.path}>
                 <div
                   className={`
-                    py-6 flex items-center justify-center cursor-pointer
-                    border-l-8 transition-all
+                    px-4 py-2 cursor-pointer transition-all border-b-4
                     ${
                       isActive(item.path)
-                        ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
-                        : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                        ? "border-accent text-sidebar-accent-foreground"
+                        : "border-transparent hover:border-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
                     }
                   `}
                 >
-                  <span className="text-xs font-display font-bold tracking-wider [writing-mode:vertical-lr] rotate-180 whitespace-nowrap">
+                  <span className="text-xs font-display font-bold tracking-wider whitespace-nowrap">
                     {item.label}
                   </span>
                 </div>
@@ -64,11 +63,11 @@ export default function Navigation() {
           </div>
 
           {/* Phone CTA */}
-          <a
-            href={`tel:${localPhone.tel}`}
-            className="h-20 flex items-center justify-center border-t-8 border-border bg-accent hover:bg-accent/90 transition-colors"
-          >
-            <Phone className="w-6 h-6 text-accent-foreground" />
+          <a href={`tel:${localPhone.tel}`}>
+            <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold tracking-wider">
+              <Phone className="w-4 h-4 mr-2" />
+              {localPhone.display}
+            </Button>
           </a>
         </div>
       </nav>
@@ -78,9 +77,9 @@ export default function Navigation() {
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
-              <img 
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg" 
-                alt="King Iron Works" 
+              <img
+                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg"
+                alt="King Iron Works"
                 className="h-12 w-auto object-contain"
               />
             </div>

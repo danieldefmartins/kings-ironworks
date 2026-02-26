@@ -102,7 +102,7 @@ function App() {
             <Navigation />
             
             {/* Main Content - offset for desktop sidebar */}
-            <main className="flex-1 lg:ml-20 pt-16 lg:pt-0">
+            <main className="flex-1 pt-16 lg:pt-20">
               <Router />
               <Footer />
             </main>
