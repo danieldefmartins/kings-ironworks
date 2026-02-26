@@ -16,7 +16,7 @@ export default function StructuralSteelLanding() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-3_1770786316000_na1fn_ZmFicmljYXRpb24tc2hvcC1pbnRlcmlvcg.png"
@@ -31,11 +31,11 @@ export default function StructuralSteelLanding() {
               🇺🇸 100% AMERICAN-MADE STEEL
             </div>
             
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               CUSTOM STRUCTURAL STEEL FABRICATION
             </h1>
             
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               State-of-the-art fabrication facility in Everett, MA. From architectural steel to 
               heavy structural beams—engineered, fabricated, and installed by American craftsmen.
             </p>

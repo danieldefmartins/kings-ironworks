@@ -15,7 +15,7 @@ export default function DeckRailingLanding() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="/images/portfolio/deck-railings-1.jpg"
@@ -30,11 +30,11 @@ export default function DeckRailingLanding() {
               CUSTOM FABRICATION
             </div>
 
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               CUSTOM DECK RAILING DESIGN & INSTALLATION
             </h1>
 
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               Elevate your outdoor living space with hand-crafted deck railings built to last.
               From classic wood and iron combos to sleek all-metal designs, every railing is
               custom-built in our Everett, MA fabrication shop.

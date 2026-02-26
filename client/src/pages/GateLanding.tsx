@@ -15,7 +15,7 @@ export default function GateLanding() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ldKpYAFGAsEGkCVX.JPG"
@@ -30,11 +30,11 @@ export default function GateLanding() {
               HAND-CRAFTED IRONWORK
             </div>
 
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               CUSTOM IRON GATE DESIGN & FABRICATION
             </h1>
 
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               Make a statement with a hand-forged iron gate built to your exact specifications.
               From grand driveway entrances to elegant garden gates, every piece is custom
               designed and fabricated in our Everett, MA shop.

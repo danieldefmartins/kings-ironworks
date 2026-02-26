@@ -16,7 +16,7 @@ export default function BuildingRestorationLanding() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-5_1770786316000_na1fn_Ym9zdG9uLWhpc3RvcmljLWJ1aWxkaW5n.png"
@@ -31,11 +31,11 @@ export default function BuildingRestorationLanding() {
               🏛️ BOSTON HISTORIC RESTORATION SPECIALISTS
             </div>
             
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               HISTORIC BUILDING RESTORATION & CUSTOM IRONWORK
             </h1>
             
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               Preserving Boston's architectural heritage since 2004. Custom artisan fabrication for 
               historic ironwork that's no longer commercially available. From Beacon Hill to the South End.
             </p>

@@ -15,7 +15,7 @@ export default function WindowWellLanding() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="/images/portfolio/window-well-1.jpg"
@@ -30,11 +30,11 @@ export default function WindowWellLanding() {
               SAFETY & PROTECTION
             </div>
 
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               WINDOW WELL COVERS & GRATES
             </h1>
 
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               Keep your family safe and your basement dry with custom-fabricated window well
               covers and security grates. Every cover is precision-measured and built to fit
               your exact window well dimensions in our Everett, MA shop.
