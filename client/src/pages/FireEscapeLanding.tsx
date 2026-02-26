@@ -16,7 +16,7 @@ export default function FireEscapeLanding() {
   return (
     <div className="min-h-screen">
       {/* SEO-Optimized Hero with Urgency */}
-      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden">
+      <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-20 lg:pt-0">
         <div className="absolute inset-0 z-0">
           <img
             src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/YgqFSongHOumLnae.JPG"
@@ -24,20 +24,20 @@ export default function FireEscapeLanding() {
             className="w-full h-full object-cover opacity-40"
           />
         </div>
-        
+
         <div className="container relative z-10">
           <div className="max-w-4xl">
             {/* Urgency Badge */}
-            <div className="inline-block px-4 py-2 bg-destructive text-destructive-foreground text-sm font-display font-bold tracking-wider mb-6 thick-border animate-pulse">
-              ⚠️ LICENSED & CERTIFIED INSTALLER
+            <div className="inline-block px-2 py-1 md:px-4 md:py-2 bg-destructive text-destructive-foreground text-[10px] md:text-sm font-display font-bold tracking-wider mb-3 md:mb-6 border-2 md:thick-border">
+              LICENSED & CERTIFIED INSTALLER
             </div>
-            
-            <h1 className="text-display text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight">
+
+            <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
               BOSTON FIRE ESCAPE INSTALLATION & REPAIR
             </h1>
-            
-            <p className="text-xl md:text-2xl text-sidebar-foreground/90 mb-8 max-w-3xl leading-relaxed">
-              Licensed fire escape specialists serving Boston for 20+ years. Code-compliant installation, 
+
+            <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
+              Licensed fire escape specialists serving Boston for 20+ years. Code-compliant installation,
               emergency repairs, and 5-year certifications. Same-day emergency service available.
             </p>
 
