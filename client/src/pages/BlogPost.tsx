@@ -118,7 +118,7 @@ export default function BlogPost() {
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 md:px-3 py-0.5 md:py-1 bg-secondary text-muted-foreground text-[10px] md:text-xs font-display font-bold tracking-wider uppercase border border-border md:border-2"
+                    className="px-2 md:px-3 py-0.5 md:py-1 bg-accent/10 text-accent text-[10px] md:text-xs font-display font-bold tracking-wider uppercase border-2 border-accent/30"
                   >
                     {tag}
                   </span>
