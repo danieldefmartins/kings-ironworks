@@ -182,6 +182,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/aqPLHeShxXujREPn.JPG`,
     path: "/blog/maintain-iron-railings-new-england-winters",
   },
+  "south-end-victorian-ironwork-guide": {
+    title:
+      "South End Ironwork: A Guide to Boston's Largest Victorian Iron Collection | King Iron Works",
+    description:
+      "The South End has the largest collection of Victorian residential ironwork in the country. Learn about its history, unique characteristics, common issues, and how to restore it properly.",
+    image: `${IMG_BASE}/NgBghqHCKpNCJSJs.jpg`,
+    path: "/blog/south-end-victorian-ironwork-guide",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {
