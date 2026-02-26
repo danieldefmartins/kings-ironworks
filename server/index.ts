@@ -134,6 +134,22 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
     path: "/blog/massachusetts-fire-escape-inspection-requirements-2026",
   },
+  "warning-signs-fire-escape-needs-repair": {
+    title:
+      "5 Warning Signs Your Fire Escape Needs Immediate Repair | King Iron Works",
+    description:
+      "Rust, loose railings, sagging platforms? Learn the 5 warning signs that mean your fire escape needs repair now — before it becomes a safety hazard or code violation.",
+    image: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
+    path: "/blog/warning-signs-fire-escape-needs-repair",
+  },
+  "historic-ironwork-restoration-beacon-hill": {
+    title:
+      "Historic Ironwork Restoration in Beacon Hill: Preserving Boston's Architectural Heritage | King Iron Works",
+    description:
+      "Beacon Hill's historic ironwork tells the story of Boston's earliest architecture. Learn how period-accurate restoration preserves your property's value and meets commission requirements.",
+    image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    path: "/blog/historic-ironwork-restoration-beacon-hill",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {
