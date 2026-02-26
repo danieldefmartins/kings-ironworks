@@ -1203,6 +1203,130 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>The most important decision you'll make isn't which fire escape design to choose — it's choosing a contractor who can handle the entire process from start to finish, who communicates clearly with you and your tenants, and who builds something that will pass certification for the next 20+ years. That's the standard we hold ourselves to.</p>
     `,
   },
+  {
+    slug: "iron-security-gates-boston-storefronts",
+    title:
+      "Iron Security Gates for Boston Storefronts: Style Meets Safety",
+    excerpt:
+      "Protecting your storefront doesn't mean uglifying it. Learn about security gate types, historic district requirements, ADA compliance, and why custom iron gates are worth the investment.",
+    category: "guides",
+    featuredImage: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
+    publishedDate: "2026-02-26",
+    readTime: "6 min read",
+    tags: [
+      "security gates",
+      "storefronts",
+      "commercial",
+      "boston",
+      "custom ironwork",
+    ],
+    content: `
+      <p>If you own a retail shop, restaurant, salon, or any street-level business in Boston, security is always on your mind. Break-ins — especially the opportunistic smash-and-grab variety — remain a persistent concern for business owners, particularly in high-traffic commercial districts.</p>
+
+      <p>The challenge is protecting your storefront without making it look like a fortress. A business that looks welcoming during the day but locked down like a prison at night sends the wrong message to customers, neighbors, and your community. And in a city like Boston, where many commercial corridors sit in historic neighborhoods or mixed-use districts with residential neighbors, aesthetics matter as much as security.</p>
+
+      <p>That's where custom iron security gates come in. Done right, they provide serious protection while actually enhancing your storefront's appearance. Here's what you need to know.</p>
+
+      <h2>Types of Storefront Security Gates</h2>
+
+      <p>Not all security gates are created equal, and the right choice depends on your storefront's configuration, your security needs, and how you want your business to look. Here are the main options:</p>
+
+      <h3>Scissor-Style Folding Gates</h3>
+
+      <p>These are the classic expandable gates that fold flat against a wall or into a pocket when not in use and extend across the opening when closed. They're one of the most common solutions for Boston storefronts because they're effective, relatively affordable, and easy to operate.</p>
+
+      <p><strong>Best for:</strong> Standard door and window openings, businesses that want a visible but unobtrusive security presence. They're especially popular with retail shops that want customers to see merchandise through the gate after hours.</p>
+
+      <h3>Rolling Security Grilles</h3>
+
+      <p>Roll-up grilles store in a housing above the opening and roll down into place when needed. They can be operated manually or with an electric motor. Available in open-weave patterns (which allow visibility) or solid patterns (for full closure), rolling grilles offer a clean, professional look.</p>
+
+      <p><strong>Best for:</strong> Larger openings, businesses that want the gate completely out of sight during business hours, and locations where a motorized option makes daily operation easier.</p>
+
+      <h3>Solid Rolling Shutters</h3>
+
+      <p>Steel or aluminum shutters that roll down to completely seal the opening. They offer maximum security and also provide weather protection and insulation. The trade-off is that they completely block visibility and light when closed, which can make a street feel less inviting at night.</p>
+
+      <p><strong>Best for:</strong> Industrial locations, storage areas, loading docks, and businesses where full closure is more important than aesthetics. Less common for customer-facing storefronts in Boston's retail districts.</p>
+
+      <h3>Custom Ornamental Iron Gates</h3>
+
+      <p>This is our specialty. Custom-fabricated iron gates designed to match your storefront's architecture and your brand's aesthetic. These can be swing gates, sliding gates, or fixed panels with operable sections. They provide strong physical security while serving as a design element that actually enhances your building's appearance.</p>
+
+      <p><strong>Best for:</strong> Businesses in <a href="/blog/historic-ironwork-restoration-beacon-hill">historic districts</a>, restaurants and bars with distinctive architectural character, boutique retail shops, and any business owner who wants security that doesn't look like security.</p>
+
+      <h2>Security Gates in Boston: Special Considerations</h2>
+
+      <p>Installing a security gate on a Boston storefront involves some considerations that wouldn't apply in, say, a suburban strip mall:</p>
+
+      <h3>Historic District Requirements</h3>
+
+      <p>If your business is in a designated historic district — the <a href="/blog/south-end-victorian-ironwork-guide">South End</a>, Back Bay, Beacon Hill, North End, or others — any exterior modification visible from the street requires approval from the local landmarks commission. This includes security gates. The commission will want to see that your gate design is compatible with the building's architecture and the surrounding streetscape. Generic scissor gates or industrial rolling shutters are unlikely to be approved; custom designs that respect the historic context are what the commission expects.</p>
+
+      <h3>ADA Compliance</h3>
+
+      <p>The Americans with Disabilities Act requires that your storefront entrance remains accessible. Your security gate needs to work with — not against — your ADA-compliant entrance. This means:</p>
+
+      <ul>
+        <li>The gate must not reduce the clear width of the accessible entrance below the required minimum (typically 32 inches clear opening)</li>
+        <li>Manual gates must be operable with one hand and without tight grasping, pinching, or twisting</li>
+        <li>The force required to operate the gate must not exceed ADA thresholds</li>
+        <li>If the gate changes the threshold height, it must remain accessible</li>
+      </ul>
+
+      <p>Motorized gates often provide the best ADA solution, since they can be operated with a simple switch or remote control.</p>
+
+      <h3>Egress Requirements</h3>
+
+      <p>Fire code requires that people inside your business can exit during an emergency, even when the security gate is in place. This means your gate must include an emergency egress feature — typically an integrated passage door or a quick-release mechanism that allows the gate to be opened from the inside without special tools or keys.</p>
+
+      <h3>Sidewalk and Right-of-Way</h3>
+
+      <p>Boston's narrow sidewalks mean that any gate that swings outward into the public right-of-way is generally not permitted. Sliding, folding, or rolling designs that stay within your building's footprint are the practical solution.</p>
+
+      <h2>Why Custom Iron Gates Are Worth the Investment</h2>
+
+      <p>Mass-produced scissor gates and rolling shutters have their place, but for many Boston storefronts, a custom iron gate is the better investment. Here's why:</p>
+
+      <ul>
+        <li><strong>They enhance your brand.</strong> A custom gate can incorporate your business's design language — geometric patterns for a modern gallery, ornate scrollwork for a South End boutique, clean minimalism for a contemporary restaurant. Instead of something that screams "we got robbed," you get something that says "we care about details."</li>
+        <li><strong>They satisfy historic commissions.</strong> Custom iron gates are far more likely to receive approval in historic districts than off-the-shelf alternatives. The commission wants to see craftsmanship and context — not a catalog product.</li>
+        <li><strong>They're built to last.</strong> A well-fabricated iron gate with proper <a href="/blog/maintain-iron-railings-new-england-winters">protective coating</a> will outlast mass-produced alternatives by decades. You install it once and maintain it periodically — you don't replace it every 5–10 years.</li>
+        <li><strong>They can reduce insurance costs.</strong> Many insurance carriers offer premium reductions for businesses with physical security measures in place. A quality security gate is a documented, visible deterrent that insurers recognize.</li>
+        <li><strong>They're exactly the right size.</strong> Boston's older commercial buildings don't have standard-size openings. A custom gate is built to your exact measurements — no gaps, no awkward fits, no compromise.</li>
+      </ul>
+
+      <h2>Manual vs. Motorized: Choosing the Right Operation</h2>
+
+      <p>Both manual and motorized gates have their advantages:</p>
+
+      <p><strong>Manual gates</strong> are simpler, less expensive, and have fewer components that can fail. For a single-door opening that gets locked up once a day, a well-made manual gate is perfectly adequate. The downside is that they require physical effort to operate, which can be an issue for ADA compliance and for employees who open and close the business daily.</p>
+
+      <p><strong>Motorized gates</strong> add convenience, improve ADA accessibility, and can be integrated with your existing security and alarm systems. They're ideal for larger openings, businesses that open and close multiple times per day, and locations where ease of operation matters. The trade-off is higher initial cost and the need for periodic maintenance of the motor and control system.</p>
+
+      <p>We install both, and we can help you decide which approach makes the most sense for your specific situation.</p>
+
+      <h2>How We Work with Business Owners</h2>
+
+      <p>Every storefront is different, so we start every project the same way: by listening. We visit your business, assess the storefront configuration, understand your security concerns, and discuss your aesthetic goals. Then we design a solution that addresses all of it.</p>
+
+      <p>Because we fabricate everything in-house at our Everett facility, we can build exactly what your storefront needs — custom dimensions, custom patterns, custom finishes. No compromises, no workarounds, no trying to make a stock product fit a non-standard opening.</p>
+
+      <p>And if you're in a historic district, we know the process. We'll prepare the design documentation, present to the commission if needed, and make sure the gate is approved before we start fabrication.</p>
+
+      <h2>Need a Security Gate for Your Business?</h2>
+
+      <p>We'll assess your storefront, discuss your options, and design a security solution that protects your business and looks great doing it. Free consultation.</p>
+
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to get started.</p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>Protecting your storefront doesn't have to mean uglifying it. The right security gate provides real, physical protection against break-ins while complementing — even elevating — your building's appearance and your brand's identity.</p>
+
+      <p>In a city like Boston, where commercial storefronts exist alongside historic architecture, residential neighbors, and vibrant street life, the way your security looks matters almost as much as how it performs. A custom iron gate says something about your business: that you're here for the long term, that you care about the details, and that you take both security and your community seriously.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {

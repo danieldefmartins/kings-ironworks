@@ -198,6 +198,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
     path: "/blog/fire-escape-installation-commercial-buildings",
   },
+  "iron-security-gates-boston-storefronts": {
+    title:
+      "Iron Security Gates for Boston Storefronts: Style Meets Safety | King Iron Works",
+    description:
+      "Protecting your storefront doesn't mean uglifying it. Learn about security gate types, historic district requirements, ADA compliance, and why custom iron gates are worth the investment.",
+    image: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
+    path: "/blog/iron-security-gates-boston-storefronts",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {
