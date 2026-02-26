@@ -150,6 +150,14 @@ const blogPostOG: Record<string, OGData> = {
     image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
     path: "/blog/historic-ironwork-restoration-beacon-hill",
   },
+  "failed-fire-escape-inspection-boston": {
+    title:
+      "What Happens If Your Boston Building Fails a Fire Escape Inspection? | King Iron Works",
+    description:
+      "Failed your fire escape inspection in Massachusetts? Here's exactly what happens next — fines, legal exposure, insurance risk, mortgage complications, and how to get back into compliance fast.",
+    image: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    path: "/blog/failed-fire-escape-inspection-boston",
+  },
 };
 
 function buildOGTags(og: OGData, baseUrl: string): string {

@@ -357,6 +357,130 @@ export const BLOG_POSTS: BlogPost[] = [
       <p>That's what we do, and we've been doing it across Boston's historic neighborhoods since 2004. <a href="/contact">Give us a call</a> and let's talk about your building.</p>
     `,
   },
+  {
+    slug: "failed-fire-escape-inspection-boston",
+    title:
+      "What Happens If Your Boston Building Fails a Fire Escape Inspection?",
+    excerpt:
+      "Failed your fire escape inspection in Massachusetts? Here's exactly what happens next — fines, legal exposure, insurance risk, mortgage complications, and how to get back into compliance fast.",
+    category: "fire-escapes",
+    featuredImage: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    publishedDate: "2026-02-26",
+    readTime: "7 min read",
+    tags: [
+      "fire escapes",
+      "inspections",
+      "boston",
+      "compliance",
+      "code violations",
+    ],
+    content: `
+      <p>Nobody wants to hear the words "your fire escape failed inspection." But it happens more often than you'd think. According to city records, Boston has nearly 10,000 fire escapes — and a significant number of them haven't been inspected within the required five-year cycle.</p>
+
+      <p>If you're a building owner, property manager, or condo board member, and your fire escape just failed its inspection — or you suspect it might — this article walks you through exactly what happens next, what you're responsible for, and how to get back into compliance without making the situation worse.</p>
+
+      <p>The short version: it's fixable. But the longer you wait, the more expensive and complicated it gets. Let's break it down.</p>
+
+      <h2>What "Failed Inspection" Actually Means</h2>
+
+      <p>When a licensed inspector examines your fire escape under <strong>780 CMR Section 1001.3.3</strong> and determines it doesn't meet structural adequacy and safety standards, they cannot issue the certification affidavit. Instead, they'll produce a detailed report outlining every issue they found.</p>
+
+      <p>That report typically documents specific code violations with descriptions and photos — things like:</p>
+
+      <ul>
+        <li>Structural corrosion at connection points</li>
+        <li>Compromised load-bearing capacity</li>
+        <li>Missing or damaged components (railings, treads, platforms)</li>
+        <li>Deteriorated protective coatings exposing bare metal</li>
+        <li>Non-functional drop ladders</li>
+        <li>Loose or failed anchor points</li>
+      </ul>
+
+      <p>This report isn't just paperwork — it's a legal document. It officially puts you on notice that your fire escape has known safety issues. And once you're on notice, the clock starts ticking on your obligation to fix them.</p>
+
+      <h2>The Real Consequences of Non-Compliance</h2>
+
+      <p>A failed fire escape inspection triggers a cascade of consequences that go well beyond a maintenance headache. Here's what's actually at stake:</p>
+
+      <h3>Fines and Legal Action</h3>
+
+      <p>In Boston, the fire prevention code allows fines of <strong>up to $50 per offense</strong> for code violations, with continuing violations accruing <strong>up to $10 per day</strong> until the issue is resolved. If you don't correct the violation within approximately 15 days, the city's Fire Prevention Legal Unit can escalate the matter to a criminal complaint in Boston Housing Court.</p>
+
+      <p>And that's just Boston proper. Other Massachusetts municipalities have their own enforcement mechanisms, but the underlying state building code requirement is the same everywhere: your fire escape must be certified every five years, period.</p>
+
+      <h3>Insurance Exposure</h3>
+
+      <p>This is the consequence most property owners don't see coming. If someone is injured on — or because of — a fire escape that has a known failed inspection or expired certification, your liability exposure increases dramatically. Insurance companies can (and do) deny claims when there's documented evidence of deferred maintenance or known code violations.</p>
+
+      <p>An expired or failed certification is exactly the kind of documented gap that a plaintiff's attorney will build a case around. It demonstrates that you knew, or should have known, about the condition of the fire escape and didn't act.</p>
+
+      <h3>Mortgage and Financing Complications</h3>
+
+      <p>Here's one that blindsided a lot of condo owners in recent years. After the Champlain Towers South collapse in Surfside, Florida in 2021, <strong>Fannie Mae and Freddie Mac</strong> — which back roughly half of all US mortgages — tightened their requirements for condo buildings. Properties with significant deferred maintenance or outstanding code violations can be deemed ineligible for agency-backed loans.</p>
+
+      <p>What does that mean in practice? If your building's fire escape certification has lapsed or failed, it could delay or derail real estate transactions in your building. Buyers may face higher interest rates, require alternative financing, or walk away entirely. Lenders now routinely ask condo associations for proof of fire escape certification as part of the underwriting process.</p>
+
+      <h3>City Licensing Issues</h3>
+
+      <p>If you're a Boston property owner applying for a Five-Year Inspection Plan through the city's Inspectional Services Department, you must have a current fire escape certificate on file. No certificate means your application gets denied, and without the five-year plan, your building is subject to more frequent city inspections and potential additional violations.</p>
+
+      <h3>Tenant Relations and Legal Risk</h3>
+
+      <p>Tenants have the right to live in a building that meets safety codes. A failed fire escape inspection — especially if it goes unaddressed — can become grounds for tenant complaints to Inspectional Services, rent withholding in severe cases, or even lawsuits. It's a situation where the relationship between landlord and tenant deteriorates fast, and understandably so.</p>
+
+      <h2>Okay, So Your Fire Escape Failed. Here's What to Do.</h2>
+
+      <p>Deep breath. This is a solvable problem. The key is moving quickly and methodically. Here's the path back to compliance:</p>
+
+      <ol>
+        <li><strong>Review the inspection report carefully.</strong> Understand exactly what was cited. Not all issues are equal — some may be minor maintenance items (paint, hardware tightening) while others may be structural. Knowing the severity helps you prioritize and budget.</li>
+        <li><strong>Contact a licensed fire escape company immediately.</strong> You need a company that can both repair the issues AND re-certify the fire escape once repairs are complete. Working with separate vendors for repairs and certification adds time, cost, and coordination headaches.</li>
+        <li><strong>Get a detailed scope of work and timeline.</strong> A good contractor will walk the entire fire escape with you, review the inspection report, and give you a clear plan: what needs to be repaired, what needs to be replaced, how long it will take, and what it will cost. No surprises.</li>
+        <li><strong>Communicate with your municipality.</strong> If you've received a violation notice, proactive communication helps. Showing the city that you've engaged a licensed professional and have a repair plan in progress demonstrates good faith and may influence their enforcement timeline.</li>
+        <li><strong>Complete repairs and get re-certified.</strong> Once all repairs meet code requirements, your licensed inspector can issue the certification affidavit and submit it to the building official. Keep copies of everything — the original failed report, repair documentation, and the new certification.</li>
+        <li><strong>Set a calendar reminder for five years from now.</strong> Seriously. The most common reason certifications lapse is simply because people forget. Put it in your calendar, your property management system, wherever it won't get lost.</li>
+      </ol>
+
+      <h2>The Most Common Reasons Fire Escapes Fail in Boston</h2>
+
+      <p>After 20+ years of inspecting and repairing fire escapes across the city, here are the issues we see most frequently on failed inspections:</p>
+
+      <ul>
+        <li><strong>Deep rust at wall connections</strong> — the steel beams or angles that penetrate the building wall are the most critical structural components, and they're also where moisture gets trapped. When these corrode, it's a serious structural concern.</li>
+        <li><strong>Loose or corroded anchor bolts</strong> — the bolts that secure the fire escape to the masonry loosen over time due to thermal cycling and vibration. When they fail, the entire structure becomes unstable.</li>
+        <li><strong>Non-functional drop ladders</strong> — the counterbalanced ladder on the lowest landing that's supposed to swing down for evacuation. We find these rusted or jammed in place on a surprisingly high percentage of inspections.</li>
+        <li><strong>Deteriorated treads and landings</strong> — metal fatigue and rust perforations that reduce load-bearing capacity below safe levels.</li>
+        <li><strong>Missing or compromised railings</strong> — height, stability, and attachment issues that create fall hazards.</li>
+        <li><strong>Complete coating failure</strong> — the protective paint has deteriorated so extensively that bare metal is exposed across large sections, accelerating all of the above problems.</li>
+      </ul>
+
+      <p>The good news is that every one of these issues is repairable. Most fire escapes — even those that have been significantly neglected — can be brought back to full compliance with the right work. Total replacement is rarely necessary unless the structure has been ignored for decades.</p>
+
+      <h2>How King Iron Works Gets You Back in Compliance</h2>
+
+      <ul>
+        <li><strong>One company, one process.</strong> We inspect, repair, fabricate replacement parts, and re-certify — all in-house. No juggling multiple vendors.</li>
+        <li><strong>Licensed fire escape installer.</strong> We're qualified under Massachusetts law to both perform and certify the work.</li>
+        <li><strong>In-house fabrication.</strong> If your fire escape needs new treads, platforms, railings, or structural components, we design and build them at our Everett facility. No delays waiting on third-party suppliers.</li>
+        <li><strong>Structural engineering coordination.</strong> For complex situations, we work directly with licensed engineers.</li>
+        <li><strong>Emergency services.</strong> When a failed inspection reveals immediate safety concerns, we can mobilize quickly.</li>
+      </ul>
+
+      <h2>Failed Inspection? Let's Fix It.</h2>
+
+      <p>The sooner you act, the lower the cost and the smaller the headache. A free on-site assessment from our team will give you a clear picture of what needs to happen and what it will take.</p>
+
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your assessment.</p>
+
+      <h2>The Bottom Line</h2>
+
+      <p>A failed fire escape inspection feels like bad news — and it is. But it's also an opportunity to actually fix a problem that, if left unaddressed, could have far worse consequences down the road: denied insurance claims, blocked real estate transactions, city violations, or worst of all, someone getting hurt.</p>
+
+      <p>The property owners who come out of this situation best are the ones who act quickly, hire the right people, and get it handled properly the first time. That's what we're here for.</p>
+
+      <p>King Iron Works has been Boston's trusted ironwork and fire escape specialist since 2004. Licensed, insured, and proud to serve property owners across <a href="/blog/massachusetts-fire-escape-inspection-requirements-2026">Massachusetts</a> and Florida.</p>
+    `,
+  },
 ];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
