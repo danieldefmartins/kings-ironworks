@@ -24,7 +24,7 @@ export default function Blog() {
     <div className="min-h-screen">
       {/* Hero */}
       <section className="bg-sidebar text-sidebar-foreground">
-        <div className="container py-10 md:py-24 pt-20 lg:pt-24">
+        <div className="container pt-24 pb-10 md:pt-32 md:pb-24 lg:pt-32">
           <div className="inline-block px-3 py-1.5 md:px-4 md:py-2 bg-accent/10 text-accent text-xs md:text-sm font-display font-bold tracking-wider mb-4 md:mb-6">
             INSIGHTS & GUIDES
           </div>

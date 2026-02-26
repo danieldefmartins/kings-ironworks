@@ -59,7 +59,7 @@ export default function BlogPost() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative bg-sidebar text-sidebar-foreground">
+      <section className="relative bg-sidebar text-sidebar-foreground overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
             src={post.featuredImage}
@@ -67,7 +67,7 @@ export default function BlogPost() {
             className="w-full h-full object-cover opacity-20"
           />
         </div>
-        <div className="container relative z-10 py-8 md:py-24 pt-20 lg:pt-24">
+        <div className="container relative z-10 pt-24 pb-8 md:pt-32 md:pb-24 lg:pt-32">
           <Link href="/blog">
             <span className="inline-flex items-center gap-1 text-sidebar-foreground/60 hover:text-accent transition-colors text-xs md:text-sm font-display font-bold tracking-wider mb-4 md:mb-6 cursor-pointer">
               <ArrowLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
