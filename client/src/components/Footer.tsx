@@ -117,11 +117,11 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="mailto:info@kingirongroup.com"
+                  href="mailto:info@kingsironworks.com"
                   className="flex items-center gap-2 text-sidebar-foreground/70 hover:text-accent transition-colors text-sm"
                 >
                   <Mail className="w-4 h-4" />
-                  info@kingirongroup.com
+                  info@kingsironworks.com
                 </a>
               </li>
               <li>
