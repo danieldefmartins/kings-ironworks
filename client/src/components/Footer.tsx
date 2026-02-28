@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <img
-              src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ughTFDIjdTrgGjGJ.jpeg"
+              src="/images/ughTFDIjdTrgGjGJ.jpeg"
               alt="King Iron Works"
               className="h-16 w-auto object-contain mb-4"
             />

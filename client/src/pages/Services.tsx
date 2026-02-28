@@ -15,7 +15,7 @@ export default function Services() {
       <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-3_1770786316000_na1fn_ZmFicmljYXRpb24tc2hvcC1pbnRlcmlvcg.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTNfMTc3MDc4NjMxNjAwMF9uYTFmbl9abUZpY21sallYUnBiMjR0YzJodmNDMXBiblJsY21sdmNnLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=JDgZooaXhv5nFgsJWSDW1wUVM7zH60c0~6732ywzUGi2OGfmW153lUcCXh1xblDEwggiM4wQUwH-k61aa78p6AIBwWtzFwFl-pOGtCAdtS9FGH1kt4D050qUbaSXynO0NaK034oDg7YxMNWqwUFuxQuTO~-IGPI3zkdn8wSzOSN~mH25X1wVgLPBoetHfXfCnJytz5F8Dhyy491QGJjAA1~LQoW3csUqx7sDBQwosSGd6832y~9d~7K5B5A2N44qpkuNJAXEAgbBizFwKqF~nGZnFmROY5uSBhuhCxHoLAblzBRxtGOyPgxqHMxn-oyMOJjL6nWFzGJmBqR6deJi2A__"
+            src="/images/fabrication-shop-interior.webp"
             alt="Fabrication shop"
             className="w-full h-full object-cover opacity-30"
           />
@@ -77,7 +77,7 @@ export default function Services() {
             </div>
             <div>
               <img
-                src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-2_1770786313000_na1fn_ZmlyZS1lc2NhcGUtaW5zdGFsbGF0aW9u.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTJfMTc3MDc4NjMxMzAwMF9uYTFmbl9abWx5WlMxbGMyTmhjR1V0YVc1emRHRnNiR0YwYVc5dS5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=J1wZIAXxJ5CYN3sWatRc2VXAW4bHXz4LVVZATKfrELWV6IcprfJ2mAwYjhUN6ce1Utg-C0bXWRw759qTZs5QMgT2puBjtEm6oIKy7rBCdwdvWGx5o-2Dw7XKE80k4aM628hNrLxihPa9xwxhl1Gvcq7wLeuuocEuwG4WPCvfSeZFt-xKRxGQucaaWubKs0xj2oYMM3M1zd76Fb7NAlAmOGW~FceWOx-bjqmIMFJyicfF0knyxALBBHOSY4O8LbWTPi5SL7slsoSd3T02TOUIoDiCb3bGbbrs-t~rc-gofOZBE57ZQI2gjVg6FMum1zi4ayiyoNRcnSlS9p5LoPFuCQ__"
+                src="/images/fire-escape-installation.webp"
                 alt="Fire escape installation"
                 className="w-full h-[500px] object-cover border-8 border-border"
               />
@@ -120,7 +120,7 @@ export default function Services() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <img
-                src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-5_1770786318000_na1fn_Ym9zdG9uLWhpc3RvcmljLWJ1aWxkaW5n.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTVfMTc3MDc4NjMxODAwMF9uYTFmbl9ZbTl6ZEc5dUxXaHBjM1J2Y21sakxXSjFhV3hrYVc1bi5wbmc~eC1vc3MtcHJvY2Vzcz1pbWFnZS9yZXNpemUsd18xOTIwLGhfMTkyMC9mb3JtYXQsd2VicC9xdWFsaXR5LHFfODAiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTg3NjE2MDB9fX1dfQ__&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=ujSROZ8t8b1pzboiP7I949WrwNZ8frVGTVkd3pksEu6pzlPPDHRRAS8yPyzycuFUuCDQyj1SnjlmpZScXhCNidraw3V8rcAbbvB84Yn48NUuluMI2p7olqNkCsW3JbjN3CPCxadpCaYxIU0ArzDi5IQb~-47PH9z30Zra5PW1Qf9U6xZhPZjhdkfzp7iJqSaQAyqkOTASks4lcK23OxslxlduyffBbicM~4DMy34n59-sBOBmDNNLyrLyLtc-ywooB9ljD4BQC-ZJeHyYG74C1HN5WH99YuVkgJu8zGNih2cRWBJ3BwVx2YyEv~ODrwVs88dcsTNZLYCkZlL2bhesg__"
+                src="/images/boston-historic-building.webp"
                 alt="Historic building"
                 className="w-full h-[500px] object-cover border-8 border-border"
               />
@@ -216,7 +216,7 @@ export default function Services() {
 
           <div className="text-center">
             <img
-              src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-4_1770786318000_na1fn_Y3VzdG9tLWlyb24tZ2F0ZQ.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTRfMTc3MDc4NjMxODAwMF9uYTFmbl9ZM1Z6ZEc5dExXbHliMjR0WjJGMFpRLnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=ZEqNf2HrVHpIvRMmxhmSQSD755bSLfcEIfE4FEzcJ-3pUWZUbx2rEDiGeuyH46e~tbrjiRhJ6ooWSa-kp6i359csT9M2V34unq9wX9zNEy9~7NCkXIN6Swqxc2DlFBlnVmPl9U5VMeahi5j6wQsFPMIzdwPWi7fME-VJtNi5XXBEQy5kMDtEVOiu0e-rjdgJ8yDWwmUiKmZrmzSPgxVjqOq25Q0g9SwtL0KFbCOJeoY73tN6AbVHpsHqNecM2k17aEA3gyuHGGREznhWTWHWHtAi8brj~iVNOtzjbdQWlLPBB326s4TFW81MOcfvAaTXbHyEQznYQ-C2Pd1lZhntXA__"
+              src="/images/custom-iron-gate.webp"
               alt="Custom iron gate"
               className="w-full max-w-2xl mx-auto h-[600px] object-cover border-8 border-border mb-8"
             />

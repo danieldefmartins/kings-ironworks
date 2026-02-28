@@ -18,8 +18,7 @@ export const BLOG_CATEGORIES = [
   { id: "guides", label: "GUIDES" },
 ];
 
-const IMG_BASE =
-  "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198";
+const IMG_BASE = "/images";
 
 export const BLOG_POSTS: BlogPost[] = [
   {

@@ -14,7 +14,7 @@ export default function Home() {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://private-us-east-1.manuscdn.com/sessionFile/PiC3jiX2zwECev1AbbjVmI/sandbox/EZosCpyNGdemuQ1YieLnnr-img-1_1770786319000_na1fn_aGVyby1oaXN0b3JpYy1pcm9ud29yaw.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvUGlDM2ppWDJ6d0VDZXYxQWJialZtSS9zYW5kYm94L0Vab3NDcHlOR2RlbXVRMVlpZUxubnItaW1nLTFfMTc3MDc4NjMxOTAwMF9uYTFmbl9hR1Z5Ynkxb2FYTjBiM0pwWXkxcGNtOXVkMjl5YXcucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=kxtv4l~flN88wu3Helk4mFrSxYlCodg2Dn3VEfp1TRrjgb6fWM0fMf5bnc~2IX~AOg6UMJIxz-UGjcbFwmUOuBfEoMWKN~ZmwEFiFHTF0VDwrxkXXHdeh5nd-qjaqOVp6EFH~NSW7bMGhlTzgcjSHJ0WDJXawS9QHeZeereLSLkCAF3MCVYYOORivNm5OOM4~IX8H7~dj4VOk-~-WxZNZAH2rgj-l15dvfXEq1nVn~bsmfJ2zNCufnBydiYQZJvlsc15Ahr0fUysgkyRWBR1tlp34spiQvol9bvQqwJMxpQXLJJP2tMM0bksphZyYrR9XbBLU~6FdU19y8TOoK1Ybw__"
+            src="/images/hero-historic-ironwork.webp"
             alt="Historic ironwork detail"
             className="w-full h-full object-cover"
           />
@@ -216,7 +216,7 @@ export default function Home() {
             {/* Fire Escape Installation */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/VrmKyMuovdgoFRfz.JPG"
+                src="/images/VrmKyMuovdgoFRfz.JPG"
                 alt="Fire escape installation"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -235,7 +235,7 @@ export default function Home() {
             {/* Custom Gate */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ldKpYAFGAsEGkCVX.JPG"
+                src="/images/ldKpYAFGAsEGkCVX.JPG"
                 alt="Custom ornamental gate"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -254,7 +254,7 @@ export default function Home() {
             {/* Interior Railing */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/apLcldtAeVXzDTCh.JPG"
+                src="/images/apLcldtAeVXzDTCh.JPG"
                 alt="Interior iron railing"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -273,7 +273,7 @@ export default function Home() {
             {/* Exterior Railing */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/KVrQsNoDvGzMAnwj.JPG"
+                src="/images/KVrQsNoDvGzMAnwj.JPG"
                 alt="Exterior railing"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -292,7 +292,7 @@ export default function Home() {
             {/* Before & After */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/FXhStnQxPmvbQEEX.JPG"
+                src="/images/FXhStnQxPmvbQEEX.JPG"
                 alt="Restoration project"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -311,7 +311,7 @@ export default function Home() {
             {/* Gate Detail */}
             <div className="relative group overflow-hidden">
               <img
-                src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/aoFXjvosIbfREama.JPG"
+                src="/images/aoFXjvosIbfREama.JPG"
                 alt="Ornamental gate detail"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />

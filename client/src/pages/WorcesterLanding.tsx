@@ -44,7 +44,7 @@ export default function WorcesterLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1600&h=1200&fit=crop')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/worcester-buildings.jpg')`,
         }}
       >
         <div className="container">

@@ -19,7 +19,7 @@ export default function FireEscapeLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/YgqFSongHOumLnae.JPG"
+            src="/images/YgqFSongHOumLnae.JPG"
             alt="Fire escape installation Boston"
             className="w-full h-full object-cover opacity-40"
           />

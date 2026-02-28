@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Phone, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 
-const IMG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198";
+const IMG = "/images";
 const LOCAL = "/images/portfolio";
 
 interface Photo {

@@ -64,7 +64,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.BOSTON,
     hours: "Monday - Friday: 7:00 AM - 5:00 PM\nSaturday: By Appointment\nSunday: Closed",
     description: "Our state-of-the-art fabrication facility houses all our custom ironwork operations. Visit our shop to see our capabilities and discuss your project in person.",
-    image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=800&h=600&fit=crop"
+    image: "/images/fabrication-shop.jpg"
   },
   {
     name: "Cape Cod, MA",
@@ -73,7 +73,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CAPE_COD,
     hours: "By Appointment",
     description: "Serving all of Cape Cod with custom ironwork, fire escape services, and historic restoration for coastal properties.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/IrppZGXOKBxchPDP.JPG"
+    image: "/images/IrppZGXOKBxchPDP.JPG"
   },
   {
     name: "Worcester, MA",
@@ -82,7 +82,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.WORCESTER,
     hours: "By Appointment",
     description: "Full-service ironwork and fire escape solutions for Worcester and surrounding Central Massachusetts communities.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/LIIMwNaIvkbuwmQE.JPG"
+    image: "/images/LIIMwNaIvkbuwmQE.JPG"
   },
   {
     name: "Miami, FL",
@@ -91,7 +91,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.MIAMI,
     hours: "By Appointment",
     description: "Bringing our 20+ years of ironwork expertise to South Florida with custom fabrication and installation services.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/AzTrmVJOTgNkaNYM.JPG"
+    image: "/images/AzTrmVJOTgNkaNYM.JPG"
   },
   {
     name: "New Hampshire",
@@ -100,7 +100,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.NEW_HAMPSHIRE,
     hours: "By Appointment",
     description: "Professional ironwork services for New Hampshire homes and businesses. Custom fabrication, fire escapes, and structural steel.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/ldKpYAFGAsEGkCVX.JPG"
+    image: "/images/ldKpYAFGAsEGkCVX.JPG"
   },
   {
     name: "Maine",
@@ -109,7 +109,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.MAINE,
     hours: "By Appointment",
     description: "Serving Maine with expert ironwork, custom fabrication, and fire escape services built to withstand New England weather.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/gujHFKlEnadUYTxL.JPG"
+    image: "/images/gujHFKlEnadUYTxL.JPG"
   },
   {
     name: "Rhode Island",
@@ -118,7 +118,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.RHODE_ISLAND,
     hours: "By Appointment",
     description: "Expert ironwork services for Rhode Island properties. Custom gates, railings, fire escapes, and historic restoration.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/NgBghqHCKpNCJSJs.jpg"
+    image: "/images/NgBghqHCKpNCJSJs.jpg"
   },
   {
     name: "New York",
@@ -136,7 +136,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CONNECTICUT,
     hours: "By Appointment",
     description: "Trusted ironwork services for Connecticut. Custom gates, railings, fire escapes, and historic restoration for homes and businesses.",
-    image: "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198/aoFXjvosIbfREama.JPG"
+    image: "/images/aoFXjvosIbfREama.JPG"
   }
 ] as const;
 

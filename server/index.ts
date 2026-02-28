@@ -14,7 +14,7 @@ interface OGData {
   path: string;
 }
 
-const IMG_BASE = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663313028198";
+const IMG_BASE = "/images";
 
 const locationOG: Record<string, OGData> = {
   "/": {
