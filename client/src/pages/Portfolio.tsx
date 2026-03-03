@@ -1,7 +1,36 @@
 import { Button } from "@/components/ui/button";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+
+function PortfolioImage({ src, alt, eager, onClick }: { src: string; alt: string; eager?: boolean; onClick: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    // Check if already cached/loaded
+    if (imgRef.current?.complete && imgRef.current.naturalHeight > 0) {
+      setLoaded(true);
+    }
+  }, []);
+
+  return (
+    <div
+      className="w-full cursor-pointer group mb-2 bg-white/5 min-h-[200px]"
+      onClick={onClick}
+    >
+      <img
+        ref={imgRef}
+        src={src}
+        alt={alt}
+        loading={eager ? "eager" : "lazy"}
+        onLoad={() => setLoaded(true)}
+        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+        className={`w-full block group-hover:brightness-90 transition-all duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
+  );
+}
 
 const IMG = "/images";
 const LOCAL = "/images/portfolio";
@@ -175,7 +204,7 @@ export default function Portfolio() {
   return (
     <div className="min-h-screen bg-black">
       {/* Fixed Filter Bar */}
-      <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
+      <div className="fixed top-16 lg:top-20 left-0 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 py-3">
           <div className="flex gap-2 max-lg:overflow-x-auto scrollbar-hide lg:flex-wrap">
             {categories.map((cat) => (
@@ -198,21 +227,15 @@ export default function Portfolio() {
       </div>
 
       {/* Full-width Vertical Photo Stream */}
-      <div className="pt-28 lg:pt-20">
+      <div className="pt-28 lg:pt-16">
         {filteredPhotos.map((photo, i) => (
-          <div
+          <PortfolioImage
             key={photo.src}
-            className="w-full cursor-pointer group mb-2"
+            src={photo.src}
+            alt={photo.alt}
+            eager={i < 3}
             onClick={() => openLightbox(i)}
-          >
-            <img
-              src={photo.src}
-              alt={photo.alt}
-              loading={i < 3 ? "eager" : "lazy"}
-              className="w-full block group-hover:brightness-90 transition-all duration-300 animate-in fade-in duration-500"
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          </div>
+          />
         ))}
 
         {filteredPhotos.length === 0 && (
