@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Phone, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 
@@ -177,7 +177,7 @@ export default function Portfolio() {
       {/* Fixed Filter Bar */}
       <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible">
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -198,10 +198,10 @@ export default function Portfolio() {
       </div>
 
       {/* Full-width Vertical Photo Stream */}
-      <div className="pt-28 lg:pt-16">
+      <div className="pt-28 lg:pt-20">
         {filteredPhotos.map((photo, i) => (
           <div
-            key={`${activeCategory}-${i}`}
+            key={photo.src}
             className="w-full cursor-pointer group mb-2"
             onClick={() => openLightbox(i)}
           >
@@ -209,7 +209,8 @@ export default function Portfolio() {
               src={photo.src}
               alt={photo.alt}
               loading={i < 3 ? "eager" : "lazy"}
-              className="w-full block group-hover:brightness-90 transition-all duration-300"
+              className="w-full block group-hover:brightness-90 transition-all duration-300 animate-in fade-in duration-500"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           </div>
         ))}
