@@ -42,6 +42,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
+import CustomIronworkLanding from "./pages/CustomIronworkLanding";
 
 function Router() {
   const [location] = useLocation();
@@ -68,6 +69,7 @@ function Router() {
       <Route path="/handrail" component={HandrailLanding} />
       <Route path="/window" component={WindowLanding} />
       <Route path="/window-well" component={WindowWellLanding} />
+      <Route path="/custom-ironwork" component={CustomIronworkLanding} />
       <Route path="/cape-cod" component={CapeCodeLanding} />
       <Route path="/worcester" component={WorcesterLanding} />
       <Route path="/miami" component={MiamiLanding} />
