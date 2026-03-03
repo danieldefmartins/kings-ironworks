@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 interface LocationSEOProps {
-  location: 'cape-cod' | 'miami' | 'boston' | 'worcester' | 'new-hampshire' | 'maine' | 'rhode-island' | 'new-york' | 'connecticut';
+  location: 'cape-cod' | 'miami' | 'boston' | 'worcester' | 'new-hampshire' | 'maine' | 'rhode-island' | 'new-york' | 'connecticut' | 'vermont';
 }
 
 /**
@@ -55,6 +55,11 @@ export default function LocationSEO({ location }: LocationSEOProps) {
         title: 'Connecticut Ironwork & Fire Escape Services | King Iron Works',
         description: 'Connecticut\'s trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Hartford, New Haven, Stamford, and all of CT. Call +1 860-740-4242',
         keywords: 'connecticut ironwork, fire escape connecticut, custom gates CT, railings connecticut, historic restoration hartford, ironwork stamford ct',
+      },
+      'vermont': {
+        title: 'Vermont Ironwork & Fire Escape Services | King Iron Works',
+        description: 'Vermont\'s trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration. Serving Burlington, Montpelier, Rutland, and all of VT. Call +1 860-740-4242',
+        keywords: 'vermont ironwork, fire escape vermont, custom gates VT, railings vermont, historic restoration burlington, ironwork montpelier vt',
       },
     };
 

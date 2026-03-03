@@ -24,6 +24,7 @@ import MaineLanding from "./pages/MaineLanding";
 import RhodeIslandLanding from "./pages/RhodeIslandLanding";
 import NewYorkLanding from "./pages/NewYorkLanding";
 import ConnecticutLanding from "./pages/ConnecticutLanding";
+import VermontLanding from "./pages/VermontLanding";
 import InteriorRailingLanding from "./pages/InteriorRailingLanding";
 import ExteriorRailingLanding from "./pages/ExteriorRailingLanding";
 import FenceLanding from "./pages/FenceLanding";
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/rhode-island" component={RhodeIslandLanding} />
       <Route path="/new-york" component={NewYorkLanding} />
       <Route path="/connecticut" component={ConnecticutLanding} />
+      <Route path="/vermont" component={VermontLanding} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/blog" component={Blog} />
       <Route path="/portfolio" component={Portfolio} />

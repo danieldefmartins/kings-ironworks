@@ -17,6 +17,7 @@ const ROUTE_PHONE_MAP: Record<string, PhoneEntry> = {
   '/rhode-island': PHONE_NUMBERS.RHODE_ISLAND,
   '/new-york': PHONE_NUMBERS.NEW_YORK,
   '/connecticut': PHONE_NUMBERS.CONNECTICUT,
+  '/vermont': PHONE_NUMBERS.CONNECTICUT,
 };
 
 /**
@@ -31,6 +32,7 @@ const GEO_PHONE_MAP: Record<string, PhoneEntry> = {
   'rhode-island': PHONE_NUMBERS.RHODE_ISLAND,
   'new-york': PHONE_NUMBERS.NEW_YORK,
   'connecticut': PHONE_NUMBERS.CONNECTICUT,
+  'vermont': PHONE_NUMBERS.CONNECTICUT,
   'boston': PHONE_NUMBERS.BOSTON,
 };
 
