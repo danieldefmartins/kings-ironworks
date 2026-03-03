@@ -25,11 +25,11 @@ import GHLFormPlaceholder from "@/components/GHLFormPlaceholder";
 
 const facilityImages = [
   { src: "/images/portfolio/facility/FullSizeRender.JPG", alt: "Kings Iron Works fabrication shop" },
-  { src: "/images/portfolio/facility/FullSizeRender 2.JPG", alt: "Welding station in our Everett facility" },
-  { src: "/images/portfolio/facility/FullSizeRender 3.JPG", alt: "Professional welding equipment" },
-  { src: "/images/portfolio/facility/FullSizeRender 4.JPG", alt: "Powder coating booth" },
-  { src: "/images/portfolio/facility/FullSizeRender 5.JPG", alt: "Custom ironwork in progress" },
-  { src: "/images/portfolio/facility/FullSizeRender 6.JPG", alt: "Finished ironwork pieces" },
+  { src: "/images/portfolio/facility/FullSizeRender%202.JPG", alt: "Welding station in our Everett facility" },
+  { src: "/images/portfolio/facility/FullSizeRender%203.JPG", alt: "Professional welding equipment" },
+  { src: "/images/portfolio/facility/FullSizeRender%204.JPG", alt: "Powder coating booth" },
+  { src: "/images/portfolio/facility/FullSizeRender%205.JPG", alt: "Custom ironwork in progress" },
+  { src: "/images/portfolio/facility/FullSizeRender%206.JPG", alt: "Finished ironwork pieces" },
   { src: "/images/portfolio/facility/IMG_2443.JPG", alt: "Fabrication shop floor" },
   { src: "/images/portfolio/facility/179be0c7-68dd-41e8-93aa-020f5aee0455.JPG", alt: "Iron fabrication process" },
   { src: "/images/portfolio/facility/9ff15a85-bb6f-4578-a4dd-28aa931a7303.JPG", alt: "Welding in progress" },
@@ -221,14 +221,14 @@ export default function FacilityLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {weldingMachines.map((machine, index) => (
-              <Card key={index} className="p-8 border-4 border-sidebar-foreground/10 hover:border-accent transition-colors bg-sidebar-foreground/5">
+              <Card key={index} className="p-8 border-4 border-sidebar-foreground/10 hover:border-accent transition-colors bg-card text-card-foreground">
                 <div className="flex items-start gap-6">
                   <div className="w-16 h-16 bg-accent/20 flex items-center justify-center flex-shrink-0">
                     <machine.icon className="w-8 h-8 text-accent" />
                   </div>
                   <div>
                     <h3 className="text-heading text-2xl mb-3">{machine.title}</h3>
-                    <p className="text-sidebar-foreground/80 mb-5 leading-relaxed">{machine.description}</p>
+                    <p className="text-muted-foreground mb-5 leading-relaxed">{machine.description}</p>
                     <ul className="grid grid-cols-2 gap-2">
                       {machine.strengths.map((strength, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">
@@ -289,7 +289,7 @@ export default function FacilityLanding() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-square overflow-hidden border-4 border-border">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender 4.JPG"
+                    src="/images/portfolio/facility/FullSizeRender%204.JPG"
                     alt="Powder coating in our facility"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -297,7 +297,7 @@ export default function FacilityLanding() {
                 </div>
                 <div className="aspect-square overflow-hidden border-4 border-border">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender 5.JPG"
+                    src="/images/portfolio/facility/FullSizeRender%205.JPG"
                     alt="Professional powder coat finish"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -305,7 +305,7 @@ export default function FacilityLanding() {
                 </div>
                 <div className="aspect-square overflow-hidden border-4 border-border col-span-2">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender 6.JPG"
+                    src="/images/portfolio/facility/FullSizeRender%206.JPG"
                     alt="Finished powder coated ironwork"
                     className="w-full h-full object-cover"
                     loading="lazy"
