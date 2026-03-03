@@ -177,7 +177,7 @@ export default function Portfolio() {
       {/* Fixed Filter Bar */}
       <div className="fixed top-16 lg:top-0 left-0 lg:left-20 right-0 z-40 bg-black/95 backdrop-blur-sm border-b border-white/10">
         <div className="px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide lg:flex-wrap lg:overflow-x-visible">
+          <div className="flex gap-2 max-lg:overflow-x-auto scrollbar-hide lg:flex-wrap">
             {categories.map((cat) => (
               <button
                 key={cat.id}
