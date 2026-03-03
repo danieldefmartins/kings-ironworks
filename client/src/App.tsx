@@ -48,9 +48,15 @@ import FacilityLanding from "./pages/FacilityLanding";
 function Router() {
   const [location] = useLocation();
   
-  // Scroll to top on route change
+  // Scroll to top + send gtag page_view on route change
   useEffect(() => {
     window.scrollTo(0, 0);
+    if (typeof window.gtag === "function") {
+      window.gtag("event", "page_view", {
+        page_path: location,
+        page_location: window.location.origin + location,
+      });
+    }
   }, [location]);
   
   return (
