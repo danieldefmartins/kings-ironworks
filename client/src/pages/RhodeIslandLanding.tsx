@@ -44,7 +44,7 @@ export default function RhodeIslandLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/NgBghqHCKpNCJSJs.jpg')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio/fire-escape/fire-escape-3.jpg')`,
         }}
       >
         <div className="container">
