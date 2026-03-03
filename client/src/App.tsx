@@ -43,6 +43,7 @@ import TermsOfService from "./pages/TermsOfService";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import CustomIronworkLanding from "./pages/CustomIronworkLanding";
+import FacilityLanding from "./pages/FacilityLanding";
 
 function Router() {
   const [location] = useLocation();
@@ -70,6 +71,7 @@ function Router() {
       <Route path="/window" component={WindowLanding} />
       <Route path="/window-well" component={WindowWellLanding} />
       <Route path="/custom-ironwork" component={CustomIronworkLanding} />
+      <Route path="/our-facility" component={FacilityLanding} />
       <Route path="/cape-cod" component={CapeCodeLanding} />
       <Route path="/worcester" component={WorcesterLanding} />
       <Route path="/miami" component={MiamiLanding} />
