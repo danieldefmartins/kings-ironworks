@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Navigation from "./components/Navigation";
@@ -48,9 +48,16 @@ import FacilityLanding from "./pages/FacilityLanding";
 function Router() {
   const [location] = useLocation();
   
+  const isFirstLoad = useRef(true);
+
   // Scroll to top + send gtag page_view on route change
   useEffect(() => {
     window.scrollTo(0, 0);
+    // Skip first load — gtag config already fires the initial page_view
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
     if (typeof window.gtag === "function") {
       window.gtag("event", "page_view", {
         page_path: location,
