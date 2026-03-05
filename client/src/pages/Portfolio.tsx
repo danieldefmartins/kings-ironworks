@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Phone, ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 
 function PortfolioImage({ src, alt, eager, onClick }: { src: string; alt: string; eager?: boolean; onClick: () => void }) {
   const [loaded, setLoaded] = useState(false);
@@ -268,7 +269,7 @@ export default function Portfolio() {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </a>
-            <a href={`tel:${localPhone.tel}`}>
+            <PhoneLink tel={localPhone.tel}>
               <Button
                 size="lg"
                 variant="outline"
@@ -277,7 +278,7 @@ export default function Portfolio() {
                 <Phone className="mr-2 w-5 h-5" />
                 {localPhone.display}
               </Button>
-            </a>
+            </PhoneLink>
           </div>
         </div>
       </section>

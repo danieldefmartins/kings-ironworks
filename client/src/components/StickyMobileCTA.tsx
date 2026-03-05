@@ -2,6 +2,7 @@ import { Phone } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 
 /**
  * Sticky Mobile CTA Bar - Lead Generation Optimization
@@ -27,10 +28,10 @@ export default function StickyMobileCTA() {
           size="lg"
           className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-black text-base px-6 shadow-lg"
         >
-          <a href={`tel:${localPhone.tel}`} className="flex items-center gap-2">
+          <PhoneLink tel={localPhone.tel} className="flex items-center gap-2">
             <Phone className="h-5 w-5" />
             CALL NOW
-          </a>
+          </PhoneLink>
         </Button>
       </div>
     </div>

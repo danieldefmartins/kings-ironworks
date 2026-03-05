@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, Phone } from "lucide-react";
 import { useState } from "react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -63,12 +64,12 @@ export default function Navigation() {
           </div>
 
           {/* Phone CTA */}
-          <a href={`tel:${localPhone.tel}`}>
+          <PhoneLink tel={localPhone.tel}>
             <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold tracking-wider">
               <Phone className="w-4 h-4 mr-2" />
               {localPhone.display}
             </Button>
-          </a>
+          </PhoneLink>
         </div>
       </nav>
 
@@ -86,12 +87,12 @@ export default function Navigation() {
           </Link>
 
           <div className="flex items-center gap-4">
-            <a href={`tel:${localPhone.tel}`}>
+            <PhoneLink tel={localPhone.tel}>
               <Button size="sm" variant="default" className="bg-accent hover:bg-accent/90">
                 <Phone className="w-4 h-4 mr-2" />
                 CALL
               </Button>
-            </a>
+            </PhoneLink>
             <Button
               size="icon"
               variant="ghost"

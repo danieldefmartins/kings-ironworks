@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Phone, Calendar, Clock } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 import { BLOG_CATEGORIES, getPostsByCategory } from "@/lib/blog-data";
 
 export default function Blog() {
@@ -136,7 +137,7 @@ export default function Blog() {
                 <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
               </Button>
             </a>
-            <a href={`tel:${localPhone.tel}`}>
+            <PhoneLink tel={localPhone.tel}>
               <Button
                 size="lg"
                 variant="outline"
@@ -145,7 +146,7 @@ export default function Blog() {
                 <Phone className="mr-2 w-4 h-4 md:w-5 md:h-5" />
                 {localPhone.display}
               </Button>
-            </a>
+            </PhoneLink>
           </div>
         </div>
       </section>

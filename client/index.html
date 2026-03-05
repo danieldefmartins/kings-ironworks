@@ -30,6 +30,23 @@
       defer
       src="%VITE_ANALYTICS_ENDPOINT%/umami"
       data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <!-- Google Ads Phone Call Click Conversion Tracking -->
+    <script>
+    function gtag_report_conversion(url) {
+      var callback = function () {
+        if (typeof(url) != 'undefined') {
+          window.location = url;
+        }
+      };
+      gtag('event', 'conversion', {
+          'send_to': 'AW-817727428/xe4zCLWS9IIcEMSP9oUD',
+          'value': 1.0,
+          'currency': 'USD',
+          'event_callback': callback
+      });
+      return false;
+    }
+    </script>
     <!-- Go High Level Chat Widget -->
     <script 
       src="https://widgets.leadconnectorhq.com/loader.js"  

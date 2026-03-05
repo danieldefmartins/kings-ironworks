@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import {
@@ -141,7 +142,7 @@ export default function CustomIronworkLanding() {
                   GET FREE ESTIMATE <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button
                   size="lg"
                   variant="outline"
@@ -150,7 +151,7 @@ export default function CustomIronworkLanding() {
                   <Phone className="mr-2 w-6 h-6" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
 
             {/* Trust Badges */}
@@ -342,7 +343,7 @@ export default function CustomIronworkLanding() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button
                   size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border"
@@ -350,7 +351,7 @@ export default function CustomIronworkLanding() {
                   <Phone className="mr-2 w-5 h-5" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Phone, MapPin, CheckCircle, ArrowRight, Shield, Award, Clock } from "lucide-react";
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import LocationSEO from "@/components/LocationSEO";
 
 /**
@@ -66,12 +67,12 @@ export default function MaineLanding() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <a href={`tel:${PHONE_NUMBERS.MAINE.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAINE.tel}>
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border w-full sm:w-auto">
                   <Phone className="mr-2 w-5 h-5" />
                   CALL {PHONE_NUMBERS.MAINE.display}
                 </Button>
-              </a>
+              </PhoneLink>
               <Link href="/contact">
                 <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-sidebar text-lg px-8 py-6 thick-border w-full sm:w-auto">
                   FREE QUOTE
@@ -147,12 +148,12 @@ export default function MaineLanding() {
                 ))}
               </div>
 
-              <a href={`tel:${PHONE_NUMBERS.MAINE.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAINE.tel}>
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   CALL FOR FREE CONSULTATION
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -188,12 +189,12 @@ export default function MaineLanding() {
             We serve the entire state from Portland to Bangor and beyond.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href={`tel:${PHONE_NUMBERS.MAINE.tel}`}>
+            <PhoneLink tel={PHONE_NUMBERS.MAINE.tel}>
               <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
                 <Phone className="mr-2 w-5 h-5" />
                 {PHONE_NUMBERS.MAINE.display}
               </Button>
-            </a>
+            </PhoneLink>
             <Link href="/contact">
               <Button size="lg" className="bg-sidebar hover:bg-sidebar/90 text-sidebar-foreground text-lg px-8 py-6 thick-border">
                 REQUEST FREE QUOTE

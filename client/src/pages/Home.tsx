@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, Shield, Wrench, Building2, MapPin, Phone, CheckCircle2 } from "lucide-react";
@@ -44,12 +45,12 @@ export default function Home() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
 
             {/* Trust Badges */}
@@ -377,12 +378,12 @@ export default function Home() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
+              <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   CALL NOW
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
           </div>
         </div>

@@ -8,6 +8,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 import {
   getPostBySlug,
   BLOG_POSTS,
@@ -184,7 +185,7 @@ export default function BlogPost() {
                 <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
               </Button>
             </a>
-            <a href={`tel:${localPhone.tel}`}>
+            <PhoneLink tel={localPhone.tel}>
               <Button
                 size="lg"
                 variant="outline"
@@ -193,7 +194,7 @@ export default function BlogPost() {
                 <Phone className="mr-2 w-4 h-4 md:w-5 md:h-5" />
                 {localPhone.display}
               </Button>
-            </a>
+            </PhoneLink>
           </div>
         </div>
       </section>

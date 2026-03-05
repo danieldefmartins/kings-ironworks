@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
@@ -46,12 +47,12 @@ export default function FenceLanding() {
 
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <a href={`tel:${phone.tel}`}>
+              <PhoneLink tel={phone.tel}>
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border group">
                   <Phone className="mr-2 w-6 h-6 group-hover:animate-bounce" />
                   CALL NOW: {phone.display}
                 </Button>
-              </a>
+              </PhoneLink>
               <Link href="/contact">
                 <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
                   FREE ESTIMATE
@@ -198,12 +199,12 @@ export default function FenceLanding() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href={`tel:${phone.tel}`}>
+              <PhoneLink tel={phone.tel}>
                 <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   {phone.display}
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { MapPin, Phone, Clock, ArrowRight, Building2, Wrench, Shield, Flame, Paintbrush } from "lucide-react";
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 
 const CAPABILITIES = [
@@ -87,12 +88,11 @@ export default function Locations() {
                   <Phone className="w-5 h-5 text-muted-foreground mt-0.5 flex-shrink-0" />
                   <div>
                     <div className="font-heading text-sm mb-1">PHONE</div>
-                    <a
-                      href={`tel:${PHONE_NUMBERS.BOSTON.tel}`}
+                    <PhoneLink tel={PHONE_NUMBERS.BOSTON.tel}
                       className="text-accent hover:underline"
                     >
                       {PHONE_NUMBERS.BOSTON.display}
-                    </a>
+                    </PhoneLink>
                   </div>
                 </div>
               </div>
@@ -134,13 +134,12 @@ export default function Locations() {
                   {isDefaultLocation ? "Boston / Everett" : localPhone.label}
                 </span>
               </div>
-              <a
-                href={`tel:${localPhone.tel}`}
+              <PhoneLink tel={localPhone.tel}
                 className="inline-flex items-center gap-2 text-accent text-xl hover:underline mb-6"
               >
                 <Phone className="w-5 h-5" />
                 {localPhone.display}
-              </a>
+              </PhoneLink>
               <p className="text-secondary-foreground/80 text-lg max-w-2xl mx-auto">
                 No matter where you are, we bring Everett-built craftsmanship to you.
                 Every project is fabricated in our shop and installed by our own crew.
@@ -187,12 +186,12 @@ export default function Locations() {
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
-              <a href={`tel:${localPhone.tel}`}>
+              <PhoneLink tel={localPhone.tel}>
                 <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
                   <Phone className="mr-2 w-5 h-5" />
                   {localPhone.display}
                 </Button>
-              </a>
+              </PhoneLink>
             </div>
           </div>
         </div>

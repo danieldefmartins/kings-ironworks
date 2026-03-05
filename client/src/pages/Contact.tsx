@@ -1,4 +1,5 @@
 import { PHONE_NUMBERS } from "@/lib/constants";
+import { PhoneLink } from "@/components/PhoneLink";
 import { Card } from "@/components/ui/card";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
 import GHLForm from "@/components/GHLForm";
@@ -53,12 +54,11 @@ export default function Contact() {
                   <div>
                     <h3 className="text-heading text-lg mb-1">YOUR LOCAL NUMBER</h3>
                     <p className="text-xs text-muted-foreground mb-2">{localPhone.label} Office</p>
-                    <a
-                      href={`tel:${localPhone.tel}`}
+                    <PhoneLink tel={localPhone.tel}
                       className="text-accent hover:underline text-lg font-medium"
                     >
                       {localPhone.display}
-                    </a>
+                    </PhoneLink>
                     <p className="text-sm text-muted-foreground mt-1">
                       Monday - Friday: 7AM - 5PM
                     </p>
@@ -151,65 +151,65 @@ export default function Contact() {
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Everett, MA</h3>
               <p className="text-sm text-muted-foreground mb-3">Headquarters</p>
-              <a href={`tel:${PHONE_NUMBERS.BOSTON.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.BOSTON.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.BOSTON.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Cape Cod, MA</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.CAPE_COD.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.CAPE_COD.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.CAPE_COD.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Worcester, MA</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.WORCESTER.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.WORCESTER.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.WORCESTER.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Miami, FL</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.MIAMI.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.MIAMI.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.MIAMI.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">New Hampshire</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.NEW_HAMPSHIRE.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.NEW_HAMPSHIRE.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.NEW_HAMPSHIRE.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Maine</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.MAINE.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.MAINE.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.MAINE.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Rhode Island</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.RHODE_ISLAND.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.RHODE_ISLAND.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.RHODE_ISLAND.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">New York</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.NEW_YORK.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.NEW_YORK.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.NEW_YORK.display}
-              </a>
+              </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border-2">
               <h3 className="text-heading text-xl mb-2">Connecticut</h3>
               <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
-              <a href={`tel:${PHONE_NUMBERS.CONNECTICUT.tel}`} className="text-accent hover:underline text-sm">
+              <PhoneLink tel={PHONE_NUMBERS.CONNECTICUT.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.CONNECTICUT.display}
-              </a>
+              </PhoneLink>
             </Card>
           </div>
         </div>

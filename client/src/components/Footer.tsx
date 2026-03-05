@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { Phone, Mail, MapPin } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
+import { PhoneLink } from "@/components/PhoneLink";
 
 export default function Footer() {
   const localPhone = useLocalPhone();
@@ -94,9 +95,9 @@ export default function Footer() {
                 <li className="text-sidebar-foreground/70">
                   <div className="font-medium text-sidebar-foreground">{localPhone.label}</div>
                   <div className="text-xs">Your Local Office</div>
-                  <a href={`tel:${localPhone.tel}`} className="text-xs text-accent hover:underline">
+                  <PhoneLink tel={localPhone.tel} className="text-xs text-accent hover:underline">
                     {localPhone.display}
-                  </a>
+                  </PhoneLink>
                 </li>
               )}
             </ul>
@@ -107,13 +108,12 @@ export default function Footer() {
             <h4 className="text-heading text-sm tracking-wider mb-4">CONTACT</h4>
             <ul className="space-y-3">
               <li>
-                <a
-                  href={`tel:${localPhone.tel}`}
+                <PhoneLink tel={localPhone.tel}
                   className="flex items-center gap-2 text-sidebar-foreground/70 hover:text-accent transition-colors text-sm"
                 >
                   <Phone className="w-4 h-4" />
                   {localPhone.display}
-                </a>
+                </PhoneLink>
               </li>
               <li>
                 <a
