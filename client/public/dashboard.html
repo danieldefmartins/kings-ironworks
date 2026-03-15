@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>King Iron Works - Shop Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f14;
+    --surface: #111920;
+    --surface2: #182028;
+    --accent: #e8a020;
+    --accent2: #f0c060;
+    --green: #2ecc71;
+    --red: #e74c3c;
+    --orange: #f39c12;
+    --blue: #3498db;
+    --text: #e8e8e8;
+    --text2: #8899aa;
+    --border: #253040;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* PASSWORD GATE */
+  #gate {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #gate.hidden { display: none; }
+
+  .gate-box {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 40px;
+    min-width: 360px;
+  }
+
+  .gate-box .logo-icon {
+    width: 64px; height: 64px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 32px; color: var(--bg);
+    margin: 0 auto 20px;
+  }
+
+  .gate-box h1 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .gate-box .gate-sub {
+    font-size: 14px;
+    color: var(--text2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .gate-box input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 16px;
+    outline: none;
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 4px;
+  }
+
+  .gate-box input:focus { border-color: var(--accent); }
+
+  .gate-box button {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .gate-box button:hover { background: var(--accent2); }
+
+  .gate-error {
+    color: var(--red);
+    font-size: 13px;
+    margin-top: 12px;
+    min-height: 20px;
+  }
+
+  /* LOADING OVERLAY */
+  #loading {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  #loading.hidden { display: none; }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 30px;
+    background: linear-gradient(135deg, #1a2530 0%, #0f1820 100%);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700; font-size: 20px; color: var(--bg);
+  }
+
+  .company-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .company-sub {
+    font-size: 12px;
+    color: var(--text2);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
+
+  .clock {
+    font-family: 'Oswald', sans-serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+
+  .date-display {
+    font-size: 13px;
+    color: var(--text2);
+    text-align: right;
+  }
+
+  .refresh-indicator {
+    font-size: 11px;
+    color: var(--text2);
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .refresh-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+  }
+
+  .refresh-dot.refreshing {
+    background: var(--orange);
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* MAIN GRID */
+  .dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    gap: 16px;
+    padding: 16px 20px;
+    height: calc(100vh - 70px);
+  }
+
+  /* KPI CARDS */
+  .kpi-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .kpi-card.gold::before { background: var(--accent); }
+  .kpi-card.green::before { background: var(--green); }
+  .kpi-card.blue::before { background: var(--blue); }
+  .kpi-card.red::before { background: var(--red); }
+  .kpi-card.orange::before { background: var(--orange); }
+
+  .kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-family: 'Oswald', sans-serif;
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .kpi-card.gold .kpi-value { color: var(--accent); }
+  .kpi-card.green .kpi-value { color: var(--green); }
+  .kpi-card.blue .kpi-value { color: var(--blue); }
+  .kpi-card.red .kpi-value { color: var(--red); }
+  .kpi-card.orange .kpi-value { color: var(--orange); }
+
+  .kpi-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* PANELS */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .panel-badge {
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Oswald', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 4px;
+  }
+
+  .panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+  }
+
+  .panel-body::-webkit-scrollbar { width: 4px; }
+  .panel-body::-webkit-scrollbar-track { background: var(--surface); }
+  .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* LIST ITEMS */
+  .list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid #1a2530;
+    transition: background 0.2s;
+  }
+
+  .list-item:hover { background: var(--surface2); }
+
+  .list-item .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .status-dot.hot { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .status-dot.warm { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
+  .status-dot.new { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .status-dot.won { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.pending { background: var(--orange); }
+  .status-dot.overdue { background: var(--red); animation: pulse 1.5s infinite; }
+  .status-dot.paid { background: var(--green); }
+
+  .list-content { flex: 1; min-width: 0; }
+
+  .list-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .list-detail {
+    font-size: 11px;
+    color: var(--text2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .list-amount {
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    margin-left: 12px;
+    white-space: nowrap;
+  }
+
+  .list-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+  }
+
+  .tag-hot { background: rgba(231,76,60,0.2); color: var(--red); }
+  .tag-warm { background: rgba(243,156,18,0.2); color: var(--orange); }
+  .tag-new { background: rgba(52,152,219,0.2); color: var(--blue); }
+  .tag-won { background: rgba(46,204,113,0.2); color: var(--green); }
+  .tag-sent { background: rgba(243,156,18,0.2); color: var(--orange); }
+  .tag-draft { background: rgba(136,153,170,0.15); color: var(--text2); }
+  .tag-overdue { background: rgba(231,76,60,0.2); color: var(--red); }
+  .tag-paid { background: rgba(46,204,113,0.2); color: var(--green); }
+  .tag-due { background: rgba(52,152,219,0.2); color: var(--blue); }
+
+  /* PANEL POSITIONS */
+  .goals-panel { grid-column: 1 / 3; }
+  .leads-panel { grid-column: 3 / 5; }
+  .estimates-panel { grid-column: 1 / 3; }
+  .debt-panel { grid-column: 3 / 5; }
+
+  /* GOAL BAR */
+  .goal-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1a2530;
+  }
+
+  .goal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .goal-label {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .goal-numbers {
+    font-family: 'Oswald', sans-serif;
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  .goal-numbers span { color: var(--accent); font-weight: 600; }
+
+  .goal-bar {
+    height: 6px;
+    background: #1a2530;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .goal-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  .fill-green { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+  .fill-gold { background: linear-gradient(90deg, #d4911c, #e8a020); }
+  .fill-blue { background: linear-gradient(90deg, #2980b9, #3498db); }
+  .fill-red { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text2);
+    font-size: 13px;
+  }
+
+  /* ERROR BANNER */
+  .error-banner {
+    background: rgba(231,76,60,0.15);
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 8px 20px;
+    font-size: 12px;
+    text-align: center;
+    display: none;
+  }
+
+  .error-banner.visible { display: block; }
+
+  /* RESPONSIVE FOR TV */
+  @media (min-width: 1920px) {
+    .kpi-value { font-size: 44px; }
+    .list-name { font-size: 15px; }
+    .list-amount { font-size: 18px; }
+    .company-name { font-size: 30px; }
+    .clock { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="logo-icon">K</div>
+    <h1>KING IRON WORKS</h1>
+    <div class="gate-sub">Shop Dashboard</div>
+    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="off" />
+    <button id="unlockBtn">UNLOCK</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading" class="hidden">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading Dashboard...</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="app" style="display:none">
+
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo-icon">K</div>
+      <div>
+        <div class="company-name">King Iron Works</div>
+        <div class="company-sub">Shop Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div>
+        <div class="date-display" id="dateDisplay"></div>
+        <div class="refresh-indicator">
+          <div class="refresh-dot" id="refreshDot"></div>
+          <span id="refreshTime">Loading...</span>
+        </div>
+      </div>
+      <div class="clock" id="clock"></div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">Unable to fetch latest data. Showing cached data. Will retry automatically.</div>
+
+  <div class="dashboard">
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card gold">
+        <div class="kpi-label">Monthly Revenue</div>
+        <div class="kpi-value" id="kpiRevenue">--</div>
+        <div class="kpi-sub" id="kpiRevenueSub">Loading...</div>
+      </div>
+      <div class="kpi-card blue">
+        <div class="kpi-label">Active Leads</div>
+        <div class="kpi-value" id="kpiLeads">--</div>
+        <div class="kpi-sub" id="kpiLeadsSub">Loading...</div>
+      </div>
+      <div class="kpi-card orange">
+        <div class="kpi-label">Pending Estimates</div>
+        <div class="kpi-value" id="kpiEstimates">--</div>
+        <div class="kpi-sub" id="kpiEstimatesSub">Loading...</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Jobs Won This Month</div>
+        <div class="kpi-value" id="kpiWon">--</div>
+        <div class="kpi-sub" id="kpiWonSub">Loading...</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Outstanding Debt</div>
+        <div class="kpi-value" id="kpiDebt">--</div>
+        <div class="kpi-sub" id="kpiDebtSub">Loading...</div>
+      </div>
+      <div class="kpi-card gold">
+        <div class="kpi-label">Jobs in Fabrication</div>
+        <div class="kpi-value" id="kpiFab">--</div>
+        <div class="kpi-sub" id="kpiFabSub">In shop now</div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="panel goals-panel">
+      <div class="panel-header">
+        <div class="panel-title">Monthly Goals</div>
+        <div class="panel-badge" id="goalsBadge">--</div>
+      </div>
+      <div class="panel-body" id="goalsBody"></div>
+    </div>
+
+    <!-- LEADS -->
+    <div class="panel leads-panel">
+      <div class="panel-header">
+        <div class="panel-title">Active Leads</div>
+        <div class="panel-badge" id="leadsBadge">0</div>
+      </div>
+      <div class="panel-body" id="leadsBody"></div>
+    </div>
+
+    <!-- ESTIMATES -->
+    <div class="panel estimates-panel">
+      <div class="panel-header">
+        <div class="panel-title">Pending Estimates</div>
+        <div class="panel-badge" id="estimatesBadge">0</div>
+      </div>
+      <div class="panel-body" id="estimatesBody"></div>
+    </div>
+
+    <!-- DEBT -->
+    <div class="panel debt-panel">
+      <div class="panel-header">
+        <div class="panel-title">Outstanding / Accounts Receivable</div>
+        <div class="panel-badge" id="debtBadge">$0</div>
+      </div>
+      <div class="panel-body" id="debtBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───
+const SHEET_ID = '16pUWiwHVatSToqhwFakhGj9y--QzCjxX0PM3kh8CZpE';
+const PASSWORD_HASH = 'kings2026';
+const REFRESH_MS = 120000; // 2 minutes
+
+// ─── STATUS CONFIG ───
+const STATUS_MAP = {
+  hot:     { dot: 'hot',     tag: 'tag-hot',     label: 'Hot' },
+  warm:    { dot: 'warm',    tag: 'tag-warm',    label: 'Warm' },
+  new:     { dot: 'new',     tag: 'tag-new',     label: 'New' },
+  won:     { dot: 'won',     tag: 'tag-won',     label: 'Won' },
+  sent:    { dot: 'warm',    tag: 'tag-sent',    label: 'Sent' },
+  draft:   { dot: 'new',     tag: 'tag-draft',   label: 'Draft' },
+  overdue: { dot: 'overdue', tag: 'tag-overdue', label: 'Overdue' },
+  paid:    { dot: 'paid',    tag: 'tag-paid',    label: 'Paid' },
+  due:     { dot: 'pending', tag: 'tag-due',     label: 'Due Soon' },
+  'due soon': { dot: 'pending', tag: 'tag-due',  label: 'Due Soon' },
+};
+
+// ─── HELPERS ───
+function $(id) { return document.getElementById(id); }
+
+function shortMoney(val) {
+  const n = Number(val) || 0;
+  if (n >= 1000) return '$' + Math.round(n / 1000) + 'K';
+  return '$' + n;
+}
+
+function fullMoney(val) {
+  const n = Number(val) || 0;
+  return '$' + n.toLocaleString('en-US');
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function getGoalFill(pct) {
+  if (pct >= 90) return 'fill-green';
+  if (pct >= 70) return 'fill-gold';
+  if (pct >= 50) return 'fill-blue';
+  return 'fill-red';
+}
+
+function formatGoalValue(goal, val) {
+  const g = (goal || '').toLowerCase();
+  if (g.includes('revenue')) return fullMoney(val);
+  if (g.includes('close rate')) return val + '%';
+  return val;
+}
+
+// ─── PASSWORD GATE ───
+function initGate() {
+  if (sessionStorage.getItem('kiw_dash_auth') === 'true') {
+    $('gate').classList.add('hidden');
+    $('loading').classList.remove('hidden');
+    loadDashboard();
+    return;
+  }
+
+  $('passwordInput').focus();
+
+  function tryUnlock() {
+    const val = $('passwordInput').value;
+    if (val === PASSWORD_HASH) {
+      sessionStorage.setItem('kiw_dash_auth', 'true');
+      $('gate').classList.add('hidden');
+      $('loading').classList.remove('hidden');
+      loadDashboard();
+    } else {
+      $('gateError').textContent = 'Incorrect password';
+      $('passwordInput').value = '';
+      $('passwordInput').focus();
+    }
+  }
+
+  $('unlockBtn').addEventListener('click', tryUnlock);
+  $('passwordInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') tryUnlock();
+  });
+}
+
+// ─── FETCH GOOGLE SHEET TAB ───
+async function fetchTab(tabName) {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tabName)}`;
+  const res = await fetch(url);
+  const text = await res.text();
+
+  // Strip JSONP wrapper: google.visualization.Query.setResponse({...})
+  const match = text.match(/setResponse\(([\s\S]*)\)\s*;?\s*$/);
+  if (!match) throw new Error('Invalid response for tab: ' + tabName);
+
+  const data = JSON.parse(match[1]);
+  const cols = data.table.cols.map(c => (c.label || '').trim().toLowerCase());
+  const rows = [];
+
+  for (const row of (data.table.rows || [])) {
+    const obj = {};
+    let hasData = false;
+    (row.c || []).forEach((cell, i) => {
+      let val = cell ? cell.v : null;
+      if (val !== null && val !== undefined && val !== '') hasData = true;
+      obj[cols[i] || ('col' + i)] = val !== null && val !== undefined ? val : '';
+    });
+    if (hasData) rows.push(obj);
+  }
+
+  return rows;
+}
+
+// ─── RENDER KPIs ───
+function renderKPIs(rows) {
+  const kpi = {};
+  rows.forEach(r => { kpi[(r.metric || '').toLowerCase()] = Number(r.value) || 0; });
+
+  $('kpiRevenue').textContent = shortMoney(kpi.revenue);
+  $('kpiRevenueSub').textContent = 'Target: ' + shortMoney(kpi.revenue_goal);
+  $('kpiLeads').textContent = kpi.active_leads || 0;
+  $('kpiLeadsSub').textContent = (kpi.hot_leads || 0) + ' hot leads';
+  $('kpiEstimates').textContent = kpi.pending_estimates || 0;
+  $('kpiEstimatesSub').textContent = shortMoney(kpi.estimates_total) + ' total';
+  $('kpiWon').textContent = kpi.jobs_won || 0;
+  $('kpiWonSub').textContent = shortMoney(kpi.jobs_won_amount) + ' booked';
+  $('kpiDebt').textContent = shortMoney(kpi.outstanding_debt);
+  $('kpiDebtSub').textContent = (kpi.overdue_count || 0) + ' overdue';
+  $('kpiFab').textContent = kpi.jobs_fabrication || 0;
+}
+
+// ─── RENDER GOALS ───
+function renderGoals(rows) {
+  const now = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  $('goalsBadge').textContent = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+
+  if (!rows.length) {
+    $('goalsBody').innerHTML = '<div class="empty-state">No goals set yet</div>';
+    return;
+  }
+
+  $('goalsBody').innerHTML = rows.map(g => {
+    const current = Number(g.current) || 0;
+    const target = Number(g.target) || 1;
+    const pct = Math.min(100, Math.round((current / target) * 100));
+    const fillClass = getGoalFill(pct);
+    const currentDisplay = formatGoalValue(g.goal, current);
+    const targetDisplay = formatGoalValue(g.goal, target);
+
+    return `
+      <div class="goal-item">
+        <div class="goal-top">
+          <div class="goal-label">${escapeHtml(g.goal)}</div>
+          <div class="goal-numbers"><span>${currentDisplay}</span> / ${targetDisplay}</div>
+        </div>
+        <div class="goal-bar"><div class="goal-fill ${fillClass}" style="width:${pct}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── RENDER LIST (Leads / Estimates / Debt) ───
+function renderList(bodyId, badgeId, rows, type) {
+  const body = $(bodyId);
+  const badge = $(badgeId);
+
+  if (!rows.length) {
+    body.innerHTML = '<div class="empty-state">No items yet — add rows in the Google Sheet</div>';
+    badge.textContent = type === 'debt' ? '$0' : '0';
+    return;
+  }
+
+  // Badge
+  if (type === 'debt') {
+    const total = rows.filter(r => {
+      const s = (r.status || '').toLowerCase();
+      return s !== 'paid';
+    }).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    badge.textContent = shortMoney(total);
+  } else {
+    badge.textContent = rows.length;
+  }
+
+  // Items
+  body.innerHTML = rows.map(item => {
+    const status = (item.status || 'new').toLowerCase().trim();
+    const cfg = STATUS_MAP[status] || STATUS_MAP.new;
+    const amount = Number(item.amount) || 0;
+    const isOverdue = status === 'overdue';
+    const isPaid = status === 'paid';
+    const amountStyle = isOverdue ? ' style="color:var(--red)"' : (isPaid ? ' style="color:var(--green)"' : '');
+
+    return `
+      <div class="list-item">
+        <div class="status-dot ${cfg.dot}"></div>
+        <div class="list-content">
+          <div class="list-name">${escapeHtml(item.name)}</div>
+          <div class="list-detail">${escapeHtml(item.detail)}</div>
+        </div>
+        <div class="list-amount"${amountStyle}>${fullMoney(amount)}</div>
+        <div class="list-tag ${cfg.tag}">${cfg.label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── FETCH ALL DATA ───
+async function fetchAllData() {
+  $('refreshDot').classList.add('refreshing');
+
+  try {
+    const [kpis, goals, leads, estimates, debt] = await Promise.all([
+      fetchTab('KPIs'),
+      fetchTab('Goals'),
+      fetchTab('Leads'),
+      fetchTab('Estimates'),
+      fetchTab('Debt'),
+    ]);
+
+    renderKPIs(kpis);
+    renderGoals(goals);
+    renderList('leadsBody', 'leadsBadge', leads, 'leads');
+    renderList('estimatesBody', 'estimatesBadge', estimates, 'estimates');
+    renderList('debtBody', 'debtBadge', debt, 'debt');
+
+    $('errorBanner').classList.remove('visible');
+
+    const now = new Date();
+    const h = now.getHours() % 12 || 12;
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+    $('refreshTime').textContent = 'Updated ' + h + ':' + m + ' ' + ampm;
+  } catch (err) {
+    console.error('Fetch error:', err);
+    $('errorBanner').classList.add('visible');
+    $('refreshTime').textContent = 'Retry in 2 min';
+  }
+
+  $('refreshDot').classList.remove('refreshing');
+}
+
+// ─── CLOCK ───
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const ampm = now.getHours() >= 12 ? 'PM' : 'AM';
+  $('clock').textContent = h + ':' + m + ' ' + ampm;
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  $('dateDisplay').textContent = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+}
+
+// ─── INIT DASHBOARD ───
+async function loadDashboard() {
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  await fetchAllData();
+
+  $('loading').classList.add('hidden');
+  $('app').style.display = '';
+
+  // Auto-refresh every 2 minutes
+  setInterval(fetchAllData, REFRESH_MS);
+}
+
+// ─── START ───
+initGate();
+</script>
+</body>
+</html>
