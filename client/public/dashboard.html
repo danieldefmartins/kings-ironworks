@@ -16,6 +16,7 @@
     --red: #e74c3c;
     --orange: #f39c12;
     --blue: #3498db;
+    --purple: #9b59b6;
     --text: #e8e8e8;
     --text2: #8899aa;
     --border: #253040;
@@ -244,9 +245,9 @@
   .dashboard {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    grid-template-rows: auto 1fr 1fr;
-    gap: 16px;
-    padding: 16px 20px;
+    grid-template-rows: auto auto 1fr 1fr;
+    gap: 12px;
+    padding: 12px 20px;
     height: calc(100vh - 70px);
   }
 
@@ -255,14 +256,14 @@
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
+    gap: 10px;
   }
 
   .kpi-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 14px 16px;
+    padding: 12px 14px;
     position: relative;
     overflow: hidden;
   }
@@ -281,16 +282,16 @@
   .kpi-card.orange::before { background: var(--orange); }
 
   .kpi-label {
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     color: var(--text2);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
 
   .kpi-value {
     font-family: 'Oswald', sans-serif;
-    font-size: 36px;
+    font-size: 32px;
     font-weight: 600;
     line-height: 1;
   }
@@ -302,9 +303,65 @@
   .kpi-card.orange .kpi-value { color: var(--orange); }
 
   .kpi-sub {
-    font-size: 11px;
+    font-size: 10px;
     color: var(--text2);
-    margin-top: 4px;
+    margin-top: 3px;
+  }
+
+  /* PIPELINE ROW */
+  .pipeline-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+
+  .pipeline-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pipeline-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .pipeline-card.pending::before { background: var(--orange); }
+  .pipeline-card.approved::before { background: var(--green); }
+  .pipeline-card.in-progress::before { background: var(--blue); }
+  .pipeline-card.fabrication::before { background: var(--purple); }
+  .pipeline-card.completed::before { background: var(--accent); }
+
+  .pipeline-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text2);
+    margin-bottom: 2px;
+  }
+
+  .pipeline-value {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  .pipeline-card.pending .pipeline-value { color: var(--orange); }
+  .pipeline-card.approved .pipeline-value { color: var(--green); }
+  .pipeline-card.in-progress .pipeline-value { color: var(--blue); }
+  .pipeline-card.fabrication .pipeline-value { color: var(--purple); }
+  .pipeline-card.completed .pipeline-value { color: var(--accent); }
+
+  .pipeline-sub {
+    font-size: 9px;
+    color: var(--text2);
   }
 
   /* PANELS */
@@ -321,14 +378,14 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 16px;
+    padding: 8px 14px;
     background: var(--surface2);
     border-bottom: 1px solid var(--border);
   }
 
   .panel-title {
     font-family: 'Oswald', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -339,7 +396,7 @@
     background: var(--accent);
     color: var(--bg);
     font-family: 'Oswald', sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     padding: 2px 10px;
     border-radius: 4px;
@@ -348,7 +405,7 @@
   .panel-body {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 0;
+    padding: 4px 0;
   }
 
   .panel-body::-webkit-scrollbar { width: 4px; }
@@ -359,7 +416,7 @@
   .list-item {
     display: flex;
     align-items: center;
-    padding: 8px 16px;
+    padding: 6px 14px;
     border-bottom: 1px solid #1a2530;
     transition: background 0.2s;
   }
@@ -369,7 +426,7 @@
   .list-item .status-dot {
     width: 8px; height: 8px;
     border-radius: 50%;
-    margin-right: 12px;
+    margin-right: 10px;
     flex-shrink: 0;
   }
 
@@ -401,17 +458,17 @@
 
   .list-amount {
     font-family: 'Oswald', sans-serif;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 500;
-    margin-left: 12px;
+    margin-left: 10px;
     white-space: nowrap;
   }
 
   .list-tag {
-    font-size: 10px;
-    padding: 2px 8px;
+    font-size: 9px;
+    padding: 2px 7px;
     border-radius: 3px;
-    margin-left: 10px;
+    margin-left: 8px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -436,7 +493,7 @@
 
   /* GOAL BAR */
   .goal-item {
-    padding: 10px 16px;
+    padding: 8px 14px;
     border-bottom: 1px solid #1a2530;
   }
 
@@ -444,7 +501,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
   }
 
   .goal-label {
@@ -454,14 +511,14 @@
 
   .goal-numbers {
     font-family: 'Oswald', sans-serif;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--text2);
   }
 
   .goal-numbers span { color: var(--accent); font-weight: 600; }
 
   .goal-bar {
-    height: 6px;
+    height: 5px;
     background: #1a2530;
     border-radius: 3px;
     overflow: hidden;
@@ -481,7 +538,7 @@
   /* EMPTY STATE */
   .empty-state {
     text-align: center;
-    padding: 24px 16px;
+    padding: 20px 14px;
     color: var(--text2);
     font-size: 13px;
   }
@@ -491,7 +548,7 @@
     background: rgba(231,76,60,0.15);
     border: 1px solid var(--red);
     color: var(--red);
-    padding: 8px 20px;
+    padding: 6px 20px;
     font-size: 12px;
     text-align: center;
     display: none;
@@ -501,9 +558,10 @@
 
   /* RESPONSIVE FOR TV */
   @media (min-width: 1920px) {
-    .kpi-value { font-size: 44px; }
+    .kpi-value { font-size: 40px; }
+    .pipeline-value { font-size: 24px; }
     .list-name { font-size: 15px; }
-    .list-amount { font-size: 18px; }
+    .list-amount { font-size: 17px; }
     .company-name { font-size: 30px; }
     .clock { font-size: 34px; }
   }
@@ -558,7 +616,7 @@
     <!-- KPI ROW -->
     <div class="kpi-row">
       <div class="kpi-card gold">
-        <div class="kpi-label">Monthly Revenue</div>
+        <div class="kpi-label">Revenue</div>
         <div class="kpi-value" id="kpiRevenue">--</div>
         <div class="kpi-sub" id="kpiRevenueSub">Loading...</div>
       </div>
@@ -568,14 +626,14 @@
         <div class="kpi-sub" id="kpiLeadsSub">Loading...</div>
       </div>
       <div class="kpi-card orange">
-        <div class="kpi-label">Pending Estimates</div>
+        <div class="kpi-label">Estimates Sent</div>
         <div class="kpi-value" id="kpiEstimates">--</div>
         <div class="kpi-sub" id="kpiEstimatesSub">Loading...</div>
       </div>
       <div class="kpi-card green">
-        <div class="kpi-label">Jobs Won This Month</div>
-        <div class="kpi-value" id="kpiWon">--</div>
-        <div class="kpi-sub" id="kpiWonSub">Loading...</div>
+        <div class="kpi-label">Approved Projects</div>
+        <div class="kpi-value" id="kpiApproved">--</div>
+        <div class="kpi-sub" id="kpiApprovedSub">Loading...</div>
       </div>
       <div class="kpi-card red">
         <div class="kpi-label">Outstanding Debt</div>
@@ -583,16 +641,40 @@
         <div class="kpi-sub" id="kpiDebtSub">Loading...</div>
       </div>
       <div class="kpi-card gold">
-        <div class="kpi-label">Jobs in Fabrication</div>
+        <div class="kpi-label">In Fabrication</div>
         <div class="kpi-value" id="kpiFab">--</div>
-        <div class="kpi-sub" id="kpiFabSub">In shop now</div>
+        <div class="kpi-sub" id="kpiFabSub">Loading...</div>
+      </div>
+    </div>
+
+    <!-- PROJECT PIPELINE -->
+    <div class="pipeline-row">
+      <div class="pipeline-card pending">
+        <div class="pipeline-label">Pending</div>
+        <div class="pipeline-value" id="pipePending">--</div>
+      </div>
+      <div class="pipeline-card approved">
+        <div class="pipeline-label">Approved</div>
+        <div class="pipeline-value" id="pipeApproved">--</div>
+      </div>
+      <div class="pipeline-card in-progress">
+        <div class="pipeline-label">In Progress</div>
+        <div class="pipeline-value" id="pipeInProgress">--</div>
+      </div>
+      <div class="pipeline-card fabrication">
+        <div class="pipeline-label">Fabrication</div>
+        <div class="pipeline-value" id="pipeFabrication">--</div>
+      </div>
+      <div class="pipeline-card completed">
+        <div class="pipeline-label">Completed</div>
+        <div class="pipeline-value" id="pipeCompleted">--</div>
       </div>
     </div>
 
     <!-- GOALS -->
     <div class="panel goals-panel">
       <div class="panel-header">
-        <div class="panel-title">Monthly Goals</div>
+        <div class="panel-title">Goals</div>
         <div class="panel-badge" id="goalsBadge">--</div>
       </div>
       <div class="panel-body" id="goalsBody"></div>
@@ -645,19 +727,38 @@ const STATUS_MAP = {
   paid:    { dot: 'paid',    tag: 'tag-paid',    label: 'Paid' },
   due:     { dot: 'pending', tag: 'tag-due',     label: 'Due Soon' },
   'due soon': { dot: 'pending', tag: 'tag-due',  label: 'Due Soon' },
+  approved:   { dot: 'won',  tag: 'tag-won',     label: 'Approved' },
+  rejected:   { dot: 'overdue', tag: 'tag-overdue', label: 'Rejected' },
+  'in progress': { dot: 'new', tag: 'tag-new',   label: 'In Progress' },
+  completed:  { dot: 'paid', tag: 'tag-paid',    label: 'Completed' },
 };
 
 // ─── HELPERS ───
 function $(id) { return document.getElementById(id); }
 
+// Parse values like "$45,200", "36%", "12" → number
+function parseVal(val) {
+  if (val === null || val === undefined || val === '') return 0;
+  if (typeof val === 'number') return val;
+  const str = String(val).replace(/[$,%]/g, '').replace(/,/g, '').trim();
+  return Number(str) || 0;
+}
+
+// Keep original string format for display
+function rawStr(val) {
+  if (val === null || val === undefined) return '';
+  return String(val).trim();
+}
+
 function shortMoney(val) {
-  const n = Number(val) || 0;
+  const n = typeof val === 'number' ? val : parseVal(val);
+  if (n >= 1000000) return '$' + (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (n >= 1000) return '$' + Math.round(n / 1000) + 'K';
   return '$' + n;
 }
 
 function fullMoney(val) {
-  const n = Number(val) || 0;
+  const n = typeof val === 'number' ? val : parseVal(val);
   return '$' + n.toLocaleString('en-US');
 }
 
@@ -674,11 +775,12 @@ function getGoalFill(pct) {
   return 'fill-red';
 }
 
-function formatGoalValue(goal, val) {
-  const g = (goal || '').toLowerCase();
-  if (g.includes('revenue')) return fullMoney(val);
-  if (g.includes('close rate')) return val + '%';
-  return val;
+// Auto-detect display format from the raw value string
+function formatGoalDisplay(rawValue, numValue) {
+  const s = rawStr(rawValue);
+  if (s.includes('$')) return shortMoney(numValue);
+  if (s.includes('%')) return numValue + '%';
+  return numValue.toLocaleString('en-US');
 }
 
 // ─── PASSWORD GATE ───
@@ -718,7 +820,6 @@ async function fetchTab(tabName) {
   const res = await fetch(url);
   const text = await res.text();
 
-  // Strip JSONP wrapper: google.visualization.Query.setResponse({...})
   const match = text.match(/setResponse\(([\s\S]*)\)\s*;?\s*$/);
   if (!match) throw new Error('Invalid response for tab: ' + tabName);
 
@@ -728,13 +829,21 @@ async function fetchTab(tabName) {
 
   for (const row of (data.table.rows || [])) {
     const obj = {};
+    const objRaw = {};
     let hasData = false;
     (row.c || []).forEach((cell, i) => {
+      const key = cols[i] || ('col' + i);
       let val = cell ? cell.v : null;
+      let fval = cell ? (cell.f || cell.v) : null;
       if (val !== null && val !== undefined && val !== '') hasData = true;
-      obj[cols[i] || ('col' + i)] = val !== null && val !== undefined ? val : '';
+      obj[key] = val !== null && val !== undefined ? val : '';
+      objRaw[key + '_raw'] = fval !== null && fval !== undefined ? fval : '';
     });
-    if (hasData) rows.push(obj);
+    if (hasData) {
+      // Merge raw values into the same object
+      Object.assign(obj, objRaw);
+      rows.push(obj);
+    }
   }
 
   return rows;
@@ -742,20 +851,46 @@ async function fetchTab(tabName) {
 
 // ─── RENDER KPIs ───
 function renderKPIs(rows) {
+  // Build lookup: metric name (lowercase, trimmed) → value
   const kpi = {};
-  rows.forEach(r => { kpi[(r.metric || '').toLowerCase()] = Number(r.value) || 0; });
+  const kpiRaw = {};
+  rows.forEach(r => {
+    const key = String(r.metric || '').toLowerCase().trim();
+    kpi[key] = parseVal(r.value);
+    kpiRaw[key] = rawStr(r.value_raw || r.value);
+  });
 
-  $('kpiRevenue').textContent = shortMoney(kpi.revenue);
-  $('kpiRevenueSub').textContent = 'Target: ' + shortMoney(kpi.revenue_goal);
+  // Revenue
+  $('kpiRevenue').textContent = shortMoney(kpi.revenue_actual || 0);
+  $('kpiRevenueSub').textContent = 'Goal: ' + shortMoney(kpi.revenue_goal || 0);
+
+  // Active Leads
   $('kpiLeads').textContent = kpi.active_leads || 0;
   $('kpiLeadsSub').textContent = (kpi.hot_leads || 0) + ' hot leads';
-  $('kpiEstimates').textContent = kpi.pending_estimates || 0;
-  $('kpiEstimatesSub').textContent = shortMoney(kpi.estimates_total) + ' total';
-  $('kpiWon').textContent = kpi.jobs_won || 0;
-  $('kpiWonSub').textContent = shortMoney(kpi.jobs_won_amount) + ' booked';
-  $('kpiDebt').textContent = shortMoney(kpi.outstanding_debt);
+
+  // Estimates Sent
+  $('kpiEstimates').textContent = shortMoney(kpi.total_estimates_sent || 0);
+  $('kpiEstimatesSub').textContent = 'Total sent value';
+
+  // Approved Projects
+  $('kpiApproved').textContent = shortMoney(kpi.approved_projects || 0);
+  $('kpiApprovedSub').textContent = 'Approved value';
+
+  // Outstanding Debt
+  $('kpiDebt').textContent = shortMoney(kpi.outstanding_debt || 0);
   $('kpiDebtSub').textContent = (kpi.overdue_count || 0) + ' overdue';
-  $('kpiFab').textContent = kpi.jobs_fabrication || 0;
+
+  // In Fabrication
+  $('kpiFab').textContent = kpi.projects_under_fabrication || 0;
+  const late = kpi.projects_late_to_start || 0;
+  $('kpiFabSub').textContent = late > 0 ? late + ' late to start' : 'On schedule';
+
+  // Pipeline cards
+  $('pipePending').textContent = shortMoney(kpi.pending_projects || 0);
+  $('pipeApproved').textContent = shortMoney(kpi.approved_projects || 0);
+  $('pipeInProgress').textContent = shortMoney(kpi.in_progress_projects || 0);
+  $('pipeFabrication').textContent = kpi.projects_under_fabrication || 0;
+  $('pipeCompleted').textContent = shortMoney(kpi.completed_projects || 0);
 }
 
 // ─── RENDER GOALS ───
@@ -770,12 +905,14 @@ function renderGoals(rows) {
   }
 
   $('goalsBody').innerHTML = rows.map(g => {
-    const current = Number(g.current) || 0;
-    const target = Number(g.target) || 1;
-    const pct = Math.min(100, Math.round((current / target) * 100));
+    const currentNum = parseVal(g.current);
+    const targetNum = parseVal(g.target) || 1;
+    const pct = Math.min(100, Math.round((currentNum / targetNum) * 100));
     const fillClass = getGoalFill(pct);
-    const currentDisplay = formatGoalValue(g.goal, current);
-    const targetDisplay = formatGoalValue(g.goal, target);
+
+    // Use raw values to detect format ($ or %)
+    const currentDisplay = formatGoalDisplay(g.current_raw || g.current, currentNum);
+    const targetDisplay = formatGoalDisplay(g.target_raw || g.target, targetNum);
 
     return `
       <div class="goal-item">
@@ -803,9 +940,9 @@ function renderList(bodyId, badgeId, rows, type) {
   // Badge
   if (type === 'debt') {
     const total = rows.filter(r => {
-      const s = (r.status || '').toLowerCase();
+      const s = (r.status || '').toLowerCase().trim();
       return s !== 'paid';
-    }).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    }).reduce((sum, r) => sum + parseVal(r.amount), 0);
     badge.textContent = shortMoney(total);
   } else {
     badge.textContent = rows.length;
@@ -815,17 +952,27 @@ function renderList(bodyId, badgeId, rows, type) {
   body.innerHTML = rows.map(item => {
     const status = (item.status || 'new').toLowerCase().trim();
     const cfg = STATUS_MAP[status] || STATUS_MAP.new;
-    const amount = Number(item.amount) || 0;
+    const amount = parseVal(item.amount);
     const isOverdue = status === 'overdue';
     const isPaid = status === 'paid';
     const amountStyle = isOverdue ? ' style="color:var(--red)"' : (isPaid ? ' style="color:var(--green)"' : '');
+
+    // Build detail line — for debt, include debtor and interest if present
+    let detailText = escapeHtml(item.detail || '');
+    if (type === 'debt') {
+      const parts = [];
+      if (item.detail) parts.push(item.detail);
+      if (item.debtor) parts.push('Debtor: ' + item.debtor);
+      if (item.interest) parts.push('Interest: ' + item.interest);
+      detailText = escapeHtml(parts.join(' — '));
+    }
 
     return `
       <div class="list-item">
         <div class="status-dot ${cfg.dot}"></div>
         <div class="list-content">
           <div class="list-name">${escapeHtml(item.name)}</div>
-          <div class="list-detail">${escapeHtml(item.detail)}</div>
+          <div class="list-detail">${detailText}</div>
         </div>
         <div class="list-amount"${amountStyle}>${fullMoney(amount)}</div>
         <div class="list-tag ${cfg.tag}">${cfg.label}</div>
