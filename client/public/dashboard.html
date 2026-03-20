@@ -244,7 +244,7 @@
   /* MAIN GRID */
   .dashboard {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-columns: repeat(6, 1fr);
     grid-template-rows: auto auto 1fr 1fr;
     gap: 12px;
     padding: 12px 20px;
@@ -488,8 +488,9 @@
   /* PANEL POSITIONS */
   .goals-panel { grid-column: 1 / 3; }
   .leads-panel { grid-column: 3 / 5; }
-  .estimates-panel { grid-column: 1 / 3; }
-  .debt-panel { grid-column: 3 / 5; }
+  .balance-panel { grid-column: 5 / 7; }
+  .estimates-panel { grid-column: 1 / 4; }
+  .debt-panel { grid-column: 4 / 7; }
 
   /* GOAL BAR */
   .goal-item {
@@ -689,6 +690,15 @@
       <div class="panel-body" id="leadsBody"></div>
     </div>
 
+    <!-- OUTSTANDING BALANCE -->
+    <div class="panel balance-panel">
+      <div class="panel-header">
+        <div class="panel-title">Outstanding Balance</div>
+        <div class="panel-badge" id="balanceBadge">$0</div>
+      </div>
+      <div class="panel-body" id="balanceBody"></div>
+    </div>
+
     <!-- ESTIMATES -->
     <div class="panel estimates-panel">
       <div class="panel-header">
@@ -732,6 +742,20 @@ const STATUS_MAP = {
   'in progress': { dot: 'new', tag: 'tag-new',   label: 'In Progress' },
   completed:  { dot: 'paid', tag: 'tag-paid',    label: 'Completed' },
 };
+
+// Late-status detector for Outstanding Balance entries (e.g. "300+ days late", "5-10 days late")
+function getBalanceStatus(statusStr) {
+  const s = (statusStr || '').toLowerCase().trim();
+  if (!s || s === 'paid') return STATUS_MAP.paid || STATUS_MAP.new;
+  // Anything with "late" → color by severity
+  if (s.includes('late')) {
+    const num = parseInt(s) || 0;
+    if (num >= 90) return { dot: 'overdue', tag: 'tag-overdue', label: statusStr.trim() };
+    if (num >= 30) return { dot: 'warm', tag: 'tag-warm', label: statusStr.trim() };
+    return { dot: 'pending', tag: 'tag-due', label: statusStr.trim() };
+  }
+  return STATUS_MAP[s] || STATUS_MAP.new;
+}
 
 // ─── HELPERS ───
 function $(id) { return document.getElementById(id); }
@@ -981,17 +1005,67 @@ function renderList(bodyId, badgeId, rows, type) {
   }).join('');
 }
 
+// ─── RENDER OUTSTANDING BALANCE ───
+function renderBalance(rows) {
+  const body = $('balanceBody');
+  const badge = $('balanceBadge');
+
+  // Filter out TOTAL rows and empty rows
+  const items = rows.filter(r => {
+    const name = String(r.name || '').trim().toUpperCase();
+    return name !== 'TOTAL' && (parseVal(r.amount) > 0);
+  });
+
+  if (!items.length) {
+    body.innerHTML = '<div class="empty-state">No outstanding balances</div>';
+    badge.textContent = '$0';
+    return;
+  }
+
+  const total = items.reduce((sum, r) => sum + parseVal(r.amount), 0);
+  badge.textContent = shortMoney(total);
+
+  body.innerHTML = items.map(item => {
+    const status = (item.status || '').trim();
+    const cfg = getBalanceStatus(status);
+    const amount = parseVal(item.amount);
+    const isLate = status.toLowerCase().includes('late');
+    const amountStyle = isLate ? ' style="color:var(--red)"' : '';
+
+    // Build detail from available fields
+    const parts = [];
+    if (item.date || item['date']) parts.push(item.date || item['date']);
+    if (item.lien) parts.push('Lien: ' + item.lien);
+    const detailText = escapeHtml(parts.join(' — '));
+
+    const displayName = item.name || 'Unnamed Project';
+
+    return `
+      <div class="list-item">
+        <div class="status-dot ${cfg.dot}"></div>
+        <div class="list-content">
+          <div class="list-name">${escapeHtml(displayName)}</div>
+          <div class="list-detail">${detailText}</div>
+        </div>
+        <div class="list-amount"${amountStyle}>${fullMoney(amount)}</div>
+        <div class="list-tag ${cfg.tag}">${escapeHtml(cfg.label)}</div>
+      </div>
+    `;
+  }).join('');
+}
+
 // ─── FETCH ALL DATA ───
 async function fetchAllData() {
   $('refreshDot').classList.add('refreshing');
 
   try {
-    const [kpis, goals, leads, estimates, debt] = await Promise.all([
+    const [kpis, goals, leads, estimates, debt, balance] = await Promise.all([
       fetchTab('KPIs'),
       fetchTab('Goals'),
       fetchTab('Leads'),
       fetchTab('Estimates'),
       fetchTab('Debt'),
+      fetchTab('Outstanding Balance'),
     ]);
 
     renderKPIs(kpis);
@@ -999,6 +1073,7 @@ async function fetchAllData() {
     renderList('leadsBody', 'leadsBadge', leads, 'leads');
     renderList('estimatesBody', 'estimatesBadge', estimates, 'estimates');
     renderList('debtBody', 'debtBadge', debt, 'debt');
+    renderBalance(balance);
 
     $('errorBanner').classList.remove('visible');
 
