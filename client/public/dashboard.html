@@ -28,8 +28,11 @@
     background: var(--bg);
     color: var(--text);
     font-family: 'Source Sans 3', sans-serif;
-    overflow: hidden;
-    height: 100vh;
+  }
+
+  /* Desktop: lock to viewport for TV display */
+  @media (min-width: 769px) {
+    body { overflow: hidden; height: 100vh; }
   }
 
   /* PASSWORD GATE */
@@ -567,6 +570,100 @@
     .list-amount { font-size: 17px; }
     .company-name { font-size: 30px; }
     .clock { font-size: 34px; }
+  }
+
+  /* RESPONSIVE FOR MOBILE */
+  @media (max-width: 768px) {
+    body {
+      overflow-y: auto;
+      height: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Gate */
+    .gate-box {
+      min-width: unset;
+      width: calc(100% - 40px);
+      max-width: 360px;
+      padding: 36px 24px;
+    }
+
+    /* Top bar */
+    .topbar {
+      padding: 10px 16px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .topbar-left { gap: 10px; }
+    .logo-icon { width: 32px; height: 32px; font-size: 16px; }
+    .company-name { font-size: 16px; letter-spacing: 1px; }
+    .company-sub { font-size: 10px; letter-spacing: 1.5px; }
+
+    .topbar-right { gap: 12px; }
+    .clock { font-size: 20px; }
+    .date-display { font-size: 11px; }
+    .refresh-indicator { font-size: 10px; }
+
+    /* Dashboard grid → single column stack */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px 12px 24px;
+      height: auto;
+    }
+
+    /* KPI row → 3x2 grid */
+    .kpi-row {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .kpi-card { padding: 10px 10px; }
+    .kpi-label { font-size: 9px; letter-spacing: 1px; }
+    .kpi-value { font-size: 22px; }
+    .kpi-sub { font-size: 9px; }
+
+    /* Pipeline → 3x2 grid */
+    .pipeline-row {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .pipeline-card { padding: 6px 8px; }
+    .pipeline-label { font-size: 8px; letter-spacing: 1px; }
+    .pipeline-value { font-size: 16px; }
+
+    /* All panels → full width, fixed height with scroll */
+    .panel {
+      grid-column: 1 / -1 !important;
+      min-height: 200px;
+      max-height: 300px;
+    }
+
+    .panel-title { font-size: 12px; letter-spacing: 1.5px; }
+    .panel-badge { font-size: 11px; padding: 2px 8px; }
+
+    /* List items */
+    .list-item { padding: 8px 12px; }
+    .list-name { font-size: 12px; white-space: normal; }
+    .list-detail { font-size: 10px; white-space: normal; }
+    .list-amount { font-size: 14px; margin-left: 8px; }
+    .list-tag { font-size: 8px; padding: 2px 5px; margin-left: 6px; }
+
+    /* Goal items */
+    .goal-item { padding: 8px 12px; }
+    .goal-label { font-size: 12px; }
+    .goal-numbers { font-size: 12px; }
+  }
+
+  /* Small phones */
+  @media (max-width: 380px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .pipeline-row { grid-template-columns: repeat(2, 1fr); }
+    .company-name { font-size: 14px; }
+    .kpi-value { font-size: 20px; }
   }
 </style>
 </head>
