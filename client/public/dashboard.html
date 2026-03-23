@@ -312,7 +312,7 @@
   .pipeline-row {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 8px;
   }
 
@@ -335,6 +335,7 @@
 
   .pipeline-card.pending::before { background: var(--orange); }
   .pipeline-card.approved::before { background: var(--green); }
+  .pipeline-card.rejected::before { background: var(--red); }
   .pipeline-card.in-progress::before { background: var(--blue); }
   .pipeline-card.fabrication::before { background: var(--purple); }
   .pipeline-card.completed::before { background: var(--accent); }
@@ -355,6 +356,7 @@
 
   .pipeline-card.pending .pipeline-value { color: var(--orange); }
   .pipeline-card.approved .pipeline-value { color: var(--green); }
+  .pipeline-card.rejected .pipeline-value { color: var(--red); }
   .pipeline-card.in-progress .pipeline-value { color: var(--blue); }
   .pipeline-card.fabrication .pipeline-value { color: var(--purple); }
   .pipeline-card.completed .pipeline-value { color: var(--accent); }
@@ -487,9 +489,9 @@
 
   /* PANEL POSITIONS */
   .goals-panel { grid-column: 1 / 3; }
-  .leads-panel { grid-column: 3 / 5; }
-  .balance-panel { grid-column: 5 / 7; }
-  .estimates-panel { grid-column: 1 / 4; }
+  .pending-panel { grid-column: 3 / 5; }
+  .active-panel { grid-column: 5 / 7; }
+  .balance-panel { grid-column: 1 / 4; }
   .debt-panel { grid-column: 4 / 7; }
 
   /* GOAL BAR */
@@ -658,6 +660,10 @@
         <div class="pipeline-label">Approved</div>
         <div class="pipeline-value" id="pipeApproved">--</div>
       </div>
+      <div class="pipeline-card rejected">
+        <div class="pipeline-label">Rejected</div>
+        <div class="pipeline-value" id="pipeRejected">--</div>
+      </div>
       <div class="pipeline-card in-progress">
         <div class="pipeline-label">In Progress</div>
         <div class="pipeline-value" id="pipeInProgress">--</div>
@@ -681,13 +687,22 @@
       <div class="panel-body" id="goalsBody"></div>
     </div>
 
-    <!-- LEADS -->
-    <div class="panel leads-panel">
+    <!-- PENDING PROJECTS -->
+    <div class="panel pending-panel">
       <div class="panel-header">
-        <div class="panel-title">Active Leads</div>
-        <div class="panel-badge" id="leadsBadge">0</div>
+        <div class="panel-title">Pending Estimates</div>
+        <div class="panel-badge" id="pendingBadge">0</div>
       </div>
-      <div class="panel-body" id="leadsBody"></div>
+      <div class="panel-body" id="pendingBody"></div>
+    </div>
+
+    <!-- ACTIVE PROJECTS -->
+    <div class="panel active-panel">
+      <div class="panel-header">
+        <div class="panel-title">Active Projects</div>
+        <div class="panel-badge" id="activeBadge">0</div>
+      </div>
+      <div class="panel-body" id="activeBody"></div>
     </div>
 
     <!-- OUTSTANDING BALANCE -->
@@ -697,15 +712,6 @@
         <div class="panel-badge" id="balanceBadge">$0</div>
       </div>
       <div class="panel-body" id="balanceBody"></div>
-    </div>
-
-    <!-- ESTIMATES -->
-    <div class="panel estimates-panel">
-      <div class="panel-header">
-        <div class="panel-title">Pending Estimates</div>
-        <div class="panel-badge" id="estimatesBadge">0</div>
-      </div>
-      <div class="panel-body" id="estimatesBody"></div>
     </div>
 
     <!-- DEBT -->
@@ -912,6 +918,7 @@ function renderKPIs(rows) {
   // Pipeline cards
   $('pipePending').textContent = shortMoney(kpi.pending_projects || 0);
   $('pipeApproved').textContent = shortMoney(kpi.approved_projects || 0);
+  $('pipeRejected').textContent = shortMoney(kpi.rejected_projects || 0);
   $('pipeInProgress').textContent = shortMoney(kpi.in_progress_projects || 0);
   $('pipeFabrication').textContent = kpi.projects_under_fabrication || 0;
   $('pipeCompleted').textContent = shortMoney(kpi.completed_projects || 0);
@@ -950,46 +957,103 @@ function renderGoals(rows) {
   }).join('');
 }
 
-// ─── RENDER LIST (Leads / Estimates / Debt) ───
-function renderList(bodyId, badgeId, rows, type) {
+// ─── RENDER PROJECTS (split from single Projects tab) ───
+function renderProjects(allRows) {
+  // Filter out summary/total rows and rows without names or amounts
+  const projects = allRows.filter(r => {
+    const name = String(r.name || '').trim();
+    if (!name || name.toUpperCase() === 'TOTAL') return false;
+    return parseVal(r.amount) > 0;
+  });
+
+  // Split by status
+  const pending = projects.filter(r => (r.status || '').toLowerCase().trim() === 'pending');
+  const active = projects.filter(r => {
+    const s = (r.status || '').toLowerCase().trim();
+    return s === 'approved' || s === 'in progress' || s === 'completed';
+  });
+
+  // Render Pending Estimates panel
+  renderProjectPanel('pendingBody', 'pendingBadge', pending, true);
+  // Render Active Projects panel
+  renderProjectPanel('activeBody', 'activeBadge', active, false);
+}
+
+function renderProjectPanel(bodyId, badgeId, rows, showMoney) {
   const body = $(bodyId);
   const badge = $(badgeId);
 
   if (!rows.length) {
-    body.innerHTML = '<div class="empty-state">No items yet — add rows in the Google Sheet</div>';
-    badge.textContent = type === 'debt' ? '$0' : '0';
+    body.innerHTML = '<div class="empty-state">No items yet</div>';
+    badge.textContent = showMoney ? '$0' : '0';
     return;
   }
 
-  // Badge
-  if (type === 'debt') {
-    const total = rows.filter(r => {
-      const s = (r.status || '').toLowerCase().trim();
-      return s !== 'paid';
-    }).reduce((sum, r) => sum + parseVal(r.amount), 0);
+  if (showMoney) {
+    const total = rows.reduce((sum, r) => sum + parseVal(r.amount), 0);
     badge.textContent = shortMoney(total);
   } else {
     badge.textContent = rows.length;
   }
 
-  // Items
   body.innerHTML = rows.map(item => {
-    const status = (item.status || 'new').toLowerCase().trim();
+    const status = (item.status || 'pending').toLowerCase().trim();
+    const cfg = STATUS_MAP[status] || STATUS_MAP.new;
+    const amount = parseVal(item.amount);
+    const isCompleted = status === 'completed';
+    const isRejected = status === 'rejected';
+    const amountStyle = isCompleted ? ' style="color:var(--green)"' : (isRejected ? ' style="color:var(--red)"' : '');
+
+    return `
+      <div class="list-item">
+        <div class="status-dot ${cfg.dot}"></div>
+        <div class="list-content">
+          <div class="list-name">${escapeHtml(item.name)}</div>
+          <div class="list-detail">${escapeHtml(item.detail || '')}</div>
+        </div>
+        <div class="list-amount"${amountStyle}>${fullMoney(amount)}</div>
+        <div class="list-tag ${cfg.tag}">${cfg.label}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ─── RENDER DEBT ───
+function renderDebt(rows) {
+  const body = $('debtBody');
+  const badge = $('debtBadge');
+
+  // Filter out empty rows and paid items for total
+  const items = rows.filter(r => {
+    const name = String(r.name || '').trim();
+    return name && name.toUpperCase() !== 'TOTAL' && parseVal(r.amount) > 0;
+  });
+
+  if (!items.length) {
+    body.innerHTML = '<div class="empty-state">No outstanding debt</div>';
+    badge.textContent = '$0';
+    return;
+  }
+
+  const total = items.filter(r => {
+    const s = (r.status || '').toLowerCase().trim();
+    return s !== 'paid';
+  }).reduce((sum, r) => sum + parseVal(r.amount), 0);
+  badge.textContent = shortMoney(total);
+
+  body.innerHTML = items.map(item => {
+    const status = (item.status || 'due').toLowerCase().trim();
     const cfg = STATUS_MAP[status] || STATUS_MAP.new;
     const amount = parseVal(item.amount);
     const isOverdue = status === 'overdue';
     const isPaid = status === 'paid';
     const amountStyle = isOverdue ? ' style="color:var(--red)"' : (isPaid ? ' style="color:var(--green)"' : '');
 
-    // Build detail line — for debt, include debtor and interest if present
-    let detailText = escapeHtml(item.detail || '');
-    if (type === 'debt') {
-      const parts = [];
-      if (item.detail) parts.push(item.detail);
-      if (item.debtor) parts.push('Debtor: ' + item.debtor);
-      if (item.interest) parts.push('Interest: ' + item.interest);
-      detailText = escapeHtml(parts.join(' — '));
-    }
+    const parts = [];
+    if (item.detail) parts.push(item.detail);
+    if (item.debtor) parts.push('Debtor: ' + item.debtor);
+    if (item.interest) parts.push('Interest: ' + item.interest);
+    const detailText = escapeHtml(parts.join(' — '));
 
     return `
       <div class="list-item">
@@ -1010,7 +1074,7 @@ function renderBalance(rows) {
   const body = $('balanceBody');
   const badge = $('balanceBadge');
 
-  // Filter out TOTAL rows and empty rows
+  // Filter out TOTAL rows; keep rows with amounts even if name is empty
   const items = rows.filter(r => {
     const name = String(r.name || '').trim().toUpperCase();
     return name !== 'TOTAL' && (parseVal(r.amount) > 0);
@@ -1038,7 +1102,7 @@ function renderBalance(rows) {
     if (item.lien) parts.push('Lien: ' + item.lien);
     const detailText = escapeHtml(parts.join(' — '));
 
-    const displayName = item.name || 'Unnamed Project';
+    const displayName = item.name || item.detail || 'Outstanding Item';
 
     return `
       <div class="list-item">
@@ -1059,20 +1123,18 @@ async function fetchAllData() {
   $('refreshDot').classList.add('refreshing');
 
   try {
-    const [kpis, goals, leads, estimates, debt, balance] = await Promise.all([
+    const [kpis, goals, projects, debt, balance] = await Promise.all([
       fetchTab('KPIs'),
       fetchTab('Goals'),
-      fetchTab('Leads'),
-      fetchTab('Estimates'),
+      fetchTab('Projects'),
       fetchTab('Debt'),
       fetchTab('Outstanding Balance'),
     ]);
 
     renderKPIs(kpis);
     renderGoals(goals);
-    renderList('leadsBody', 'leadsBadge', leads, 'leads');
-    renderList('estimatesBody', 'estimatesBadge', estimates, 'estimates');
-    renderList('debtBody', 'debtBadge', debt, 'debt');
+    renderProjects(projects);
+    renderDebt(debt);
     renderBalance(balance);
 
     $('errorBanner').classList.remove('visible');
