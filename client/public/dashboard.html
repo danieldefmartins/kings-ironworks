@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>King Iron Works - Shop Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
   :root {
     --bg: #0a0f14;
@@ -249,8 +250,8 @@
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     grid-template-rows: auto auto 1fr 1fr;
-    gap: 12px;
-    padding: 12px 20px;
+    gap: 10px;
+    padding: 10px 20px;
     height: calc(100vh - 70px);
   }
 
@@ -311,62 +312,103 @@
     margin-top: 3px;
   }
 
-  /* PIPELINE ROW */
-  .pipeline-row {
+  /* CHARTS ROW */
+  .charts-row {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
   }
 
-  .pipeline-card {
+  .chart-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 8px 12px;
-    text-align: center;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
     position: relative;
     overflow: hidden;
   }
 
-  .pipeline-card::before {
-    content: '';
+  .chart-canvas-wrap {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .chart-canvas-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .chart-center-label {
     position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
   }
 
-  .pipeline-card.pending::before { background: var(--orange); }
-  .pipeline-card.approved::before { background: var(--green); }
-  .pipeline-card.rejected::before { background: var(--red); }
-  .pipeline-card.in-progress::before { background: var(--blue); }
-  .pipeline-card.fabrication::before { background: var(--purple); }
-  .pipeline-card.completed::before { background: var(--accent); }
-
-  .pipeline-label {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--text2);
-    margin-bottom: 2px;
-  }
-
-  .pipeline-value {
+  .chart-center-value {
     font-family: 'Oswald', sans-serif;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
+    line-height: 1;
   }
 
-  .pipeline-card.pending .pipeline-value { color: var(--orange); }
-  .pipeline-card.approved .pipeline-value { color: var(--green); }
-  .pipeline-card.rejected .pipeline-value { color: var(--red); }
-  .pipeline-card.in-progress .pipeline-value { color: var(--blue); }
-  .pipeline-card.fabrication .pipeline-value { color: var(--purple); }
-  .pipeline-card.completed .pipeline-value { color: var(--accent); }
-
-  .pipeline-sub {
-    font-size: 9px;
+  .chart-center-sub {
+    font-size: 8px;
     color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .chart-info { flex: 1; min-width: 0; }
+
+  .chart-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .chart-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  .chart-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .chart-legend-label {
+    color: var(--text2);
+    flex: 1;
+  }
+
+  .chart-legend-value {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 500;
+    color: var(--text);
   }
 
   /* PANELS */
@@ -480,6 +522,19 @@
     white-space: nowrap;
   }
 
+  /* BIG JOB HIGHLIGHT */
+  .list-item.big-job {
+    border-left: 3px solid var(--accent);
+    background: rgba(232,160,32,0.04);
+  }
+
+  /* PHONE LINKS */
+  .list-detail a {
+    color: var(--blue);
+    text-decoration: none;
+  }
+  .list-detail a:hover { text-decoration: underline; }
+
   .tag-hot { background: rgba(231,76,60,0.2); color: var(--red); }
   .tag-warm { background: rgba(243,156,18,0.2); color: var(--orange); }
   .tag-new { background: rgba(52,152,219,0.2); color: var(--blue); }
@@ -565,11 +620,14 @@
   /* RESPONSIVE FOR TV */
   @media (min-width: 1920px) {
     .kpi-value { font-size: 40px; }
-    .pipeline-value { font-size: 24px; }
     .list-name { font-size: 15px; }
     .list-amount { font-size: 17px; }
     .company-name { font-size: 30px; }
     .clock { font-size: 34px; }
+    .chart-canvas-wrap { width: 120px; height: 120px; }
+    .chart-center-value { font-size: 22px; }
+    .chart-title { font-size: 14px; }
+    .chart-legend-item { font-size: 13px; }
   }
 
   /* RESPONSIVE FOR MOBILE */
@@ -625,15 +683,17 @@
     .kpi-value { font-size: 22px; }
     .kpi-sub { font-size: 9px; }
 
-    /* Pipeline → 3x2 grid */
-    .pipeline-row {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
+    /* Charts → stack vertically */
+    .charts-row {
+      grid-template-columns: 1fr;
+      gap: 8px;
     }
 
-    .pipeline-card { padding: 6px 8px; }
-    .pipeline-label { font-size: 8px; letter-spacing: 1px; }
-    .pipeline-value { font-size: 16px; }
+    .chart-card { padding: 10px 12px; gap: 12px; }
+    .chart-canvas-wrap { width: 80px; height: 80px; }
+    .chart-center-value { font-size: 15px; }
+    .chart-title { font-size: 11px; letter-spacing: 1.5px; }
+    .chart-legend-item { font-size: 10px; }
 
     /* All panels → full width, fixed height with scroll */
     .panel {
@@ -661,9 +721,9 @@
   /* Small phones */
   @media (max-width: 380px) {
     .kpi-row { grid-template-columns: repeat(2, 1fr); }
-    .pipeline-row { grid-template-columns: repeat(2, 1fr); }
     .company-name { font-size: 14px; }
     .kpi-value { font-size: 20px; }
+    .chart-canvas-wrap { width: 70px; height: 70px; }
   }
 </style>
 </head>
@@ -747,31 +807,51 @@
       </div>
     </div>
 
-    <!-- PROJECT PIPELINE -->
-    <div class="pipeline-row">
-      <div class="pipeline-card pending">
-        <div class="pipeline-label">Pending</div>
-        <div class="pipeline-value" id="pipePending">--</div>
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+      <!-- Revenue Gauge -->
+      <div class="chart-card">
+        <div class="chart-canvas-wrap">
+          <canvas id="revenueChart"></canvas>
+          <div class="chart-center-label">
+            <div class="chart-center-value" id="revenueGaugeLabel" style="color:var(--accent)">--</div>
+            <div class="chart-center-sub">Revenue</div>
+          </div>
+        </div>
+        <div class="chart-info">
+          <div class="chart-title">Revenue vs Goal</div>
+          <div class="chart-legend" id="revenueLegend"></div>
+        </div>
       </div>
-      <div class="pipeline-card approved">
-        <div class="pipeline-label">Approved</div>
-        <div class="pipeline-value" id="pipeApproved">--</div>
+
+      <!-- Pipeline Donut -->
+      <div class="chart-card">
+        <div class="chart-canvas-wrap">
+          <canvas id="pipelineChart"></canvas>
+          <div class="chart-center-label">
+            <div class="chart-center-value" id="pipelineGaugeLabel" style="color:var(--text)">--</div>
+            <div class="chart-center-sub">Total</div>
+          </div>
+        </div>
+        <div class="chart-info">
+          <div class="chart-title">Pipeline Breakdown</div>
+          <div class="chart-legend" id="pipelineLegend"></div>
+        </div>
       </div>
-      <div class="pipeline-card rejected">
-        <div class="pipeline-label">Rejected</div>
-        <div class="pipeline-value" id="pipeRejected">--</div>
-      </div>
-      <div class="pipeline-card in-progress">
-        <div class="pipeline-label">In Progress</div>
-        <div class="pipeline-value" id="pipeInProgress">--</div>
-      </div>
-      <div class="pipeline-card fabrication">
-        <div class="pipeline-label">Fabrication</div>
-        <div class="pipeline-value" id="pipeFabrication">--</div>
-      </div>
-      <div class="pipeline-card completed">
-        <div class="pipeline-label">Completed</div>
-        <div class="pipeline-value" id="pipeCompleted">--</div>
+
+      <!-- Win Rate Gauge -->
+      <div class="chart-card">
+        <div class="chart-canvas-wrap">
+          <canvas id="winRateChart"></canvas>
+          <div class="chart-center-label">
+            <div class="chart-center-value" id="winRateGaugeLabel" style="color:var(--green)">--</div>
+            <div class="chart-center-sub">Win Rate</div>
+          </div>
+        </div>
+        <div class="chart-info">
+          <div class="chart-title">Conversion</div>
+          <div class="chart-legend" id="winRateLegend"></div>
+        </div>
       </div>
     </div>
 
@@ -895,6 +975,11 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
+// Turn phone numbers in text into clickable tel: links
+function linkifyPhones(html) {
+  return html.replace(/(\d{3})[.\-](\d{3})[.\-](\d{4})/g, '<a href="tel:$1$2$3">$1.$2.$3</a>');
+}
+
 function getGoalFill(pct) {
   if (pct >= 90) return 'fill-green';
   if (pct >= 70) return 'fill-gold';
@@ -976,9 +1061,13 @@ async function fetchTab(tabName) {
   return rows;
 }
 
+// ─── CHART INSTANCES (for destroy on refresh) ───
+let revenueChartInstance = null;
+let pipelineChartInstance = null;
+let winRateChartInstance = null;
+
 // ─── RENDER KPIs ───
 function renderKPIs(rows) {
-  // Build lookup: metric name (lowercase, trimmed) → value
   const kpi = {};
   const kpiRaw = {};
   rows.forEach(r => {
@@ -987,38 +1076,168 @@ function renderKPIs(rows) {
     kpiRaw[key] = rawStr(r.value_raw || r.value);
   });
 
-  // Revenue
+  // KPI cards
   $('kpiRevenue').textContent = shortMoney(kpi.revenue_actual || 0);
   $('kpiRevenueSub').textContent = 'Goal: ' + shortMoney(kpi.revenue_goal || 0);
 
-  // Active Leads
   $('kpiLeads').textContent = kpi.active_leads || 0;
   $('kpiLeadsSub').textContent = (kpi.hot_leads || 0) + ' hot leads';
 
-  // Estimates Sent
   $('kpiEstimates').textContent = shortMoney(kpi.total_estimates_sent || 0);
   $('kpiEstimatesSub').textContent = 'Total sent value';
 
-  // Approved Projects
   $('kpiApproved').textContent = shortMoney(kpi.approved_projects || 0);
   $('kpiApprovedSub').textContent = 'Approved value';
 
-  // Outstanding Debt
   $('kpiDebt').textContent = shortMoney(kpi.outstanding_debt || 0);
   $('kpiDebtSub').textContent = (kpi.overdue_count || 0) + ' overdue';
 
-  // In Fabrication
   $('kpiFab').textContent = kpi.projects_under_fabrication || 0;
   const late = kpi.projects_late_to_start || 0;
   $('kpiFabSub').textContent = late > 0 ? late + ' late to start' : 'On schedule';
 
-  // Pipeline cards
-  $('pipePending').textContent = shortMoney(kpi.pending_projects || 0);
-  $('pipeApproved').textContent = shortMoney(kpi.approved_projects || 0);
-  $('pipeRejected').textContent = shortMoney(kpi.rejected_projects || 0);
-  $('pipeInProgress').textContent = shortMoney(kpi.in_progress_projects || 0);
-  $('pipeFabrication').textContent = kpi.projects_under_fabrication || 0;
-  $('pipeCompleted').textContent = shortMoney(kpi.completed_projects || 0);
+  // ─── CHARTS ───
+  renderRevenueChart(kpi.revenue_actual || 0, kpi.revenue_goal || 1);
+  renderPipelineChart(kpi);
+  renderWinRateChart(kpi);
+}
+
+// ─── REVENUE GAUGE ───
+function renderRevenueChart(actual, goal) {
+  const pct = Math.min(100, Math.round((actual / goal) * 100));
+  const remaining = Math.max(0, goal - actual);
+
+  $('revenueGaugeLabel').textContent = shortMoney(actual);
+
+  // Legend
+  $('revenueLegend').innerHTML = `
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:var(--accent)"></div>
+      <span class="chart-legend-label">Earned</span>
+      <span class="chart-legend-value">${shortMoney(actual)}</span>
+    </div>
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:#253040"></div>
+      <span class="chart-legend-label">Remaining</span>
+      <span class="chart-legend-value">${shortMoney(remaining)}</span>
+    </div>
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:transparent;border:1px solid var(--text2)"></div>
+      <span class="chart-legend-label">Progress</span>
+      <span class="chart-legend-value" style="color:var(--accent)">${pct}%</span>
+    </div>
+  `;
+
+  if (revenueChartInstance) revenueChartInstance.destroy();
+  revenueChartInstance = new Chart($('revenueChart'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [actual, remaining],
+        backgroundColor: ['#e8a020', '#1a2530'],
+        borderWidth: 0,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { animateRotate: true, duration: 1000 },
+    }
+  });
+}
+
+// ─── PIPELINE DONUT ───
+function renderPipelineChart(kpi) {
+  const segments = [
+    { label: 'Pending',     value: kpi.pending_projects || 0,      color: '#f39c12' },
+    { label: 'Approved',    value: kpi.approved_projects || 0,     color: '#2ecc71' },
+    { label: 'Rejected',    value: kpi.rejected_projects || 0,     color: '#e74c3c' },
+    { label: 'In Progress', value: kpi.in_progress_projects || 0,  color: '#3498db' },
+    { label: 'Completed',   value: kpi.completed_projects || 0,    color: '#e8a020' },
+  ];
+
+  const total = segments.reduce((s, seg) => s + seg.value, 0);
+  $('pipelineGaugeLabel').textContent = shortMoney(total);
+
+  $('pipelineLegend').innerHTML = segments.map(seg => `
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:${seg.color}"></div>
+      <span class="chart-legend-label">${seg.label}</span>
+      <span class="chart-legend-value">${shortMoney(seg.value)}</span>
+    </div>
+  `).join('');
+
+  if (pipelineChartInstance) pipelineChartInstance.destroy();
+  pipelineChartInstance = new Chart($('pipelineChart'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: segments.map(s => s.value),
+        backgroundColor: segments.map(s => s.color),
+        borderWidth: 0,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      cutout: '68%',
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { animateRotate: true, duration: 1000 },
+    }
+  });
+}
+
+// ─── WIN RATE GAUGE ───
+function renderWinRateChart(kpi) {
+  const approved = kpi.approved_projects || 0;
+  const rejected = kpi.rejected_projects || 0;
+  const decided = approved + rejected;
+  const winPct = decided > 0 ? Math.round((approved / decided) * 100) : 0;
+  const losePct = 100 - winPct;
+
+  $('winRateGaugeLabel').textContent = winPct + '%';
+
+  const pending = kpi.pending_projects || 0;
+  $('winRateLegend').innerHTML = `
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:var(--green)"></div>
+      <span class="chart-legend-label">Won</span>
+      <span class="chart-legend-value">${shortMoney(approved)}</span>
+    </div>
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:var(--red)"></div>
+      <span class="chart-legend-label">Lost</span>
+      <span class="chart-legend-value">${shortMoney(rejected)}</span>
+    </div>
+    <div class="chart-legend-item">
+      <div class="chart-legend-dot" style="background:var(--orange)"></div>
+      <span class="chart-legend-label">Pending</span>
+      <span class="chart-legend-value">${shortMoney(pending)}</span>
+    </div>
+  `;
+
+  if (winRateChartInstance) winRateChartInstance.destroy();
+  winRateChartInstance = new Chart($('winRateChart'), {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [winPct, losePct],
+        backgroundColor: ['#2ecc71', '#1a2530'],
+        borderWidth: 0,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      cutout: '72%',
+      responsive: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      animation: { animateRotate: true, duration: 1000 },
+      rotation: -90,
+      circumference: 360,
+    }
+  });
 }
 
 // ─── RENDER GOALS ───
@@ -1100,13 +1319,15 @@ function renderProjectPanel(bodyId, badgeId, rows, showMoney) {
     const isCompleted = status === 'completed';
     const isRejected = status === 'rejected';
     const amountStyle = isCompleted ? ' style="color:var(--green)"' : (isRejected ? ' style="color:var(--red)"' : '');
+    const bigJob = amount >= 50000 ? ' big-job' : '';
+    const detailHtml = linkifyPhones(escapeHtml(item.detail || ''));
 
     return `
-      <div class="list-item">
+      <div class="list-item${bigJob}">
         <div class="status-dot ${cfg.dot}"></div>
         <div class="list-content">
           <div class="list-name">${escapeHtml(item.name)}</div>
-          <div class="list-detail">${escapeHtml(item.detail || '')}</div>
+          <div class="list-detail">${detailHtml}</div>
         </div>
         <div class="list-amount"${amountStyle}>${fullMoney(amount)}</div>
         <div class="list-tag ${cfg.tag}">${cfg.label}</div>
