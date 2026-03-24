@@ -935,31 +935,28 @@ function renderOverview(kpi) {
   const late = kpi.projects_late_to_start || 0;
   $('kpiFabSub').textContent = late > 0 ? late + ' late to start' : 'On schedule';
 
-  // Business Insights
-  const pending = kpi.pending_projects || 0;
-  const approvedVal = kpi.approved_projects || 0;
-  const rejectedVal = kpi.rejected_projects || 0;
-  const inProg = kpi.in_progress_projects || 0;
-  const completed = kpi.completed_projects || 0;
-  const pipeTotal = pending + approvedVal + rejectedVal + inProg + completed;
-  const totalEstSent = kpi.total_estimates_sent || 0;
+  // Business Insights — computed from actual project data
+  const projectCount = allProjects.length;
 
-  // Avg deal size
-  const projectCount = allProjects.length || 1;
-  const avgDeal = pipeTotal / Math.max(projectCount, 1);
+  // Avg deal size — total project value / number of projects
+  const projectTotal = allProjects.reduce((s, p) => s + parseVal(p.amount), 0);
+  const avgDeal = projectCount > 0 ? projectTotal / projectCount : 0;
   $('insightAvgDeal').textContent = shortMoney(avgDeal);
   $('insightAvgDealSub').textContent = 'across ' + projectCount + ' projects';
 
-  // Close rate
-  const decidedTotal = approvedVal + rejectedVal;
-  const closeRate = decidedTotal > 0 ? Math.round((approvedVal / decidedTotal) * 100) : 0;
+  // Close rate — by project COUNT, only decided (approved + rejected), pending excluded
+  const approvedCount = allProjects.filter(p => (p.status || '').toLowerCase().trim() === 'approved').length;
+  const rejectedCount = allProjects.filter(p => (p.status || '').toLowerCase().trim() === 'rejected').length;
+  const decidedCount = approvedCount + rejectedCount;
+  const closeRate = decidedCount > 0 ? Math.round((approvedCount / decidedCount) * 100) : 0;
   $('insightCloseRate').textContent = closeRate + '%';
-  $('insightCloseRateSub').textContent = shortMoney(approvedVal) + ' won / ' + shortMoney(rejectedVal) + ' lost';
+  $('insightCloseRateSub').textContent = approvedCount + ' won / ' + rejectedCount + ' lost';
 
-  // Pipeline total
+  // Pipeline total — from KPIs
+  const pipeTotal = (kpi.pending_projects || 0) + (kpi.approved_projects || 0) + (kpi.rejected_projects || 0) + (kpi.in_progress_projects || 0) + (kpi.completed_projects || 0);
+  const pendingCount = allProjects.filter(p => (p.status || '').toLowerCase().trim() === 'pending').length;
   $('insightPipeline').textContent = shortMoney(pipeTotal);
-  const pendingPct = pipeTotal > 0 ? Math.round((pending / pipeTotal) * 100) : 0;
-  $('insightPipelineSub').textContent = pendingPct + '% pending decision';
+  $('insightPipelineSub').textContent = pendingCount + ' pending decision';
 
   // Total project count
   $('insightProjectCount').textContent = projectCount;
@@ -1058,7 +1055,7 @@ function renderPipeline(kpi) {
 function renderProjectsPage(rows) {
   allProjects = rows.filter(r => {
     const name = String(r.name || '').trim();
-    return name && name.toUpperCase() !== 'TOTAL' && parseVal(r.amount) > 0;
+    return name && !name.toUpperCase().includes('TOTAL') && parseVal(r.amount) > 0;
   });
   applyProjectFilter();
 }
@@ -1330,6 +1327,12 @@ async function fetchAllData() {
     // Build KPI lookup
     const kpi = {};
     kpis.forEach(r => { kpi[String(r.metric || '').toLowerCase().trim()] = parseVal(r.value); });
+
+    // Populate allProjects FIRST so insights have data
+    allProjects = projects.filter(r => {
+      const name = String(r.name || '').trim();
+      return name && !name.toUpperCase().includes('TOTAL') && parseVal(r.amount) > 0;
+    });
 
     renderOverview(kpi);
     renderPipeline(kpi);
