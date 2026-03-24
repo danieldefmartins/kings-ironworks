@@ -226,6 +226,24 @@
   .kpi-card.purple .kpi-value { color: var(--purple); }
   .kpi-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
 
+  /* ═══ BUSINESS INSIGHTS ROW ═══ */
+  .insights-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 16px; flex-shrink: 0;
+  }
+  .insight-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 16px; text-align: center;
+  }
+  .insight-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text2); margin-bottom: 4px;
+  }
+  .insight-value {
+    font-family: 'Oswald', sans-serif; font-size: 22px; font-weight: 600; color: var(--text);
+  }
+  .insight-sub { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
   /* ═══ CHART CONTAINERS ═══ */
   .charts-duo {
     display: grid; grid-template-columns: 1fr 1fr; gap: 16px; flex: 1; min-height: 0;
@@ -368,7 +386,7 @@
 
   /* ═══ FINANCIALS PAGE ═══ */
   .fin-summary {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
     margin-bottom: 16px; flex-shrink: 0;
   }
   .fin-summary-card {
@@ -398,19 +416,115 @@
 
   .empty-state { text-align: center; padding: 24px 16px; color: var(--text2); font-size: 14px; }
 
+  /* ═══ DESKTOP (1200px+) ═══ */
+  @media (min-width: 1200px) {
+    .page { padding: 70px 48px 60px; }
+    .page-title { font-size: 24px; margin-bottom: 20px; }
+    .page-title span { font-size: 17px; }
+
+    /* KPIs - bigger on desktop */
+    .kpi-grid { gap: 16px; }
+    .kpi-card { padding: 20px 24px; }
+    .kpi-value { font-size: 42px; }
+    .kpi-label { font-size: 12px; letter-spacing: 2px; }
+    .kpi-sub { font-size: 12px; }
+
+    /* Insights row */
+    .insight-value { font-size: 26px; }
+    .insight-label { font-size: 11px; }
+
+    /* Charts - much bigger */
+    .chart-wrap { width: 200px; height: 200px; }
+    .chart-center-val { font-size: 28px; }
+    .chart-center-sub { font-size: 10px; }
+    .chart-box-title { font-size: 14px; }
+    .chart-box { padding: 20px; }
+    .chart-legend-row { font-size: 13px; }
+    .chart-legend-dot { width: 12px; height: 12px; }
+
+    /* Pipeline - give bars more room */
+    .pipeline-split { grid-template-columns: 1fr 2fr; gap: 24px; }
+    .pipeline-donut-wrap { width: 260px; height: 260px; }
+    .pipeline-donut-box { padding: 28px; }
+    .pipeline-bars-box { padding: 24px; }
+
+    /* Projects - taller chart, bigger items */
+    .projects-chart-box { height: 300px; }
+    .filter-btn { padding: 8px 20px; font-size: 13px; }
+    .list-name { font-size: 15px; }
+    .list-amount { font-size: 17px; }
+    .list-tag { font-size: 10px; padding: 4px 10px; }
+    .list-item { padding: 10px 20px; }
+
+    /* Goals - large radials */
+    .goals-grid { gap: 20px; }
+    .goal-card { padding: 28px 20px; gap: 14px; }
+    .goal-chart-wrap { width: 170px; height: 170px; }
+    .goal-name { font-size: 16px; }
+    .goal-detail { font-size: 14px; }
+
+    /* Financials - prominent numbers */
+    .fin-summary { gap: 16px; margin-bottom: 20px; }
+    .fin-summary-card { padding: 20px 24px; }
+    .fin-summary-value { font-size: 38px; }
+    .fin-summary-label { font-size: 12px; }
+    .fin-chart-area { height: 180px; margin-bottom: 14px; }
+    .fin-panel { padding: 20px; }
+    .fin-panel-title { font-size: 14px; }
+
+    /* Nav dots bigger targets */
+    .nav-dot { padding: 6px 12px; }
+    .nav-label { font-size: 10px; letter-spacing: 2px; }
+  }
+
+  /* ═══ WIDE DESKTOP (1600px+) ═══ */
+  @media (min-width: 1600px) {
+    .page { padding: 70px 64px 60px; }
+    .kpi-value { font-size: 48px; }
+    .kpi-card { padding: 24px 28px; }
+    .chart-wrap { width: 240px; height: 240px; }
+    .chart-center-val { font-size: 32px; }
+    .pipeline-donut-wrap { width: 300px; height: 300px; }
+    .pipeline-split { grid-template-columns: 1fr 2.5fr; }
+    .projects-chart-box { height: 340px; }
+    .goal-chart-wrap { width: 200px; height: 200px; }
+    .goal-card { padding: 32px 24px; }
+    .fin-chart-area { height: 220px; }
+    .fin-summary-value { font-size: 44px; }
+    .insight-value { font-size: 30px; }
+  }
+
   /* ═══ TV (1920px+) ═══ */
   @media (min-width: 1920px) {
-    .kpi-value { font-size: 44px; }
+    .page { padding: 70px 80px 60px; }
+    .kpi-value { font-size: 54px; }
+    .kpi-card { padding: 28px 32px; }
+    .kpi-label { font-size: 13px; }
+    .kpi-sub { font-size: 13px; }
     .company-name { font-size: 28px; }
     .clock { font-size: 30px; }
-    .page-title { font-size: 28px; }
-    .chart-wrap { width: 200px; height: 200px; }
-    .chart-center-val { font-size: 30px; }
-    .pipeline-donut-wrap { width: 260px; height: 260px; }
-    .goal-chart-wrap { width: 160px; height: 160px; }
-    .list-name { font-size: 16px; }
-    .list-amount { font-size: 18px; }
-    .fin-summary-value { font-size: 40px; }
+    .page-title { font-size: 30px; }
+    .chart-wrap { width: 280px; height: 280px; }
+    .chart-center-val { font-size: 36px; }
+    .chart-center-sub { font-size: 12px; }
+    .pipeline-donut-wrap { width: 340px; height: 340px; }
+    .pipeline-split { grid-template-columns: 1fr 2.5fr; }
+    .goal-chart-wrap { width: 220px; height: 220px; }
+    .goal-name { font-size: 18px; }
+    .goal-detail { font-size: 15px; }
+    .goal-card { padding: 36px 28px; gap: 16px; }
+    .projects-chart-box { height: 380px; }
+    .list-name { font-size: 17px; }
+    .list-amount { font-size: 20px; }
+    .list-tag { font-size: 11px; padding: 4px 12px; }
+    .list-item { padding: 12px 24px; }
+    .fin-summary-value { font-size: 50px; }
+    .fin-chart-area { height: 240px; }
+    .fin-panel-title { font-size: 16px; }
+    .insight-value { font-size: 34px; }
+    .insight-label { font-size: 12px; }
+    .chart-legend-row { font-size: 14px; }
+    .nav-label { font-size: 11px; }
   }
 
   /* ═══ MOBILE ═══ */
@@ -438,6 +552,13 @@
     .kpi-label { font-size: 9px; }
     .kpi-value { font-size: 26px; }
     .kpi-sub { font-size: 9px; }
+
+    /* Insights */
+    .insights-row { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+    .insight-card { padding: 8px 10px; }
+    .insight-value { font-size: 18px; }
+    .insight-label { font-size: 8px; }
+    .insight-sub { font-size: 8px; }
 
     /* Charts */
     .charts-duo { grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -469,8 +590,10 @@
     .goal-card { padding: 14px 10px; gap: 6px; }
 
     /* Financials */
-    .fin-summary { gap: 8px; }
-    .fin-summary-value { font-size: 24px; }
+    .fin-summary { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .fin-summary-value { font-size: 20px; }
+    .fin-summary-card { padding: 10px 8px; }
+    .fin-summary-label { font-size: 9px; letter-spacing: 1px; }
     .fin-split { grid-template-columns: 1fr; gap: 12px; }
     .fin-chart-area { height: 120px; }
 
@@ -551,6 +674,12 @@
         <div class="kpi-card red"><div class="kpi-label">Outstanding Debt</div><div class="kpi-value" id="kpiDebt">--</div><div class="kpi-sub" id="kpiDebtSub"></div></div>
         <div class="kpi-card purple"><div class="kpi-label">In Fabrication</div><div class="kpi-value" id="kpiFab">--</div><div class="kpi-sub" id="kpiFabSub"></div></div>
       </div>
+      <div class="insights-row">
+        <div class="insight-card"><div class="insight-label">Avg Deal Size</div><div class="insight-value" id="insightAvgDeal">--</div><div class="insight-sub" id="insightAvgDealSub"></div></div>
+        <div class="insight-card"><div class="insight-label">Close Rate</div><div class="insight-value" id="insightCloseRate">--</div><div class="insight-sub" id="insightCloseRateSub"></div></div>
+        <div class="insight-card"><div class="insight-label">Pipeline Total</div><div class="insight-value" id="insightPipeline">--</div><div class="insight-sub" id="insightPipelineSub"></div></div>
+        <div class="insight-card"><div class="insight-label">Total Projects</div><div class="insight-value" id="insightProjectCount">--</div><div class="insight-sub" id="insightProjectCountSub"></div></div>
+      </div>
       <div class="charts-duo">
         <div class="chart-box">
           <div class="chart-box-title">Revenue vs Goal</div>
@@ -610,7 +739,8 @@
       <div class="page-title">Financials</div>
       <div class="fin-summary">
         <div class="fin-summary-card"><div class="fin-summary-label">Outstanding Balance</div><div class="fin-summary-value" id="finBalanceTotal" style="color:var(--orange)">--</div></div>
-        <div class="fin-summary-card"><div class="fin-summary-label">Debt / Accounts Receivable</div><div class="fin-summary-value" id="finDebtTotal" style="color:var(--red)">--</div></div>
+        <div class="fin-summary-card"><div class="fin-summary-label">Debt / AR</div><div class="fin-summary-value" id="finDebtTotal" style="color:var(--red)">--</div></div>
+        <div class="fin-summary-card"><div class="fin-summary-label">Total Liabilities</div><div class="fin-summary-value" id="finTotalLiabilities" style="color:var(--purple)">--</div></div>
       </div>
       <div class="fin-split">
         <div class="fin-panel">
@@ -798,6 +928,40 @@ function renderOverview(kpi) {
   const late = kpi.projects_late_to_start || 0;
   $('kpiFabSub').textContent = late > 0 ? late + ' late to start' : 'On schedule';
 
+  // Business Insights
+  const pending = kpi.pending_projects || 0;
+  const approvedVal = kpi.approved_projects || 0;
+  const rejectedVal = kpi.rejected_projects || 0;
+  const inProg = kpi.in_progress_projects || 0;
+  const completed = kpi.completed_projects || 0;
+  const pipeTotal = pending + approvedVal + rejectedVal + inProg + completed;
+  const totalEstSent = kpi.total_estimates_sent || 0;
+
+  // Avg deal size
+  const projectCount = allProjects.length || 1;
+  const avgDeal = pipeTotal / Math.max(projectCount, 1);
+  $('insightAvgDeal').textContent = shortMoney(avgDeal);
+  $('insightAvgDealSub').textContent = 'across ' + projectCount + ' projects';
+
+  // Close rate
+  const decidedTotal = approvedVal + rejectedVal;
+  const closeRate = decidedTotal > 0 ? Math.round((approvedVal / decidedTotal) * 100) : 0;
+  $('insightCloseRate').textContent = closeRate + '%';
+  $('insightCloseRateSub').textContent = shortMoney(approvedVal) + ' won / ' + shortMoney(rejectedVal) + ' lost';
+
+  // Pipeline total
+  $('insightPipeline').textContent = shortMoney(pipeTotal);
+  const pendingPct = pipeTotal > 0 ? Math.round((pending / pipeTotal) * 100) : 0;
+  $('insightPipelineSub').textContent = pendingPct + '% pending decision';
+
+  // Total project count
+  $('insightProjectCount').textContent = projectCount;
+  const activeCount = allProjects.filter(p => {
+    const s = (p.status || '').toLowerCase().trim();
+    return s === 'approved' || s === 'in progress';
+  }).length;
+  $('insightProjectCountSub').textContent = activeCount + ' active, ' + (kpi.projects_under_fabrication || 0) + ' in fab';
+
   // Revenue gauge
   const revActual = kpi.revenue_actual || 0;
   const revGoal = kpi.revenue_goal || 1;
@@ -844,9 +1008,19 @@ function renderPipeline(kpi) {
   const total = segments.reduce((s, x) => s + x.value, 0);
 
   $('pipeCenterVal').textContent = shortMoney(total);
-  $('pipeLegend').innerHTML = segments.map(seg => `
-    <div class="chart-legend-row"><div class="chart-legend-dot" style="background:${seg.color}"></div><span class="chart-legend-name">${seg.label}</span><span class="chart-legend-val">${shortMoney(seg.value)}</span></div>
-  `).join('');
+
+  // Count projects by status for pipeline legend
+  const statusCounts = {};
+  allProjects.forEach(p => {
+    const s = (p.status || 'pending').toLowerCase().trim();
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  });
+
+  $('pipeLegend').innerHTML = segments.map(seg => {
+    const key = seg.label.toLowerCase();
+    const count = statusCounts[key] || 0;
+    return `<div class="chart-legend-row"><div class="chart-legend-dot" style="background:${seg.color}"></div><span class="chart-legend-name">${seg.label} (${count})</span><span class="chart-legend-val">${shortMoney(seg.value)}</span></div>`;
+  }).join('');
 
   renderChart('chartPipeDonut', {
     type: 'doughnut',
@@ -858,7 +1032,7 @@ function renderPipeline(kpi) {
     type: 'bar',
     data: {
       labels: segments.map(s => s.label),
-      datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderRadius: 4, barThickness: 28 }]
+      datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.85 }]
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
@@ -866,8 +1040,8 @@ function renderPipeline(kpi) {
         callbacks: { label: ctx => ' ' + shortMoney(ctx.raw) }
       }},
       scales: {
-        x: { grid: { color: '#1a2530' }, ticks: { callback: v => shortMoney(v), color: '#8899aa', font: { family: "'Oswald'" } } },
-        y: { grid: { display: false }, ticks: { color: '#8899aa', font: { family: "'Oswald'", size: 12, weight: 600 } } }
+        x: { grid: { color: '#1a2530' }, ticks: { callback: v => shortMoney(v), color: '#8899aa', font: { family: "'Oswald'", size: window.innerWidth >= 1200 ? 13 : 11 } } },
+        y: { grid: { display: false }, ticks: { color: '#8899aa', font: { family: "'Oswald'", size: window.innerWidth >= 1200 ? 14 : 12, weight: 600 } } }
       }
     }
   });
@@ -884,17 +1058,27 @@ function renderProjectsPage(rows) {
 
 function applyProjectFilter() {
   let filtered = allProjects;
-  if (currentFilter === 'pending') {
-    filtered = allProjects.filter(r => (r.status || '').toLowerCase().trim() === 'pending');
-  } else if (currentFilter === 'active') {
-    filtered = allProjects.filter(r => {
-      const s = (r.status || '').toLowerCase().trim();
-      return s === 'approved' || s === 'in progress' || s === 'completed';
-    });
-  }
+  const pendingList = allProjects.filter(r => (r.status || '').toLowerCase().trim() === 'pending');
+  const activeList = allProjects.filter(r => {
+    const s = (r.status || '').toLowerCase().trim();
+    return s === 'approved' || s === 'in progress' || s === 'completed';
+  });
 
-  // Top projects bar chart
-  const top = [...filtered].sort((a, b) => parseVal(b.amount) - parseVal(a.amount)).slice(0, 8);
+  if (currentFilter === 'pending') filtered = pendingList;
+  else if (currentFilter === 'active') filtered = activeList;
+
+  // Update filter tab counts
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    const f = btn.dataset.filter;
+    if (f === 'all') btn.textContent = 'All (' + allProjects.length + ')';
+    else if (f === 'pending') btn.textContent = 'Pending (' + pendingList.length + ')';
+    else if (f === 'active') btn.textContent = 'Active (' + activeList.length + ')';
+  });
+
+  // Top projects bar chart — more on desktop
+  const isWide = window.innerWidth >= 1200;
+  const topCount = isWide ? 12 : 8;
+  const top = [...filtered].sort((a, b) => parseVal(b.amount) - parseVal(a.amount)).slice(0, topCount);
   const barColors = top.map(p => {
     const s = (p.status || '').toLowerCase().trim();
     if (s === 'approved') return '#2ecc71';
@@ -909,9 +1093,10 @@ function applyProjectFilter() {
     data: {
       labels: top.map(p => {
         const n = String(p.name || '').trim();
-        return n.length > 25 ? n.substring(0, 22) + '...' : n;
+        const maxLen = isWide ? 35 : 25;
+        return n.length > maxLen ? n.substring(0, maxLen - 3) + '...' : n;
       }),
-      datasets: [{ data: top.map(p => parseVal(p.amount)), backgroundColor: barColors, borderRadius: 4, barThickness: 22 }]
+      datasets: [{ data: top.map(p => parseVal(p.amount)), backgroundColor: barColors, borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.85 }]
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
@@ -920,7 +1105,7 @@ function applyProjectFilter() {
       }},
       scales: {
         x: { grid: { color: '#1a2530' }, ticks: { callback: v => shortMoney(v), color: '#8899aa', font: { family: "'Oswald'" } } },
-        y: { grid: { display: false }, ticks: { color: '#ccc', font: { family: "'Source Sans 3'", size: 11 } } }
+        y: { grid: { display: false }, ticks: { color: '#ccc', font: { family: "'Source Sans 3'", size: window.innerWidth >= 1200 ? 13 : 11 } } }
       }
     }
   });
@@ -960,18 +1145,41 @@ function renderGoalsPage(rows) {
     return;
   }
 
+  // Calculate days remaining in month
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysLeft = lastDay - today.getDate();
+
   grid.innerHTML = rows.map((g, i) => {
     const cur = parseVal(g.current);
     const tgt = parseVal(g.target) || 1;
     const pct = Math.min(100, Math.round((cur / tgt) * 100));
     const curDisp = formatGoalDisplay(g.current_raw || g.current, cur);
     const tgtDisp = formatGoalDisplay(g.target_raw || g.target, tgt);
+
+    // Pace info
+    let paceHtml = '';
+    if (pct < 100 && daysLeft > 0) {
+      const remaining = tgt - cur;
+      const goalName = (g.goal || '').toLowerCase();
+      if (goalName.includes('revenue') || goalName.includes('estimate')) {
+        const perDay = remaining / daysLeft;
+        paceHtml = `<div class="goal-detail" style="margin-top:4px;color:var(--text2);font-size:10px">${shortMoney(perDay)}/day needed</div>`;
+      } else if (goalName.includes('lead') || goalName.includes('review')) {
+        const perWeek = Math.ceil((remaining / daysLeft) * 7);
+        paceHtml = `<div class="goal-detail" style="margin-top:4px;color:var(--text2);font-size:10px">${perWeek}/week needed</div>`;
+      }
+    } else if (pct >= 100) {
+      paceHtml = `<div class="goal-detail" style="margin-top:4px;color:var(--green);font-size:10px">Goal reached!</div>`;
+    }
+
     return `<div class="goal-card">
       <div class="goal-chart-wrap"><canvas id="goalChart${i}"></canvas>
         <div class="chart-center"><div class="chart-center-val" style="color:${goalColor(pct)}">${pct}%</div></div>
       </div>
       <div class="goal-name">${escapeHtml(g.goal)}</div>
       <div class="goal-detail"><span>${curDisp}</span> / ${tgtDisp}</div>
+      ${paceHtml}
     </div>`;
   }).join('');
 
@@ -1017,7 +1225,7 @@ function renderFinancials(debt, balance) {
     });
     renderChart('chartBalance', {
       type: 'bar',
-      data: { labels, datasets: [{ data: amounts, backgroundColor: colors, borderRadius: 4, barThickness: 30 }] },
+      data: { labels, datasets: [{ data: amounts, backgroundColor: colors, borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.85 }] },
       options: {
         indexAxis: 'y', responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + fullMoney(ctx.raw) } } },
@@ -1061,6 +1269,9 @@ function renderFinancials(debt, balance) {
   const debtTotal = debtItems.filter(r => (r.status || '').toLowerCase().trim() !== 'paid')
     .reduce((s, r) => s + parseVal(r.amount), 0);
   $('finDebtTotal').textContent = shortMoney(debtTotal);
+
+  // Total liabilities
+  $('finTotalLiabilities').textContent = shortMoney(balTotal + debtTotal);
 
   // Debt chart
   if (debtItems.length) {
