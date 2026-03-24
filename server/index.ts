@@ -208,6 +208,18 @@ const blogPostOG: Record<string, OGData> = {
   },
 };
 
+// Google Tag snippet — injected server-side so it's always present
+const GTAG_SNIPPET = `<!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GT-P3H97K4D"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'GT-P3H97K4D');
+      gtag('config', 'G-040FS71NJ6');
+      gtag('config', 'AW-817727428');
+    </script>`;
+
 function buildOGTags(og: OGData, baseUrl: string): string {
   const url = `${baseUrl}${og.path}`;
   const image = og.image.startsWith("http") ? og.image : `${baseUrl}${og.image}`;
@@ -281,17 +293,37 @@ async function startServer() {
 
     const ogTags = buildOGTags(og!, baseUrl);
 
-    // Inject OG tags right before </head>
-    const html = indexHtml.replace("</head>", `    ${ogTags}\n  </head>`);
+    // Inject Google Tag + OG tags right before </head>
+    // Check if gtag is already in the HTML (from source index.html) to avoid duplicates
+    const hasGtag = indexHtml.includes('googletagmanager.com/gtag/js');
+    const gtagInject = hasGtag ? '' : `${GTAG_SNIPPET}\n    `;
+    const html = indexHtml.replace("</head>", `    ${gtagInject}${ogTags}\n  </head>`);
 
     // Also replace the <title> tag with the location-specific title
-    const titleHtml = html.replace(
+    let finalHtml = html.replace(
       /<title>.*?<\/title>/,
       `<title>${og!.title}</title>`,
     );
 
+    // Inject Google Ads phone conversion function if not already present
+    if (!finalHtml.includes('gtag_report_conversion')) {
+      const conversionScript = `<script>
+    function gtag_report_conversion(url) {
+      var callback = function () {
+        if (typeof(url) != 'undefined') { window.location = url; }
+      };
+      gtag('event', 'conversion', {
+        'send_to': 'AW-817727428/xe4zCLWS9IIcEMSP9oUD',
+        'value': 1.0, 'currency': 'USD', 'event_callback': callback
+      });
+      return false;
+    }
+    </script>`;
+      finalHtml = finalHtml.replace('</body>', `${conversionScript}\n  </body>`);
+    }
+
     res.setHeader("Content-Type", "text/html");
-    res.send(titleHtml);
+    res.send(finalHtml);
   });
 
   const port = process.env.PORT || 3000;
