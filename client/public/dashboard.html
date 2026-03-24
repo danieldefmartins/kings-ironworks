@@ -580,33 +580,38 @@
     .chart-box-title { font-size: 11px; }
     .chart-legend-row { font-size: 10px; }
 
-    /* Pipeline */
-    .pipeline-split { grid-template-columns: 1fr; gap: 12px; }
-    .pipeline-donut-wrap { width: min(140px, 25vh); height: min(140px, 25vh); }
-    .pipeline-bars-box { min-height: 180px; }
+    /* Pipeline — stacked, explicit heights so charts render */
+    .pipeline-split { grid-template-columns: 1fr; gap: 12px; flex: none; }
+    .pipeline-donut-box { min-height: auto; overflow: visible; }
+    .pipeline-donut-wrap { width: 130px; height: 130px; }
+    .pipeline-bars-box { height: 220px; min-height: auto; }
+    .pipeline-bars-box canvas { min-height: 150px; }
 
-    /* Projects */
+    /* Projects — list needs explicit height since page scrolls */
     .projects-chart-box { height: 180px; }
     .filter-btn { padding: 5px 12px; font-size: 10px; }
     .list-name { font-size: 12px; white-space: normal; }
     .list-detail { font-size: 10px; white-space: normal; }
     .list-amount { font-size: 14px; margin-left: 8px; }
     .list-tag { font-size: 8px; padding: 2px 6px; margin-left: 6px; }
+    .project-list { flex: none; min-height: 300px; max-height: 50vh; }
 
     /* Goals */
-    .goals-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .goals-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; flex: none; }
     .goal-chart-wrap { width: 90px; height: 90px; }
     .goal-name { font-size: 11px; }
     .goal-detail { font-size: 10px; }
     .goal-card { padding: 14px 10px; gap: 6px; }
 
-    /* Financials */
+    /* Financials — stacked panels with explicit heights */
     .fin-summary { grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .fin-summary-value { font-size: 20px; }
     .fin-summary-card { padding: 10px 8px; }
     .fin-summary-label { font-size: 9px; letter-spacing: 1px; }
-    .fin-split { grid-template-columns: 1fr; gap: 12px; }
-    .fin-chart-area { height: 120px; }
+    .fin-split { grid-template-columns: 1fr; gap: 12px; flex: none; }
+    .fin-chart-area { height: 140px; }
+    .fin-panel { overflow: visible; }
+    .fin-list { flex: none; min-height: 80px; }
 
     /* Nav */
     .page-nav { padding: 10px 12px; gap: 6px; }
@@ -621,8 +626,9 @@
     .chart-wrap { width: 80px; height: 80px; }
     .chart-center-val { font-size: 14px; }
     .goal-chart-wrap { width: 70px; height: 70px; }
-    .pipeline-donut-wrap { width: 110px; height: 110px; }
+    .pipeline-donut-wrap { width: 100px; height: 100px; }
     .company-name { font-size: 13px; }
+    .project-list { min-height: 250px; }
   }
 </style>
 </head>
