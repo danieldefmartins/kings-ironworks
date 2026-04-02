@@ -83,7 +83,7 @@ export default function TermsOfService() {
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Text STOP:</strong> Reply <strong>STOP</strong>, <strong>END</strong>, <strong>CANCEL</strong>, <strong>UNSUBSCRIBE</strong>, or <strong>QUIT</strong> to any text message from King Iron Works LLC</li>
               <li><strong>Call Us:</strong> Contact us at +1 617-404-2589 and request to be removed from SMS communications</li>
-              <li><strong>Email Us:</strong> Send an opt-out request to info@kingirongroup.com with your phone number</li>
+              <li><strong>Email Us:</strong> Send an opt-out request to info@kingsironsworks.com with your phone number</li>
             </ul>
             <p>
               After you opt out, you will receive one final confirmation message stating: "You have successfully opted out of SMS messages from King Iron Works LLC. You will no longer receive text messages from us. Reply START to opt back in." No further messages will be sent unless you opt back in.
@@ -100,12 +100,12 @@ export default function TermsOfService() {
               <li><strong>Boston/Everett Office:</strong> +1 617-404-2589</li>
               <li><strong>Cape Cod/Worcester Office:</strong> +1 508-955-5006</li>
               <li><strong>Miami Office:</strong> +1 754-240-0082</li>
-              <li><strong>Email:</strong> info@kingirongroup.com</li>
+              <li><strong>Email:</strong> info@kingsironsworks.com</li>
               <li><strong>Business Hours:</strong> Monday - Friday, 7:00 AM - 5:00 PM EST</li>
               <li><strong>Emergency Line:</strong> Available 24/7 for urgent fire escape or structural steel emergencies</li>
             </ul>
             <p>
-              For immediate SMS help, reply <strong>HELP</strong> to any text message from us, and you will receive: "King Iron Works LLC - For assistance, call +1 617-404-2589 or email info@kingirongroup.com. Reply STOP to opt out."
+              For immediate SMS help, reply <strong>HELP</strong> to any text message from us, and you will receive: "King Iron Works LLC - For assistance, call +1 617-404-2589 or email info@kingsironsworks.com. Reply STOP to opt out."
             </p>
 
             <h3 className="text-heading text-xl mb-3 mt-4">3.5 Message Frequency & Data Rate Disclosure</h3>
@@ -143,7 +143,7 @@ export default function TermsOfService() {
               <li>Messages filtered as spam by carrier or device-level filters</li>
             </ul>
             <p>
-              If you do not receive expected messages, please contact us directly at +1 617-404-2589 or info@kingirongroup.com to ensure you receive important project updates through alternative channels.
+              If you do not receive expected messages, please contact us directly at +1 617-404-2589 or info@kingsironsworks.com to ensure you receive important project updates through alternative channels.
             </p>
 
             <h3 className="text-heading text-xl mb-3 mt-4">3.7 Age Requirement & Consent</h3>
@@ -288,7 +288,7 @@ export default function TermsOfService() {
               <li><strong>Phone (Boston/Everett):</strong> +1 617-404-2589</li>
               <li><strong>Phone (Cape Cod/Worcester):</strong> +1 508-955-5006</li>
               <li><strong>Phone (Miami):</strong> +1 754-240-0082</li>
-              <li><strong>Email:</strong> info@kingirongroup.com</li>
+              <li><strong>Email:</strong> info@kingsironsworks.com</li>
               <li><strong>Business Hours:</strong> Monday - Friday, 7:00 AM - 5:00 PM EST</li>
               <li><strong>Emergency Services:</strong> Available 24/7 for urgent structural or fire escape issues</li>
             </ul>
