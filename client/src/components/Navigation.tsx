@@ -107,28 +107,33 @@ export default function Navigation() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 bg-sidebar z-40 pt-16">
-          <div className="container py-8">
-            <div className="flex flex-col gap-2">
-              {navItems.map((item) => (
-                <Link key={item.path} href={item.path}>
-                  <div
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`
-                      py-4 px-6 border-l-8 cursor-pointer transition-all
-                      ${
-                        isActive(item.path)
-                          ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
-                          : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
-                      }
-                    `}
-                  >
-                    <span className="text-lg font-display font-bold tracking-wider">
-                      {item.label}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+        <div className="lg:hidden fixed inset-0 bg-sidebar z-40 flex flex-col">
+          {/* Spacer for the fixed top bar */}
+          <div className="h-16 shrink-0" />
+          {/* Scrollable menu content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
+            <div className="container py-4 pb-8">
+              <div className="flex flex-col gap-2">
+                {navItems.map((item) => (
+                  <Link key={item.path} href={item.path}>
+                    <div
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`
+                        py-4 px-6 border-l-8 cursor-pointer transition-all
+                        ${
+                          isActive(item.path)
+                            ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
+                            : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
+                        }
+                      `}
+                    >
+                      <span className="text-lg font-display font-bold tracking-wider">
+                        {item.label}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         </div>
