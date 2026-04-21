@@ -8,7 +8,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  ChevronDown,
   Home,
   Sparkles,
 } from "lucide-react";
@@ -201,7 +200,7 @@ function MasonryImage({
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.2) }}
       className="break-inside-avoid cursor-pointer"
-      style={{ marginBottom: "8px" }}
+      style={{ marginBottom: "14px" }}
       onClick={onClick}
     >
       <div className="relative overflow-hidden rounded-2xl bg-neutral-200 dark:bg-neutral-800">
@@ -233,7 +232,7 @@ function InlineCTA({ index }: { index: number }) {
   const Icon = msg.icon;
 
   return (
-    <div className="break-inside-avoid" style={{ marginBottom: "8px" }}>
+    <div className="break-inside-avoid" style={{ marginBottom: "14px" }}>
       <div className="bg-accent/10 rounded-2xl p-3 sm:p-4 flex flex-col gap-2">
         <div className="flex items-center gap-1.5 text-accent">
           <Icon className="w-4 h-4 shrink-0" />
@@ -277,30 +276,30 @@ function CategorySuggestions({
   if (otherCategories.length === 0) return null;
 
   return (
-    <div className="col-span-full py-4 sm:py-6">
-      <p className="text-xs font-display font-bold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+    <div className="py-6 sm:py-8">
+      <p className="text-sm font-display font-bold text-muted-foreground uppercase tracking-wider mb-4 px-1">
         Explore more of our work
       </p>
-      <div className="flex gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide pb-1">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
         {otherCategories.map((cat) => {
           const preview = photos.find((p) => p.category === cat.id);
           return (
             <button
               key={cat.id}
               onClick={() => onSelect(cat.id)}
-              className="shrink-0 group relative w-32 sm:w-40 h-24 sm:h-28 rounded-xl overflow-hidden"
+              className="shrink-0 group relative w-44 sm:w-52 h-56 sm:h-64 rounded-2xl overflow-hidden"
             >
               {preview && (
                 <img
                   src={preview.src}
                   alt={cat.label}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-colors" />
-              <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                <p className="text-white text-[11px] sm:text-xs font-display font-bold text-left leading-tight drop-shadow-md">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <p className="text-white text-sm sm:text-base font-display font-bold text-left leading-tight drop-shadow-lg">
                   {cat.label}
                 </p>
               </div>
@@ -325,83 +324,10 @@ function CategoryPicker({
   photoCounts: Record<string, number>;
   onSelect: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
   return (
     <>
-      {/* Mobile: dropdown button */}
-      <div ref={dropdownRef} className="md:hidden relative">
-        <button
-          onClick={() => setOpen(!open)}
-          className="w-full flex items-center justify-between bg-card border border-border rounded-md px-3 py-2.5 text-sm font-display font-bold"
-        >
-          <span>{getCategoryLabel(activeCategory)}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground font-normal">
-              {photoCounts[activeCategory]} photos
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-muted-foreground transition-transform ${
-                open ? "rotate-180" : ""
-              }`}
-            />
-          </div>
-        </button>
-
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.15 }}
-              className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-xl z-50 max-h-[60vh] overflow-y-auto"
-            >
-              {categories.map((cat) => {
-                const count = photoCounts[cat.id];
-                const isActive = activeCategory === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => {
-                      onSelect(cat.id);
-                      setOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${
-                      isActive
-                        ? "bg-accent/10 text-accent font-bold"
-                        : count === 0
-                          ? "text-muted-foreground/40"
-                          : "text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <span className="font-display">{cat.label}</span>
-                    <span className={`text-xs ${isActive ? "text-accent" : "text-muted-foreground"}`}>
-                      {count}
-                    </span>
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* Desktop: scrollable pill bar */}
-      <div className="hidden md:flex gap-1.5 overflow-x-auto scrollbar-hide">
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
         {categories.map((cat) => {
           const count = photoCounts[cat.id];
           const isActive = activeCategory === cat.id;
@@ -724,92 +650,95 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Compact header — minimal on mobile */}
-      <div className="sticky top-16 lg:top-20 z-30 bg-background border-b border-border">
-        <div className="px-2 sm:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2 sm:py-2.5">
-          {/* Mobile: category dropdown + quick link */}
-          <div className="flex items-center gap-2 md:hidden">
-            <div className="flex-1">
-              <CategoryPicker
-                activeCategory={activeCategory}
-                photoCounts={photoCounts}
-                onSelect={setCategory}
-              />
-            </div>
-            <Link href="/contact">
-              <Button
-                size="sm"
-                className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] h-[38px] px-3 shrink-0"
-              >
-                Free Quote
-              </Button>
-            </Link>
+      {/* Category bar — Pinterest-style tabs on mobile, pills on desktop */}
+      <div className="sticky top-16 lg:top-20 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50">
+        {/* Mobile: horizontal scrolling text tabs */}
+        <div className="md:hidden px-3 py-2">
+          <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+            {categories.map((cat) => {
+              const count = photoCounts[cat.id];
+              const isActive = activeCategory === cat.id;
+              if (count === 0) return null;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`shrink-0 text-sm font-display font-bold whitespace-nowrap pb-1 transition-colors border-b-2 ${
+                    isActive
+                      ? "text-foreground border-foreground"
+                      : "text-muted-foreground border-transparent"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Desktop: breadcrumb + pills + links */}
-          <div className="hidden md:block">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
-                  <Home className="w-3 h-3" />
-                  Home
-                </Link>
-                <span>/</span>
-                {activeCategory !== "all" ? (
-                  <>
-                    <Link href="/portfolio" className="hover:text-foreground transition-colors">
-                      Portfolio
-                    </Link>
-                    <span>/</span>
-                    <span className="text-foreground font-medium">
-                      {getCategoryLabel(activeCategory)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-foreground font-medium">Portfolio</span>
-                )}
-                <span className="text-muted-foreground/50 ml-1">
-                  ({filteredPhotos.length} projects)
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Link href="/services">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs font-display font-bold tracking-wider h-7"
-                  >
-                    Services
-                  </Button>
-                </Link>
-                <Link href="/contact">
-                  <Button
-                    size="sm"
-                    className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold tracking-wider h-7"
-                  >
-                    Free Quote
-                    <ArrowRight className="ml-1 w-3 h-3" />
-                  </Button>
-                </Link>
-              </div>
+        {/* Desktop: breadcrumb + pills + links */}
+        <div className="hidden md:block px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2.5">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+                <Home className="w-3 h-3" />
+                Home
+              </Link>
+              <span>/</span>
+              {activeCategory !== "all" ? (
+                <>
+                  <Link href="/portfolio" className="hover:text-foreground transition-colors">
+                    Portfolio
+                  </Link>
+                  <span>/</span>
+                  <span className="text-foreground font-medium">
+                    {getCategoryLabel(activeCategory)}
+                  </span>
+                </>
+              ) : (
+                <span className="text-foreground font-medium">Portfolio</span>
+              )}
+              <span className="text-muted-foreground/50 ml-1">
+                ({filteredPhotos.length} projects)
+              </span>
             </div>
-            <CategoryPicker
-              activeCategory={activeCategory}
-              photoCounts={photoCounts}
-              onSelect={setCategory}
-            />
+            <div className="flex items-center gap-2">
+              <Link href="/services">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs font-display font-bold tracking-wider h-7"
+                >
+                  Services
+                </Button>
+              </Link>
+              <Link href="/contact">
+                <Button
+                  size="sm"
+                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold tracking-wider h-7"
+                >
+                  Free Quote
+                  <ArrowRight className="ml-1 w-3 h-3" />
+                </Button>
+              </Link>
+            </div>
           </div>
+          <CategoryPicker
+            activeCategory={activeCategory}
+            photoCounts={photoCounts}
+            onSelect={setCategory}
+          />
         </div>
       </div>
 
       {/* Masonry Grid — tight gaps, edge-to-edge on mobile */}
-      <div className="px-2 sm:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2 sm:py-4">
+      <div className="px-3 sm:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-3 sm:py-4">
         {filteredPhotos.length > 0 ? (
           <>
             <style>{`
-              .portfolio-masonry { column-count: 2; column-gap: 8px; }
-              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 10px; } }
-              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 12px; } }
+              .portfolio-masonry { column-count: 2; column-gap: 14px; }
+              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 16px; } }
+              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 18px; } }
             `}</style>
 
             {/* First batch */}
@@ -878,21 +807,21 @@ export default function Portfolio() {
       </div>
 
       {/* Bottom CTA */}
-      <section className="border-t-4 border-accent bg-accent text-accent-foreground py-12 sm:py-16">
+      <section className="border-t-2 sm:border-t-4 border-accent bg-accent text-accent-foreground py-10 sm:py-16">
         <div className="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto text-center">
-          <h2 className="text-display text-xl sm:text-2xl lg:text-3xl mb-3">
+          <h2 className="text-display text-lg sm:text-2xl lg:text-3xl mb-2 sm:mb-3">
             Like What You See?
           </h2>
-          <p className="text-sm sm:text-base opacity-90 mb-6 leading-relaxed">
+          <p className="text-xs sm:text-base opacity-90 mb-5 sm:mb-6 leading-relaxed">
             Every project started with a conversation. Tell us your vision and
             we&apos;ll bring it to life with the same craftsmanship you see here.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 justify-center">
             <Link href="/contact">
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm sm:text-base px-6 py-4 thick-border font-display font-bold tracking-wider"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-xs sm:text-base px-5 sm:px-6 py-3 sm:py-4 border-2 sm:thick-border font-display font-bold tracking-wider w-full sm:w-auto"
               >
                 Book Free Consultation
                 <Calendar className="ml-2 w-4 h-4" />
@@ -902,7 +831,7 @@ export default function Portfolio() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm sm:text-base px-6 py-4 thick-border font-display font-bold tracking-wider"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-xs sm:text-base px-5 sm:px-6 py-3 sm:py-4 border-2 sm:thick-border font-display font-bold tracking-wider w-full sm:w-auto"
               >
                 <Phone className="mr-2 w-4 h-4" />
                 {localPhone.display}
