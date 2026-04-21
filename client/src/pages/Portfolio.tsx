@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
-  Grid3X3,
+  ChevronDown,
   Home,
   Sparkles,
 } from "lucide-react";
@@ -30,7 +30,7 @@ interface Photo {
 }
 
 const categories = [
-  { id: "all", label: "All Work", icon: Grid3X3 },
+  { id: "all", label: "All Work" },
   { id: "cable-railing", label: "Cable Railings" },
   { id: "structural-steel", label: "Structural Steel" },
   { id: "gate", label: "Gates" },
@@ -131,28 +131,28 @@ const photos: Photo[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// CTA messages that appear between photos
+// CTA messages
 // ---------------------------------------------------------------------------
 
 const ctaMessages = [
   {
     headline: "Love what you see?",
     body: "Every piece is custom-built to your exact vision. Let\u2019s talk about yours.",
-    cta: "Schedule a Free Consultation",
+    cta: "Free Consultation",
     href: "/contact",
     icon: Calendar,
   },
   {
-    headline: "Imagining something like this for your home?",
-    body: "Our craftsmen have 20+ years of experience bringing ideas to life. Yours could be next.",
+    headline: "Picture this at your home?",
+    body: "20+ years of craftsmanship. Yours could be next.",
     cta: "Get a Free Quote",
     href: "/contact",
     icon: ArrowRight,
   },
   {
-    headline: "Ready to start your project?",
-    body: "From a quick conversation to a finished masterpiece \u2014 we make the process easy.",
-    cta: "Book Your Appointment",
+    headline: "Ready to start?",
+    body: "From conversation to masterpiece \u2014 we make it easy.",
+    cta: "Book Appointment",
     href: "/contact",
     icon: Sparkles,
   },
@@ -162,15 +162,15 @@ const ctaMessages = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-const BATCH_SIZE = 20;
-const CTA_INTERVAL = 10; // show a CTA card every N photos
+const BATCH_SIZE = 24;
+const CTA_INTERVAL = 12;
 
 function getCategoryLabel(id: string) {
   return categories.find((c) => c.id === id)?.label ?? id;
 }
 
 // ---------------------------------------------------------------------------
-// MasonryImage — single image tile with fade-in on load
+// MasonryImage
 // ---------------------------------------------------------------------------
 
 function MasonryImage({
@@ -196,18 +196,16 @@ function MasonryImage({
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.3) }}
-      className="mb-3 break-inside-avoid cursor-pointer group"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.2) }}
+      className="break-inside-avoid cursor-pointer group"
+      style={{ marginBottom: "2px" }}
       onClick={onClick}
     >
-      <div className="relative overflow-hidden rounded-lg bg-muted/30">
-        {/* Blur placeholder */}
+      <div className="relative overflow-hidden bg-neutral-200 dark:bg-neutral-800">
         {!loaded && (
-          <div className="absolute inset-0 bg-muted/50 animate-pulse rounded-lg" />
+          <div className="absolute inset-0 animate-pulse bg-neutral-300 dark:bg-neutral-700" />
         )}
         <img
           ref={imgRef}
@@ -216,13 +214,13 @@ function MasonryImage({
           loading={index < 8 ? "eager" : "lazy"}
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          className={`w-full block transition-all duration-500 group-hover:scale-[1.03] group-hover:brightness-110 ${
+          className={`w-full block transition-all duration-300 group-hover:scale-[1.02] ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-lg flex items-end p-3">
-          <span className="text-white text-xs font-display font-bold tracking-wider uppercase">
+        {/* Hover overlay — desktop only */}
+        <div className="hidden sm:flex absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-end p-2.5">
+          <span className="text-white text-[10px] font-display font-bold tracking-wider uppercase">
             {getCategoryLabel(photo.category)}
           </span>
         </div>
@@ -232,7 +230,7 @@ function MasonryImage({
 }
 
 // ---------------------------------------------------------------------------
-// InlineCTA — appointment prompt card inside the masonry grid
+// InlineCTA — compact card in the grid
 // ---------------------------------------------------------------------------
 
 function InlineCTA({ index }: { index: number }) {
@@ -240,24 +238,24 @@ function InlineCTA({ index }: { index: number }) {
   const Icon = msg.icon;
 
   return (
-    <div className="mb-3 break-inside-avoid">
-      <div className="rounded-lg border-2 border-accent/30 bg-accent/5 p-5 sm:p-6 flex flex-col gap-3">
-        <div className="flex items-center gap-2 text-accent">
-          <Icon className="w-5 h-5" />
-          <span className="text-sm font-display font-bold tracking-wider uppercase">
+    <div className="break-inside-avoid" style={{ marginBottom: "2px" }}>
+      <div className="bg-accent/10 p-3 sm:p-4 flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 text-accent">
+          <Icon className="w-4 h-4 shrink-0" />
+          <span className="text-xs font-display font-bold leading-tight">
             {msg.headline}
           </span>
         </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+        <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">
           {msg.body}
         </p>
         <Link href={msg.href}>
           <Button
             size="sm"
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold tracking-wider text-xs"
+            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] sm:text-xs h-7 sm:h-8"
           >
             {msg.cta}
-            <ArrowRight className="ml-2 w-4 h-4" />
+            <ArrowRight className="ml-1 w-3 h-3" />
           </Button>
         </Link>
       </div>
@@ -266,7 +264,128 @@ function InlineCTA({ index }: { index: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Lightbox — immersive full-screen viewer
+// CategoryPicker — dropdown on mobile, pill bar on desktop
+// ---------------------------------------------------------------------------
+
+function CategoryPicker({
+  activeCategory,
+  photoCounts,
+  onSelect,
+}: {
+  activeCategory: string;
+  photoCounts: Record<string, number>;
+  onSelect: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <>
+      {/* Mobile: dropdown button */}
+      <div ref={dropdownRef} className="md:hidden relative">
+        <button
+          onClick={() => setOpen(!open)}
+          className="w-full flex items-center justify-between bg-card border border-border rounded-md px-3 py-2.5 text-sm font-display font-bold"
+        >
+          <span>{getCategoryLabel(activeCategory)}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-normal">
+              {photoCounts[activeCategory]} photos
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-muted-foreground transition-transform ${
+                open ? "rotate-180" : ""
+              }`}
+            />
+          </div>
+        </button>
+
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-xl z-50 max-h-[60vh] overflow-y-auto"
+            >
+              {categories.map((cat) => {
+                const count = photoCounts[cat.id];
+                const isActive = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => {
+                      onSelect(cat.id);
+                      setOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2.5 text-sm transition-colors ${
+                      isActive
+                        ? "bg-accent/10 text-accent font-bold"
+                        : count === 0
+                          ? "text-muted-foreground/40"
+                          : "text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <span className="font-display">{cat.label}</span>
+                    <span className={`text-xs ${isActive ? "text-accent" : "text-muted-foreground"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Desktop: scrollable pill bar */}
+      <div className="hidden md:flex gap-1.5 overflow-x-auto scrollbar-hide">
+        {categories.map((cat) => {
+          const count = photoCounts[cat.id];
+          const isActive = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => onSelect(cat.id)}
+              className={`
+                px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap
+                transition-all rounded-full flex-shrink-0
+                ${
+                  isActive
+                    ? "bg-accent text-accent-foreground"
+                    : count === 0
+                      ? "text-muted-foreground/30"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
+                }
+              `}
+            >
+              {cat.label}
+              {count > 0 && !isActive && (
+                <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Lightbox
 // ---------------------------------------------------------------------------
 
 function Lightbox({
@@ -294,7 +413,6 @@ function Lightbox({
     setCurrentIndex((i) => (i === lbPhotos.length - 1 ? 0 : i + 1));
   }, [lbPhotos.length]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -305,7 +423,6 @@ function Lightbox({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose, prev, next]);
 
-  // Lock body scroll
   useEffect(() => {
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -314,12 +431,8 @@ function Lightbox({
     };
   }, []);
 
-  // Touch handlers for swipe
   const onTouchStart = (e: React.TouchEvent) => {
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchDeltaRef.current = { x: 0, y: 0 };
   };
 
@@ -328,24 +441,16 @@ function Lightbox({
     const dx = e.touches[0].clientX - touchStartRef.current.x;
     const dy = e.touches[0].clientY - touchStartRef.current.y;
     touchDeltaRef.current = { x: dx, y: dy };
-    // Horizontal swipe — show offset
-    if (Math.abs(dx) > Math.abs(dy)) {
-      setSwipeOffset(dx * 0.4);
-    }
+    if (Math.abs(dx) > Math.abs(dy)) setSwipeOffset(dx * 0.4);
   };
 
   const onTouchEnd = () => {
     const { x: dx, y: dy } = touchDeltaRef.current;
     setSwipeOffset(0);
-    // Horizontal swipe
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-      if (dx > 0) prev();
-      else next();
+      dx > 0 ? prev() : next();
     }
-    // Vertical swipe down to close
-    if (dy > 100 && Math.abs(dy) > Math.abs(dx)) {
-      onClose();
-    }
+    if (dy > 100 && Math.abs(dy) > Math.abs(dx)) onClose();
     touchStartRef.current = null;
   };
 
@@ -355,45 +460,36 @@ function Lightbox({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
-      className="fixed inset-0 z-50 bg-black/97 flex flex-col"
+      className="fixed inset-0 z-50 bg-black flex flex-col"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-3 sm:px-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors p-1"
-          >
-            <X className="w-6 h-6" />
+      <div className="flex items-center justify-between px-3 py-2 sm:px-6 sm:py-3 shrink-0">
+        <div className="flex items-center gap-2">
+          <button onClick={onClose} className="text-white/60 hover:text-white p-1">
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
-          <span className="text-white/40 text-sm font-display">
+          <span className="text-white/40 text-xs sm:text-sm font-display">
             {currentIndex + 1} / {lbPhotos.length}
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden sm:inline text-white/30 text-xs font-display uppercase tracking-wider">
-            {getCategoryLabel(photo.category)}
-          </span>
-        </div>
+        <span className="text-white/30 text-[10px] sm:text-xs font-display uppercase tracking-wider">
+          {getCategoryLabel(photo.category)}
+        </span>
       </div>
 
-      {/* Main image area */}
+      {/* Image */}
       <div
-        className="flex-1 flex items-center justify-center relative overflow-hidden px-2 sm:px-16"
+        className="flex-1 flex items-center justify-center relative overflow-hidden"
         onClick={onClose}
       >
-        {/* Prev button — desktop */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            prev();
-          }}
-          className="hidden sm:flex absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+          onClick={(e) => { e.stopPropagation(); prev(); }}
+          className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
         >
-          <ChevronLeft className="w-8 h-8" />
+          <ChevronLeft className="w-7 h-7" />
         </button>
 
         <AnimatePresence mode="wait">
@@ -401,57 +497,44 @@ function Lightbox({
             key={photo.src}
             src={photo.src}
             alt={photo.alt}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              x: swipeOffset,
-            }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="max-h-[80vh] max-w-full object-contain rounded-sm select-none"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1, x: swipeOffset }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.15 }}
+            className="max-h-[82vh] max-w-[96vw] sm:max-w-[90vw] object-contain select-none"
             onClick={(e) => e.stopPropagation()}
             draggable={false}
           />
         </AnimatePresence>
 
-        {/* Next button — desktop */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            next();
-          }}
-          className="hidden sm:flex absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
+          onClick={(e) => { e.stopPropagation(); next(); }}
+          className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
         >
-          <ChevronRight className="w-8 h-8" />
+          <ChevronRight className="w-7 h-7" />
         </button>
       </div>
 
-      {/* Bottom bar — info + CTA */}
-      <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-white/10">
-        <div className="text-center sm:text-left">
-          <p className="text-white/80 text-sm">{photo.alt}</p>
-          <p className="text-white/30 text-xs font-display uppercase tracking-wider mt-0.5">
-            {getCategoryLabel(photo.category)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      {/* Bottom bar */}
+      <div className="shrink-0 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 border-t border-white/10">
+        <p className="text-white/60 text-xs sm:text-sm truncate flex-1">{photo.alt}</p>
+        <div className="flex items-center gap-1.5 shrink-0">
           <Link href="/contact">
             <Button
               size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold tracking-wider text-xs"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] sm:text-xs h-7 sm:h-8 px-2.5 sm:px-3"
             >
-              <Calendar className="w-3.5 h-3.5 mr-1.5" />
-              Get a Free Quote
+              <Calendar className="w-3 h-3 mr-1" />
+              Quote
             </Button>
           </Link>
           <PhoneLink tel={localPhone.tel}>
             <Button
               size="sm"
               variant="outline"
-              className="border-white/20 text-white/70 hover:text-white hover:border-white/40 font-display text-xs"
+              className="border-white/20 text-white/70 hover:text-white font-display text-[10px] sm:text-xs h-7 sm:h-8 px-2.5 sm:px-3"
             >
-              <Phone className="w-3.5 h-3.5 mr-1.5" />
+              <Phone className="w-3 h-3 mr-1" />
               Call
             </Button>
           </PhoneLink>
@@ -459,27 +542,19 @@ function Lightbox({
       </div>
 
       {/* Thumbnail strip — desktop */}
-      <div className="hidden sm:block shrink-0 border-t border-white/5 px-6 py-2">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide justify-center max-w-4xl mx-auto">
+      <div className="hidden md:block shrink-0 border-t border-white/5 px-6 py-1.5">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide justify-center max-w-4xl mx-auto">
           {lbPhotos.map((p, i) => (
             <button
               key={p.src}
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentIndex(i);
-              }}
-              className={`shrink-0 w-12 h-12 rounded overflow-hidden transition-all ${
+              onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
+              className={`shrink-0 w-10 h-10 rounded-sm overflow-hidden transition-all ${
                 i === currentIndex
                   ? "ring-2 ring-accent opacity-100"
-                  : "opacity-40 hover:opacity-70"
+                  : "opacity-30 hover:opacity-60"
               }`}
             >
-              <img
-                src={p.src}
-                alt=""
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <img src={p.src} alt="" className="w-full h-full object-cover" loading="lazy" />
             </button>
           ))}
         </div>
@@ -503,10 +578,8 @@ export default function Portfolio() {
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const filterBarRef = useRef<HTMLDivElement>(null);
   const localPhone = useLocalPhone();
 
-  // Filter photos by category
   const filteredPhotos = useMemo(
     () =>
       activeCategory === "all"
@@ -515,40 +588,33 @@ export default function Portfolio() {
     [activeCategory],
   );
 
-  // Count per category
   const photoCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const c of categories) {
-      counts[c.id] =
-        c.id === "all" ? photos.length : photos.filter((p) => p.category === c.id).length;
+      counts[c.id] = c.id === "all" ? photos.length : photos.filter((p) => p.category === c.id).length;
     }
     return counts;
   }, []);
 
-  // Reset visible count when category changes
   useEffect(() => {
     setVisibleCount(BATCH_SIZE);
   }, [activeCategory]);
 
-  // Infinite scroll observer
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          setVisibleCount((prev) =>
-            Math.min(prev + BATCH_SIZE, filteredPhotos.length),
-          );
+          setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredPhotos.length));
         }
       },
-      { rootMargin: "400px" },
+      { rootMargin: "600px" },
     );
     observer.observe(el);
     return () => observer.disconnect();
   }, [filteredPhotos.length]);
 
-  // Navigate categories via URL
   const setCategory = useCallback(
     (id: string) => {
       setLocation(id === "all" ? "/portfolio" : `/portfolio/${id}`);
@@ -557,144 +623,109 @@ export default function Portfolio() {
     [setLocation],
   );
 
-  // Build masonry items (photos + CTA cards interleaved)
+  // Build masonry items with interleaved CTAs
   const visiblePhotos = filteredPhotos.slice(0, visibleCount);
   const masonryItems: Array<
     { type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number }
   > = [];
   let ctaCounter = 0;
   for (let i = 0; i < visiblePhotos.length; i++) {
-    masonryItems.push({
-      type: "photo",
-      photo: visiblePhotos[i],
-      globalIndex: i,
-    });
-    // Insert CTA after every CTA_INTERVAL photos (but not at the very end)
-    if (
-      (i + 1) % CTA_INTERVAL === 0 &&
-      i + 1 < visiblePhotos.length
-    ) {
+    masonryItems.push({ type: "photo", photo: visiblePhotos[i], globalIndex: i });
+    if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < visiblePhotos.length) {
       masonryItems.push({ type: "cta", ctaIndex: ctaCounter++ });
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header / Breadcrumb */}
-      <div className="border-b border-border bg-background">
-        <div className="container py-4 sm:py-5">
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-            <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
-              <Home className="w-3 h-3" />
-              Home
+      {/* Compact header — minimal on mobile */}
+      <div className="sticky top-16 lg:top-20 z-30 bg-background border-b border-border">
+        <div className="px-2 sm:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2 sm:py-2.5">
+          {/* Mobile: category dropdown + quick link */}
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="flex-1">
+              <CategoryPicker
+                activeCategory={activeCategory}
+                photoCounts={photoCounts}
+                onSelect={setCategory}
+              />
+            </div>
+            <Link href="/contact">
+              <Button
+                size="sm"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] h-[38px] px-3 shrink-0"
+              >
+                Free Quote
+              </Button>
             </Link>
-            <span>/</span>
-            {activeCategory !== "all" ? (
-              <>
-                <Link
-                  href="/portfolio"
-                  className="hover:text-foreground transition-colors"
-                >
-                  Portfolio
+          </div>
+
+          {/* Desktop: breadcrumb + pills + links */}
+          <div className="hidden md:block">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+                  <Home className="w-3 h-3" />
+                  Home
                 </Link>
                 <span>/</span>
-                <span className="text-foreground font-medium">
-                  {getCategoryLabel(activeCategory)}
-                </span>
-              </>
-            ) : (
-              <span className="text-foreground font-medium">Portfolio</span>
-            )}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-            <div>
-              <h1 className="text-display text-2xl sm:text-3xl lg:text-4xl">
-                {activeCategory === "all"
-                  ? "Our Portfolio"
-                  : getCategoryLabel(activeCategory)}
-              </h1>
-              <p className="text-muted-foreground text-sm mt-1">
-                {filteredPhotos.length} project
-                {filteredPhotos.length !== 1 ? "s" : ""} showcasing our
-                craftsmanship
-              </p>
-            </div>
-
-            {/* Quick links */}
-            <div className="flex items-center gap-2">
-              <Link href="/services">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs font-display font-bold tracking-wider"
-                >
-                  Our Services
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button
-                  size="sm"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold tracking-wider"
-                >
-                  Free Quote
-                  <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Sticky Category Filter Bar */}
-      <div
-        ref={filterBarRef}
-        className="sticky top-16 lg:top-20 z-30 bg-background/95 backdrop-blur-sm border-b border-border"
-      >
-        <div className="container py-2.5">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5">
-            {categories.map((cat) => {
-              const count = photoCounts[cat.id];
-              const isActive = activeCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setCategory(cat.id)}
-                  className={`
-                    px-3.5 py-1.5 text-[11px] font-display font-bold tracking-wider whitespace-nowrap
-                    transition-all rounded-full flex-shrink-0 flex items-center gap-1.5
-                    ${
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : count === 0
-                          ? "bg-transparent text-muted-foreground/40 border border-border/50"
-                          : "bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
-                    }
-                  `}
-                >
-                  {cat.label.toUpperCase()}
-                  {count > 0 && (
-                    <span
-                      className={`text-[9px] ${
-                        isActive ? "text-accent-foreground/70" : "text-muted-foreground/50"
-                      }`}
-                    >
-                      {count}
+                {activeCategory !== "all" ? (
+                  <>
+                    <Link href="/portfolio" className="hover:text-foreground transition-colors">
+                      Portfolio
+                    </Link>
+                    <span>/</span>
+                    <span className="text-foreground font-medium">
+                      {getCategoryLabel(activeCategory)}
                     </span>
-                  )}
-                </button>
-              );
-            })}
+                  </>
+                ) : (
+                  <span className="text-foreground font-medium">Portfolio</span>
+                )}
+                <span className="text-muted-foreground/50 ml-1">
+                  ({filteredPhotos.length} projects)
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href="/services">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs font-display font-bold tracking-wider h-7"
+                  >
+                    Services
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button
+                    size="sm"
+                    className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold tracking-wider h-7"
+                  >
+                    Free Quote
+                    <ArrowRight className="ml-1 w-3 h-3" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+            <CategoryPicker
+              activeCategory={activeCategory}
+              photoCounts={photoCounts}
+              onSelect={setCategory}
+            />
           </div>
         </div>
       </div>
 
-      {/* Masonry Grid */}
-      <div className="container py-6">
+      {/* Masonry Grid — tight gaps, edge-to-edge on mobile */}
+      <div className="px-0.5 sm:px-2 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-0.5 sm:py-3">
         {filteredPhotos.length > 0 ? (
-          <div className="columns-2 md:columns-3 xl:columns-4 gap-3">
-            <AnimatePresence mode="popLayout">
+          <>
+            <style>{`
+              .portfolio-masonry { column-count: 2; column-gap: 2px; }
+              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 4px; } }
+              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 6px; } }
+            `}</style>
+            <div className="portfolio-masonry">
               {masonryItems.map((item, idx) => {
                 if (item.type === "cta") {
                   return <InlineCTA key={`cta-${item.ctaIndex}`} index={item.ctaIndex} />;
@@ -708,28 +739,23 @@ export default function Portfolio() {
                   />
                 );
               })}
-            </AnimatePresence>
-          </div>
+            </div>
+          </>
         ) : (
           <div className="text-center py-32">
-            <p className="text-xl text-muted-foreground mb-4">
+            <p className="text-lg text-muted-foreground mb-4">
               No projects in this category yet.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => setCategory("all")}
-              className="font-display font-bold tracking-wider"
-            >
+            <Button variant="outline" onClick={() => setCategory("all")} className="font-display font-bold">
               View All Work
             </Button>
           </div>
         )}
 
-        {/* Infinite scroll sentinel */}
         {visibleCount < filteredPhotos.length && (
-          <div ref={loadMoreRef} className="flex justify-center py-12">
+          <div ref={loadMoreRef} className="flex justify-center py-10">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <div className="w-5 h-5 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
               Loading more...
             </div>
           </div>
@@ -737,34 +763,33 @@ export default function Portfolio() {
       </div>
 
       {/* Bottom CTA */}
-      <section className="border-t-4 border-accent bg-accent text-accent-foreground py-16 sm:py-20">
-        <div className="container text-center max-w-2xl">
-          <h2 className="text-display text-2xl sm:text-3xl lg:text-4xl mb-4">
+      <section className="border-t-4 border-accent bg-accent text-accent-foreground py-12 sm:py-16">
+        <div className="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto text-center">
+          <h2 className="text-display text-xl sm:text-2xl lg:text-3xl mb-3">
             Like What You See?
           </h2>
-          <p className="text-lg opacity-90 mb-8 leading-relaxed">
-            Every project in our portfolio started with a conversation. Tell us
-            about your vision and we&apos;ll bring it to life with the same
-            care and precision you see here.
+          <p className="text-sm sm:text-base opacity-90 mb-6 leading-relaxed">
+            Every project started with a conversation. Tell us your vision and
+            we&apos;ll bring it to life with the same craftsmanship you see here.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/contact">
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-base px-8 py-5 thick-border font-display font-bold tracking-wider"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm sm:text-base px-6 py-4 thick-border font-display font-bold tracking-wider"
               >
-                Book Your Free Consultation
-                <Calendar className="ml-2 w-5 h-5" />
+                Book Free Consultation
+                <Calendar className="ml-2 w-4 h-4" />
               </Button>
             </Link>
             <PhoneLink tel={localPhone.tel}>
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-base px-8 py-5 thick-border font-display font-bold tracking-wider"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm sm:text-base px-6 py-4 thick-border font-display font-bold tracking-wider"
               >
-                <Phone className="mr-2 w-5 h-5" />
+                <Phone className="mr-2 w-4 h-4" />
                 {localPhone.display}
               </Button>
             </PhoneLink>
