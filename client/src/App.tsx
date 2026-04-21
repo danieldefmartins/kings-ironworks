@@ -96,6 +96,7 @@ function Router() {
       <Route path="/vermont" component={VermontLanding} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/blog" component={Blog} />
+      <Route path="/portfolio/:category" component={Portfolio} />
       <Route path="/portfolio" component={Portfolio} />
       <Route path="/locations" component={Locations} />
       <Route path="/about" component={About} />
