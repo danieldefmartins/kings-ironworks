@@ -6,82 +6,136 @@ import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
 import { ArrowRight, Shield, Wrench, Building2, MapPin, Phone, CheckCircle2 } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
+import { useState, useEffect, useCallback } from "react";
+import type { CarouselApi } from "@/components/ui/carousel";
+
+const heroSlides = [
+  {
+    image: "/images/New Portfolio/staircase/15414fcf-625a-4e55-860a-ab1fefbb89e6.jpg",
+    alt: "Ornate curved staircase with hand-forged scrollwork and copper accents",
+  },
+  {
+    image: "/images/New Portfolio/staircase/IMG_6934.JPEG",
+    alt: "Grand curved staircase with crystal chandelier and ornate ironwork",
+  },
+  {
+    image: "/images/New Portfolio/staircase/IMG_3906.JPEG",
+    alt: "Modern floating staircase with glass panels and steel mono-stringer",
+  },
+  {
+    image: "/images/New Portfolio/staircase/IMG_7991.JPEG",
+    alt: "LED-lit floating staircase with horizontal railings and pendant lights",
+  },
+  {
+    image: "/images/New Portfolio/staircase/FullSizeRender-5.jpg",
+    alt: "Industrial curved steel spiral staircase in open-concept home",
+  },
+];
 
 export default function Home() {
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const onSelect = useCallback(() => {
+    if (!carouselApi) return;
+    setCurrentSlide(carouselApi.selectedScrollSnap());
+  }, [carouselApi]);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+    onSelect();
+    carouselApi.on("select", onSelect);
+    return () => { carouselApi.off("select", onSelect); };
+  }, [carouselApi, onSelect]);
+
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Diagonal Split */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/images/hero-historic-ironwork.webp"
-            alt="Historic ironwork detail"
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-sidebar/95 via-sidebar/70 to-transparent" />
-        </div>
+      {/* Hero Section - Staircase Showcase Carousel */}
+      <section className="relative overflow-hidden">
+        <Carousel
+          opts={{ loop: true }}
+          plugins={[Autoplay({ delay: 5000, stopOnInteraction: false })]}
+          setApi={setCarouselApi}
+          className="w-full"
+        >
+          <CarouselContent className="ml-0">
+            {heroSlides.map((slide, i) => (
+              <CarouselItem key={i} className="pl-0 relative">
+                <div className="relative h-[85vh] sm:h-[90vh]">
+                  <img
+                    src={slide.image}
+                    alt={slide.alt}
+                    className="w-full h-full object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                </div>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
 
-        {/* Content */}
-        <div className="container relative z-10">
-          <div className="max-w-3xl">
-            <div className="inline-block px-4 py-2 bg-accent text-accent-foreground text-sm font-display font-bold tracking-wider mb-6">
-              SINCE 2004 • 20+ YEARS OF EXCELLENCE
+          {/* Dot indicators */}
+          <div className="absolute bottom-32 sm:bottom-40 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {heroSlides.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => carouselApi?.scrollTo(i)}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  i === currentSlide ? "bg-white w-6" : "bg-white/40"
+                }`}
+              />
+            ))}
+          </div>
+        </Carousel>
+
+        {/* Overlay Content — positioned over the carousel */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 pb-6 sm:pb-10">
+          <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto lg:mx-0 lg:ml-8 xl:ml-16">
+            <div className="inline-block px-3 py-1.5 bg-accent text-accent-foreground text-xs font-display font-bold tracking-wider mb-3">
+              SINCE 2004 &bull; 20+ YEARS OF EXCELLENCE
             </div>
-            
-            <h1 className="text-display text-4xl sm:text-5xl md:text-7xl lg:text-8xl text-sidebar-foreground mb-6 leading-tight">
-              WHERE HERITAGE MEETS SAFETY
+
+            <h1 className="text-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-3 leading-[1.1]">
+              We Make Steel
+              <br />
+              <span className="text-accent">Dance.</span>
             </h1>
-            
-            <p className="text-lg sm:text-xl md:text-2xl text-sidebar-foreground/80 mb-8 leading-relaxed">
-              Boston's premier historic ironwork restoration and licensed fire escape specialists. 
-              Custom artisan fabrication meets modern safety standards—all in-house.
+
+            <p className="text-sm sm:text-base md:text-lg text-white/80 mb-5 leading-relaxed max-w-xl">
+              If we can make steel dance in a beautiful rhythm, imagine what we
+              can do for your railings, staircases, and all your ironwork needs.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base px-6 py-4 font-display font-bold">
                   FREE ASSESSMENT
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
-                  <Phone className="mr-2 w-5 h-5" />
+                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 text-sm sm:text-base px-6 py-4 font-display font-bold">
+                  <Phone className="mr-2 w-4 h-4" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>
               </PhoneLink>
             </div>
 
             {/* Trust Badges */}
-            <div className="mt-12 flex flex-wrap gap-4 text-sm text-sidebar-foreground/70">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-accent" />
+            <div className="mt-5 flex flex-wrap gap-3 text-xs sm:text-sm text-white/60">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-accent" />
                 <span>Licensed Installer</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-accent" />
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-accent" />
                 <span>4 Locations</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-accent" />
-                <span>State-of-the-Art Shop</span>
-              </div>
-            </div>
-            
-            {/* American Pride Badges */}
-            <div className="mt-6 flex flex-wrap gap-4">
-              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-xl sm:text-2xl">🇺🇸</span>
-                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">PROUD TO BE AMERICAN</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-xl sm:text-2xl">🎖️</span>
-                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">MILITARY DISCOUNT AVAILABLE</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-accent/20 border-2 border-accent">
-                <span className="text-xl sm:text-2xl">⚙️</span>
-                <span className="font-display font-bold text-sidebar-foreground text-xs sm:text-sm">MADE IN USA</span>
+              <div className="flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-accent" />
+                <span>Made in USA</span>
               </div>
             </div>
           </div>
