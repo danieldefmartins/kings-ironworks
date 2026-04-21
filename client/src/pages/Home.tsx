@@ -13,23 +13,23 @@ import type { CarouselApi } from "@/components/ui/carousel";
 
 const heroSlides = [
   {
-    image: "/images/New%20Portfolio/staircase/15414fcf-625a-4e55-860a-ab1fefbb89e6.jpg",
+    image: "/images/new-portfolio/staircase/15414fcf-625a-4e55-860a-ab1fefbb89e6.jpg",
     alt: "Ornate curved staircase with hand-forged scrollwork and copper accents",
   },
   {
-    image: "/images/New%20Portfolio/staircase/IMG_6934.JPEG",
+    image: "/images/new-portfolio/staircase/IMG_6934.JPEG",
     alt: "Grand curved staircase with crystal chandelier and ornate ironwork",
   },
   {
-    image: "/images/New%20Portfolio/staircase/IMG_3906.JPEG",
+    image: "/images/new-portfolio/staircase/IMG_3906.JPEG",
     alt: "Modern floating staircase with glass panels and steel mono-stringer",
   },
   {
-    image: "/images/New%20Portfolio/staircase/IMG_7991.JPEG",
+    image: "/images/new-portfolio/staircase/IMG_7991.JPEG",
     alt: "LED-lit floating staircase with horizontal railings and pendant lights",
   },
   {
-    image: "/images/New%20Portfolio/staircase/FullSizeRender-5.jpg",
+    image: "/images/new-portfolio/staircase/FullSizeRender-5.jpg",
     alt: "Industrial curved steel spiral staircase in open-concept home",
   },
 ];

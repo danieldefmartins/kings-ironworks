@@ -42,7 +42,7 @@ const categories = [
   { id: "restoration", label: "Restoration" },
 ];
 
-const NEW = "/images/New%20Portfolio/staircase";
+const NEW = "/images/new-portfolio/staircase";
 
 const photos: Photo[] = [
   // Staircases — curated from 605 photos
