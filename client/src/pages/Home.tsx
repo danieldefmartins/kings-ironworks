@@ -106,10 +106,10 @@ export default function Home() {
               SINCE 2004 &bull; 20+ YEARS OF EXCELLENCE
             </div>
 
-            <h1 className="text-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-3 leading-[1.1]">
+            <h1 className="text-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white mb-3 leading-[1.1]" style={{ textShadow: "0 2px 20px rgba(0,0,0,0.6)" }}>
               We Make Steel
               <br />
-              <span className="text-accent">Dance.</span>
+              <span className="text-white" style={{ WebkitTextStroke: "1px rgba(255,255,255,0.3)", textShadow: "0 0 30px rgba(0,0,0,0.8), 0 2px 10px rgba(0,0,0,0.9)" }}>Dance.</span>
             </h1>
 
             <p className="text-sm sm:text-base md:text-lg text-white/80 mb-5 leading-relaxed max-w-xl">

@@ -21,7 +21,7 @@ const locationOG: Record<string, OGData> = {
     title: "King Iron Works - Boston's Premier Historic Ironwork & Fire Escape Specialists",
     description:
       "20+ years of expertise in historic building restoration, licensed fire escape services, and custom ironwork fabrication. Serving Boston, New England, New York, and Florida.",
-    image: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    image: `${IMG_BASE}/homepage/project2-hero.jpg`,
     path: "/",
   },
   "/cape-cod": {
