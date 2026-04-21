@@ -13,24 +13,32 @@ import type { CarouselApi } from "@/components/ui/carousel";
 
 const heroSlides = [
   {
-    image: "/images/new-portfolio/staircase/15414fcf-625a-4e55-860a-ab1fefbb89e6.jpg",
-    alt: "Ornate curved staircase with hand-forged scrollwork and copper accents",
+    image: "/images/homepage/project1-hero.jpg",
+    alt: "Hand-forged peacock scrollwork curved staircase — a King Iron Works masterpiece",
+    // Portrait image — on mobile show upper portion with scrollwork detail
+    objectPosition: "center 30%",
+  },
+  {
+    image: "/images/homepage/project2-hero.jpg",
+    alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
+    // Square image — center works well
+    objectPosition: "center center",
+  },
+  {
+    image: "/images/homepage/project1-reveal.jpg",
+    alt: "The master craftsman with his finished curved staircase masterpiece",
+    // Landscape — center on the staircase and person
+    objectPosition: "center 40%",
   },
   {
     image: "/images/new-portfolio/staircase/IMG_6934.JPEG",
     alt: "Grand curved staircase with crystal chandelier and ornate ironwork",
-  },
-  {
-    image: "/images/new-portfolio/staircase/IMG_3906.JPEG",
-    alt: "Modern floating staircase with glass panels and steel mono-stringer",
-  },
-  {
-    image: "/images/new-portfolio/staircase/IMG_7991.JPEG",
-    alt: "LED-lit floating staircase with horizontal railings and pendant lights",
+    objectPosition: "center 20%",
   },
   {
     image: "/images/new-portfolio/staircase/FullSizeRender-5.jpg",
     alt: "Industrial curved steel spiral staircase in open-concept home",
+    objectPosition: "center center",
   },
 ];
 
@@ -63,14 +71,15 @@ export default function Home() {
           <CarouselContent className="ml-0">
             {heroSlides.map((slide, i) => (
               <CarouselItem key={i} className="pl-0 relative">
-                <div className="relative h-[85vh] sm:h-[90vh]">
+                <div className="relative h-[92vh] sm:h-[90vh]">
                   <img
                     src={slide.image}
                     alt={slide.alt}
                     className="w-full h-full object-cover"
+                    style={{ objectPosition: slide.objectPosition }}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
                 </div>
               </CarouselItem>
             ))}
