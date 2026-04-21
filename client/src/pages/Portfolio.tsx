@@ -29,7 +29,7 @@ interface Photo {
 }
 
 const categories = [
-  { id: "all", label: "All Work" },
+  { id: "all", label: "All" },
   { id: "cable-railing", label: "Cable Railings" },
   { id: "structural-steel", label: "Structural Steel" },
   { id: "gate", label: "Gates" },
@@ -46,14 +46,11 @@ const categories = [
 ];
 
 const photos: Photo[] = [
-  // Structural Steel
   { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-1.jpg`, alt: "Structural steel fabrication" },
   { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-2.jpg`, alt: "Commercial structural steel installation" },
   { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-3.jpg`, alt: "Steel beam construction" },
-  // Cable Railings
   { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-1.jpg`, alt: "Custom cable railing system" },
   { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-2.jpg`, alt: "Cable railing installation" },
-  // Fire Escapes
   { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation" },
   { category: "fire-escape", src: `${IMG}/PmBUKqXwdDkeqflj.JPG`, alt: "Fire escape structural repair" },
   { category: "fire-escape", src: `${IMG}/LIIMwNaIvkbuwmQE.JPG`, alt: "Commercial fire escape system" },
@@ -63,7 +60,6 @@ const photos: Photo[] = [
   { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-1.jpg`, alt: "Fire escape ladder and platform system" },
   { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-2.jpg`, alt: "Residential fire escape installation" },
   { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-3.jpg`, alt: "Fire escape stairway fabrication" },
-  // Gates
   { category: "gate", src: `${IMG}/ldKpYAFGAsEGkCVX.JPG`, alt: "Ornamental wrought iron gate" },
   { category: "gate", src: `${IMG}/aoFXjvosIbfREama.JPG`, alt: "Hand-forged estate gate" },
   { category: "gate", src: `${IMG}/AzTrmVJOTgNkaNYM.JPG`, alt: "Custom security gate" },
@@ -73,7 +69,6 @@ const photos: Photo[] = [
   { category: "gate", src: `${LOCAL}/gate/gate-1.jpg`, alt: "Custom iron gate fabrication" },
   { category: "gate", src: `${LOCAL}/gate/gate-2.jpg`, alt: "Ornamental garden gate" },
   { category: "gate", src: `${LOCAL}/gate/gate-3.jpg`, alt: "Residential entry gate" },
-  // Interior Railings
   { category: "interior-railing", src: `${IMG}/apLcldtAeVXzDTCh.JPG`, alt: "Custom interior staircase railing" },
   { category: "interior-railing", src: `${IMG}/YrJVPkpgGfMkWRdT.JPG`, alt: "Elegant spiral staircase railing" },
   { category: "interior-railing", src: `${IMG}/qOPbckSMBFnciBif.JPG`, alt: "Modern interior railing" },
@@ -81,7 +76,6 @@ const photos: Photo[] = [
   { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-1.jpg`, alt: "Custom staircase railing design" },
   { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-2.jpg`, alt: "Interior iron balustrade" },
   { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-3.jpg`, alt: "Wrought iron staircase handrail" },
-  // Exterior Railings
   { category: "exterior-railing", src: `${IMG}/KVrQsNoDvGzMAnwj.JPG`, alt: "Weather-resistant exterior railing" },
   { category: "exterior-railing", src: `${IMG}/BtcNBKAOOIKUZnLV.JPG`, alt: "Powder-coated deck railing" },
   { category: "exterior-railing", src: `${IMG}/gujHFKlEnadUYTxL.JPG`, alt: "Classic New England porch railing" },
@@ -89,19 +83,15 @@ const photos: Photo[] = [
   { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-1.jpg`, alt: "Custom exterior porch railing" },
   { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-2.jpg`, alt: "Wrought iron exterior handrail" },
   { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-3.jpg`, alt: "Decorative exterior balustrade" },
-  // Deck Railings
   { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-1.jpg`, alt: "Custom deck railing system" },
   { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-2.jpg`, alt: "Iron deck railing installation" },
   { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-3.jpg`, alt: "Residential deck railing" },
-  // Balcony
   { category: "balcony", src: `${LOCAL}/balcony/balcony-1.jpg`, alt: "Custom balcony railing" },
   { category: "balcony", src: `${LOCAL}/balcony/balcony-2.jpg`, alt: "Ornamental balcony ironwork" },
   { category: "balcony", src: `${LOCAL}/balcony/balcony-3.jpg`, alt: "Residential balcony installation" },
-  // Pipe & Handrail
   { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
   { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
   { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
-  // Restoration
   { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail" },
   { category: "restoration", src: `${IMG}/ZtrYnxwJFDZSmXOw.jpg`, alt: "Ornamental iron restoration" },
   { category: "restoration", src: `${IMG}/wFpGlEabFZwcJrgX.jpg`, alt: "Boston building restoration" },
@@ -114,16 +104,13 @@ const photos: Photo[] = [
   { category: "restoration", src: `${IMG}/GeAuXhLZDbFMhTPk.jpg`, alt: "Heritage building craftsmanship" },
   { category: "restoration", src: `${IMG}/egdmCLWLFeuifEJv.jpg`, alt: "Custom restoration of unavailable designs" },
   { category: "restoration", src: `${LOCAL}/restoration/restoration-1.jpg`, alt: "Historic ironwork restoration project" },
-  // Window Well
   { category: "window-well", src: `${LOCAL}/window-well/window-well-1.jpg`, alt: "Custom window well cover" },
   { category: "window-well", src: `${LOCAL}/window-well/window-well-2.jpg`, alt: "Iron window well grate" },
   { category: "window-well", src: `${LOCAL}/window-well/window-well-3.jpg`, alt: "Window well guard installation" },
   { category: "window-well", src: `${LOCAL}/window-well/window-well-4.jpg`, alt: "Decorative window well cover" },
-  // Windows
   { category: "window", src: `${LOCAL}/window/window-1.jpg`, alt: "Custom iron window guard" },
   { category: "window", src: `${LOCAL}/window/window-2.jpg`, alt: "Decorative window security grille" },
   { category: "window", src: `${LOCAL}/window/window-3.jpg`, alt: "Iron window frame installation" },
-  // Before & After
   { category: "before-after", src: `${LOCAL}/before-after/before-after-1.jpg`, alt: "Ironwork restoration before and after" },
   { category: "before-after", src: `${LOCAL}/before-after/before-after-2.jpg`, alt: "Railing repair transformation" },
   { category: "before-after", src: `${LOCAL}/before-after/before-after-3.jpg`, alt: "Complete ironwork renovation" },
@@ -158,12 +145,12 @@ const ctaMessages = [
 ];
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Constants
 // ---------------------------------------------------------------------------
 
 const BATCH_SIZE = 24;
 const CTA_INTERVAL = 20;
-const CATEGORY_SUGGEST_INTERVAL = 18; // show category suggestions every N photos
+const CATEGORY_SUGGEST_AFTER = 18;
 
 function getCategoryLabel(id: string) {
   return categories.find((c) => c.id === id)?.label ?? id;
@@ -199,13 +186,12 @@ function MasonryImage({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.2) }}
-      className="break-inside-avoid cursor-pointer"
-      style={{ marginBottom: "14px" }}
+      className="break-inside-avoid cursor-pointer pb-[16px]"
       onClick={onClick}
     >
-      <div className="relative overflow-hidden rounded-2xl bg-neutral-200 dark:bg-neutral-800">
+      <div className="relative overflow-hidden rounded-[16px] bg-neutral-200 dark:bg-neutral-800">
         {!loaded && (
-          <div className="absolute inset-0 animate-pulse bg-neutral-300 dark:bg-neutral-700 rounded-2xl" />
+          <div className="absolute inset-0 animate-pulse bg-neutral-300 dark:bg-neutral-700 rounded-[16px]" />
         )}
         <img
           ref={imgRef}
@@ -224,7 +210,7 @@ function MasonryImage({
 }
 
 // ---------------------------------------------------------------------------
-// InlineCTA — compact card in the grid
+// InlineCTA
 // ---------------------------------------------------------------------------
 
 function InlineCTA({ index }: { index: number }) {
@@ -232,24 +218,23 @@ function InlineCTA({ index }: { index: number }) {
   const Icon = msg.icon;
 
   return (
-    <div className="break-inside-avoid" style={{ marginBottom: "14px" }}>
-      <div className="bg-accent/10 rounded-2xl p-3 sm:p-4 flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 text-accent">
-          <Icon className="w-4 h-4 shrink-0" />
-          <span className="text-xs font-display font-bold leading-tight">
+    <div className="break-inside-avoid pb-[16px]">
+      <div className="bg-accent/10 rounded-[16px] p-4 flex flex-col gap-2.5">
+        <div className="flex items-center gap-2 text-accent">
+          <Icon className="w-5 h-5 shrink-0" />
+          <span className="text-sm font-display font-bold leading-tight">
             {msg.headline}
           </span>
         </div>
-        <p className="text-[11px] sm:text-xs text-muted-foreground leading-snug">
+        <p className="text-sm text-muted-foreground leading-snug">
           {msg.body}
         </p>
         <Link href={msg.href}>
           <Button
-            size="sm"
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] sm:text-xs h-7 sm:h-8"
+            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-sm h-10"
           >
             {msg.cta}
-            <ArrowRight className="ml-1 w-3 h-3" />
+            <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </Link>
       </div>
@@ -258,7 +243,7 @@ function InlineCTA({ index }: { index: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// CategorySuggestions — horizontal strip suggesting other categories
+// CategorySuggestions
 // ---------------------------------------------------------------------------
 
 function CategorySuggestions({
@@ -268,7 +253,6 @@ function CategorySuggestions({
   activeCategory: string;
   onSelect: (id: string) => void;
 }) {
-  // Get other categories that have photos, pick up to 6
   const otherCategories = categories.filter(
     (c) => c.id !== "all" && c.id !== activeCategory && photos.some((p) => p.category === c.id),
   ).slice(0, 6);
@@ -276,18 +260,19 @@ function CategorySuggestions({
   if (otherCategories.length === 0) return null;
 
   return (
-    <div className="py-6 sm:py-8">
-      <p className="text-sm font-display font-bold text-muted-foreground uppercase tracking-wider mb-4 px-1">
+    <div className="py-6 overflow-hidden">
+      <p className="text-base font-display font-bold text-foreground mb-4 px-1">
         Explore more of our work
       </p>
-      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1">
         {otherCategories.map((cat) => {
           const preview = photos.find((p) => p.category === cat.id);
           return (
             <button
               key={cat.id}
               onClick={() => onSelect(cat.id)}
-              className="shrink-0 group relative w-44 sm:w-52 h-56 sm:h-64 rounded-2xl overflow-hidden"
+              className="shrink-0 group relative rounded-[16px] overflow-hidden"
+              style={{ width: "45vw", maxWidth: "200px", height: "55vw", maxHeight: "240px" }}
             >
               {preview && (
                 <img
@@ -297,9 +282,9 @@ function CategorySuggestions({
                   loading="lazy"
                 />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-white text-sm sm:text-base font-display font-bold text-left leading-tight drop-shadow-lg">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <p className="text-white text-sm font-display font-bold text-left leading-tight drop-shadow-lg">
                   {cat.label}
                 </p>
               </div>
@@ -308,54 +293,6 @@ function CategorySuggestions({
         })}
       </div>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// CategoryPicker — dropdown on mobile, pill bar on desktop
-// ---------------------------------------------------------------------------
-
-function CategoryPicker({
-  activeCategory,
-  photoCounts,
-  onSelect,
-}: {
-  activeCategory: string;
-  photoCounts: Record<string, number>;
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <>
-      {/* Desktop: scrollable pill bar */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-        {categories.map((cat) => {
-          const count = photoCounts[cat.id];
-          const isActive = activeCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => onSelect(cat.id)}
-              className={`
-                px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap
-                transition-all rounded-full flex-shrink-0
-                ${
-                  isActive
-                    ? "bg-accent text-accent-foreground"
-                    : count === 0
-                      ? "text-muted-foreground/30"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
-                }
-              `}
-            >
-              {cat.label}
-              {count > 0 && !isActive && (
-                <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </>
   );
 }
 
@@ -378,7 +315,6 @@ function Lightbox({
   const [swipeOffset, setSwipeOffset] = useState(0);
   const localPhone = useLocalPhone();
 
-  // Track natural aspect ratios for thumbnails
   const [thumbRatios, setThumbRatios] = useState<Record<string, number>>({});
   const onThumbLoad = useCallback((src: string, img: HTMLImageElement) => {
     if (img.naturalWidth && img.naturalHeight) {
@@ -412,16 +348,13 @@ function Lightbox({
   useEffect(() => {
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = original;
-    };
+    return () => { document.body.style.overflow = original; };
   }, []);
 
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     touchDeltaRef.current = { x: 0, y: 0 };
   };
-
   const onTouchMove = (e: React.TouchEvent) => {
     if (!touchStartRef.current) return;
     const dx = e.touches[0].clientX - touchStartRef.current.x;
@@ -429,13 +362,10 @@ function Lightbox({
     touchDeltaRef.current = { x: dx, y: dy };
     if (Math.abs(dx) > Math.abs(dy)) setSwipeOffset(dx * 0.4);
   };
-
   const onTouchEnd = () => {
     const { x: dx, y: dy } = touchDeltaRef.current;
     setSwipeOffset(0);
-    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
-      dx > 0 ? prev() : next();
-    }
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { dx > 0 ? prev() : next(); }
     if (dy > 100 && Math.abs(dy) > Math.abs(dx)) onClose();
     touchStartRef.current = null;
   };
@@ -452,28 +382,25 @@ function Lightbox({
       onTouchEnd={onTouchEnd}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-3 py-2 sm:px-6 sm:py-3 shrink-0">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        <div className="flex items-center gap-3">
           <button onClick={onClose} className="text-white/60 hover:text-white p-1">
-            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+            <X className="w-6 h-6" />
           </button>
-          <span className="text-white/40 text-xs sm:text-sm font-display">
+          <span className="text-white/40 text-sm font-display">
             {currentIndex + 1} / {lbPhotos.length}
           </span>
         </div>
-        <span className="text-white/30 text-[10px] sm:text-xs font-display uppercase tracking-wider">
+        <span className="text-white/40 text-xs font-display uppercase tracking-wider">
           {getCategoryLabel(photo.category)}
         </span>
       </div>
 
       {/* Image */}
-      <div
-        className="flex-1 flex items-center justify-center relative overflow-hidden"
-        onClick={onClose}
-      >
+      <div className="flex-1 flex items-center justify-center relative overflow-hidden" onClick={onClose}>
         <button
           onClick={(e) => { e.stopPropagation(); prev(); }}
-          className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
+          className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
         >
           <ChevronLeft className="w-7 h-7" />
         </button>
@@ -487,7 +414,7 @@ function Lightbox({
             animate={{ opacity: 1, scale: 1, x: swipeOffset }}
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.15 }}
-            className="max-h-[82vh] max-w-[96vw] sm:max-w-[90vw] object-contain select-none"
+            className="max-h-[78vh] max-w-[94vw] object-contain select-none"
             onClick={(e) => e.stopPropagation()}
             draggable={false}
           />
@@ -495,22 +422,22 @@ function Lightbox({
 
         <button
           onClick={(e) => { e.stopPropagation(); next(); }}
-          className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
+          className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"
         >
           <ChevronRight className="w-7 h-7" />
         </button>
       </div>
 
       {/* Bottom bar */}
-      <div className="shrink-0 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between gap-2 border-t border-white/10">
-        <p className="text-white/60 text-xs sm:text-sm truncate flex-1">{photo.alt}</p>
-        <div className="flex items-center gap-1.5 shrink-0">
+      <div className="shrink-0 px-4 py-3 flex items-center justify-between gap-3 border-t border-white/10">
+        <p className="text-white/60 text-sm truncate flex-1">{photo.alt}</p>
+        <div className="flex items-center gap-2 shrink-0">
           <Link href="/contact">
             <Button
               size="sm"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-[10px] sm:text-xs h-7 sm:h-8 px-2.5 sm:px-3"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-xs h-9 px-3"
             >
-              <Calendar className="w-3 h-3 mr-1" />
+              <Calendar className="w-3.5 h-3.5 mr-1.5" />
               Quote
             </Button>
           </Link>
@@ -518,21 +445,20 @@ function Lightbox({
             <Button
               size="sm"
               variant="outline"
-              className="border-white/20 text-white/70 hover:text-white font-display text-[10px] sm:text-xs h-7 sm:h-8 px-2.5 sm:px-3"
+              className="border-white/20 text-white/70 hover:text-white font-display text-xs h-9 px-3"
             >
-              <Phone className="w-3 h-3 mr-1" />
+              <Phone className="w-3.5 h-3.5 mr-1.5" />
               Call
             </Button>
           </PhoneLink>
         </div>
       </div>
 
-      {/* Thumbnail strip — desktop, respects aspect ratio */}
-      <div className="hidden md:block shrink-0 border-t border-white/5 px-6 py-1.5">
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide justify-center max-w-5xl mx-auto items-end">
+      {/* Thumbnail strip — desktop only */}
+      <div className="hidden md:block shrink-0 border-t border-white/5 px-6 py-2">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide justify-center max-w-5xl mx-auto items-end">
           {lbPhotos.map((p, i) => {
             const ratio = thumbRatios[p.src];
-            // Height fixed at 48px, width scales with aspect ratio
             const thumbH = 48;
             const thumbW = ratio ? Math.round(thumbH * ratio) : thumbH;
             return (
@@ -540,17 +466,12 @@ function Lightbox({
                 key={p.src}
                 onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
                 className={`shrink-0 rounded-md overflow-hidden transition-all ${
-                  i === currentIndex
-                    ? "ring-2 ring-accent opacity-100"
-                    : "opacity-30 hover:opacity-60"
+                  i === currentIndex ? "ring-2 ring-accent opacity-100" : "opacity-30 hover:opacity-60"
                 }`}
                 style={{ width: thumbW, height: thumbH }}
               >
                 <img
-                  src={p.src}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
+                  src={p.src} alt="" className="w-full h-full object-cover" loading="lazy"
                   onLoad={(e) => onThumbLoad(p.src, e.target as HTMLImageElement)}
                 />
               </button>
@@ -570,9 +491,7 @@ export default function Portfolio() {
   const [, setLocation] = useLocation();
   const [matchCategory, params] = useRoute("/portfolio/:category");
   const categoryFromUrl = matchCategory ? params.category : "all";
-
-  const activeCategory =
-    categories.find((c) => c.id === categoryFromUrl)?.id ?? "all";
+  const activeCategory = categories.find((c) => c.id === categoryFromUrl)?.id ?? "all";
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -580,10 +499,7 @@ export default function Portfolio() {
   const localPhone = useLocalPhone();
 
   const filteredPhotos = useMemo(
-    () =>
-      activeCategory === "all"
-        ? photos
-        : photos.filter((p) => p.category === activeCategory),
+    () => activeCategory === "all" ? photos : photos.filter((p) => p.category === activeCategory),
     [activeCategory],
   );
 
@@ -595,19 +511,13 @@ export default function Portfolio() {
     return counts;
   }, []);
 
-  useEffect(() => {
-    setVisibleCount(BATCH_SIZE);
-  }, [activeCategory]);
+  useEffect(() => { setVisibleCount(BATCH_SIZE); }, [activeCategory]);
 
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredPhotos.length));
-        }
-      },
+      ([entry]) => { if (entry.isIntersecting) setVisibleCount((prev) => Math.min(prev + BATCH_SIZE, filteredPhotos.length)); },
       { rootMargin: "600px" },
     );
     observer.observe(el);
@@ -622,39 +532,46 @@ export default function Portfolio() {
     [setLocation],
   );
 
-  // Split photos into two masonry blocks with category suggestions between them
+  // Split into two batches for category suggestions
   const visiblePhotos = filteredPhotos.slice(0, visibleCount);
-  const splitAt = Math.min(CATEGORY_SUGGEST_INTERVAL, visiblePhotos.length);
+  const splitAt = Math.min(CATEGORY_SUGGEST_AFTER, visiblePhotos.length);
   const firstBatch = visiblePhotos.slice(0, splitAt);
   const secondBatch = visiblePhotos.slice(splitAt);
-  const showCategorySuggestions = secondBatch.length > 0;
 
-  // Build masonry items with interleaved CTAs
-  function buildMasonryItems(batch: Photo[], startIndex: number) {
-    const items: Array<
-      | { type: "photo"; photo: Photo; globalIndex: number }
-      | { type: "cta"; ctaIndex: number }
-    > = [];
+  function buildItems(batch: Photo[], startIndex: number) {
+    const items: Array<{ type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number }> = [];
     let ctaCount = 0;
     for (let i = 0; i < batch.length; i++) {
       items.push({ type: "photo", photo: batch[i], globalIndex: startIndex + i });
-      if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < batch.length) {
-        items.push({ type: "cta", ctaIndex: ctaCount++ });
-      }
+      if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < batch.length) items.push({ type: "cta", ctaIndex: ctaCount++ });
     }
     return items;
   }
 
-  const firstItems = buildMasonryItems(firstBatch, 0);
-  const secondItems = buildMasonryItems(secondBatch, splitAt);
+  const firstItems = buildItems(firstBatch, 0);
+  const secondItems = buildItems(secondBatch, splitAt);
+
+  function renderMasonry(items: typeof firstItems, keyPrefix: string) {
+    return items.map((item, idx) => {
+      if (item.type === "cta") return <InlineCTA key={`cta-${keyPrefix}-${item.ctaIndex}`} index={item.ctaIndex} />;
+      return (
+        <MasonryImage
+          key={item.photo.src}
+          photo={item.photo}
+          index={idx}
+          onClick={() => setLightboxIndex(item.globalIndex)}
+        />
+      );
+    });
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Category bar — Pinterest-style tabs on mobile, pills on desktop */}
-      <div className="sticky top-16 lg:top-20 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50">
-        {/* Mobile: horizontal scrolling text tabs */}
-        <div className="md:hidden px-3 py-2">
-          <div className="flex gap-4 overflow-x-auto scrollbar-hide">
+    <div className="min-h-screen bg-background overflow-x-hidden">
+      {/* ── Category Tabs ── */}
+      <div className="sticky top-16 lg:top-20 z-30 bg-background border-b border-border">
+        {/* Mobile + Tablet: Pinterest-style text tabs */}
+        <div className="lg:hidden overflow-x-auto scrollbar-hide">
+          <div className="flex gap-1 px-4 py-3 min-w-0">
             {categories.map((cat) => {
               const count = photoCounts[cat.id];
               const isActive = activeCategory === cat.id;
@@ -663,10 +580,10 @@ export default function Portfolio() {
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.id)}
-                  className={`shrink-0 text-sm font-display font-bold whitespace-nowrap pb-1 transition-colors border-b-2 ${
+                  className={`shrink-0 px-4 py-2 text-[15px] font-display font-bold whitespace-nowrap rounded-full transition-colors ${
                     isActive
-                      ? "text-foreground border-foreground"
-                      : "text-muted-foreground border-transparent"
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {cat.label}
@@ -676,120 +593,84 @@ export default function Portfolio() {
           </div>
         </div>
 
-        {/* Desktop: breadcrumb + pills + links */}
-        <div className="hidden md:block px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2.5">
+        {/* Desktop: breadcrumb + pill bar */}
+        <div className="hidden lg:block px-8 max-w-[1280px] mx-auto py-3">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1">
-                <Home className="w-3 h-3" />
-                Home
+                <Home className="w-3 h-3" /> Home
               </Link>
               <span>/</span>
               {activeCategory !== "all" ? (
                 <>
-                  <Link href="/portfolio" className="hover:text-foreground transition-colors">
-                    Portfolio
-                  </Link>
+                  <Link href="/portfolio" className="hover:text-foreground transition-colors">Portfolio</Link>
                   <span>/</span>
-                  <span className="text-foreground font-medium">
-                    {getCategoryLabel(activeCategory)}
-                  </span>
+                  <span className="text-foreground font-medium">{getCategoryLabel(activeCategory)}</span>
                 </>
               ) : (
                 <span className="text-foreground font-medium">Portfolio</span>
               )}
-              <span className="text-muted-foreground/50 ml-1">
-                ({filteredPhotos.length} projects)
-              </span>
+              <span className="text-muted-foreground/50 ml-1">({filteredPhotos.length})</span>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/services">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs font-display font-bold tracking-wider h-7"
-                >
-                  Services
-                </Button>
+                <Button variant="outline" size="sm" className="text-xs font-display font-bold h-7">Services</Button>
               </Link>
               <Link href="/contact">
-                <Button
-                  size="sm"
-                  className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold tracking-wider h-7"
-                >
-                  Free Quote
-                  <ArrowRight className="ml-1 w-3 h-3" />
+                <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 text-xs font-display font-bold h-7">
+                  Free Quote <ArrowRight className="ml-1 w-3 h-3" />
                 </Button>
               </Link>
             </div>
           </div>
-          <CategoryPicker
-            activeCategory={activeCategory}
-            photoCounts={photoCounts}
-            onSelect={setCategory}
-          />
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+            {categories.map((cat) => {
+              const count = photoCounts[cat.id];
+              const isActive = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap transition-all rounded-full flex-shrink-0 ${
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : count === 0
+                        ? "text-muted-foreground/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
+                  }`}
+                >
+                  {cat.label}
+                  {count > 0 && !isActive && <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Masonry Grid — tight gaps, edge-to-edge on mobile */}
-      <div className="px-3 sm:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-3 sm:py-4">
+      {/* ── Masonry Grid ── */}
+      <div className="px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto pt-4 pb-6">
         {filteredPhotos.length > 0 ? (
           <>
             <style>{`
-              .portfolio-masonry { column-count: 2; column-gap: 14px; }
-              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 16px; } }
-              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 18px; } }
+              .portfolio-masonry { column-count: 2; column-gap: 16px; }
+              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 18px; } }
+              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 20px; } }
             `}</style>
 
-            {/* First batch */}
-            <div className="portfolio-masonry">
-              {firstItems.map((item, idx) => {
-                if (item.type === "cta") {
-                  return <InlineCTA key={`cta-a-${item.ctaIndex}`} index={item.ctaIndex} />;
-                }
-                return (
-                  <MasonryImage
-                    key={item.photo.src}
-                    photo={item.photo}
-                    index={idx}
-                    onClick={() => setLightboxIndex(item.globalIndex)}
-                  />
-                );
-              })}
-            </div>
+            <div className="portfolio-masonry">{renderMasonry(firstItems, "a")}</div>
 
-            {/* Category suggestions between batches */}
-            {showCategorySuggestions && (
-              <CategorySuggestions
-                activeCategory={activeCategory}
-                onSelect={setCategory}
-              />
+            {secondBatch.length > 0 && (
+              <CategorySuggestions activeCategory={activeCategory} onSelect={setCategory} />
             )}
 
-            {/* Second batch */}
             {secondItems.length > 0 && (
-              <div className="portfolio-masonry">
-                {secondItems.map((item, idx) => {
-                  if (item.type === "cta") {
-                    return <InlineCTA key={`cta-b-${item.ctaIndex}`} index={item.ctaIndex + 10} />;
-                  }
-                  return (
-                    <MasonryImage
-                      key={item.photo.src}
-                      photo={item.photo}
-                      index={idx}
-                      onClick={() => setLightboxIndex(item.globalIndex)}
-                    />
-                  );
-                })}
-              </div>
+              <div className="portfolio-masonry">{renderMasonry(secondItems, "b")}</div>
             )}
           </>
         ) : (
-          <div className="text-center py-32">
-            <p className="text-lg text-muted-foreground mb-4">
-              No projects in this category yet.
-            </p>
+          <div className="text-center py-24">
+            <p className="text-lg text-muted-foreground mb-4">No projects in this category yet.</p>
             <Button variant="outline" onClick={() => setCategory("all")} className="font-display font-bold">
               View All Work
             </Button>
@@ -799,41 +680,39 @@ export default function Portfolio() {
         {visibleCount < filteredPhotos.length && (
           <div ref={loadMoreRef} className="flex justify-center py-10">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-              <div className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
               Loading more...
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom CTA */}
-      <section className="border-t-2 sm:border-t-4 border-accent bg-accent text-accent-foreground py-10 sm:py-16">
-        <div className="px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto text-center">
-          <h2 className="text-display text-lg sm:text-2xl lg:text-3xl mb-2 sm:mb-3">
-            Like What You See?
-          </h2>
-          <p className="text-xs sm:text-base opacity-90 mb-5 sm:mb-6 leading-relaxed">
-            Every project started with a conversation. Tell us your vision and
-            we&apos;ll bring it to life with the same craftsmanship you see here.
+      {/* ── Bottom CTA ── */}
+      <section className="bg-accent text-accent-foreground py-12">
+        <div className="px-6 max-w-lg mx-auto text-center">
+          <h2 className="text-display text-2xl mb-3">Like What You See?</h2>
+          <p className="text-sm opacity-90 mb-6 leading-relaxed">
+            Every project started with a conversation. Tell us your vision
+            and we&apos;ll bring it to life with the same craftsmanship you see here.
           </p>
-          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 justify-center">
+          <div className="flex flex-col gap-3">
             <Link href="/contact">
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-xs sm:text-base px-5 sm:px-6 py-3 sm:py-4 border-2 sm:thick-border font-display font-bold tracking-wider w-full sm:w-auto"
+                className="w-full bg-transparent border-2 border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm py-4 font-display font-bold"
               >
                 Book Free Consultation
-                <Calendar className="ml-2 w-4 h-4" />
+                <Calendar className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <PhoneLink tel={localPhone.tel}>
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-xs sm:text-base px-5 sm:px-6 py-3 sm:py-4 border-2 sm:thick-border font-display font-bold tracking-wider w-full sm:w-auto"
+                className="w-full bg-transparent border-2 border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm py-4 font-display font-bold"
               >
-                <Phone className="mr-2 w-4 h-4" />
+                <Phone className="mr-2 w-5 h-5" />
                 {localPhone.display}
               </Button>
             </PhoneLink>
@@ -844,11 +723,7 @@ export default function Portfolio() {
       {/* Lightbox */}
       <AnimatePresence>
         {lightboxIndex !== null && filteredPhotos[lightboxIndex] && (
-          <Lightbox
-            photos={filteredPhotos}
-            initialIndex={lightboxIndex}
-            onClose={() => setLightboxIndex(null)}
-          />
+          <Lightbox photos={filteredPhotos} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
         )}
       </AnimatePresence>
     </div>
