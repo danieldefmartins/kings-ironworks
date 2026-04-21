@@ -117,19 +117,19 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <GeoRedirect />
-          <div className="flex min-h-screen">
+          <div className="flex flex-col min-h-screen w-full max-w-full overflow-x-hidden">
             {/* Navigation */}
             <Navigation />
-            
-            {/* Main Content - offset for desktop sidebar */}
+
+            {/* Main Content */}
             <main className="flex-1 pt-16 lg:pt-20">
               <Router />
               <Footer />
             </main>
-            
+
             {/* Sticky Mobile CTA - Lead Generation Optimization */}
             <StickyMobileCTA />
-            
+
             {/* GHL Chat Widget - Real-time SMS/Email Communication */}
             <GHLChatWidget />
           </div>
