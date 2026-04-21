@@ -431,7 +431,7 @@ export default function Portfolio() {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       {/* ── Category Tabs ── no extra spacing, sits right under nav */}
-      <div className="sticky top-16 lg:top-20 z-30 bg-background border-b border-border">
+      <div className="bg-background border-b border-border">
         {/* Mobile + Tablet */}
         <div className="lg:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-1.5 px-3 py-2">
