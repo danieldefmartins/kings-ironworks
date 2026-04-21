@@ -71,20 +71,20 @@ export default function Home() {
           <CarouselContent className="ml-0">
             {heroSlides.map((slide, i) => (
               <CarouselItem key={i} className="pl-0 relative">
-                <div className="relative h-[92vh] sm:h-[90vh] bg-black">
-                  {/* Image — contained on desktop, cover on mobile */}
+                <div className="relative h-[92vh] sm:h-[90vh] bg-black overflow-hidden">
+                  {/* Image — cover always, but on desktop we let side gradients do the heavy lifting */}
                   <img
                     src={slide.image}
                     alt={slide.alt}
-                    className="w-full h-full object-cover lg:object-contain"
+                    className="w-full h-full object-cover"
                     style={{ objectPosition: slide.objectPosition }}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
                   {/* Bottom gradient — always */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
-                  {/* Side gradients — desktop only, fade image edges to black */}
-                  <div className="hidden lg:block absolute inset-y-0 left-0 w-[20%] bg-gradient-to-r from-black/80 to-transparent" />
-                  <div className="hidden lg:block absolute inset-y-0 right-0 w-[20%] bg-gradient-to-l from-black/80 to-transparent" />
+                  {/* Side vignette gradients — desktop only, wide and soft */}
+                  <div className="hidden lg:block absolute inset-y-0 left-0 w-[35%] bg-gradient-to-r from-black via-black/50 to-transparent" />
+                  <div className="hidden lg:block absolute inset-y-0 right-0 w-[35%] bg-gradient-to-l from-black via-black/50 to-transparent" />
                 </div>
               </CarouselItem>
             ))}
