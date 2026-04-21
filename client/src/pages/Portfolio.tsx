@@ -164,6 +164,7 @@ const ctaMessages = [
 
 const BATCH_SIZE = 24;
 const CTA_INTERVAL = 12;
+const CATEGORY_SUGGEST_INTERVAL = 18; // show category suggestions every N photos
 
 function getCategoryLabel(id: string) {
   return categories.find((c) => c.id === id)?.label ?? id;
@@ -252,6 +253,60 @@ function InlineCTA({ index }: { index: number }) {
             <ArrowRight className="ml-1 w-3 h-3" />
           </Button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CategorySuggestions — horizontal strip suggesting other categories
+// ---------------------------------------------------------------------------
+
+function CategorySuggestions({
+  activeCategory,
+  onSelect,
+}: {
+  activeCategory: string;
+  onSelect: (id: string) => void;
+}) {
+  // Get other categories that have photos, pick up to 6
+  const otherCategories = categories.filter(
+    (c) => c.id !== "all" && c.id !== activeCategory && photos.some((p) => p.category === c.id),
+  ).slice(0, 6);
+
+  if (otherCategories.length === 0) return null;
+
+  return (
+    <div className="col-span-full py-4 sm:py-6">
+      <p className="text-xs font-display font-bold text-muted-foreground uppercase tracking-wider mb-3 px-1">
+        Explore more of our work
+      </p>
+      <div className="flex gap-2 sm:gap-2.5 overflow-x-auto scrollbar-hide pb-1">
+        {otherCategories.map((cat) => {
+          const preview = photos.find((p) => p.category === cat.id);
+          return (
+            <button
+              key={cat.id}
+              onClick={() => onSelect(cat.id)}
+              className="shrink-0 group relative w-32 sm:w-40 h-24 sm:h-28 rounded-xl overflow-hidden"
+            >
+              {preview && (
+                <img
+                  src={preview.src}
+                  alt={cat.label}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  loading="lazy"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-colors" />
+              <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                <p className="text-white text-[11px] sm:text-xs font-display font-bold text-left leading-tight drop-shadow-md">
+                  {cat.label}
+                </p>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -397,6 +452,17 @@ function Lightbox({
   const [swipeOffset, setSwipeOffset] = useState(0);
   const localPhone = useLocalPhone();
 
+  // Track natural aspect ratios for thumbnails
+  const [thumbRatios, setThumbRatios] = useState<Record<string, number>>({});
+  const onThumbLoad = useCallback((src: string, img: HTMLImageElement) => {
+    if (img.naturalWidth && img.naturalHeight) {
+      setThumbRatios((prev) => {
+        if (prev[src]) return prev;
+        return { ...prev, [src]: img.naturalWidth / img.naturalHeight };
+      });
+    }
+  }, []);
+
   const photo = lbPhotos[currentIndex];
 
   const prev = useCallback(() => {
@@ -535,22 +601,35 @@ function Lightbox({
         </div>
       </div>
 
-      {/* Thumbnail strip — desktop */}
+      {/* Thumbnail strip — desktop, respects aspect ratio */}
       <div className="hidden md:block shrink-0 border-t border-white/5 px-6 py-1.5">
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide justify-center max-w-4xl mx-auto">
-          {lbPhotos.map((p, i) => (
-            <button
-              key={p.src}
-              onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
-              className={`shrink-0 w-10 h-10 rounded-sm overflow-hidden transition-all ${
-                i === currentIndex
-                  ? "ring-2 ring-accent opacity-100"
-                  : "opacity-30 hover:opacity-60"
-              }`}
-            >
-              <img src={p.src} alt="" className="w-full h-full object-cover" loading="lazy" />
-            </button>
-          ))}
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide justify-center max-w-5xl mx-auto items-end">
+          {lbPhotos.map((p, i) => {
+            const ratio = thumbRatios[p.src];
+            // Height fixed at 48px, width scales with aspect ratio
+            const thumbH = 48;
+            const thumbW = ratio ? Math.round(thumbH * ratio) : thumbH;
+            return (
+              <button
+                key={p.src}
+                onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
+                className={`shrink-0 rounded-md overflow-hidden transition-all ${
+                  i === currentIndex
+                    ? "ring-2 ring-accent opacity-100"
+                    : "opacity-30 hover:opacity-60"
+                }`}
+                style={{ width: thumbW, height: thumbH }}
+              >
+                <img
+                  src={p.src}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onLoad={(e) => onThumbLoad(p.src, e.target as HTMLImageElement)}
+                />
+              </button>
+            );
+          })}
         </div>
       </div>
     </motion.div>
@@ -617,18 +696,31 @@ export default function Portfolio() {
     [setLocation],
   );
 
-  // Build masonry items with interleaved CTAs
+  // Split photos into two masonry blocks with category suggestions between them
   const visiblePhotos = filteredPhotos.slice(0, visibleCount);
-  const masonryItems: Array<
-    { type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number }
-  > = [];
-  let ctaCounter = 0;
-  for (let i = 0; i < visiblePhotos.length; i++) {
-    masonryItems.push({ type: "photo", photo: visiblePhotos[i], globalIndex: i });
-    if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < visiblePhotos.length) {
-      masonryItems.push({ type: "cta", ctaIndex: ctaCounter++ });
+  const splitAt = Math.min(CATEGORY_SUGGEST_INTERVAL, visiblePhotos.length);
+  const firstBatch = visiblePhotos.slice(0, splitAt);
+  const secondBatch = visiblePhotos.slice(splitAt);
+  const showCategorySuggestions = secondBatch.length > 0;
+
+  // Build masonry items with interleaved CTAs
+  function buildMasonryItems(batch: Photo[], startIndex: number) {
+    const items: Array<
+      | { type: "photo"; photo: Photo; globalIndex: number }
+      | { type: "cta"; ctaIndex: number }
+    > = [];
+    let ctaCount = 0;
+    for (let i = 0; i < batch.length; i++) {
+      items.push({ type: "photo", photo: batch[i], globalIndex: startIndex + i });
+      if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < batch.length) {
+        items.push({ type: "cta", ctaIndex: ctaCount++ });
+      }
     }
+    return items;
   }
+
+  const firstItems = buildMasonryItems(firstBatch, 0);
+  const secondItems = buildMasonryItems(secondBatch, splitAt);
 
   return (
     <div className="min-h-screen bg-background">
@@ -719,10 +811,12 @@ export default function Portfolio() {
               @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 8px; } }
               @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 10px; } }
             `}</style>
+
+            {/* First batch */}
             <div className="portfolio-masonry">
-              {masonryItems.map((item, idx) => {
+              {firstItems.map((item, idx) => {
                 if (item.type === "cta") {
-                  return <InlineCTA key={`cta-${item.ctaIndex}`} index={item.ctaIndex} />;
+                  return <InlineCTA key={`cta-a-${item.ctaIndex}`} index={item.ctaIndex} />;
                 }
                 return (
                   <MasonryImage
@@ -734,6 +828,33 @@ export default function Portfolio() {
                 );
               })}
             </div>
+
+            {/* Category suggestions between batches */}
+            {showCategorySuggestions && (
+              <CategorySuggestions
+                activeCategory={activeCategory}
+                onSelect={setCategory}
+              />
+            )}
+
+            {/* Second batch */}
+            {secondItems.length > 0 && (
+              <div className="portfolio-masonry">
+                {secondItems.map((item, idx) => {
+                  if (item.type === "cta") {
+                    return <InlineCTA key={`cta-b-${item.ctaIndex}`} index={item.ctaIndex + 10} />;
+                  }
+                  return (
+                    <MasonryImage
+                      key={item.photo.src}
+                      photo={item.photo}
+                      index={idx}
+                      onClick={() => setLightboxIndex(item.globalIndex)}
+                    />
+                  );
+                })}
+              </div>
+            )}
           </>
         ) : (
           <div className="text-center py-32">
