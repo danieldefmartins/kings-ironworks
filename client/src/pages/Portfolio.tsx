@@ -123,7 +123,6 @@ const ctaMessages = [
 ];
 
 const BATCH_SIZE = 24;
-const CTA_INTERVAL = 20;
 const CATEGORY_SUGGEST_AFTER = 18;
 
 function getCategoryLabel(id: string) {
@@ -136,12 +135,34 @@ function getCategoryLabel(id: string) {
 
 type MasonryItem = { type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number };
 
+// Staggered CTA insertion intervals per column — different for each column
+// so images never align side by side
+const COLUMN_CTA_OFFSETS = [3, 6, 4, 7]; // first CTA appears after N photos
+const COLUMN_CTA_INTERVALS = [5, 7, 6, 8]; // then every N photos after that
+
 function distributeToColumns(items: MasonryItem[], colCount: number): MasonryItem[][] {
   const cols: MasonryItem[][] = Array.from({ length: colCount }, () => []);
-  // Simple round-robin distribution — images alternate L/R like Pinterest
+  const photoCountPerCol = new Array(colCount).fill(0);
+  let ctaCounter = 0;
+
+  // Round-robin distribute photos into columns
   items.forEach((item, i) => {
-    cols[i % colCount].push(item);
+    const col = i % colCount;
+    cols[col].push(item);
+
+    if (item.type === "photo") {
+      photoCountPerCol[col]++;
+      const count = photoCountPerCol[col];
+      const offset = COLUMN_CTA_OFFSETS[col % COLUMN_CTA_OFFSETS.length];
+      const interval = COLUMN_CTA_INTERVALS[col % COLUMN_CTA_INTERVALS.length];
+
+      // Insert a CTA card at staggered positions per column
+      if (count === offset || (count > offset && (count - offset) % interval === 0)) {
+        cols[col].push({ type: "cta", ctaIndex: ctaCounter++ });
+      }
+    }
   });
+
   return cols;
 }
 
@@ -423,13 +444,7 @@ export default function Portfolio() {
   const splitAt = Math.min(CATEGORY_SUGGEST_AFTER, visiblePhotos.length);
 
   function buildItems(batch: Photo[], startIdx: number): MasonryItem[] {
-    const items: MasonryItem[] = [];
-    let cta = 0;
-    for (let i = 0; i < batch.length; i++) {
-      items.push({ type: "photo", photo: batch[i], globalIndex: startIdx + i });
-      if ((i + 1) % CTA_INTERVAL === 0 && i + 1 < batch.length) items.push({ type: "cta", ctaIndex: cta++ });
-    }
-    return items;
+    return batch.map((photo, i) => ({ type: "photo" as const, photo, globalIndex: startIdx + i }));
   }
 
   const firstItems = buildItems(visiblePhotos.slice(0, splitAt), 0);
