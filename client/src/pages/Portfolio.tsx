@@ -165,7 +165,7 @@ function MasonryImage({ photo, index, onClick }: { photo: Photo; index: number; 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.2) }}
-      className="cursor-pointer mb-2 md:mb-3"
+      className="cursor-pointer mb-4 md:mb-5"
       onClick={onClick}
     >
       <div className="relative overflow-hidden rounded-[16px] bg-neutral-200 dark:bg-neutral-800">
@@ -179,6 +179,14 @@ function MasonryImage({ photo, index, onClick }: { photo: Photo; index: number; 
           onError={() => setFailed(true)}
           className={`w-full block transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
         />
+      </div>
+      <div className="mt-1.5 px-0.5">
+        <p className="text-[13px] font-display font-bold text-foreground leading-snug line-clamp-2">
+          {photo.alt}
+        </p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
+          {getCategoryLabel(photo.category)}
+        </p>
       </div>
     </motion.div>
   );
