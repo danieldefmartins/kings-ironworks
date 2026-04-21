@@ -199,13 +199,13 @@ function MasonryImage({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3, delay: Math.min(index * 0.02, 0.2) }}
-      className="break-inside-avoid cursor-pointer group"
-      style={{ marginBottom: "2px" }}
+      className="break-inside-avoid cursor-pointer"
+      style={{ marginBottom: "6px" }}
       onClick={onClick}
     >
-      <div className="relative overflow-hidden bg-neutral-200 dark:bg-neutral-800">
+      <div className="relative overflow-hidden rounded-2xl bg-neutral-200 dark:bg-neutral-800">
         {!loaded && (
-          <div className="absolute inset-0 animate-pulse bg-neutral-300 dark:bg-neutral-700" />
+          <div className="absolute inset-0 animate-pulse bg-neutral-300 dark:bg-neutral-700 rounded-2xl" />
         )}
         <img
           ref={imgRef}
@@ -214,16 +214,10 @@ function MasonryImage({
           loading={index < 8 ? "eager" : "lazy"}
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          className={`w-full block transition-all duration-300 group-hover:scale-[1.02] ${
+          className={`w-full block transition-opacity duration-300 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
-        {/* Hover overlay — desktop only */}
-        <div className="hidden sm:flex absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 items-end p-2.5">
-          <span className="text-white text-[10px] font-display font-bold tracking-wider uppercase">
-            {getCategoryLabel(photo.category)}
-          </span>
-        </div>
       </div>
     </motion.div>
   );
@@ -238,8 +232,8 @@ function InlineCTA({ index }: { index: number }) {
   const Icon = msg.icon;
 
   return (
-    <div className="break-inside-avoid" style={{ marginBottom: "2px" }}>
-      <div className="bg-accent/10 p-3 sm:p-4 flex flex-col gap-2">
+    <div className="break-inside-avoid" style={{ marginBottom: "6px" }}>
+      <div className="bg-accent/10 rounded-2xl p-3 sm:p-4 flex flex-col gap-2">
         <div className="flex items-center gap-1.5 text-accent">
           <Icon className="w-4 h-4 shrink-0" />
           <span className="text-xs font-display font-bold leading-tight">
@@ -717,13 +711,13 @@ export default function Portfolio() {
       </div>
 
       {/* Masonry Grid — tight gaps, edge-to-edge on mobile */}
-      <div className="px-0.5 sm:px-2 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-0.5 sm:py-3">
+      <div className="px-1.5 sm:px-3 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-1.5 sm:py-3">
         {filteredPhotos.length > 0 ? (
           <>
             <style>{`
-              .portfolio-masonry { column-count: 2; column-gap: 2px; }
-              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 4px; } }
-              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 6px; } }
+              .portfolio-masonry { column-count: 2; column-gap: 6px; }
+              @media (min-width: 768px) { .portfolio-masonry { column-count: 3; column-gap: 8px; } }
+              @media (min-width: 1280px) { .portfolio-masonry { column-count: 4; column-gap: 10px; } }
             `}</style>
             <div className="portfolio-masonry">
               {masonryItems.map((item, idx) => {
