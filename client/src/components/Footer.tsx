@@ -10,9 +10,9 @@ export default function Footer() {
   return (
     <footer className="bg-sidebar text-sidebar-foreground border-t-4 border-border">
       <div className="px-4 sm:px-6 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-10 sm:py-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-12">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
           {/* Brand */}
-          <div>
+          <div className="col-span-2 lg:col-span-1">
             <img
               src="/images/ughTFDIjdTrgGjGJ.jpeg"
               alt="King Iron Works"
