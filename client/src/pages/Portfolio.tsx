@@ -137,13 +137,22 @@ type MasonryItem = { type: "photo"; photo: Photo; globalIndex: number } | { type
 
 // Staggered CTA insertion intervals per column — different for each column
 // so images never align side by side
-const COLUMN_CTA_OFFSETS = [3, 6, 4, 7]; // first CTA appears after N photos
+// Column indices that get a CTA prepended before any photos (breaks first-row alignment)
+const COLUMNS_WITH_INITIAL_CTA = [1]; // col B starts offset
+const COLUMN_CTA_OFFSETS = [3, 6, 4, 7]; // first CTA after N photos
 const COLUMN_CTA_INTERVALS = [5, 7, 6, 8]; // then every N photos after that
 
 function distributeToColumns(items: MasonryItem[], colCount: number): MasonryItem[][] {
   const cols: MasonryItem[][] = Array.from({ length: colCount }, () => []);
   const photoCountPerCol = new Array(colCount).fill(0);
   let ctaCounter = 0;
+
+  // Prepend a CTA to specific columns so the very first row is already offset
+  for (const colIdx of COLUMNS_WITH_INITIAL_CTA) {
+    if (colIdx < colCount) {
+      cols[colIdx].push({ type: "cta", ctaIndex: ctaCounter++ });
+    }
+  }
 
   // Round-robin distribute photos into columns
   items.forEach((item, i) => {
@@ -156,7 +165,6 @@ function distributeToColumns(items: MasonryItem[], colCount: number): MasonryIte
       const offset = COLUMN_CTA_OFFSETS[col % COLUMN_CTA_OFFSETS.length];
       const interval = COLUMN_CTA_INTERVALS[col % COLUMN_CTA_INTERVALS.length];
 
-      // Insert a CTA card at staggered positions per column
       if (count === offset || (count > offset && (count - offset) % interval === 0)) {
         cols[col].push({ type: "cta", ctaIndex: ctaCounter++ });
       }
