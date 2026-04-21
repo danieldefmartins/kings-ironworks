@@ -71,15 +71,20 @@ export default function Home() {
           <CarouselContent className="ml-0">
             {heroSlides.map((slide, i) => (
               <CarouselItem key={i} className="pl-0 relative">
-                <div className="relative h-[92vh] sm:h-[90vh]">
+                <div className="relative h-[92vh] sm:h-[90vh] bg-black">
+                  {/* Image — contained on desktop, cover on mobile */}
                   <img
                     src={slide.image}
                     alt={slide.alt}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover lg:object-contain"
                     style={{ objectPosition: slide.objectPosition }}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
+                  {/* Bottom gradient — always */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
+                  {/* Side gradients — desktop only, fade image edges to black */}
+                  <div className="hidden lg:block absolute inset-y-0 left-0 w-[20%] bg-gradient-to-r from-black/80 to-transparent" />
+                  <div className="hidden lg:block absolute inset-y-0 right-0 w-[20%] bg-gradient-to-l from-black/80 to-transparent" />
                 </div>
               </CarouselItem>
             ))}
