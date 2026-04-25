@@ -60,7 +60,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install --no-save --legacy-peer-deps sharp axios @anthropic-ai/sdk
+        run: npm install --no-save --legacy-peer-deps sharp axios @anthropic-ai/sdk puppeteer
 
       - name: Download, curate, and optimize iCloud photos
         run: node .github/scripts/icloud-download.mjs
