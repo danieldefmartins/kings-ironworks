@@ -60,13 +60,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: |
-          mkdir -p /tmp/photo-pipeline && cd /tmp/photo-pipeline
-          npm init -y > /dev/null 2>&1
-          npm install sharp axios @anthropic-ai/sdk
+        run: npm install --no-save --legacy-peer-deps sharp axios @anthropic-ai/sdk
 
       - name: Download, curate, and optimize iCloud photos
-        run: NODE_PATH=/tmp/photo-pipeline/node_modules node .github/scripts/icloud-download.mjs
+        run: node .github/scripts/icloud-download.mjs
         env:
           ICLOUD_LINK: ${{ inputs.icloud_link }}
           DEST_FOLDER: ${{ inputs.folder }}
