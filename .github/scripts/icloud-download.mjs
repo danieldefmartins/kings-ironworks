@@ -14,6 +14,8 @@ import { mkdirSync, existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import puppeteer from 'puppeteer';
 
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 // ─── Config ────────────────────────────────────────────────────────────
 const ICLOUD_LINK = process.env.ICLOUD_LINK;
 const DEST_FOLDER = process.env.DEST_FOLDER || '';
@@ -88,7 +90,7 @@ async function fetchPhotoUrlsViaBrowser(link) {
 
   // Wait for photos to start loading
   console.log('Waiting for photos to load...');
-  await page.waitForTimeout(5000);
+  await sleep(5000);
 
   // Scroll to trigger lazy loading of more photos
   let previousCount = 0;
@@ -97,7 +99,7 @@ async function fetchPhotoUrlsViaBrowser(link) {
 
   while (scrollAttempts < maxScrolls) {
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-    await page.waitForTimeout(2000);
+    await sleep(2000);
 
     const currentCount = imageUrls.size;
     console.log(`  Found ${currentCount} image URLs so far...`);
