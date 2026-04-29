@@ -108,7 +108,7 @@ export default function PrivacyPolicy() {
             <ul className="list-disc pl-6 space-y-2">
               <li>Replying <strong>STOP</strong> to any text message from us</li>
               <li>Calling us at +1 617-404-2589</li>
-              <li>Emailing us at info@kingsironsworks.com</li>
+              <li>Emailing us at info@kingsironworks.com</li>
             </ul>
             <p>
               After you opt out, you will receive one final confirmation message. No further messages will be sent unless you opt back in.
@@ -218,7 +218,7 @@ export default function PrivacyPolicy() {
             </p>
             <ul className="list-none space-y-2">
               <li>Phone: +1 617-404-2589</li>
-              <li>Email: info@kingsironsworks.com</li>
+              <li>Email: info@kingsironworks.com</li>
             </ul>
             <p>
               We will respond to your request within 30 days. We may need to verify your identity before processing certain requests.
@@ -298,7 +298,7 @@ export default function PrivacyPolicy() {
               <li><strong>Phone:</strong> +1 617-404-2589 (Boston/Everett)</li>
               <li><strong>Phone:</strong> +1 508-955-5006 (Cape Cod/Worcester)</li>
               <li><strong>Phone:</strong> +1 754-240-0082 (Miami, FL)</li>
-              <li><strong>Email:</strong> info@kingsironsworks.com</li>
+              <li><strong>Email:</strong> info@kingsironworks.com</li>
               <li><strong>Business Hours:</strong> Monday - Friday, 7:00 AM - 5:00 PM EST</li>
             </ul>
           </section>

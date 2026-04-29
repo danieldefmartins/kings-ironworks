@@ -140,7 +140,7 @@ export const LOCATIONS = [
   }
 ] as const;
 
-export const EMAIL = "info@kingsironsworks.com";
+export const EMAIL = "info@kingsironworks.com";
 
 export const GHL_FORM_ID = "aTeL51mSBGXtZGmEcsex";
 export const GHL_CHAT_WIDGET_ID = "699737916e6009b3eccf3dff";

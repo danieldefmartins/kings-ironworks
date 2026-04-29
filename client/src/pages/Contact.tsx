@@ -74,10 +74,10 @@ export default function Contact() {
                   <div>
                     <h3 className="text-heading text-lg mb-2">EMAIL</h3>
                     <a
-                      href="mailto:info@kingsironsworks.com"
+                      href="mailto:info@kingsironworks.com"
                       className="text-accent hover:underline break-all"
                     >
-                      info@kingsironsworks.com
+                      info@kingsironworks.com
                     </a>
                     <p className="text-sm text-muted-foreground mt-1">
                       We respond within 24 hours

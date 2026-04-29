@@ -128,7 +128,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>King Iron Works is a <strong>Licensed Fire Escape Installer</strong> offering inspection, certification, and repair services across Massachusetts and Florida. With 20+ years of experience and a full fabrication facility, we handle everything from routine inspections to complete fire escape replacement.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your inspection.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your inspection.</p>
     `,
   },
   {
@@ -238,7 +238,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Don't wait for your next inspection to find out. A quick call gets you a free on-site assessment from a licensed fire escape professional.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -345,7 +345,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Whether you need to restore original ironwork, replicate a missing design, or navigate the commission approval process — we've done it hundreds of times and we'd love to help.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule a free assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule a free assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -469,7 +469,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>The sooner you act, the lower the cost and the smaller the headache. A free on-site assessment from our team will give you a clear picture of what needs to happen and what it will take.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -628,7 +628,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>We'll walk your property, understand your goals, and give you an honest recommendation — no pressure, no upsell.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your free assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your free assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -762,7 +762,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>A free on-site consultation is the best way to start. We'll take a look at your building, discuss your vision, and give you a clear picture of what's possible.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your free consultation.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your free consultation.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -920,7 +920,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>If your railings need more than a touch-up — whether it's a full repaint, rust repair, or replacement of damaged sections — we can help. Free on-site assessment.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule your assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule your assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -1044,7 +1044,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Whether you need a full fence restoration, replacement of missing panels, railing repair, or commission-approved new ironwork — we've been doing this work across Boston's historic neighborhoods since 2004.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to schedule a free assessment.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to schedule a free assessment.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -1193,7 +1193,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>Start with a free on-site assessment. We'll evaluate your building, discuss the options, and give you a clear, detailed estimate with a realistic timeline.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to get started.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to get started.</p>
 
       <h2>The Bottom Line</h2>
 
@@ -1317,7 +1317,7 @@ export const BLOG_POSTS: BlogPost[] = [
 
       <p>We'll assess your storefront, discuss your options, and design a security solution that protects your business and looks great doing it. Free consultation.</p>
 
-      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironsworks.com"><strong>info@kingsironsworks.com</strong></a> to get started.</p>
+      <p>Contact us at <a href="tel:16174042589"><strong>+1 617-404-2589</strong></a> or <a href="mailto:info@kingsironworks.com"><strong>info@kingsironworks.com</strong></a> to get started.</p>
 
       <h2>The Bottom Line</h2>
 
