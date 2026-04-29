@@ -338,81 +338,99 @@ async function main() {
   console.log(`Processing ${imageUrls.length} photos...\n`);
 
   let processed = 0;
+  let skippedFormats = 0;
+
   for (let i = 0; i < imageUrls.length; i++) {
     const url = imageUrls[i];
     console.log(`[${i + 1}/${imageUrls.length}] Downloading...`);
 
-    let imageBuffer;
     try {
-      const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 60000 });
-      imageBuffer = Buffer.from(res.data);
+      let imageBuffer;
+      try {
+        const res = await axios.get(url, { responseType: 'arraybuffer', timeout: 60000 });
+        imageBuffer = Buffer.from(res.data);
 
-      // Verify it's an image
-      const meta = await sharp(imageBuffer).metadata();
-      if (!meta.width || meta.width < 100) {
-        console.log('  Skipped (too small or not an image)\n');
+        // Convert to JPEG early to handle HEIC/HEIF/WebP
+        const meta = await sharp(imageBuffer).metadata();
+        if (!meta.width || meta.width < 100) {
+          console.log('  Skipped (too small or not an image)\n');
+          continue;
+        }
+        imageBuffer = await sharp(imageBuffer).jpeg({ quality: 98 }).toBuffer();
+      } catch (e) {
+        if (e.message.includes('heif') || e.message.includes('HEIC') || e.message.includes('bad seek') || e.message.includes('unsupported')) {
+          console.log(`  Skipped (unsupported format: HEIC/HEIF)\n`);
+          skippedFormats++;
+          continue;
+        }
+        console.log(`  Download/decode error: ${e.message}\n`);
+        report.errors.push({ url: url.substring(0, 80), error: e.message });
         continue;
       }
-    } catch (e) {
-      console.log(`  Download error: ${e.message}\n`);
-      report.errors.push({ url: url.substring(0, 80), error: e.message });
-      continue;
-    }
 
-    // AI Analysis
-    let analysis = { score: 7, category: 'general', filename: '', keep: true, reason: 'AI disabled' };
-    if (ENABLE_AI) {
-      console.log('  Analyzing with AI...');
-      try {
-        analysis = await analyzePhoto(imageBuffer);
-        console.log(`  Score: ${analysis.score}/10 | Category: ${analysis.category} | ${analysis.keep ? 'KEEP' : 'REJECT'}`);
-      } catch (e) {
-        console.log(`  AI error (keeping): ${e.message}`);
+      // AI Analysis
+      let analysis = { score: 7, category: 'general', filename: '', keep: true, reason: 'AI disabled' };
+      if (ENABLE_AI) {
+        console.log('  Analyzing with AI...');
+        try {
+          analysis = await analyzePhoto(imageBuffer);
+          console.log(`  Score: ${analysis.score}/10 | Category: ${analysis.category} | ${analysis.keep ? 'KEEP' : 'REJECT'}`);
+        } catch (e) {
+          console.log(`  AI error (keeping): ${e.message}`);
+        }
       }
+
+      if (!analysis.keep || analysis.score < MIN_SCORE) {
+        console.log(`  REJECTED (score ${analysis.score} < ${MIN_SCORE})\n`);
+        report.rejected.push({ score: analysis.score, reason: analysis.reason, category: analysis.category });
+        continue;
+      }
+
+      // Output path
+      const category = CATEGORIES.includes(analysis.category) ? analysis.category : 'general';
+      const outputDir = DEST_FOLDER ? join(BASE_DIR, DEST_FOLDER) : join(BASE_DIR, category);
+      if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
+
+      let filename = analysis.filename || `photo-${i + 1}`;
+      filename = sanitize(filename).replace(/\.(jpg|jpeg|png|heic|heif|webp)$/i, '') + '.jpg';
+      const outputPath = join(outputDir, filename);
+
+      if (existsSync(outputPath)) {
+        console.log(`  Skipped (exists): ${filename}\n`);
+        continue;
+      }
+
+      // Brand effects
+      if (APPLY_EFFECTS) {
+        console.log('  Applying brand effects...');
+        try { imageBuffer = await applyBrandEffects(imageBuffer); }
+        catch (e) { console.log(`  Effects error (using original): ${e.message}`); }
+      }
+
+      // Resize & optimize
+      const meta = await sharp(imageBuffer).metadata();
+      let pipeline = sharp(imageBuffer);
+      if (MAX_WIDTH > 0 && meta.width > MAX_WIDTH) {
+        pipeline = pipeline.resize(MAX_WIDTH, null, { fit: 'inside', withoutEnlargement: true });
+      }
+
+      const outputBuffer = await pipeline.jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer();
+      writeFileSync(outputPath, outputBuffer);
+
+      const finalKB = (outputBuffer.length / 1024).toFixed(0);
+      console.log(`  Saved: ${outputPath} (${finalKB}KB)\n`);
+
+      report.accepted.push({ filename, category, score: analysis.score, size: `${finalKB}KB`, path: outputPath });
+      processed++;
+    } catch (e) {
+      console.log(`  Unexpected error (skipping): ${e.message}\n`);
+      report.errors.push({ url: url.substring(0, 80), error: e.message });
     }
+  }
 
-    if (!analysis.keep || analysis.score < MIN_SCORE) {
-      console.log(`  REJECTED (score ${analysis.score} < ${MIN_SCORE})\n`);
-      report.rejected.push({ score: analysis.score, reason: analysis.reason, category: analysis.category });
-      continue;
-    }
-
-    // Output path
-    const category = CATEGORIES.includes(analysis.category) ? analysis.category : 'general';
-    const outputDir = DEST_FOLDER ? join(BASE_DIR, DEST_FOLDER) : join(BASE_DIR, category);
-    if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
-
-    let filename = analysis.filename || `photo-${i + 1}`;
-    filename = sanitize(filename).replace(/\.(jpg|jpeg|png|heic|heif|webp)$/i, '') + '.jpg';
-    const outputPath = join(outputDir, filename);
-
-    if (existsSync(outputPath)) {
-      console.log(`  Skipped (exists): ${filename}\n`);
-      continue;
-    }
-
-    // Brand effects
-    if (APPLY_EFFECTS) {
-      console.log('  Applying brand effects...');
-      try { imageBuffer = await applyBrandEffects(imageBuffer); }
-      catch (e) { console.log(`  Effects error (using original): ${e.message}`); }
-    }
-
-    // Resize & optimize
-    const meta = await sharp(imageBuffer).metadata();
-    let pipeline = sharp(imageBuffer);
-    if (MAX_WIDTH > 0 && meta.width > MAX_WIDTH) {
-      pipeline = pipeline.resize(MAX_WIDTH, null, { fit: 'inside', withoutEnlargement: true });
-    }
-
-    const outputBuffer = await pipeline.jpeg({ quality: QUALITY, mozjpeg: true }).toBuffer();
-    writeFileSync(outputPath, outputBuffer);
-
-    const finalKB = (outputBuffer.length / 1024).toFixed(0);
-    console.log(`  Saved: ${outputPath} (${finalKB}KB)\n`);
-
-    report.accepted.push({ filename, category, score: analysis.score, size: `${finalKB}KB`, path: outputPath });
-    processed++;
+  if (skippedFormats > 0) {
+    console.log(`\nNote: ${skippedFormats} HEIC/HEIF files were skipped (not supported on this runner).`);
+    console.log(`Tip: Select "Most Compatible" when sharing from iCloud to get JPEG versions.\n`);
   }
 
   // Report
