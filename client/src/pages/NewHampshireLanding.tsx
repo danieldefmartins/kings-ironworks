@@ -45,7 +45,7 @@ export default function NewHampshireLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/ldKpYAFGAsEGkCVX.JPG')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg')`,
         }}
       >
         <div className="container">

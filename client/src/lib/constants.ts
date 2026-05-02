@@ -64,7 +64,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.BOSTON,
     hours: "Monday - Friday: 7:00 AM - 5:00 PM\nSaturday: By Appointment\nSunday: Closed",
     description: "Our state-of-the-art fabrication facility houses all our custom ironwork operations. Visit our shop to see our capabilities and discuss your project in person.",
-    image: "/images/fabrication-shop.jpg"
+    image: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-welding-sparks-dramatic.jpg"
   },
   {
     name: "Cape Cod, MA",
@@ -73,7 +73,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CAPE_COD,
     hours: "By Appointment",
     description: "Serving all of Cape Cod with custom ironwork, fire escape services, and historic restoration for coastal properties.",
-    image: "/images/IrppZGXOKBxchPDP.JPG"
+    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-IrppZGXO.jpg"
   },
   {
     name: "Worcester, MA",
@@ -82,7 +82,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.WORCESTER,
     hours: "By Appointment",
     description: "Full-service ironwork and fire escape solutions for Worcester and surrounding Central Massachusetts communities.",
-    image: "/images/LIIMwNaIvkbuwmQE.JPG"
+    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-LIIMwNaI.jpg"
   },
   {
     name: "Miami, FL",
@@ -91,7 +91,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.MIAMI,
     hours: "By Appointment",
     description: "Bringing our 20+ years of ironwork expertise to South Florida with custom fabrication and installation services.",
-    image: "/images/AzTrmVJOTgNkaNYM.JPG"
+    image: "/images/portfolio-organized/Gates/king-iron-works-gate-scroll-residential-84.jpg"
   },
   {
     name: "New Hampshire",
@@ -100,7 +100,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.NEW_HAMPSHIRE,
     hours: "By Appointment",
     description: "Professional ironwork services for New Hampshire homes and businesses. Custom fabrication, fire escapes, and structural steel.",
-    image: "/images/ldKpYAFGAsEGkCVX.JPG"
+    image: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg"
   },
   {
     name: "Maine",
@@ -109,7 +109,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.MAINE,
     hours: "By Appointment",
     description: "Serving Maine with expert ironwork, custom fabrication, and fire escape services built to withstand New England weather.",
-    image: "/images/gujHFKlEnadUYTxL.JPG"
+    image: "/images/portfolio-organized/Deck-Railing/king-iron-works-deck-railing-privacy-screen-patio.jpg"
   },
   {
     name: "Rhode Island",
@@ -118,7 +118,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.RHODE_ISLAND,
     hours: "By Appointment",
     description: "Expert ironwork services for Rhode Island properties. Custom gates, railings, fire escapes, and historic restoration.",
-    image: "/images/NgBghqHCKpNCJSJs.jpg"
+    image: "/images/portfolio-organized/Before-After/king-iron-works-before-window-sill-crumbling.jpg"
   },
   {
     name: "New York",
@@ -127,7 +127,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.NEW_YORK,
     hours: "By Appointment",
     description: "Full-service ironwork solutions for New York. Fire escapes, structural steel, custom fabrication, and building restoration.",
-    image: "/images/new-york-ironwork.jpg"
+    image: "/images/portfolio-organized/Branding/king-iron-works-new-york-brownstone-railings.jpg"
   },
   {
     name: "Connecticut",
@@ -136,7 +136,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CONNECTICUT,
     hours: "By Appointment",
     description: "Trusted ironwork services for Connecticut. Custom gates, railings, fire escapes, and historic restoration for homes and businesses.",
-    image: "/images/aoFXjvosIbfREama.JPG"
+    image: "/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg"
   }
 ] as const;
 

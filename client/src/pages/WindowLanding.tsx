@@ -19,7 +19,7 @@ export default function WindowLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/portfolio/window-1.jpg"
+            src="/images/portfolio-organized/Window-Guard/king-iron-works-window-guard-bars-brick-1.jpg"
             alt="Custom window guards and security grilles"
             className="w-full h-full object-cover opacity-40"
           />

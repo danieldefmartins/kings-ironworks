@@ -35,7 +35,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/images/ughTFDIjdTrgGjGJ.jpeg"
+                src="/images/portfolio-organized/Branding/king-iron-works-logo-black-bg.jpg"
                 alt="King Iron Works"
                 className="h-14 w-auto object-contain"
               />
@@ -80,7 +80,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/images/ughTFDIjdTrgGjGJ.jpeg"
+                src="/images/portfolio-organized/Branding/king-iron-works-logo-black-bg.jpg"
                 alt="King Iron Works"
                 className="h-12 w-auto object-contain"
               />

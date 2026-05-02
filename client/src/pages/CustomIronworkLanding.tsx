@@ -27,12 +27,12 @@ import Testimonials from "@/components/Testimonials";
  */
 
 const portfolioImages = [
-  { src: "/images/portfolio/gate/gate-1.jpg", alt: "Custom iron gate fabrication" },
-  { src: "/images/portfolio/gate/gate-2.jpg", alt: "Ornamental iron gate design" },
-  { src: "/images/portfolio/exterior-railing/exterior-railing-1.jpg", alt: "Custom exterior iron railing" },
-  { src: "/images/portfolio/interior-railing/interior-railings-1.jpg", alt: "Interior iron railing craftsmanship" },
-  { src: "/images/portfolio/before-after/before-after-1.jpg", alt: "Iron restoration before and after" },
-  { src: "/images/portfolio/balcony/balcony-1.jpg", alt: "Custom iron balcony railing" },
+  { src: "/images/portfolio-organized/Gates/king-iron-works-gate-patio-scroll-bronze.jpg", alt: "Custom iron gate fabrication" },
+  { src: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg", alt: "Ornamental iron gate design" },
+  { src: "/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg", alt: "Custom exterior iron railing" },
+  { src: "/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg", alt: "Interior iron railing craftsmanship" },
+  { src: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg", alt: "Iron restoration before and after" },
+  { src: "/images/portfolio-organized/Balcony/king-iron-works-balcony-ornamental-boston-brick.jpg", alt: "Custom iron balcony railing" },
 ];
 
 const services = [
@@ -110,7 +110,7 @@ export default function CustomIronworkLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/custom-iron-gate.webp"
+            src="/images/portfolio-organized/Gates/king-iron-works-gate-custom-iron-webp.webp"
             alt="Custom ironwork built in our fabrication shop"
             className="w-full h-full object-cover opacity-40"
           />

@@ -45,7 +45,7 @@ export default function NewYorkLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/new-york-ironwork.jpg')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Branding/king-iron-works-new-york-brownstone-railings.jpg')`,
         }}
       >
         <div className="container">

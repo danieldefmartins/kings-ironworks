@@ -45,7 +45,7 @@ export default function CapeCodeLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/IrppZGXOKBxchPDP.JPG')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-IrppZGXO.jpg')`,
         }}
       >
         <div className="container">

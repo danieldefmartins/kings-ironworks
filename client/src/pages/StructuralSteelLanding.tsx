@@ -20,7 +20,7 @@ export default function StructuralSteelLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/fabrication-shop-interior.webp"
+            src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-interior-webp.webp"
             alt="Structural steel fabrication Boston"
             className="w-full h-full object-cover opacity-40"
           />

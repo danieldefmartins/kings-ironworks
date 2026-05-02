@@ -10,7 +10,7 @@ export default function About() {
       <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/fabrication-shop-interior.webp"
+            src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-interior-webp.webp"
             alt="Fabrication shop"
             className="w-full h-full object-cover opacity-30"
           />

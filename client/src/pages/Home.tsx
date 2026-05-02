@@ -13,19 +13,19 @@ import type { CarouselApi } from "@/components/ui/carousel";
 
 const heroSlides = [
   {
-    image: "/images/homepage/project1-hero.jpg",
+    image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-hero.jpg",
     alt: "Hand-forged peacock scrollwork curved staircase — a King Iron Works masterpiece",
     // Portrait image — on mobile show upper portion with scrollwork detail
     objectPosition: "center 30%",
   },
   {
-    image: "/images/homepage/project2-hero.jpg",
+    image: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
     alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
     // Square image — center works well
     objectPosition: "center center",
   },
   {
-    image: "/images/homepage/project1-reveal.jpg",
+    image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
     alt: "The master craftsman with his finished curved staircase masterpiece",
     // Landscape — center on the staircase and person
     objectPosition: "center 40%",
@@ -285,7 +285,7 @@ export default function Home() {
             {/* Fire Escape Installation */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/VrmKyMuovdgoFRfz.JPG"
+                src="/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg"
                 alt="Fire escape installation"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -304,7 +304,7 @@ export default function Home() {
             {/* Custom Gate */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/ldKpYAFGAsEGkCVX.JPG"
+                src="/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg"
                 alt="Custom ornamental gate"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -323,7 +323,7 @@ export default function Home() {
             {/* Interior Railing */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/apLcldtAeVXzDTCh.JPG"
+                src="/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg"
                 alt="Interior iron railing"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -342,7 +342,7 @@ export default function Home() {
             {/* Exterior Railing */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/KVrQsNoDvGzMAnwj.JPG"
+                src="/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg"
                 alt="Exterior railing"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -361,7 +361,7 @@ export default function Home() {
             {/* Before & After */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/FXhStnQxPmvbQEEX.JPG"
+                src="/images/portfolio-organized/Before-After/king-iron-works-before-after-farmhouse-railing-after.jpg"
                 alt="Restoration project"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />
@@ -380,7 +380,7 @@ export default function Home() {
             {/* Gate Detail */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/aoFXjvosIbfREama.JPG"
+                src="/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg"
                 alt="Ornamental gate detail"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />

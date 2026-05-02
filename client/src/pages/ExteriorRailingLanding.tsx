@@ -22,7 +22,7 @@ export default function ExteriorRailingLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/BtcNBKAOOIKUZnLV.JPG"
+            src="/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-cable-deck-modern-1.jpg"
             alt="Exterior railing installation Boston"
             className="w-full h-full object-cover opacity-40"
           />

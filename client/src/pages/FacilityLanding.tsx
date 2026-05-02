@@ -25,16 +25,16 @@ import GHLFormPlaceholder from "@/components/GHLFormPlaceholder";
  */
 
 const facilityImages = [
-  { src: "/images/portfolio/facility/FullSizeRender.JPG", alt: "Kings Iron Works fabrication shop" },
-  { src: "/images/portfolio/facility/FullSizeRender%202.JPG", alt: "Welding station in our Everett facility" },
-  { src: "/images/portfolio/facility/FullSizeRender%203.JPG", alt: "Professional welding equipment" },
-  { src: "/images/portfolio/facility/FullSizeRender%204.JPG", alt: "Powder coating booth" },
-  { src: "/images/portfolio/facility/FullSizeRender%205.JPG", alt: "Custom ironwork in progress" },
-  { src: "/images/portfolio/facility/FullSizeRender%206.JPG", alt: "Finished ironwork pieces" },
-  { src: "/images/portfolio/facility/IMG_2443.JPG", alt: "Fabrication shop floor" },
-  { src: "/images/portfolio/facility/179be0c7-68dd-41e8-93aa-020f5aee0455.JPG", alt: "Iron fabrication process" },
-  { src: "/images/portfolio/facility/9ff15a85-bb6f-4578-a4dd-28aa931a7303.JPG", alt: "Welding in progress" },
-  { src: "/images/portfolio/facility/d82e2919-483e-4558-9b25-4ea02b66f361.JPG", alt: "Facility equipment" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-1.jpg", alt: "Kings Iron Works fabrication shop" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-2.jpg", alt: "Welding station in our Everett facility" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-3.jpg", alt: "Professional welding equipment" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-4.jpg", alt: "Powder coating booth" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-5.jpg", alt: "Custom ironwork in progress" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-branded-truck.jpg", alt: "Finished ironwork pieces" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-workbench-banner.jpg", alt: "Fabrication shop floor" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-6.jpg", alt: "Iron fabrication process" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-7.jpg", alt: "Welding in progress" },
+  { src: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-butterfly-metal-art.jpg", alt: "Facility equipment" },
 ];
 
 const weldingMachines = [
@@ -75,7 +75,7 @@ export default function FacilityLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/fabrication-shop-interior.webp"
+            src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-interior-webp.webp"
             alt="Kings Iron Works fabrication facility in Everett, MA"
             className="w-full h-full object-cover opacity-40"
           />
@@ -290,7 +290,7 @@ export default function FacilityLanding() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="aspect-square overflow-hidden border-4 border-border">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender%204.JPG"
+                    src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-4.jpg"
                     alt="Powder coating in our facility"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -298,7 +298,7 @@ export default function FacilityLanding() {
                 </div>
                 <div className="aspect-square overflow-hidden border-4 border-border">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender%205.JPG"
+                    src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-5.jpg"
                     alt="Professional powder coat finish"
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -306,7 +306,7 @@ export default function FacilityLanding() {
                 </div>
                 <div className="aspect-square overflow-hidden border-4 border-border col-span-2">
                   <img
-                    src="/images/portfolio/facility/FullSizeRender%206.JPG"
+                    src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-branded-truck.jpg"
                     alt="Finished powder coated ironwork"
                     className="w-full h-full object-cover"
                     loading="lazy"

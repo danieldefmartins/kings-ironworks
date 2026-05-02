@@ -16,7 +16,7 @@ export default function Services() {
       <section className="relative min-h-[60vh] flex items-center bg-sidebar text-sidebar-foreground pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/fabrication-shop-interior.webp"
+            src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-interior-webp.webp"
             alt="Fabrication shop"
             className="w-full h-full object-cover opacity-30"
           />
@@ -78,7 +78,7 @@ export default function Services() {
             </div>
             <div>
               <img
-                src="/images/fire-escape-installation.webp"
+                src="/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-installation-webp.webp"
                 alt="Fire escape installation"
                 className="w-full h-[500px] object-cover border-8 border-border"
               />
@@ -121,7 +121,7 @@ export default function Services() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1">
               <img
-                src="/images/boston-historic-building.webp"
+                src="/images/portfolio-organized/Branding/king-iron-works-boston-historic-building.webp"
                 alt="Historic building"
                 className="w-full h-[500px] object-cover border-8 border-border"
               />
@@ -217,7 +217,7 @@ export default function Services() {
 
           <div className="text-center">
             <img
-              src="/images/custom-iron-gate.webp"
+              src="/images/portfolio-organized/Gates/king-iron-works-gate-custom-iron-webp.webp"
               alt="Custom iron gate"
               className="w-full max-w-2xl mx-auto h-[600px] object-cover border-8 border-border mb-8"
             />

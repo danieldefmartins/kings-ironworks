@@ -20,7 +20,7 @@ export default function BuildingRestorationLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/boston-historic-building.webp"
+            src="/images/portfolio-organized/Branding/king-iron-works-boston-historic-building.webp"
             alt="Historic building restoration Boston"
             className="w-full h-full object-cover opacity-40"
           />

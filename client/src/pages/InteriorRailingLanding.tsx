@@ -22,7 +22,7 @@ export default function InteriorRailingLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/apLcldtAeVXzDTCh.JPG"
+            src="/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg"
             alt="Custom interior railing installation Boston"
             className="w-full h-full object-cover opacity-40"
           />

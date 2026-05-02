@@ -19,7 +19,7 @@ export default function WindowWellLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/portfolio/window-well-1.jpg"
+            src="/images/portfolio-organized/Window-Well/king-iron-works-window-well-horizontal-bar-modern.jpg"
             alt="Custom window well covers and grates"
             className="w-full h-full object-cover opacity-40"
           />

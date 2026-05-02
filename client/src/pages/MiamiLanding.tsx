@@ -45,7 +45,7 @@ export default function MiamiLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/miami-skyline.jpg')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Branding/king-iron-works-miami-skyline-service-area.jpg')`,
         }}
       >
         <div className="container">

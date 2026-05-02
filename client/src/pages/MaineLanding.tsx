@@ -45,7 +45,7 @@ export default function MaineLanding() {
       <section
         className="relative min-h-[90vh] flex items-center bg-cover bg-center"
         style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/gujHFKlEnadUYTxL.JPG')`,
+          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Deck-Railing/king-iron-works-deck-railing-privacy-screen-patio.jpg')`,
         }}
       >
         <div className="container">
