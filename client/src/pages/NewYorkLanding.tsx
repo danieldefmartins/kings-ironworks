@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import CityHero from "@/components/CityHero";
 import { Link } from "wouter";
 import { Phone, MapPin, CheckCircle, ArrowRight, Shield, Award, Clock } from "lucide-react";
 import { PHONE_NUMBERS } from "@/lib/constants";
@@ -42,62 +43,7 @@ export default function NewYorkLanding() {
     <div className="min-h-screen">
       <LocationSEO location="new-york" />
       {/* Hero Section */}
-      <section
-        className="relative min-h-[90vh] flex items-center bg-cover bg-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('/images/portfolio-organized/Branding/king-iron-works-new-york-brownstone-railings.jpg')`,
-        }}
-      >
-        <div className="container">
-          <div className="max-w-3xl">
-            <div className="inline-block bg-accent px-4 py-2 mb-6">
-              <div className="flex items-center gap-2 text-accent-foreground">
-                <MapPin className="w-5 h-5" />
-                <span className="font-heading font-bold">SERVING NEW YORK</span>
-              </div>
-            </div>
-
-            <h1 className="text-display text-5xl md:text-7xl mb-6 text-white">
-              NEW YORK'S TRUSTED IRONWORK SPECIALISTS
-            </h1>
-
-            <p className="text-xl md:text-2xl text-white/90 mb-8">
-              Custom ironwork, fire escape services, and structural steel for New York properties.
-              Licensed, insured, and built to meet the highest standards in the industry.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <PhoneLink tel={PHONE_NUMBERS.NEW_YORK.tel}>
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border w-full sm:w-auto">
-                  <Phone className="mr-2 w-5 h-5" />
-                  CALL {PHONE_NUMBERS.NEW_YORK.display}
-                </Button>
-              </PhoneLink>
-              <Link href="/contact">
-                <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-white hover:text-sidebar text-lg px-8 py-6 thick-border w-full sm:w-auto">
-                  FREE QUOTE
-                  <ArrowRight className="ml-2 w-5 h-5" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-white/80">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-accent" />
-                <span>Licensed Installer</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-accent" />
-                <span>20+ Years Experience</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-accent" />
-                <span>Veteran Owned</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CityHero cityName="New York" />
 
       {/* Services Section */}
       <section className="diagonal-cut-top bg-card py-24">

@@ -25,6 +25,13 @@ import RhodeIslandLanding from "./pages/RhodeIslandLanding";
 import NewYorkLanding from "./pages/NewYorkLanding";
 import ConnecticutLanding from "./pages/ConnecticutLanding";
 import VermontLanding from "./pages/VermontLanding";
+import NorthShoreLanding from "./pages/NorthShoreLanding";
+import LawrenceLanding from "./pages/LawrenceLanding";
+import LowellLanding from "./pages/LowellLanding";
+import EverettLanding from "./pages/EverettLanding";
+import PortsmouthLanding from "./pages/PortsmouthLanding";
+import NashuaLanding from "./pages/NashuaLanding";
+import ManchesterNHLanding from "./pages/ManchesterNHLanding";
 import InteriorRailingLanding from "./pages/InteriorRailingLanding";
 import ExteriorRailingLanding from "./pages/ExteriorRailingLanding";
 import FenceLanding from "./pages/FenceLanding";
@@ -100,6 +107,13 @@ function Router() {
       <Route path="/new-york" component={NewYorkLanding} />
       <Route path="/connecticut" component={ConnecticutLanding} />
       <Route path="/vermont" component={VermontLanding} />
+      <Route path="/north-shore" component={NorthShoreLanding} />
+      <Route path="/lawrence" component={LawrenceLanding} />
+      <Route path="/lowell" component={LowellLanding} />
+      <Route path="/everett" component={EverettLanding} />
+      <Route path="/portsmouth" component={PortsmouthLanding} />
+      <Route path="/nashua" component={NashuaLanding} />
+      <Route path="/manchester-nh" component={ManchesterNHLanding} />
       <Route path="/blog/:slug" component={BlogPost} />
       <Route path="/blog" component={Blog} />
       <Route path="/portfolio/:category" component={Portfolio} />
