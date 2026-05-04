@@ -64,7 +64,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.BOSTON,
     hours: "Monday - Friday: 7:00 AM - 5:00 PM\nSaturday: By Appointment\nSunday: Closed",
     description: "Our state-of-the-art fabrication facility houses all our custom ironwork operations. Visit our shop to see our capabilities and discuss your project in person.",
-    image: "/images/portfolio-organized/Shop-Process/king-iron-works-shop-welding-sparks-dramatic.jpg"
+    image: "/images/portfolio-organized/Shop-Process/king-iron-works-install-welding-onsite.jpg"
   },
   {
     name: "Cape Cod, MA",
@@ -118,7 +118,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.RHODE_ISLAND,
     hours: "By Appointment",
     description: "Expert ironwork services for Rhode Island properties. Custom gates, railings, fire escapes, and historic restoration.",
-    image: "/images/portfolio-organized/Before-After/king-iron-works-before-window-sill-crumbling.jpg"
+    image: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg"
   },
   {
     name: "New York",

@@ -31,12 +31,12 @@ const heroSlides = [
     objectPosition: "center 40%",
   },
   {
-    image: "/images/new-portfolio/staircase/IMG_6934.JPEG",
+    image: "/images/new-portfolio/staircase/king-iron-works-staircase-curved-ornamental-gold-accents.jpg",
     alt: "Grand curved staircase with crystal chandelier and ornate ironwork",
     objectPosition: "center 20%",
   },
   {
-    image: "/images/new-portfolio/staircase/FullSizeRender-5.jpg",
+    image: "/images/new-portfolio/staircase/king-iron-works-staircase-curved-modern-rod-railing.jpg",
     alt: "Industrial curved steel spiral staircase in open-concept home",
     objectPosition: "center center",
   },
@@ -361,7 +361,7 @@ export default function Home() {
             {/* Before & After */}
             <div className="relative group overflow-hidden">
               <img
-                src="/images/portfolio-organized/Before-After/king-iron-works-before-after-farmhouse-railing-after.jpg"
+                src="/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg"
                 alt="Restoration project"
                 className="w-full h-[350px] object-cover border-8 border-border"
               />

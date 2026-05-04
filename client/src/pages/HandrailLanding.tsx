@@ -19,7 +19,7 @@ export default function HandrailLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/portfolio-organized/Handrail/king-iron-works-handrail-pipe-porch-colonial.jpg"
+            src="/images/portfolio-organized/Handrail/king-iron-works-handrail-1.jpg"
             alt="Pipe handrail and railing installation"
             className="w-full h-full object-cover opacity-40"
           />
