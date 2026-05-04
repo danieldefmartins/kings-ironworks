@@ -50,117 +50,114 @@ export function getLocationCode(geoLocation: GeoLocation | null): LocationCode {
   const cityLower = city?.toLowerCase() || '';
   const regionLower = region?.toLowerCase() || '';
 
-  // Cape Cod detection (specific cities first)
-  const capeCodeCities = [
-    'barnstable', 'bourne', 'brewster', 'chatham', 'dennis', 'eastham',
-    'falmouth', 'harwich', 'mashpee', 'orleans', 'provincetown', 'sandwich',
-    'truro', 'wellfleet', 'yarmouth', 'hyannis', 'woods hole'
-  ];
+  // IMPORTANT: Always check REGION first to avoid city-name collisions.
+  // Cities like Manchester, Bristol, Rochester exist in multiple states.
+  // The region from the IP API is the most reliable indicator.
 
-  if (capeCodeCities.some(cc => cityLower.includes(cc))) {
-    return 'cape-cod';
-  }
-
-  // New York detection
-  const newYorkCities = [
-    'new york', 'manhattan', 'brooklyn', 'queens', 'bronx', 'staten island',
-    'yonkers', 'buffalo', 'rochester', 'syracuse', 'albany', 'new rochelle',
-    'mount vernon', 'schenectady', 'utica', 'white plains', 'troy',
-    'niagara falls', 'long island', 'hempstead', 'islip', 'oyster bay'
-  ];
-
-  if (newYorkCities.some(nc => cityLower.includes(nc)) ||
-      regionLower.includes('new york') || regionLower === 'ny') {
-    return 'new-york';
-  }
-
-  // Connecticut detection
-  const connecticutCities = [
-    'hartford', 'new haven', 'stamford', 'bridgeport', 'waterbury',
-    'norwalk', 'danbury', 'new britain', 'greenwich', 'fairfield',
-    'west hartford', 'milford', 'stratford', 'manchester', 'bristol'
-  ];
-
-  if (connecticutCities.some(ct => cityLower.includes(ct)) ||
-      regionLower.includes('connecticut') || regionLower === 'ct') {
-    return 'connecticut';
-  }
-
-  // Rhode Island detection
-  const rhodeIslandCities = [
-    'providence', 'warwick', 'cranston', 'pawtucket', 'east providence',
-    'woonsocket', 'newport', 'central falls', 'west warwick', 'coventry',
-    'cumberland', 'north providence', 'south kingstown', 'bristol', 'westerly'
-  ];
-
-  if (rhodeIslandCities.some(ri => cityLower.includes(ri)) ||
-      regionLower.includes('rhode island') || regionLower === 'ri') {
-    return 'rhode-island';
-  }
-
-  // New Hampshire detection
-  const newHampshireCities = [
-    'manchester', 'nashua', 'concord', 'dover', 'rochester', 'keene',
-    'portsmouth', 'laconia', 'lebanon', 'claremont', 'berlin', 'franklin',
-    'somersworth', 'hampton', 'exeter', 'derry', 'londonderry', 'hudson'
-  ];
-
-  if (newHampshireCities.some(nh => cityLower.includes(nh)) ||
-      regionLower.includes('new hampshire') || regionLower === 'nh') {
-    return 'new-hampshire';
-  }
-
-  // Maine detection
-  const maineCities = [
-    'portland', 'lewiston', 'bangor', 'south portland', 'auburn',
-    'biddeford', 'sanford', 'saco', 'westbrook', 'augusta',
-    'waterville', 'brewer', 'presque isle', 'bath', 'caribou',
-    'ellsworth', 'old orchard beach', 'scarborough', 'brunswick', 'gorham'
-  ];
-
-  if (maineCities.some(me => cityLower.includes(me)) ||
-      regionLower.includes('maine') || regionLower === 'me') {
-    return 'maine';
-  }
-
-  // Florida detection - route ALL Florida visitors to Miami landing page
+  // 1. Check region/state first — this is the most accurate signal
   if (regionLower.includes('florida') || regionLower === 'fl') {
     return 'miami';
   }
 
-  // Specific Miami/South Florida cities for extra certainty
-  const miamiCities = [
-    'miami', 'miami beach', 'coral gables', 'hialeah', 'homestead',
-    'fort lauderdale', 'hollywood', 'pembroke pines', 'boca raton',
-    'west palm beach', 'pompano beach', 'davie', 'plantation', 'tampa',
-    'orlando', 'jacksonville', 'tallahassee', 'fort myers', 'naples'
-  ];
-
-  if (miamiCities.some(mc => cityLower.includes(mc))) {
-    return 'miami';
+  if (regionLower.includes('new york') || regionLower === 'ny') {
+    return 'new-york';
   }
 
-  // Worcester/Central Massachusetts detection
-  const worcesterCities = [
-    'worcester', 'auburn', 'shrewsbury', 'westborough', 'northborough',
-    'southborough', 'marlborough', 'framingham', 'natick', 'milford',
-    'grafton', 'millbury', 'leicester', 'spencer', 'oxford'
-  ];
-
-  if (worcesterCities.some(wc => cityLower.includes(wc))) {
-    return 'worcester';
+  if (regionLower.includes('new hampshire') || regionLower === 'nh') {
+    // Check for specific NH coastal/border towns near MA
+    const nhCoastalCities = [
+      'portsmouth', 'hampton', 'exeter', 'newburyport', 'seabrook',
+      'rye', 'north hampton', 'stratham', 'newmarket', 'durham',
+      'dover', 'rochester', 'somersworth', 'newington'
+    ];
+    // All NH cities go to NH page
+    return 'new-hampshire';
   }
 
-  // Boston/Greater Boston detection (default for Massachusetts)
-  const bostonCities = [
-    'boston', 'cambridge', 'somerville', 'brookline', 'newton', 'quincy',
-    'waltham', 'medford', 'malden', 'everett', 'revere', 'chelsea',
-    'lowell', 'lynn', 'salem'
-  ];
+  if (regionLower.includes('maine') || regionLower === 'me') {
+    return 'maine';
+  }
 
-  if (bostonCities.some(bc => cityLower.includes(bc)) ||
-      regionLower.includes('massachusetts') || regionLower === 'ma') {
+  if (regionLower.includes('connecticut') || regionLower === 'ct') {
+    return 'connecticut';
+  }
+
+  if (regionLower.includes('rhode island') || regionLower === 'ri') {
+    return 'rhode-island';
+  }
+
+  if (regionLower.includes('vermont') || regionLower === 'vt') {
+    return 'default'; // Vermont page exists at /vermont but no specific location code
+  }
+
+  if (regionLower.includes('massachusetts') || regionLower === 'ma') {
+    // Within MA, check specific sub-regions
+    const capeCodeCities = [
+      'barnstable', 'bourne', 'brewster', 'chatham', 'dennis', 'eastham',
+      'falmouth', 'harwich', 'mashpee', 'orleans', 'provincetown', 'sandwich',
+      'truro', 'wellfleet', 'yarmouth', 'hyannis', 'woods hole'
+    ];
+
+    if (capeCodeCities.some(cc => cityLower.includes(cc))) {
+      return 'cape-cod';
+    }
+
+    const worcesterCities = [
+      'worcester', 'shrewsbury', 'westborough', 'northborough',
+      'southborough', 'marlborough', 'grafton', 'millbury',
+      'leicester', 'spencer', 'oxford', 'webster', 'dudley',
+      'sturbridge', 'charlton', 'southbridge', 'leominster', 'fitchburg'
+    ];
+
+    if (worcesterCities.some(wc => cityLower.includes(wc))) {
+      return 'worcester';
+    }
+
+    // North Shore MA (near NH border) — still route to Boston/default
+    // These are NOT New Hampshire even though they're near the border
+    const northShoreCities = [
+      'newburyport', 'amesbury', 'salisbury', 'merrimac', 'haverhill',
+      'methuen', 'lawrence', 'andover', 'north andover', 'georgetown',
+      'rowley', 'ipswich', 'essex', 'gloucester', 'rockport',
+      'nahant', 'swampscott', 'marblehead', 'peabody', 'danvers',
+      'beverly', 'salem', 'lynn', 'saugus'
+    ];
+
+    // All other MA cities go to Boston
     return 'boston';
+  }
+
+  // 2. If region didn't match, fall back to city-based detection
+  // Only use cities that are UNIQUE to their state (no duplicates)
+
+  const uniqueNYCities = [
+    'new york', 'manhattan', 'brooklyn', 'queens', 'bronx', 'staten island',
+    'yonkers', 'buffalo', 'syracuse', 'albany', 'schenectady', 'utica',
+    'white plains', 'niagara falls', 'long island', 'hempstead'
+  ];
+
+  if (uniqueNYCities.some(nc => cityLower.includes(nc))) {
+    return 'new-york';
+  }
+
+  const uniqueCTCities = [
+    'hartford', 'new haven', 'stamford', 'bridgeport', 'waterbury',
+    'norwalk', 'danbury', 'new britain', 'greenwich', 'fairfield',
+    'west hartford', 'stratford'
+  ];
+
+  if (uniqueCTCities.some(ct => cityLower.includes(ct))) {
+    return 'connecticut';
+  }
+
+  const uniqueMiamiCities = [
+    'miami', 'miami beach', 'coral gables', 'hialeah', 'homestead',
+    'fort lauderdale', 'pembroke pines', 'boca raton',
+    'west palm beach', 'pompano beach', 'tampa', 'orlando', 'jacksonville'
+  ];
+
+  if (uniqueMiamiCities.some(mc => cityLower.includes(mc))) {
+    return 'miami';
   }
 
   return 'default';
