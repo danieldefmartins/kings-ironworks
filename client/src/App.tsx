@@ -93,9 +93,8 @@ function Router() {
       <Route path="/handrail" component={HandrailLanding} />
       <Route path="/window" component={WindowLanding} />
       <Route path="/window-well" component={WindowWellLanding} />
+      <Route path="/staircases" component={StaircaseHub} />
       <Route path="/dream-staircase" component={StaircaseHub} />
-      <Route path="/staircases/:type" component={StaircaseDetail} />
-      <Route path="/staircases" component={StaircaseShowcase} />
       <Route path="/custom-ironwork" component={CustomIronworkLanding} />
       <Route path="/our-facility" component={FacilityLanding} />
       <Route path="/cape-cod" component={CapeCodeLanding} />
