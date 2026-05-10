@@ -2,9 +2,8 @@ import { Button } from "@/components/ui/button";
 
 import { PHONE_NUMBERS } from "@/lib/constants";
 import { PhoneLink } from "@/components/PhoneLink";
-import { Card } from "@/components/ui/card";
 import { Link } from "wouter";
-import { ArrowRight, Shield, Wrench, Building2, MapPin, Phone, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Phone, CheckCircle2 } from "lucide-react";
 import Testimonials from "@/components/Testimonials";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
@@ -15,19 +14,16 @@ const heroSlides = [
   {
     image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-hero.jpg",
     alt: "Hand-forged peacock scrollwork curved staircase — a King Iron Works masterpiece",
-    // Portrait image — on mobile show upper portion with scrollwork detail
     objectPosition: "center 30%",
   },
   {
     image: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
     alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
-    // Square image — center works well
     objectPosition: "center center",
   },
   {
     image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
     alt: "The master craftsman with his finished curved staircase masterpiece",
-    // Landscape — center on the staircase and person
     objectPosition: "center 40%",
   },
   {
@@ -39,6 +35,39 @@ const heroSlides = [
     image: "/images/new-portfolio/staircase/king-iron-works-staircase-curved-modern-rod-railing.jpg",
     alt: "Industrial curved steel spiral staircase in open-concept home",
     objectPosition: "center center",
+  },
+];
+
+const featuredWork = [
+  {
+    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg",
+    title: "Fire Escape Installation",
+    category: "Commercial",
+  },
+  {
+    image: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg",
+    title: "Custom Ornamental Gate",
+    category: "Residential",
+  },
+  {
+    image: "/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg",
+    title: "Interior Railing",
+    category: "Residential",
+  },
+  {
+    image: "/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg",
+    title: "Exterior Railing",
+    category: "Residential",
+  },
+  {
+    image: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg",
+    title: "Historic Restoration",
+    category: "Commercial",
+  },
+  {
+    image: "/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg",
+    title: "Iron & Glass Doors",
+    category: "Residential",
   },
 ];
 
@@ -72,7 +101,6 @@ export default function Home() {
             {heroSlides.map((slide, i) => (
               <CarouselItem key={i} className="pl-0 relative">
                 <div className="relative h-[92vh] sm:h-[90vh] bg-black overflow-hidden">
-                  {/* Image — cover always, but on desktop we let side gradients do the heavy lifting */}
                   <img
                     src={slide.image}
                     alt={slide.alt}
@@ -80,9 +108,7 @@ export default function Home() {
                     style={{ objectPosition: slide.objectPosition }}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
-                  {/* Bottom gradient — always */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
-                  {/* Side vignette gradients — desktop only, wide and soft */}
                   <div className="hidden lg:block absolute inset-y-0 left-0 w-[35%] bg-gradient-to-r from-black via-black/50 to-transparent" />
                   <div className="hidden lg:block absolute inset-y-0 right-0 w-[35%] bg-gradient-to-l from-black via-black/50 to-transparent" />
                 </div>
@@ -104,7 +130,7 @@ export default function Home() {
           </div>
         </Carousel>
 
-        {/* Overlay Content — positioned over the carousel */}
+        {/* Overlay Content */}
         <div className="absolute bottom-0 left-0 right-0 z-10 pb-6 sm:pb-10">
           <div className="px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto lg:mx-0 lg:ml-8 xl:ml-16">
             <div className="inline-block px-3 py-1.5 bg-accent text-accent-foreground text-xs font-display font-bold tracking-wider mb-3">
@@ -137,7 +163,6 @@ export default function Home() {
               </PhoneLink>
             </div>
 
-            {/* Trust Badges */}
             <div className="mt-5 flex flex-wrap gap-3 text-xs sm:text-sm text-white/60">
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-accent" />
@@ -156,275 +181,125 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Services Section - Diagonal Cut */}
-      <section className="diagonal-cut-top bg-card py-24">
+      {/* Services Section */}
+      <section className="py-24 lg:py-32 bg-background">
         <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-display text-4xl md:text-6xl mb-4">OUR SERVICES</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Comprehensive ironwork solutions from historic restoration to modern safety compliance
+          <div className="text-center mb-20">
+            <p className="section-eyebrow mb-4">What We Do</p>
+            <h2 className="text-display text-3xl md:text-5xl mb-6">Crafted by Hand,<br />Built to Last</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              From custom staircases to structural steel, every piece leaves our Everett shop
+              with the precision and care of twenty years of mastery.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Fire Escape Services */}
-            <Card className="p-8 border-8 border-border hover:border-accent transition-all duration-300 group">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-4">
-                  <Shield className="w-8 h-8 text-accent" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
+            {[
+              {
+                title: "Custom Staircases & Railings",
+                description: "Curved, floating, spiral, and traditional staircases. Glass, cable, and ornamental iron railings. Designed to your exact vision.",
+                link: "/staircases",
+              },
+              {
+                title: "Fire Escape Services",
+                description: "Licensed installation, repair, inspection, and MA State Building Code certification. Emergency services available across New England.",
+                link: "/fire-escape",
+              },
+              {
+                title: "Structural Steel & Restoration",
+                description: "Commercial fabrication, historic building restoration, and custom metalwork. Period-accurate replication for landmark properties.",
+                link: "/structural-steel",
+              },
+            ].map((service, i) => (
+              <Link key={i} href={service.link}>
+                <div className="group cursor-pointer">
+                  <div className="w-12 h-[2px] bg-accent mb-8 group-hover:w-20 transition-all duration-300" />
+                  <h3 className="text-display text-xl md:text-2xl mb-4 group-hover:text-accent transition-colors">{service.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-6">{service.description}</p>
+                  <span className="inline-flex items-center gap-2 text-sm font-display font-bold text-accent">
+                    Learn More
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                  </span>
                 </div>
-                <h3 className="text-heading text-2xl mb-3">FIRE ESCAPE SERVICES</h3>
-                <p className="text-muted-foreground leading-relaxed mb-6">
-                  Licensed installation, repair, inspection, and MA State Building Code certification. 
-                  Emergency services available.
-                </p>
-              </div>
-              <Link href="/fire-escape">
-                <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
-                  LEARN MORE
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
               </Link>
-            </Card>
-
-            {/* Historic Restoration */}
-            <Card className="p-8 border-8 border-border hover:border-accent transition-all duration-300 group">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-4">
-                  <Building2 className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="text-heading text-2xl mb-3">HISTORIC RESTORATION</h3>
-                <p className="text-muted-foreground leading-relaxed mb-6">
-                  Custom replication of unavailable historic designs. Period-accurate restoration for 
-                  Boston's landmark buildings.
-                </p>
-              </div>
-              <Link href="/building-restoration">
-                <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
-                  LEARN MORE
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-            </Card>
-
-            {/* Custom Ironwork */}
-            <Card className="p-8 border-8 border-border hover:border-accent transition-all duration-300 group">
-              <div className="mb-6">
-                <div className="w-16 h-16 bg-accent/10 flex items-center justify-center mb-4">
-                  <Wrench className="w-8 h-8 text-accent" />
-                </div>
-                <h3 className="text-heading text-2xl mb-3">CUSTOM IRONWORK</h3>
-                <p className="text-muted-foreground leading-relaxed mb-6">
-                  Railings, staircases, gates, fences, and ornamental iron. Designed, fabricated, 
-                  and installed in-house.
-                </p>
-              </div>
-              <Link href="/structural-steel">
-                <Button variant="outline" className="w-full border-2 group-hover:border-accent group-hover:bg-accent group-hover:text-accent-foreground transition-all">
-                  LEARN MORE
-                  <ArrowRight className="ml-2 w-4 h-4" />
-                </Button>
-              </Link>
-            </Card>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Why Choose Us - Diagonal Cut */}
-      <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
+      {/* Stats Section */}
+      <section className="py-20 lg:py-24 bg-sidebar text-sidebar-foreground">
         <div className="container">
-          <h2 className="text-display text-4xl md:text-6xl text-center mb-16">WHY KINGS IRONWORKS</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-6xl font-display font-black text-accent mb-4">20+</div>
-              <div className="text-xl font-heading mb-2">YEARS</div>
-              <p className="text-secondary-foreground/70">
-                Two decades of expertise in Boston ironwork and restoration
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-6xl font-display font-black text-accent mb-4">4</div>
-              <div className="text-xl font-heading mb-2">LOCATIONS</div>
-              <p className="text-secondary-foreground/70">
-                Everett, Cape Cod, Worcester, and Miami coverage
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-6xl font-display font-black text-accent mb-4">100%</div>
-              <div className="text-xl font-heading mb-2">IN-HOUSE</div>
-              <p className="text-secondary-foreground/70">
-                State-of-the-art fabrication shop in Everett, MA
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="text-6xl font-display font-black text-accent mb-4">✓</div>
-              <div className="text-xl font-heading mb-2">LICENSED</div>
-              <p className="text-secondary-foreground/70">
-                MA licensed fire escape installer and certified
-              </p>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+            {[
+              { number: "20+", label: "Years", desc: "of expertise in custom ironwork" },
+              { number: "9", label: "States", desc: "served across the East Coast" },
+              { number: "100%", label: "In-House", desc: "fabrication in our Everett shop" },
+              { number: "MA", label: "Licensed", desc: "fire escape installer & certified" },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-4xl lg:text-5xl font-display font-bold text-accent mb-2">{stat.number}</div>
+                <div className="text-sm font-display font-bold tracking-wider uppercase mb-2">{stat.label}</div>
+                <p className="text-sm text-sidebar-foreground/50">{stat.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Featured Work */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="py-24 lg:py-32 bg-background">
         <div className="container">
-          <div className="text-center mb-16">
-            <h2 className="text-display text-4xl md:text-6xl mb-4">FEATURED WORK</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              From historic Beacon Hill restorations to modern fire escape installations
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            {/* Fire Escape Installation */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg"
-                alt="Fire escape installation"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    FIRE ESCAPE INSTALLATION
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Code-compliant installation on Boston building
-                  </p>
-                </div>
-              </div>
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-16">
+            <div>
+              <p className="section-eyebrow mb-4">Portfolio</p>
+              <h2 className="text-display text-3xl md:text-5xl">Featured Work</h2>
             </div>
-
-            {/* Custom Gate */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg"
-                alt="Custom ornamental gate"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    CUSTOM ORNAMENTAL GATE
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Hand-crafted wrought iron gate design
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Interior Railing */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg"
-                alt="Interior iron railing"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    INTERIOR RAILING
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Custom staircase railing installation
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Exterior Railing */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg"
-                alt="Exterior railing"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    EXTERIOR RAILING
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Durable outdoor railing system
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Before & After */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg"
-                alt="Restoration project"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    HISTORIC RESTORATION
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Period-accurate ironwork restoration
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Gate Detail */}
-            <div className="relative group overflow-hidden">
-              <img
-                src="/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg"
-                alt="Ornamental gate detail"
-                className="w-full h-[350px] object-cover border-8 border-border"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-sidebar/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6 border-8 border-transparent group-hover:border-accent">
-                <div>
-                  <h3 className="text-heading text-xl text-sidebar-foreground mb-2">
-                    ORNAMENTAL IRONWORK
-                  </h3>
-                  <p className="text-sidebar-foreground/80 text-sm">
-                    Intricate custom metalwork design
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center">
             <Link href="/portfolio">
-              <Button size="lg" variant="outline" className="border-2 border-border hover:border-accent hover:bg-accent hover:text-accent-foreground thick-border">
-                VIEW FULL PORTFOLIO
-                <ArrowRight className="ml-2 w-5 h-5" />
-              </Button>
+              <span className="inline-flex items-center gap-2 text-sm font-display font-bold text-accent mt-4 md:mt-0 hover:gap-3 transition-all">
+                View Full Portfolio
+                <ArrowRight className="w-4 h-4" />
+              </span>
             </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredWork.map((work, i) => (
+              <div key={i} className="relative group overflow-hidden cursor-pointer">
+                <img
+                  src={work.image}
+                  alt={work.title}
+                  className="w-full h-[380px] object-cover transition-transform duration-700 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                  <p className="text-xs text-accent font-bold tracking-wider uppercase mb-1">{work.category}</p>
+                  <h3 className="text-lg font-display font-bold text-white">{work.title}</h3>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Testimonials Section - Lead Generation Optimization */}
+      {/* Testimonials */}
       <Testimonials />
 
-      {/* Locations CTA */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      {/* Locations */}
+      <section className="py-24 lg:py-32 bg-sidebar text-sidebar-foreground">
         <div className="container">
-          <div className="max-w-4xl mx-auto text-center">
-            <MapPin className="w-16 h-16 text-accent mx-auto mb-6" />
-            <h2 className="text-display text-4xl md:text-6xl mb-6">SERVING MULTIPLE LOCATIONS</h2>
-            <p className="text-xl text-sidebar-foreground/80 mb-8">
-              With facilities in Everett, Cape Cod, Worcester, and Miami, we're ready to serve your 
-              ironwork and fire escape needs across Massachusetts and Florida.
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>Locations</p>
+            <h2 className="text-display text-3xl md:text-5xl mb-6">Serving the Entire East Coast</h2>
+            <p className="text-lg text-sidebar-foreground/60 mb-10 leading-relaxed">
+              With our fabrication shop in Everett, MA and service teams across nine states,
+              we bring master craftsmanship to your doorstep.
             </p>
             <Link href="/locations">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border">
-                FIND YOUR LOCATION
-                <ArrowRight className="ml-2 w-5 h-5" />
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold px-8">
+                Find Your Location
+                <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
           </div>
@@ -432,24 +307,25 @@ export default function Home() {
       </section>
 
       {/* Final CTA */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-24">
+      <section className="py-24 lg:py-32 bg-accent">
         <div className="container">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-display text-4xl md:text-6xl mb-6">READY TO START YOUR PROJECT?</h2>
-            <p className="text-xl mb-8 opacity-90">
-              Get a free assessment from Boston's premier ironwork and fire escape specialists
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-display text-3xl md:text-5xl text-accent-foreground mb-6">Ready to Start<br />Your Project?</h2>
+            <p className="text-lg text-accent-foreground/70 mb-10 leading-relaxed">
+              Free consultation and assessment. Tell us what you're dreaming of —
+              we'll engineer and forge it into reality.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
-                  REQUEST QUOTE
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                <Button size="lg" className="bg-sidebar text-sidebar-foreground hover:bg-sidebar/90 font-display font-bold px-8 py-5">
+                  Request a Quote
+                  <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
-                  <Phone className="mr-2 w-5 h-5" />
-                  CALL NOW
+                <Button size="lg" variant="outline" className="border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10 font-display font-bold px-8 py-5">
+                  <Phone className="mr-2 w-4 h-4" />
+                  Call Now
                 </Button>
               </PhoneLink>
             </div>

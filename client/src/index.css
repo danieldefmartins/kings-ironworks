@@ -4,10 +4,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Industrial Heritage Brutalism Design System
- * Colors from the forge: molten metal amber, raw steel, charcoal, cream
- * Typography: Space Grotesk (geometric, industrial) + Inter (clean, professional)
- * Layout: Diagonal cuts, asymmetric grids, bold borders
+/* Modern Luxury Ironwork Design System
+ * Clean, editorial aesthetic inspired by premium architectural brands
+ * Typography: Space Grotesk (display) + Inter (body) — lighter weights for elegance
+ * Layout: Generous whitespace, clean sections, no heavy borders
  */
 
 @theme inline {
@@ -55,19 +55,19 @@
 
 :root {
   /* Industrial Heritage Brutalism Palette */
-  --primary: oklch(0.45 0.08 35); /* Warm amber - molten metal */
-  --primary-foreground: oklch(0.98 0.01 90); /* Cream */
-  --sidebar-primary: oklch(0.45 0.08 35);
+  --primary: oklch(0.55 0.12 75); /* Rich gold */
+  --primary-foreground: oklch(0.10 0.005 280); /* Near black */
+  --sidebar-primary: oklch(0.55 0.12 75);
   --sidebar-primary-foreground: oklch(0.98 0.01 90);
   --chart-1: oklch(0.50 0.08 240);
-  --chart-2: oklch(0.45 0.08 35);
+  --chart-2: oklch(0.55 0.12 75);
   --chart-3: oklch(0.30 0.02 260);
   --chart-4: oklch(0.25 0.01 270);
   --chart-5: oklch(0.15 0.005 280);
-  --radius: 2px;
-  
+  --radius: 4px;
+
   /* Base colors - light theme */
-  --background: oklch(0.98 0.01 90); /* Warm cream */
+  --background: oklch(0.99 0.003 90); /* Near-white with warmth */
   --foreground: oklch(0.15 0.005 280); /* Deep charcoal */
   --card: oklch(1 0 0); /* Pure white for cards */
   --card-foreground: oklch(0.15 0.005 280);
@@ -82,26 +82,26 @@
   --muted: oklch(0.92 0.005 270);
   --muted-foreground: oklch(0.40 0.02 260);
   
-  /* Accent - warm amber */
-  --accent: oklch(0.50 0.08 35);
+  /* Accent - rich gold matching logo */
+  --accent: oklch(0.55 0.12 75);
   --accent-foreground: oklch(0.98 0.01 90);
   
   /* Destructive */
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 90);
   
-  /* Borders - strong, visible */
-  --border: oklch(0.25 0.01 270);
-  --input: oklch(0.85 0.005 270);
-  --ring: oklch(0.45 0.08 35);
+  /* Borders - subtle and refined */
+  --border: oklch(0.88 0.005 270);
+  --input: oklch(0.90 0.005 270);
+  --ring: oklch(0.55 0.12 75);
   
   /* Sidebar */
   --sidebar: oklch(0.15 0.005 280);
   --sidebar-foreground: oklch(0.98 0.01 90);
-  --sidebar-accent: oklch(0.45 0.08 35);
+  --sidebar-accent: oklch(0.55 0.12 75);
   --sidebar-accent-foreground: oklch(0.98 0.01 90);
   --sidebar-border: oklch(0.30 0.02 260);
-  --sidebar-ring: oklch(0.45 0.08 35);
+  --sidebar-ring: oklch(0.55 0.12 75);
 }
 
 @layer base {
@@ -120,9 +120,9 @@
   
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
   }
   
   button:not(:disabled),
@@ -167,60 +167,41 @@
     }
   }
   
-  /* Industrial Heritage Brutalism Components */
+  /* Clean section transitions */
   .diagonal-cut-top {
-    /* Remove diagonal cut on mobile to prevent text cutoff */
     clip-path: none;
     margin-top: 0;
-    padding-top: 4rem;
   }
-  
-  @media (min-width: 768px) {
-    .diagonal-cut-top {
-      /* Add diagonal cut on desktop where there's more space */
-      clip-path: polygon(0 8%, 100% 0, 100% 100%, 0 100%);
-      margin-top: -5rem;
-      padding-top: 12rem;
-    }
-  }
-  
+
   .diagonal-cut-bottom {
-    /* Remove diagonal cut on mobile to prevent text cutoff */
     clip-path: none;
     margin-bottom: 0;
-    padding-bottom: 4rem;
   }
-  
-  @media (min-width: 768px) {
-    .diagonal-cut-bottom {
-      /* Add diagonal cut on desktop where there's more space */
-      clip-path: polygon(0 0, 100% 0, 100% 92%, 0 100%);
-      margin-bottom: -5rem;
-      padding-bottom: 8rem;
-    }
-  }
-  
+
   .thick-border {
-    border-width: 8px;
+    border-width: 2px;
   }
-  
+
   .metal-texture {
-    background-image: 
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 2px,
-        oklch(0 0 0 / 0.02) 2px,
-        oklch(0 0 0 / 0.02) 4px
-      );
+    background: none;
+  }
+
+  /* Section eyebrow labels */
+  .section-eyebrow {
+    font-family: var(--font-body);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: oklch(0.55 0.12 75);
   }
 }
 
 @layer utilities {
   .text-display {
     font-family: var(--font-display);
-    font-weight: 900;
-    letter-spacing: -0.02em;
+    font-weight: 700;
+    letter-spacing: -0.03em;
   }
   
   .text-heading {
