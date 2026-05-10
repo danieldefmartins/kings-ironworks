@@ -44,13 +44,13 @@ export default function StructuralSteelLanding() {
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   GET PROJECT QUOTE
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>
@@ -77,7 +77,7 @@ export default function StructuralSteelLanding() {
       </section>
 
       {/* Capabilities */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             FULL-SERVICE STEEL FABRICATION
@@ -122,7 +122,7 @@ export default function StructuralSteelLanding() {
                 features: ["Loft conversions", "Basement support", "Open-plan beams", "Structural repair"]
               }
             ].map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-8 border border-border hover:border-accent transition-colors">
                 <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mb-6">
                   <service.icon className="w-8 h-8 text-accent" />
                 </div>
@@ -137,7 +137,7 @@ export default function StructuralSteelLanding() {
                   ))}
                 </ul>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full thick-border">
+                  <Button variant="outline" className="w-full">
                     Get Quote
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -149,7 +149,7 @@ export default function StructuralSteelLanding() {
       </section>
 
       {/* Process */}
-      <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
+      <section className="bg-secondary text-secondary-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             OUR FABRICATION PROCESS
@@ -173,14 +173,14 @@ export default function StructuralSteelLanding() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-20">
+      <section className="bg-accent text-accent-foreground py-20">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             WHY KINGS IRONWORKS FOR STRUCTURAL STEEL
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 border-4 border-border bg-card text-card-foreground">
+            <Card className="p-8 border border-border bg-card text-card-foreground">
               <h3 className="text-heading text-2xl mb-4">In-House Fabrication</h3>
               <p className="text-muted-foreground leading-relaxed">
                 Complete control over quality and timeline. Our 15,000 sq ft Everett facility handles 
@@ -188,7 +188,7 @@ export default function StructuralSteelLanding() {
               </p>
             </Card>
 
-            <Card className="p-8 border-4 border-border bg-card text-card-foreground">
+            <Card className="p-8 border border-border bg-card text-card-foreground">
               <h3 className="text-heading text-2xl mb-4">Licensed & Insured</h3>
               <p className="text-muted-foreground leading-relaxed">
                 Fully licensed structural steel contractor. $2M liability insurance. All work meets 
@@ -196,7 +196,7 @@ export default function StructuralSteelLanding() {
               </p>
             </Card>
 
-            <Card className="p-8 border-4 border-border bg-card text-card-foreground">
+            <Card className="p-8 border border-border bg-card text-card-foreground">
               <h3 className="text-heading text-2xl mb-4">American Made</h3>
               <p className="text-muted-foreground leading-relaxed">
                 100% American steel, American workers, American quality. Supporting local manufacturing 
@@ -208,7 +208,7 @@ export default function StructuralSteelLanding() {
       </section>
 
       {/* Final CTA */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -226,13 +226,13 @@ export default function StructuralSteelLanding() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   REQUEST PROJECT QUOTE
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>

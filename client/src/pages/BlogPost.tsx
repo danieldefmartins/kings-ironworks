@@ -29,7 +29,7 @@ export default function BlogPost() {
             The article you're looking for doesn't exist.
           </p>
           <Link href="/blog">
-            <Button className="bg-accent hover:bg-accent/90 thick-border">
+            <Button className="bg-accent hover:bg-accent/90">
               <ArrowLeft className="mr-2 w-4 h-4" />
               BACK TO BLOG
             </Button>
@@ -140,7 +140,7 @@ export default function BlogPost() {
             <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-8">
               {relatedPosts.map((related) => (
                 <Link key={related.slug} href={`/blog/${related.slug}`}>
-                  <article className="group bg-card border-2 md:border-4 border-border hover:border-accent transition-all cursor-pointer flex flex-row md:flex-col">
+                  <article className="group bg-card border-2 md:border border-border hover:border-accent transition-all cursor-pointer flex flex-row md:flex-col">
                     <div className="w-24 flex-shrink-0 md:w-full md:aspect-[16/9] overflow-hidden">
                       <img
                         src={related.featuredImage}
@@ -165,7 +165,7 @@ export default function BlogPost() {
       )}
 
       {/* CTA */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-12 md:py-24">
+      <section className="bg-accent text-accent-foreground py-12 md:py-24">
         <div className="container text-center">
           <h2 className="text-display text-2xl md:text-5xl mb-4 md:mb-6">
             NEED HELP WITH YOUR PROJECT?
@@ -179,7 +179,7 @@ export default function BlogPost() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 thick-border w-full sm:w-auto"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 w-full sm:w-auto"
               >
                 GET FREE QUOTE
                 <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
@@ -189,7 +189,7 @@ export default function BlogPost() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 thick-border w-full sm:w-auto"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 w-full sm:w-auto"
               >
                 <Phone className="mr-2 w-4 h-4 md:w-5 md:h-5" />
                 {localPhone.display}

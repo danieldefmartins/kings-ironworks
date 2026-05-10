@@ -44,13 +44,13 @@ export default function BuildingRestorationLanding() {
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   VIEW OUR PORTFOLIO
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>
@@ -77,7 +77,7 @@ export default function BuildingRestorationLanding() {
       </section>
 
       {/* What We Restore */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             HISTORIC IRONWORK RESTORATION SERVICES
@@ -122,7 +122,7 @@ export default function BuildingRestorationLanding() {
                 examples: ["Missing elements", "Damaged pieces", "Period additions", "Matching sets"]
               }
             ].map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-8 border border-border hover:border-accent transition-colors">
                 <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mb-6">
                   <service.icon className="w-8 h-8 text-accent" />
                 </div>
@@ -137,7 +137,7 @@ export default function BuildingRestorationLanding() {
                   ))}
                 </ul>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full thick-border">
+                  <Button variant="outline" className="w-full">
                     Discuss Project
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -149,7 +149,7 @@ export default function BuildingRestorationLanding() {
       </section>
 
       {/* Before/After Projects Placeholder */}
-      <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
+      <section className="bg-secondary text-secondary-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-8">
             RESTORATION PROJECTS
@@ -191,7 +191,7 @@ export default function BuildingRestorationLanding() {
                 scope: ["Historical research", "CAD design", "Hand forging", "Patina matching"]
               }
             ].map((project, index) => (
-              <Card key={index} className="p-8 border-4 border-border bg-card text-card-foreground">
+              <Card key={index} className="p-8 border border-border bg-card text-card-foreground">
                 <div className="mb-6">
                   <div className="aspect-video bg-muted flex items-center justify-center text-muted-foreground mb-4">
                     <div className="text-center">
@@ -226,7 +226,7 @@ export default function BuildingRestorationLanding() {
           
           <div className="text-center mt-12">
             <Link href="/portfolio">
-              <Button size="lg" variant="outline" className="border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10 thick-border">
+              <Button size="lg" variant="outline" className="border-secondary-foreground/30 text-secondary-foreground hover:bg-secondary-foreground/10">
                 VIEW FULL PORTFOLIO
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -236,7 +236,7 @@ export default function BuildingRestorationLanding() {
       </section>
 
       {/* Our Process */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-20">
+      <section className="bg-accent text-accent-foreground py-20">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             OUR RESTORATION PROCESS
@@ -260,14 +260,14 @@ export default function BuildingRestorationLanding() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             WHY PROPERTY OWNERS CHOOSE KINGS IRONWORKS
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="p-8 border-4 border-border">
+            <Card className="p-8 border border-border">
               <h3 className="text-heading text-2xl mb-4">Custom Fabrication</h3>
               <p className="text-muted-foreground leading-relaxed">
                 We recreate ironwork that's no longer available. From fragments or photos, our artisans 
@@ -275,7 +275,7 @@ export default function BuildingRestorationLanding() {
               </p>
             </Card>
 
-            <Card className="p-8 border-4 border-border">
+            <Card className="p-8 border border-border">
               <h3 className="text-heading text-2xl mb-4">Historic Expertise</h3>
               <p className="text-muted-foreground leading-relaxed">
                 20+ years working with Boston's historic properties. We understand preservation guidelines, 
@@ -283,7 +283,7 @@ export default function BuildingRestorationLanding() {
               </p>
             </Card>
 
-            <Card className="p-8 border-4 border-border">
+            <Card className="p-8 border border-border">
               <h3 className="text-heading text-2xl mb-4">In-House Artisans</h3>
               <p className="text-muted-foreground leading-relaxed">
                 All work done in our Everett facility by skilled craftsmen. Complete control over quality, 
@@ -295,7 +295,7 @@ export default function BuildingRestorationLanding() {
       </section>
 
       {/* Final CTA */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -313,13 +313,13 @@ export default function BuildingRestorationLanding() {
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   SCHEDULE CONSULTATION
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>

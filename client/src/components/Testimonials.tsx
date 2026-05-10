@@ -54,7 +54,7 @@ export default function Testimonials() {
           {testimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="bg-card text-card-foreground p-8 rounded-lg border-4 border-primary/20 hover:border-primary transition-colors"
+              className="bg-card text-card-foreground p-8 rounded-lg border border-primary/20 hover:border-primary transition-colors"
             >
               <div className="flex items-center gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
@@ -82,7 +82,7 @@ export default function Testimonials() {
         </div>
 
         <div className="text-center mt-12">
-          <div className="inline-block bg-primary text-primary-foreground px-8 py-4 rounded-lg border-4 border-primary-foreground/20">
+          <div className="inline-block bg-primary text-primary-foreground px-8 py-4 rounded-lg border border-primary-foreground/20">
             <p className="text-3xl font-black mb-1">4.9/5.0 Average Rating</p>
             <p className="text-sm opacity-90">Based on 200+ verified reviews</p>
           </div>

@@ -44,13 +44,13 @@ export default function HandrailLanding() {
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border group">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 group">
                   <Phone className="mr-2 w-6 h-6" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}
                 </Button>
               </PhoneLink>
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   FREE QUOTE <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
@@ -80,7 +80,7 @@ export default function HandrailLanding() {
       </section>
 
       {/* Stats */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-20">
+      <section className="bg-accent text-accent-foreground py-20">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             WHY CHOOSE KINGS IRONWORKS
@@ -103,7 +103,7 @@ export default function HandrailLanding() {
       </section>
 
       {/* Services Cards */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             OUR HANDRAIL SERVICES
@@ -148,7 +148,7 @@ export default function HandrailLanding() {
                 features: ["Code upgrades", "Structural repair", "Finish restoration", "Component matching"]
               }
             ].map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-8 border border-border hover:border-accent transition-colors">
                 <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mb-6">
                   <service.icon className="w-8 h-8 text-accent" />
                 </div>
@@ -163,7 +163,7 @@ export default function HandrailLanding() {
                   ))}
                 </ul>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full thick-border">
+                  <Button variant="outline" className="w-full">
                     Get Quote
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -175,7 +175,7 @@ export default function HandrailLanding() {
       </section>
 
       {/* Final CTA */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -193,12 +193,12 @@ export default function HandrailLanding() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   REQUEST FREE QUOTE <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>

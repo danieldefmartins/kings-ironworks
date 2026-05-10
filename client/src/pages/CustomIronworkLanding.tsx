@@ -137,7 +137,7 @@ export default function CustomIronworkLanding() {
               <Link href="#quote">
                 <Button
                   size="lg"
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border group"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 group"
                 >
                   GET FREE ESTIMATE <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -146,7 +146,7 @@ export default function CustomIronworkLanding() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border"
+                  className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 w-6 h-6" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}
@@ -174,7 +174,7 @@ export default function CustomIronworkLanding() {
       </section>
 
       {/* Portfolio Gallery */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-24">
+      <section className="bg-accent text-accent-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             OUR RECENT WORK
@@ -187,7 +187,7 @@ export default function CustomIronworkLanding() {
             {portfolioImages.map((image, index) => (
               <div
                 key={index}
-                className="aspect-square overflow-hidden border-4 border-accent-foreground/20 hover:border-accent-foreground/50 transition-colors"
+                className="aspect-square overflow-hidden border border-accent-foreground/20 hover:border-accent-foreground/50 transition-colors"
               >
                 <img
                   src={image.src}
@@ -204,7 +204,7 @@ export default function CustomIronworkLanding() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10 text-lg px-8 py-6 thick-border"
+                className="border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10 text-lg px-8 py-6"
               >
                 VIEW FULL PORTFOLIO <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -214,7 +214,7 @@ export default function CustomIronworkLanding() {
       </section>
 
       {/* What We Build */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             WHAT WE BUILD
@@ -225,7 +225,7 @@ export default function CustomIronworkLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-8 border border-border hover:border-accent transition-colors">
                 <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mb-6">
                   <service.icon className="w-8 h-8 text-accent" />
                 </div>
@@ -240,7 +240,7 @@ export default function CustomIronworkLanding() {
                   ))}
                 </ul>
                 <Link href="#quote">
-                  <Button variant="outline" className="w-full thick-border">
+                  <Button variant="outline" className="w-full">
                     Get Quote <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
                 </Link>
@@ -251,7 +251,7 @@ export default function CustomIronworkLanding() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             WHY CHOOSE KINGS IRON WORKS
@@ -299,7 +299,7 @@ export default function CustomIronworkLanding() {
       <Testimonials />
 
       {/* Process */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             HOW IT WORKS
@@ -323,7 +323,7 @@ export default function CustomIronworkLanding() {
       </section>
 
       {/* Final CTA with Lead Form */}
-      <section id="quote" className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section id="quote" className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -346,7 +346,7 @@ export default function CustomIronworkLanding() {
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button
                   size="lg"
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 w-5 h-5" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}

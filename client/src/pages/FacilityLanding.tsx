@@ -102,7 +102,7 @@ export default function FacilityLanding() {
               <Link href="#quote">
                 <Button
                   size="lg"
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border group"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 group"
                 >
                   GET FREE ESTIMATE <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -111,7 +111,7 @@ export default function FacilityLanding() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border"
+                  className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 w-6 h-6" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}
@@ -139,7 +139,7 @@ export default function FacilityLanding() {
       </section>
 
       {/* Why Our Facility Matters */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-24">
+      <section className="bg-accent text-accent-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             WHY OUR FACILITY MATTERS
@@ -176,7 +176,7 @@ export default function FacilityLanding() {
       </section>
 
       {/* Facility Photo Gallery */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             INSIDE OUR SHOP
@@ -189,7 +189,7 @@ export default function FacilityLanding() {
             {facilityImages.map((image, index) => (
               <div
                 key={index}
-                className="aspect-square overflow-hidden border-4 border-border hover:border-accent transition-colors"
+                className="aspect-square overflow-hidden border border-border hover:border-accent transition-colors"
               >
                 <img
                   src={image.src}
@@ -204,7 +204,7 @@ export default function FacilityLanding() {
       </section>
 
       {/* Welding Machines */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">
             PROFESSIONAL WELDING EQUIPMENT
@@ -222,7 +222,7 @@ export default function FacilityLanding() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {weldingMachines.map((machine, index) => (
-              <Card key={index} className="p-8 border-4 border-sidebar-foreground/10 hover:border-accent transition-colors bg-card text-card-foreground">
+              <Card key={index} className="p-8 border border-sidebar-foreground/10 hover:border-accent transition-colors bg-card text-card-foreground">
                 <div className="flex items-start gap-6">
                   <div className="w-16 h-16 bg-accent/20 flex items-center justify-center flex-shrink-0">
                     <machine.icon className="w-8 h-8 text-accent" />
@@ -247,7 +247,7 @@ export default function FacilityLanding() {
       </section>
 
       {/* Powder Coating */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <div className="max-w-5xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
@@ -288,7 +288,7 @@ export default function FacilityLanding() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="aspect-square overflow-hidden border-4 border-border">
+                <div className="aspect-square overflow-hidden border border-border">
                   <img
                     src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-4.jpg"
                     alt="Powder coating in our facility"
@@ -296,7 +296,7 @@ export default function FacilityLanding() {
                     loading="lazy"
                   />
                 </div>
-                <div className="aspect-square overflow-hidden border-4 border-border">
+                <div className="aspect-square overflow-hidden border border-border">
                   <img
                     src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-process-website-5.jpg"
                     alt="Professional powder coat finish"
@@ -304,7 +304,7 @@ export default function FacilityLanding() {
                     loading="lazy"
                   />
                 </div>
-                <div className="aspect-square overflow-hidden border-4 border-border col-span-2">
+                <div className="aspect-square overflow-hidden border border-border col-span-2">
                   <img
                     src="/images/portfolio-organized/Shop-Process/king-iron-works-shop-branded-truck.jpg"
                     alt="Finished powder coated ironwork"
@@ -319,14 +319,14 @@ export default function FacilityLanding() {
       </section>
 
       {/* The Difference */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-24">
+      <section className="bg-accent text-accent-foreground py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             THE KINGS IRON WORKS DIFFERENCE
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <Card className="p-8 border-4 border-accent-foreground/20 bg-accent-foreground/10">
+            <Card className="p-8 border border-accent-foreground/20 bg-accent-foreground/10">
               <h3 className="text-heading text-2xl mb-4 flex items-center gap-3">
                 <Award className="w-7 h-7" />
                 Our Shop
@@ -347,7 +347,7 @@ export default function FacilityLanding() {
               </ul>
             </Card>
 
-            <Card className="p-8 border-4 border-accent-foreground/20 bg-accent-foreground/5 opacity-70">
+            <Card className="p-8 border border-accent-foreground/20 bg-accent-foreground/5 opacity-70">
               <h3 className="text-heading text-2xl mb-4">Typical Competitors</h3>
               <ul className="space-y-3">
                 {[
@@ -369,7 +369,7 @@ export default function FacilityLanding() {
       </section>
 
       {/* Final CTA with Lead Form */}
-      <section id="quote" className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section id="quote" className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -392,7 +392,7 @@ export default function FacilityLanding() {
               <PhoneLink tel={PHONE_NUMBERS.MAIN.tel}>
                 <Button
                   size="lg"
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6 thick-border"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg px-8 py-6"
                 >
                   <Phone className="mr-2 w-5 h-5" />
                   CALL NOW: {PHONE_NUMBERS.MAIN.display}

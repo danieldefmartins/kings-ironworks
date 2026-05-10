@@ -54,7 +54,7 @@ export default function QuoteForm({ service, variant = "default" }: QuoteFormPro
 
   if (variant === "compact") {
     return (
-      <div className="bg-accent text-accent-foreground p-6 rounded-lg border-4 border-accent-foreground/20">
+      <div className="bg-accent text-accent-foreground p-6 rounded-lg border border-accent-foreground/20">
         <h3 className="text-xl font-black mb-4">Get Free Quote</h3>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
@@ -95,7 +95,7 @@ export default function QuoteForm({ service, variant = "default" }: QuoteFormPro
   }
 
   return (
-    <div className="bg-card text-card-foreground p-8 rounded-lg border-4 border-primary shadow-2xl">
+    <div className="bg-card text-card-foreground p-8 rounded-lg border border-primary shadow-2xl">
       <div className="text-center mb-6">
         <h3 className="text-3xl font-black mb-2">Get Your Free Quote</h3>
         <p className="text-muted-foreground">

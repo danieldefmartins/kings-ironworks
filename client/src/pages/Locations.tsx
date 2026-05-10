@@ -43,9 +43,9 @@ export default function Locations() {
       </section>
 
       {/* Everett Facility Showcase */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
-          <Card className="border-8 border-accent p-8 md:p-12">
+          <Card className="border border-accent p-8 md:p-12">
             <div className="flex items-start gap-4 mb-8">
               <div className="w-14 h-14 bg-accent/10 flex items-center justify-center flex-shrink-0">
                 <Building2 className="w-7 h-7 text-accent" />
@@ -123,11 +123,11 @@ export default function Locations() {
       </section>
 
       {/* Your Local Office - Dynamic */}
-      <section className="diagonal-cut-top bg-secondary text-secondary-foreground py-24">
+      <section className="bg-secondary text-secondary-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">YOUR LOCAL OFFICE</h2>
-            <div className="bg-secondary-foreground/5 border-4 border-secondary-foreground/20 p-8 md:p-12 mb-8">
+            <div className="bg-secondary-foreground/5 border border-secondary-foreground/20 p-8 md:p-12 mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <MapPin className="w-6 h-6 text-accent" />
                 <span className="text-display text-2xl md:text-3xl">
@@ -150,7 +150,7 @@ export default function Locations() {
       </section>
 
       {/* Service Areas / Delivery Reach */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-4">WHERE WE DELIVER</h2>
           <p className="text-center text-muted-foreground text-lg mb-12 max-w-2xl mx-auto">
@@ -172,7 +172,7 @@ export default function Locations() {
       </section>
 
       {/* CTA */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-24">
+      <section className="bg-accent text-accent-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">READY TO GET STARTED?</h2>
@@ -181,13 +181,13 @@ export default function Locations() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6">
                   REQUEST QUOTE
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={localPhone.tel}>
-                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {localPhone.display}
                 </Button>

@@ -11,14 +11,14 @@ export default function Navigation() {
   const localPhone = useLocalPhone();
 
   const navItems = [
-    { path: "/", label: "HOME" },
-    { path: "/services", label: "SERVICES" },
-    { path: "/staircases", label: "STAIRCASES" },
-    { path: "/portfolio", label: "PORTFOLIO" },
-    { path: "/blog", label: "BLOG" },
-    { path: "/locations", label: "OUR FACILITY" },
-    { path: "/about", label: "ABOUT" },
-    { path: "/contact", label: "CONTACT" },
+    { path: "/", label: "Home" },
+    { path: "/services", label: "Services" },
+    { path: "/staircases", label: "Staircases" },
+    { path: "/portfolio", label: "Portfolio" },
+    { path: "/blog", label: "Blog" },
+    { path: "/locations", label: "Locations" },
+    { path: "/about", label: "About" },
+    { path: "/contact", label: "Contact" },
   ];
 
   const isActive = (path: string) =>
@@ -29,7 +29,7 @@ export default function Navigation() {
   return (
     <>
       {/* Desktop Navigation - Fixed Horizontal Top Bar */}
-      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-20 bg-sidebar border-b-4 border-border z-50">
+      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-20 bg-sidebar border-b border-sidebar-border/30 z-50">
         <div className="container h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
@@ -48,7 +48,7 @@ export default function Navigation() {
               <Link key={item.path} href={item.path}>
                 <div
                   className={`
-                    px-4 py-2 cursor-pointer transition-all border-b-4
+                    px-4 py-2 cursor-pointer transition-all border-b-2
                     ${
                       isActive(item.path)
                         ? "border-accent text-sidebar-accent-foreground"
@@ -75,7 +75,7 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Navigation - Top Bar */}
-      <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b-4 border-border z-50">
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-sidebar-border/30 z-50">
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
@@ -91,7 +91,7 @@ export default function Navigation() {
             <PhoneLink tel={localPhone.tel}>
               <Button size="sm" variant="default" className="bg-accent hover:bg-accent/90">
                 <Phone className="w-4 h-4 mr-2" />
-                CALL
+                Call
               </Button>
             </PhoneLink>
             <Button
@@ -120,11 +120,11 @@ export default function Navigation() {
                     <div
                       onClick={() => setMobileMenuOpen(false)}
                       className={`
-                        py-4 px-6 border-l-8 cursor-pointer transition-all
+                        py-4 px-6 border-l-2 cursor-pointer transition-all
                         ${
                           isActive(item.path)
-                            ? "border-accent bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/50 text-sidebar-foreground/70"
+                            ? "border-accent bg-sidebar-accent/10 text-sidebar-accent-foreground"
+                            : "border-transparent hover:border-accent/50 hover:bg-sidebar-accent/5 text-sidebar-foreground/70"
                         }
                       `}
                     >

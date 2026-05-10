@@ -31,7 +31,7 @@ export default function CableRailingLanding() {
         <div className="container relative z-10">
           <div className="max-w-4xl">
             {/* Badge */}
-            <div className="inline-block px-4 py-2 bg-accent text-accent-foreground text-sm font-display font-bold tracking-wider mb-6 thick-border">
+            <div className="inline-block px-4 py-2 bg-accent text-accent-foreground text-sm font-display font-bold tracking-wider mb-6">
               LICENSED & CERTIFIED
             </div>
 
@@ -48,13 +48,13 @@ export default function CableRailingLanding() {
             {/* Dual CTA */}
             <div className="flex flex-col sm:flex-row gap-4 mb-12">
               <PhoneLink tel={phone.tel}>
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border group">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 group">
                   <Phone className="mr-2 w-6 h-6 group-hover:animate-bounce" />
                   CALL NOW: {phone.display}
                 </Button>
               </PhoneLink>
               <Link href="/contact">
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   FREE CONSULTATION
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
@@ -85,7 +85,7 @@ export default function CableRailingLanding() {
       </section>
 
       {/* Stats Section */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-20">
+      <section className="bg-accent text-accent-foreground py-20">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             WHY BOSTON TRUSTS KINGS IRONWORKS
@@ -113,7 +113,7 @@ export default function CableRailingLanding() {
       </section>
 
       {/* Services Cards */}
-      <section className="diagonal-cut-top bg-card py-24">
+      <section className="bg-card py-24">
         <div className="container">
           <h2 className="text-display text-4xl md:text-5xl text-center mb-16">
             CABLE RAILING SERVICES
@@ -158,14 +158,14 @@ export default function CableRailingLanding() {
                 cta: "Schedule Service"
               }
             ].map((service, index) => (
-              <Card key={index} className="p-8 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-8 border border-border hover:border-accent transition-colors">
                 <div className="w-16 h-16 bg-accent/20 flex items-center justify-center mb-6">
                   <service.icon className="w-8 h-8 text-accent" />
                 </div>
                 <h3 className="text-heading text-2xl mb-4">{service.title}</h3>
                 <p className="text-muted-foreground mb-6 leading-relaxed">{service.description}</p>
                 <Link href="/contact">
-                  <Button variant="outline" className="w-full thick-border">
+                  <Button variant="outline" className="w-full">
                     {service.cta}
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Button>
@@ -177,7 +177,7 @@ export default function CableRailingLanding() {
       </section>
 
       {/* Final CTA */}
-      <section className="diagonal-cut-top bg-sidebar text-sidebar-foreground py-24">
+      <section className="bg-sidebar text-sidebar-foreground py-24">
         <div className="container">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-display text-4xl md:text-5xl mb-6">
@@ -194,13 +194,13 @@ export default function CableRailingLanding() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <Link href="/contact">
-                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6 thick-border">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">
                   REQUEST FREE CONSULTATION
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>
               <PhoneLink tel={phone.tel}>
-                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6 thick-border">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6">
                   <Phone className="mr-2 w-5 h-5" />
                   {phone.display}
                 </Button>

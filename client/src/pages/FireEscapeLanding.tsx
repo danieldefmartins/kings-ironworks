@@ -43,7 +43,7 @@ export default function FireEscapeLanding() {
 
               {/* Phone — THE primary CTA, large and unmissable */}
               <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`} className="block mb-6">
-                <Button size="lg" className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-xl md:text-2xl px-8 py-8 thick-border group">
+                <Button size="lg" className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-xl md:text-2xl px-8 py-8 group">
                   <Phone className="mr-3 w-7 h-7 group-hover:animate-bounce" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>
@@ -74,7 +74,7 @@ export default function FireEscapeLanding() {
             </div>
 
             {/* Right: Lead form — visible without scrolling */}
-            <div className="bg-card text-card-foreground p-6 border-4 border-accent rounded-lg">
+            <div className="bg-card text-card-foreground p-6 border border-accent rounded-lg">
               <h2 className="text-heading text-2xl mb-2 text-center">GET YOUR FREE ESTIMATE</h2>
               <p className="text-sm text-muted-foreground text-center mb-4">
                 We'll call you back within 2 hours during business hours
@@ -97,7 +97,7 @@ export default function FireEscapeLanding() {
               </div>
             </div>
             <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`} className="flex-shrink-0">
-              <Button size="lg" variant="outline" className="border-destructive-foreground text-destructive-foreground hover:bg-destructive-foreground hover:text-destructive px-6 py-4 thick-border whitespace-nowrap">
+              <Button size="lg" variant="outline" className="border-destructive-foreground text-destructive-foreground hover:bg-destructive-foreground hover:text-destructive px-6 py-4 whitespace-nowrap">
                 <Phone className="mr-2 w-5 h-5" />
                 CALL NOW
               </Button>
@@ -127,7 +127,7 @@ export default function FireEscapeLanding() {
                 points: ["Engineered to building code", "Residential & commercial", "In-house fabrication", "Permit coordination included"],
               },
             ].map((service, index) => (
-              <Card key={index} className="p-6 border-4 border-border hover:border-accent transition-colors">
+              <Card key={index} className="p-6 border border-border hover:border-accent transition-colors">
                 <div className="w-12 h-12 bg-accent/20 flex items-center justify-center mb-4">
                   <service.icon className="w-6 h-6 text-accent" />
                 </div>
@@ -169,7 +169,7 @@ export default function FireEscapeLanding() {
           </div>
 
           {/* Single powerful testimonial */}
-          <div className="max-w-2xl mx-auto bg-card text-card-foreground p-8 border-4 border-accent/30 rounded-lg">
+          <div className="max-w-2xl mx-auto bg-card text-card-foreground p-8 border border-accent/30 rounded-lg">
             <div className="flex gap-1 mb-3">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} className="w-5 h-5 fill-accent text-accent" />
@@ -211,7 +211,7 @@ export default function FireEscapeLanding() {
             <div className="mt-8">
               <p className="text-sm text-muted-foreground mb-3">Prefer to call? We pick up.</p>
               <a href={`tel:${PHONE_NUMBERS.MAIN.tel}`}>
-                <Button size="lg" className="bg-destructive hover:bg-destructive/90 text-xl px-8 py-6 thick-border">
+                <Button size="lg" className="bg-destructive hover:bg-destructive/90 text-xl px-8 py-6">
                   <Phone className="mr-2 w-6 h-6" />
                   {PHONE_NUMBERS.MAIN.display}
                 </Button>

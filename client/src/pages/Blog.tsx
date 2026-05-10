@@ -38,7 +38,7 @@ export default function Blog() {
       </section>
 
       {/* Category Filter */}
-      <section className="diagonal-cut-top bg-card py-4 md:py-8 border-b-2 md:border-b-4 border-border">
+      <section className="bg-card py-4 md:py-8 border-b-2 md:border-b-4 border-border">
         <div className="container">
           <div className="flex gap-1.5 md:gap-2 overflow-x-auto scrollbar-hide pb-1">
             {BLOG_CATEGORIES.map((cat) => (
@@ -65,7 +65,7 @@ export default function Blog() {
             <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-8">
               {filteredPosts.map((post) => (
                 <Link key={post.slug} href={`/blog/${post.slug}`}>
-                  <article className="group bg-card border-2 md:border-4 border-border hover:border-accent transition-all cursor-pointer flex flex-row md:flex-col h-auto md:h-full">
+                  <article className="group bg-card border-2 md:border border-border hover:border-accent transition-all cursor-pointer flex flex-row md:flex-col h-auto md:h-full">
                     {/* Mobile: small thumbnail left | Desktop: full-width top */}
                     <div className="w-28 flex-shrink-0 md:w-full md:aspect-[16/9] overflow-hidden">
                       <img
@@ -117,7 +117,7 @@ export default function Blog() {
       </section>
 
       {/* CTA */}
-      <section className="diagonal-cut-top bg-accent text-accent-foreground py-12 md:py-24">
+      <section className="bg-accent text-accent-foreground py-12 md:py-24">
         <div className="container text-center">
           <h2 className="text-display text-2xl md:text-5xl mb-4 md:mb-6">
             HAVE A PROJECT IN MIND?
@@ -131,7 +131,7 @@ export default function Blog() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 thick-border w-full sm:w-auto"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 w-full sm:w-auto"
               >
                 GET FREE QUOTE
                 <ArrowRight className="ml-2 w-4 h-4 md:w-5 md:h-5" />
@@ -141,7 +141,7 @@ export default function Blog() {
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 thick-border w-full sm:w-auto"
+                className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-sm md:text-lg px-6 md:px-8 py-4 md:py-6 w-full sm:w-auto"
               >
                 <Phone className="mr-2 w-4 h-4 md:w-5 md:h-5" />
                 {localPhone.display}
