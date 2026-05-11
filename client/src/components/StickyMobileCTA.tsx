@@ -1,38 +1,27 @@
-import { Phone } from "lucide-react";
-
+import { Phone, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 import { PhoneLink } from "@/components/PhoneLink";
 
-/**
- * Sticky Mobile CTA Bar - Lead Generation Optimization
- * Fixed bottom bar on mobile with prominent call-to-action
- * Increases mobile conversions by 30-50% by keeping CTA always visible
- */
 export default function StickyMobileCTA() {
   const localPhone = useLocalPhone();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-primary border-t-4 border-primary-foreground shadow-2xl">
-      <div className="container py-3 flex items-center justify-between gap-3">
-        <div className="flex-1">
-          <p className="text-xs font-bold text-primary-foreground uppercase tracking-wide">
-            Free Assessment
-          </p>
-          <p className="text-[10px] text-primary-foreground/90">
-            Licensed & Insured
-          </p>
-        </div>
-        <Button
-          asChild
-          size="lg"
-          className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-black text-base px-6 shadow-lg"
-        >
-          <PhoneLink tel={localPhone.tel} className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            CALL NOW
-          </PhoneLink>
-        </Button>
+    <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-sidebar border-t border-sidebar-border/30 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+      <div className="flex items-stretch">
+        <Link href="/contact" className="flex-1">
+          <div className="flex items-center justify-center gap-2 py-3.5 bg-accent text-accent-foreground">
+            <span className="text-sm font-display font-bold">Free Assessment</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        </Link>
+        <PhoneLink tel={localPhone.tel} className="flex-1">
+          <div className="flex items-center justify-center gap-2 py-3.5 text-sidebar-foreground">
+            <Phone className="w-4 h-4" />
+            <span className="text-sm font-display font-bold">Call Now</span>
+          </div>
+        </PhoneLink>
       </div>
     </div>
   );

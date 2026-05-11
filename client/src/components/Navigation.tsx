@@ -29,7 +29,7 @@ export default function Navigation() {
   return (
     <>
       {/* Desktop Navigation - Fixed Horizontal Top Bar */}
-      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-20 bg-sidebar border-b border-sidebar-border/30 z-50">
+      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-24 bg-sidebar border-b border-sidebar-border/30 z-50">
         <div className="container h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
@@ -37,7 +37,7 @@ export default function Navigation() {
               <img
                 src="/images/portfolio-organized/Branding/king-iron-works-logo.jpg"
                 alt="King Iron Works"
-                className="h-14 w-auto object-contain"
+                className="h-16 w-auto object-contain"
               />
             </div>
           </Link>
@@ -75,14 +75,14 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Navigation - Top Bar */}
-      <nav className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-sidebar border-b border-sidebar-border/30 z-50">
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-18 bg-sidebar border-b border-sidebar-border/30 z-50">
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
                 src="/images/portfolio-organized/Branding/king-iron-works-logo.jpg"
                 alt="King Iron Works"
-                className="h-12 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             </div>
           </Link>
@@ -100,7 +100,7 @@ export default function Navigation() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-sidebar-foreground"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
             </Button>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function Navigation() {
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-0 bg-sidebar z-40 flex flex-col">
           {/* Spacer for the fixed top bar */}
-          <div className="h-16 shrink-0" />
+          <div className="h-18 shrink-0" />
           {/* Scrollable menu content */}
           <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: "touch" }}>
             <div className="container py-4 pb-8">
