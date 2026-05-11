@@ -29,9 +29,9 @@ import Testimonials from "@/components/Testimonials";
 const portfolioImages = [
   { src: "/images/portfolio-organized/Gates/king-iron-works-gate-patio-scroll-bronze.jpg", alt: "Custom iron gate fabrication" },
   { src: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg", alt: "Ornamental iron gate design" },
-  { src: "/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg", alt: "Custom exterior iron railing" },
-  { src: "/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg", alt: "Interior iron railing craftsmanship" },
-  { src: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg", alt: "Iron restoration before and after" },
+  { src: "/images/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-1.jpg", alt: "Custom exterior iron railing" },
+  { src: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-1.jpg", alt: "Interior iron railing craftsmanship" },
+  { src: "/images/portfolio-organized/Staircases/Curved/Project 2/king-iron-works-staircase-curved-project1-hero.jpg", alt: "Iron restoration before and after" },
   { src: "/images/portfolio-organized/Balcony/king-iron-works-balcony-ornamental-boston-brick.jpg", alt: "Custom iron balcony railing" },
 ];
 

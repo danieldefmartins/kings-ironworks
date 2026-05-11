@@ -51,8 +51,6 @@ import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import CustomIronworkLanding from "./pages/CustomIronworkLanding";
 import FacilityLanding from "./pages/FacilityLanding";
-import StaircaseShowcase from "./pages/StaircaseShowcase";
-import StaircaseDetail from "./pages/StaircaseDetail";
 import StaircaseHub from "./pages/StaircaseHub";
 import ProjectShowcase from "./pages/ProjectShowcase";
 

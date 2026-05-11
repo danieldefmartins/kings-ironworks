@@ -22,7 +22,7 @@ export default function CableRailingLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/portfolio-organized/Cable-Railing/king-iron-works-cable-railing-commercial-interior.jpg"
+            src="/images/portfolio-organized/Railings/Cable-Railing/king-iron-works-cable-railing-project-1.jpg"
             alt="Cable railing system installation Boston"
             className="w-full h-full object-cover opacity-40"
           />

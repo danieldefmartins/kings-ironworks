@@ -77,7 +77,7 @@ const featuredWork = [
     link: "/portfolio/balconies",
   },
   {
-    image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-1.jpg",
+    image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-10.jpg",
     title: "Commercial Steel Fabrication",
     category: "Structural Steel",
     link: "/portfolio/structural-steel",
@@ -236,7 +236,7 @@ export default function Home() {
               {
                 title: "Structural Steel",
                 desc: "Commercial fabrication, historic restoration, and custom metalwork",
-                image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-1.jpg",
+                image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-10.jpg",
                 link: "/structural-steel",
               },
             ].map((item, i) => (

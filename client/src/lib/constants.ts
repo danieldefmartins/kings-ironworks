@@ -73,7 +73,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CAPE_COD,
     hours: "By Appointment",
     description: "Serving all of Cape Cod with custom ironwork, fire escape services, and historic restoration for coastal properties.",
-    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-IrppZGXO.jpg"
+    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-1.jpg"
   },
   {
     name: "Worcester, MA",
@@ -109,7 +109,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.MAINE,
     hours: "By Appointment",
     description: "Serving Maine with expert ironwork, custom fabrication, and fire escape services built to withstand New England weather.",
-    image: "/images/portfolio-organized/Deck-Railing/king-iron-works-deck-railing-privacy-screen-patio.jpg"
+    image: "/images/portfolio-organized/Railings/Deck-Railing/king-iron-works-deck-railing-project-1.jpg"
   },
   {
     name: "Rhode Island",
@@ -118,7 +118,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.RHODE_ISLAND,
     hours: "By Appointment",
     description: "Expert ironwork services for Rhode Island properties. Custom gates, railings, fire escapes, and historic restoration.",
-    image: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg"
+    image: "/images/portfolio-organized/Staircases/Curved/Project 2/king-iron-works-staircase-curved-project1-hero.jpg"
   },
   {
     name: "New York",
@@ -136,7 +136,7 @@ export const LOCATIONS = [
     phone: PHONE_NUMBERS.CONNECTICUT,
     hours: "By Appointment",
     description: "Trusted ironwork services for Connecticut. Custom gates, railings, fire escapes, and historic restoration for homes and businesses.",
-    image: "/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg"
+    image: "/images/portfolio-organized/Gates/king-iron-works-gate-10.jpg"
   }
 ] as const;
 

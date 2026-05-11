@@ -19,7 +19,7 @@ export default function DeckRailingLanding() {
       <section className="relative min-h-[85vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/portfolio-organized/Deck-Railing/king-iron-works-deck-railing-upper-craftsman.jpg"
+            src="/images/portfolio-organized/Railings/Deck-Railing/king-iron-works-deck-railing-project-2.jpg"
             alt="Custom deck railing design and installation"
             className="w-full h-full object-cover opacity-40"
           />
