@@ -12,31 +12,38 @@ import {
 } from "@/components/ui/carousel";
 import Autoplay from "embla-carousel-autoplay";
 
+const HUB = "/images/staircase-hub";
+
 const heroSlides = [
   {
-    image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-hero.jpg",
-    alt: "Hand-forged curved staircase — King Iron Works masterpiece",
-    objectPosition: "center 30%",
+    desktop: `${HUB}/tiers/desktop/king-iron-works-curved-ultra-luxury.jpg`,
+    mobile: `${HUB}/tiers/mobile/king-iron-works-curved-ultra-luxury.jpg`,
+    alt: "Ultra-luxury curved staircase with hand-forged ornamental balustrade and gold leaf accents",
   },
   {
-    image: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
-    alt: "Grand curved staircase with ornate scrollwork and crystal chandelier",
-    objectPosition: "center center",
+    desktop: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
+    mobile: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
+    alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
   },
   {
-    image: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
-    alt: "Master craftsman with finished curved staircase",
-    objectPosition: "center 40%",
+    desktop: `${HUB}/tiers/desktop/king-iron-works-cantilever-luxury.jpg`,
+    mobile: `${HUB}/tiers/mobile/king-iron-works-cantilever-luxury.jpg`,
+    alt: "Luxury floating cantilever staircase with frameless glass railing and LED lighting",
   },
   {
-    image: "/images/new-portfolio/staircase/king-iron-works-staircase-curved-ornamental-gold-accents.jpg",
-    alt: "Grand curved staircase with crystal chandelier and ornate ironwork",
-    objectPosition: "center 20%",
+    desktop: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
+    mobile: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
+    alt: "The master craftsman with his finished curved staircase masterpiece",
   },
   {
-    image: "/images/new-portfolio/staircase/king-iron-works-staircase-curved-modern-rod-railing.jpg",
-    alt: "Industrial curved steel spiral staircase in open-concept home",
-    objectPosition: "center center",
+    desktop: `${HUB}/tiers/desktop/king-iron-works-spiral-luxury.jpg`,
+    mobile: `${HUB}/tiers/mobile/king-iron-works-spiral-luxury.jpg`,
+    alt: "Luxury spiral staircase with curved glass railing and LED under-tread lighting",
+  },
+  {
+    desktop: `${HUB}/tiers/desktop/king-iron-works-mono-modern.jpg`,
+    mobile: `${HUB}/tiers/mobile/king-iron-works-mono-modern.jpg`,
+    alt: "Modern mono-stringer staircase with cable railing and open risers",
   },
 ];
 
@@ -78,13 +85,15 @@ export default function CityHero({ cityName, stateName, tagline }: CityHeroProps
           {heroSlides.map((slide, i) => (
             <CarouselItem key={i} className="pl-0 relative">
               <div className="relative h-[92vh] sm:h-[90vh] bg-black overflow-hidden">
-                <img
-                  src={slide.image}
-                  alt={slide.alt}
-                  className="w-full h-full object-cover"
-                  style={{ objectPosition: slide.objectPosition }}
-                  loading={i === 0 ? "eager" : "lazy"}
-                />
+                <picture>
+                  <source media="(min-width: 1024px)" srcSet={slide.desktop} />
+                  <img
+                    src={slide.mobile}
+                    alt={slide.alt}
+                    className="w-full h-full object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                  />
+                </picture>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/5" />
                 <div className="hidden lg:block absolute inset-y-0 left-0 w-[35%] bg-gradient-to-r from-black via-black/50 to-transparent" />
                 <div className="hidden lg:block absolute inset-y-0 right-0 w-[35%] bg-gradient-to-l from-black via-black/50 to-transparent" />
