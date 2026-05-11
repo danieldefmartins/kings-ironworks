@@ -218,31 +218,31 @@ export default function Home() {
               {
                 title: "Interior Railings",
                 desc: "Custom staircase railings, balustrades, and handrails for homes and commercial spaces",
-                image: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-1.jpg",
+                image: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg",
                 link: "/interior-railing",
               },
               {
                 title: "Exterior Railings",
                 desc: "Weather-resistant porch, deck, and balcony railings built for New England",
-                image: "/images/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-1.jpg",
+                image: "/images/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-8.jpg",
                 link: "/exterior-railing",
               },
               {
                 title: "Gates",
                 desc: "Entry gates, driveway gates, garden gates, and security gates with optional automation",
-                image: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg",
+                image: "/images/portfolio-organized/Gates/king-iron-works-gate-21.jpg",
                 link: "/gate",
               },
               {
                 title: "Fire Escapes",
                 desc: "Licensed MA installer — new installation, repair, inspection, and certification",
-                image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg",
+                image: "/images/portfolio-organized/Fire-Escape/fire_escape_magazine_16x9.png",
                 link: "/fire-escape",
               },
               {
                 title: "Structural Steel",
                 desc: "I-beams, mezzanines, support columns, and commercial steel fabrication",
-                image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-10.jpg",
+                image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-20.jpg",
                 link: "/structural-steel",
               },
               {
