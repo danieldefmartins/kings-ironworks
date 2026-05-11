@@ -55,12 +55,12 @@
 
 :root {
   /* Industrial Heritage Brutalism Palette */
-  --primary: oklch(0.55 0.12 75); /* Rich gold */
+  --primary: oklch(0.66 0.12 75); /* Rich gold */
   --primary-foreground: oklch(0.10 0.005 280); /* Near black */
-  --sidebar-primary: oklch(0.55 0.12 75);
+  --sidebar-primary: oklch(0.66 0.12 75);
   --sidebar-primary-foreground: oklch(0.98 0.01 90);
   --chart-1: oklch(0.50 0.08 240);
-  --chart-2: oklch(0.55 0.12 75);
+  --chart-2: oklch(0.66 0.12 75);
   --chart-3: oklch(0.30 0.02 260);
   --chart-4: oklch(0.25 0.01 270);
   --chart-5: oklch(0.15 0.005 280);
@@ -83,7 +83,7 @@
   --muted-foreground: oklch(0.40 0.02 260);
   
   /* Accent - rich gold matching logo */
-  --accent: oklch(0.55 0.12 75);
+  --accent: oklch(0.66 0.12 75);
   --accent-foreground: oklch(0.98 0.01 90);
   
   /* Destructive */
@@ -93,15 +93,15 @@
   /* Borders - subtle and refined */
   --border: oklch(0.88 0.005 270);
   --input: oklch(0.90 0.005 270);
-  --ring: oklch(0.55 0.12 75);
+  --ring: oklch(0.66 0.12 75);
   
   /* Sidebar */
   --sidebar: oklch(0.15 0.005 280);
   --sidebar-foreground: oklch(0.98 0.01 90);
-  --sidebar-accent: oklch(0.55 0.12 75);
+  --sidebar-accent: oklch(0.66 0.12 75);
   --sidebar-accent-foreground: oklch(0.98 0.01 90);
   --sidebar-border: oklch(0.30 0.02 260);
-  --sidebar-ring: oklch(0.55 0.12 75);
+  --sidebar-ring: oklch(0.66 0.12 75);
 }
 
 @layer base {
@@ -193,7 +193,7 @@
     font-weight: 500;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: oklch(0.55 0.12 75);
+    color: oklch(0.66 0.12 75);
   }
 }
 
