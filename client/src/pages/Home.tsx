@@ -236,7 +236,7 @@ export default function Home() {
               {
                 title: "Fire Escapes",
                 desc: "Licensed MA installer — new installation, repair, inspection, and certification",
-                image: "/images/portfolio-organized/Fire-Escape/fire_escape_magazine_16x9.png",
+                image: "/images/portfolio-organized/Fire-Escape/fire_escape_magazine_16x9.jpg",
                 link: "/fire-escape",
               },
               {
