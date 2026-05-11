@@ -328,7 +328,7 @@ function Lightbox({ photos: lbPhotos, initialIndex, onClose }: { photos: Photo[]
 // MasonryGrid
 // ---------------------------------------------------------------------------
 
-function MasonryGrid({ items, onImageClick }: { items: MasonryItem[]; onImageClick: (globalIndex: number) => void }) {
+function MasonryGrid({ items, onImageClick }: { items: MasonryItem[]; onImageClick: (photo: Photo) => void }) {
   const [colCount, setColCount] = useState(2);
 
   useEffect(() => {
@@ -354,7 +354,7 @@ function MasonryGrid({ items, onImageClick }: { items: MasonryItem[]; onImageCli
                 key={item.photo.src}
                 photo={item.photo}
                 index={idx}
-                onClick={() => onImageClick(item.globalIndex)}
+                onClick={() => onImageClick(item.photo)}
               />
             );
           })}
@@ -380,22 +380,58 @@ export default function Portfolio() {
   const activeSubcategory = parentCategories.some((p) => p.id === categoryFromUrl) ? null : categoryFromUrl;
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const localPhone = useLocalPhone();
-
-  // Get filtered photos
-  const filteredPhotos = useMemo(() => {
-    if (activeParent === "all") return photos;
-    if (activeSubcategory) return photos.filter((p) => p.category === activeSubcategory);
-    return getPhotosForParent(activeParent);
-  }, [activeParent, activeSubcategory]);
 
   // Get subcategories for the active parent
   const subcategories = useMemo(() => {
     if (activeParent === "all") return [];
     return getSubcategories(activeParent);
   }, [activeParent]);
+
+  // -----------------------------------------------------------------------
+  // Interleaved grid photos: round-robin across subcategories so the grid
+  // shows variety instead of 100 images from one project in a row.
+  // IMAGES_PER_ROUND controls how many from each sub before cycling.
+  // -----------------------------------------------------------------------
+  const IMAGES_PER_ROUND = 3;
+
+  const gridPhotos = useMemo(() => {
+    // When viewing a specific subcategory, show all its photos in order
+    if (activeSubcategory) {
+      return photos.filter((p) => p.category === activeSubcategory);
+    }
+
+    // Get the relevant child category IDs
+    const childIds = activeParent === "all"
+      ? portfolioCategories.map((c) => c.id)
+      : (parentCategories.find((p) => p.id === activeParent)?.children ?? []);
+
+    // Build per-sub queues
+    const queues: Photo[][] = childIds
+      .map((id) => photos.filter((p) => p.category === id))
+      .filter((q) => q.length > 0);
+
+    // Round-robin interleave
+    const result: Photo[] = [];
+    const cursors = queues.map(() => 0);
+    let exhausted = 0;
+    while (exhausted < queues.length) {
+      for (let q = 0; q < queues.length; q++) {
+        if (cursors[q] >= queues[q].length) continue;
+        const end = Math.min(cursors[q] + IMAGES_PER_ROUND, queues[q].length);
+        for (let i = cursors[q]; i < end; i++) result.push(queues[q][i]);
+        cursors[q] = end;
+        if (cursors[q] >= queues[q].length) exhausted++;
+      }
+    }
+    return result;
+  }, [activeParent, activeSubcategory]);
+
+  // All photos for the clicked subcategory (used for lightbox)
+  const lightboxPhotosForCategory = useCallback((category: string) => {
+    return photos.filter((p) => p.category === category);
+  }, []);
 
   // Parent-level photo counts
   const parentCounts = useMemo(() => {
@@ -409,17 +445,26 @@ export default function Portfolio() {
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisibleCount((p) => Math.min(p + BATCH_SIZE, filteredPhotos.length)); }, { rootMargin: "600px" });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisibleCount((p) => Math.min(p + BATCH_SIZE, gridPhotos.length)); }, { rootMargin: "600px" });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [filteredPhotos.length]);
+  }, [gridPhotos.length]);
 
   const setCategory = useCallback((id: string) => {
     setLocation(id === "all" ? "/portfolio" : `/portfolio/${id}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setLocation]);
 
-  const visiblePhotos = filteredPhotos.slice(0, visibleCount);
+  // Lightbox state: stores the subcategory photos + index within them
+  const [lightboxState, setLightboxState] = useState<{ photos: Photo[]; index: number } | null>(null);
+
+  const handleImageClick = useCallback((photo: Photo, indexInSubcategory?: number) => {
+    const subPhotos = lightboxPhotosForCategory(photo.category);
+    const idx = indexInSubcategory ?? subPhotos.findIndex((p) => p.src === photo.src);
+    setLightboxState({ photos: subPhotos, index: Math.max(0, idx) });
+  }, [lightboxPhotosForCategory]);
+
+  const visiblePhotos = gridPhotos.slice(0, visibleCount);
   const splitAt = Math.min(CATEGORY_SUGGEST_AFTER, visiblePhotos.length);
 
   function buildItems(batch: Photo[], startIdx: number): MasonryItem[] {
@@ -478,7 +523,7 @@ export default function Portfolio() {
               ) : (
                 <span className="text-foreground font-medium">Portfolio</span>
               )}
-              <span className="text-muted-foreground/50 ml-1">({filteredPhotos.length})</span>
+              <span className="text-muted-foreground/50 ml-1">({gridPhotos.length})</span>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/services"><Button variant="outline" size="sm" className="text-xs font-display font-bold h-7">Services</Button></Link>
@@ -549,16 +594,16 @@ export default function Portfolio() {
 
       {/* Photo Grid */}
       <div className="px-3 md:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto pt-2 pb-6">
-        {filteredPhotos.length > 0 ? (
+        {gridPhotos.length > 0 ? (
           <>
-            <MasonryGrid items={firstItems} onImageClick={setLightboxIndex} />
+            <MasonryGrid items={firstItems} onImageClick={handleImageClick} />
 
             {secondBatch.length > 0 && (
               <CategorySuggestions activeParent={activeParent} onSelect={setCategory} />
             )}
 
             {secondItems.length > 0 && (
-              <MasonryGrid items={secondItems} onImageClick={setLightboxIndex} />
+              <MasonryGrid items={secondItems} onImageClick={handleImageClick} />
             )}
           </>
         ) : (
@@ -568,7 +613,7 @@ export default function Portfolio() {
           </div>
         )}
 
-        {visibleCount < filteredPhotos.length && (
+        {visibleCount < gridPhotos.length && (
           <div ref={loadMoreRef} className="flex justify-center py-10">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <div className="w-5 h-5 border-2 border-accent/40 border-t-accent rounded-full animate-spin" /> Loading more...
@@ -600,10 +645,10 @@ export default function Portfolio() {
         </div>
       </section>
 
-      {/* Lightbox */}
+      {/* Lightbox — opens all photos from the clicked image's subcategory */}
       <AnimatePresence>
-        {lightboxIndex !== null && filteredPhotos[lightboxIndex] && (
-          <Lightbox photos={filteredPhotos} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+        {lightboxState && (
+          <Lightbox photos={lightboxState.photos} initialIndex={lightboxState.index} onClose={() => setLightboxState(null)} />
         )}
       </AnimatePresence>
     </div>
