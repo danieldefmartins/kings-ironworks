@@ -1,20 +1,10 @@
 // ---------------------------------------------------------------------------
 // Portfolio Data — Auto-generated from portfolio-organized folder structure
 // ---------------------------------------------------------------------------
-
-export interface PortfolioCategory {
-  id: string;
-  label: string;
-  photos: string[];
-}
-
+export interface PortfolioCategory { id: string; label: string; photos: string[]; }
 const IMG = "/images/portfolio-organized";
-
 export const categories: PortfolioCategory[] = [
-  {
-    id: "curved-staircases",
-    label: "Curved Staircases",
-    photos: [
+  { id: "curved-staircases", label: "Curved Staircases", photos: [
       `${IMG}/Staircases/Curved/king-iron-works-staircase-curved-led-artistic-panels.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircase-curved-modern-hor-bar-waterfront.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircase-curved-modern-rod-railing.jpg`,
@@ -39,12 +29,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/king-iron-works-staircase-website-512.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircase-website-514.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircases-modern-project-8.jpg`,
-    ],
-  },
-  {
-    id: "curved-project-1",
-    label: "Curved Project: Medallion Scrollwork",
-    photos: [
+    ],  },
+  { id: "curved-project-1", label: "Curved Project: Medallion Scrollwork", photos: [
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-425.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-426.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-427.jpg`,
@@ -74,13 +60,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-451.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-452.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-453.jpg`,
-    ],
-  },
-  {
-    id: "curved-project-2",
-    label: "Curved Project: Peacock Masterpiece",
-    photos: [
-      `${IMG}/Staircases/Curved/Project 2/king-iron-works-exterior-railing-project-261.jpg`,
+    ],  },
+  { id: "curved-project-2", label: "Curved Project: Peacock Masterpiece", photos: [
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-chandelier-below.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-fleur-de-lis.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-grand-overhead.jpg`,
@@ -88,14 +69,11 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-ornamental-gold-accents.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-ornamental-marble-foyer.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-ornamental-overhead.jpg`,
-      `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-ornamental-project1.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-ornamental-spiral-above.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-peacock-above.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-peacock-chandelier.jpg`,
-      `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-peacock-side.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-project1-hero.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-project1-reveal.jpg`,
-      `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-scrollwork-closeup.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-scrollwork-detail.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-website-1.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-website-104.jpg`,
@@ -149,13 +127,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-website-93.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-website-94.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-website-95.jpg`,
-      `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircases-curved-project-1.jpg`,
-    ],
-  },
-  {
-    id: "floating-full",
-    label: "Full Floating Staircases",
-    photos: [
+    ],  },
+  { id: "floating-full", label: "Full Floating Staircases", photos: [
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-exterior-railing-project-145.jpg`,
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-exterior-railing-project-235.jpg`,
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-exterior-railing-project-281.jpg`,
@@ -197,12 +170,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-staircase-website-513.jpg`,
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-staircase-website-516.jpg`,
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-staircase-website-517.jpg`,
-    ],
-  },
-  {
-    id: "floating-mono-stringer",
-    label: "Mono Stringer Staircases",
-    photos: [
+    ],  },
+  { id: "floating-mono-stringer", label: "Mono Stringer Staircases", photos: [
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-exterior-railing-project-123.jpg`,
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-exterior-railing-project-124.jpg`,
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-exterior-railing-project-167.jpg`,
@@ -344,12 +313,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-staircase-website-97.jpg`,
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-staircases-floating-project-3.jpg`,
       `${IMG}/Staircases/Floating/Mono Stringer/king-iron-works-staircases-switchback-project-3.jpg`,
-    ],
-  },
-  {
-    id: "floating-dual-stringer",
-    label: "Dual Stringer Staircases",
-    photos: [
+    ],  },
+  { id: "floating-dual-stringer", label: "Dual Stringer Staircases", photos: [
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-exterior-railing-project-154.jpg`,
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-exterior-railing-project-159.jpg`,
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-exterior-railing-project-160.jpg`,
@@ -440,12 +405,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-staircases-modern-project-3.jpg`,
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-staircases-modern-project-4.jpg`,
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-staircases-modern-project-5.jpg`,
-    ],
-  },
-  {
-    id: "spiral-interior",
-    label: "Interior Spiral Staircases",
-    photos: [
+    ],  },
+  { id: "spiral-interior", label: "Interior Spiral Staircases", photos: [
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-exterior-railing-project-108.jpg`,
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-exterior-railing-project-116.jpg`,
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-exterior-railing-project-117.jpg`,
@@ -478,12 +439,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-staircases-spiral-website-16.jpg`,
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-staircases-spiral-website-18.jpg`,
       `${IMG}/Staircases/Spiral/Interior Spiral/king-iron-works-staircases-spiral-website-7.jpg`,
-    ],
-  },
-  {
-    id: "spiral-exterior",
-    label: "Exterior Spiral Staircases",
-    photos: [
+    ],  },
+  { id: "spiral-exterior", label: "Exterior Spiral Staircases", photos: [
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-exterior-railing-project-155.jpg`,
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-exterior-railing-project-17.jpg`,
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-exterior-railing-project-178.jpg`,
@@ -519,12 +476,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-staircases-spiral-website-6.jpg`,
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-staircases-spiral-website-8.jpg`,
       `${IMG}/Staircases/Spiral/Exterior Spiral/king-iron-works-staircases-spiral-website-9.jpg`,
-    ],
-  },
-  {
-    id: "grand-ornamental",
-    label: "Grand Ornamental Staircases",
-    photos: [
+    ],  },
+  { id: "grand-ornamental", label: "Grand Ornamental Staircases", photos: [
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-exterior-railing-project-184.jpg`,
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-exterior-railing-project-232.jpg`,
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-staircase-curved-scroll-circle-panels-1.jpg`,
@@ -552,12 +505,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-staircase-website-496.jpg`,
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-staircase-website-497.jpg`,
       `${IMG}/Staircases/Grand-Ornamental/king-iron-works-staircase-website-499.jpg`,
-    ],
-  },
-  {
-    id: "exterior-railings",
-    label: "Exterior Railings",
-    photos: [
+    ],  },
+  { id: "exterior-railings", label: "Exterior Railings", photos: [
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-1.jpg`,
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-10.jpg`,
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-11.jpg`,
@@ -770,17 +719,11 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-website-7.jpg`,
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-website-8.jpg`,
       `${IMG}/Railings/Exterior-Railing/king-iron-works-exterior-railing-website-9.jpg`,
-    ],
-  },
-  {
-    id: "interior-railings",
-    label: "Interior Railings",
-    photos: [
+    ],  },
+  { id: "interior-railings", label: "Interior Railings", photos: [
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-1.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-10.jpg`,
-      `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-11.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-12.jpg`,
-      `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-13.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-14.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-15.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-16.jpg`,
@@ -814,12 +757,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-project-2.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-vert-picket-staircase-1.jpg`,
       `${IMG}/Railings/Interior-Railing/king-iron-works-interior-railing-wood-horizontal-bar.jpg`,
-    ],
-  },
-  {
-    id: "cable-railings",
-    label: "Cable Railings",
-    photos: [
+    ],  },
+  { id: "cable-railings", label: "Cable Railings", photos: [
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-cedar-deck-stairs.jpg`,
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-hillside-outdoor.jpg`,
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-project-1.jpg`,
@@ -829,12 +768,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-project-5.jpg`,
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-project-8.jpg`,
       `${IMG}/Railings/Cable-Railing/king-iron-works-cable-railing-website-1.jpg`,
-    ],
-  },
-  {
-    id: "deck-railings",
-    label: "Deck Railings",
-    photos: [
+    ],  },
+  { id: "deck-railings", label: "Deck Railings", photos: [
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-1.jpg`,
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-privacy-screen-patio.jpg`,
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-project-1.jpg`,
@@ -845,12 +780,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-project-6.jpg`,
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-project-9.jpg`,
       `${IMG}/Railings/Deck-Railing/king-iron-works-deck-railing-upper-craftsman.jpg`,
-    ],
-  },
-  {
-    id: "commercial-railings",
-    label: "Commercial Railings",
-    photos: [
+    ],  },
+  { id: "commercial-railings", label: "Commercial Railings", photos: [
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-1.jpg`,
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-10.jpg`,
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-11.jpg`,
@@ -884,22 +815,14 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-ada-ramp-stainless-1.jpg`,
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-ada-ramp-stainless-2.jpg`,
       `${IMG}/Railings/Commercial-Railing/king-iron-works-commercial-railing-industrial-concrete-1.jpg`,
-    ],
-  },
-  {
-    id: "small-railings",
-    label: "Small Railings",
-    photos: [
+    ],  },
+  { id: "small-railings", label: "Small Railings", photos: [
       `${IMG}/Railings/Small-Railing/king-iron-works-small-railing-1.jpg`,
       `${IMG}/Railings/Small-Railing/king-iron-works-small-railing-2.jpg`,
       `${IMG}/Railings/Small-Railing/king-iron-works-small-railing-3.jpg`,
       `${IMG}/Railings/Small-Railing/king-iron-works-small-railing-4.jpg`,
-    ],
-  },
-  {
-    id: "gates",
-    label: "Gates",
-    photos: [
+    ],  },
+  { id: "gates", label: "Gates", photos: [
       `${IMG}/Gates/king-iron-works-gate-10.jpg`,
       `${IMG}/Gates/king-iron-works-gate-11.jpg`,
       `${IMG}/Gates/king-iron-works-gate-12.jpg`,
@@ -946,12 +869,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Gates/king-iron-works-gates-project-5.jpg`,
       `${IMG}/Gates/king-iron-works-gates-project-6.jpg`,
       `${IMG}/Gates/king-iron-works-gates-project-7.jpg`,
-    ],
-  },
-  {
-    id: "fire-escapes",
-    label: "Fire Escapes",
-    photos: [
+    ],  },
+  { id: "fire-escapes", label: "Fire Escapes", photos: [
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-1.jpg`,
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-1.png`,
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-10.jpg`,
@@ -993,12 +912,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-website-PmBUKqXw.jpg`,
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg`,
       `${IMG}/Fire-Escape/king-iron-works-fire-escape-website-YgqFSong.jpg`,
-    ],
-  },
-  {
-    id: "balconies",
-    label: "Balconies",
-    photos: [
+    ],  },
+  { id: "balconies", label: "Balconies", photos: [
       `${IMG}/Balcony/king-iron-works-balcony-1.jpg`,
       `${IMG}/Balcony/king-iron-works-balcony-10.jpg`,
       `${IMG}/Balcony/king-iron-works-balcony-11.jpg`,
@@ -1017,12 +932,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Balcony/king-iron-works-balcony-project-2.jpg`,
       `${IMG}/Balcony/king-iron-works-balcony-project-3.jpg`,
       `${IMG}/Balcony/king-iron-works-balcony-website-1.jpg`,
-    ],
-  },
-  {
-    id: "juliet-balconies",
-    label: "Juliet Balconies",
-    photos: [
+    ],  },
+  { id: "juliet-balconies", label: "Juliet Balconies", photos: [
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-1.jpg`,
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-10.jpg`,
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-11.jpg`,
@@ -1041,12 +952,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-7.jpg`,
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-8.jpg`,
       `${IMG}/Juliet-Balcony/king-iron-works-juliet-balcony-9.jpg`,
-    ],
-  },
-  {
-    id: "fences",
-    label: "Fences",
-    photos: [
+    ],  },
+  { id: "fences", label: "Fences", photos: [
       `${IMG}/Fence/king-iron-works-fence-1.jpg`,
       `${IMG}/Fence/king-iron-works-fence-10.jpg`,
       `${IMG}/Fence/king-iron-works-fence-11.jpg`,
@@ -1068,12 +975,8 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Fence/king-iron-works-fence-knuckle-porch-1.jpg`,
       `${IMG}/Fence/king-iron-works-fence-vert-picket-driveway-1.jpg`,
       `${IMG}/Fence/king-iron-works-fence-vert-picket-yard-3.jpg`,
-    ],
-  },
-  {
-    id: "structural-steel",
-    label: "Structural Steel",
-    photos: [
+    ],  },
+  { id: "structural-steel", label: "Structural Steel", photos: [
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-10.jpg`,
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-11.jpg`,
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-12.jpg`,
@@ -1110,42 +1013,26 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-9.jpg`,
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-website-1.jpg`,
       `${IMG}/Structural-Steel/king-iron-works-structural-steel-website-2.jpg`,
-    ],
-  },
-  {
-    id: "window-wells",
-    label: "Window Wells",
-    photos: [
+    ],  },
+  { id: "window-wells", label: "Window Wells", photos: [
       `${IMG}/Window-Well/king-iron-works-window-well-1.jpg`,
       `${IMG}/Window-Well/king-iron-works-window-well-horizontal-bar-modern.jpg`,
       `${IMG}/Window-Well/king-iron-works-window-well-project-1.jpg`,
       `${IMG}/Window-Well/king-iron-works-window-well-website-1.jpg`,
       `${IMG}/Window-Well/king-iron-works-window-well-website-2.jpg`,
       `${IMG}/Window-Well/king-iron-works-window-well-website-3.jpg`,
-    ],
-  },
-  {
-    id: "window-guards",
-    label: "Window Guards",
-    photos: [
+    ],  },
+  { id: "window-guards", label: "Window Guards", photos: [
       `${IMG}/Window-Guard/king-iron-works-window-guard-website-1.jpg`,
       `${IMG}/Window-Guard/king-iron-works-window-guard-website-2.jpg`,
       `${IMG}/Window-Guard/king-iron-works-window-guard-website-3.jpg`,
-    ],
-  },
-  {
-    id: "ada-ramps",
-    label: "ADA Ramps",
-    photos: [
+    ],  },
+  { id: "ada-ramps", label: "ADA Ramps", photos: [
       `${IMG}/ada-ramp/king-iron-works-ada-ramp-1.jpg`,
       `${IMG}/ada-ramp/king-iron-works-ada-ramp-2.jpg`,
       `${IMG}/ada-ramp/king-iron-works-ada-ramp-3.jpg`,
-    ],
-  },
-  {
-    id: "shop-process",
-    label: "Shop & Process",
-    photos: [
+    ],  },
+  { id: "shop-process", label: "Shop & Process", photos: [
       `${IMG}/Shop-Process/king-iron-works-install-welding-onsite.jpg`,
       `${IMG}/Shop-Process/king-iron-works-shop-branded-truck.jpg`,
       `${IMG}/Shop-Process/king-iron-works-shop-butterfly-metal-art.jpg`,
@@ -1306,10 +1193,7 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Shop-Process/king-iron-works-staircase-website-92.jpg`,
       `${IMG}/Shop-Process/king-iron-works-staircase-website-98.jpg`,
       `${IMG}/Shop-Process/king-iron-works-staircase-website-99.jpg`,
-    ],
-  },
+    ],  },
 ];
 export const allPhotos = categories.flatMap((c) => c.photos.map((src) => ({ src, category: c.id })));
-export function getCategoryLabel(id: string): string {
-  return categories.find((c) => c.id === id)?.label ?? id;
-}
+export function getCategoryLabel(id: string): string { return categories.find((c) => c.id === id)?.label ?? id; }
