@@ -54,6 +54,7 @@ import FacilityLanding from "./pages/FacilityLanding";
 import StaircaseShowcase from "./pages/StaircaseShowcase";
 import StaircaseDetail from "./pages/StaircaseDetail";
 import StaircaseHub from "./pages/StaircaseHub";
+import ProjectShowcase from "./pages/ProjectShowcase";
 
 function Router() {
   const [location] = useLocation();
@@ -93,6 +94,8 @@ function Router() {
       <Route path="/handrail" component={HandrailLanding} />
       <Route path="/window" component={WindowLanding} />
       <Route path="/window-well" component={WindowWellLanding} />
+      <Route path="/projects/medallion-scrollwork">{() => <ProjectShowcase projectSlug="medallion-scrollwork" />}</Route>
+      <Route path="/projects/peacock-masterpiece">{() => <ProjectShowcase projectSlug="peacock-masterpiece" />}</Route>
       <Route path="/staircases" component={StaircaseHub} />
       <Route path="/dream-staircase" component={StaircaseHub} />
       <Route path="/custom-ironwork" component={CustomIronworkLanding} />

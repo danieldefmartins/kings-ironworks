@@ -44,6 +44,12 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/king-iron-works-staircases-curved-project-9.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircases-modern-project-7.jpg`,
       `${IMG}/Staircases/Curved/king-iron-works-staircases-modern-project-8.jpg`,
+    ],
+  },
+  {
+    id: "curved-project-1",
+    label: "Curved Project: Medallion Scrollwork",
+    photos: [
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-425.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-426.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-427.jpg`,
@@ -73,6 +79,12 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-451.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-452.jpg`,
       `${IMG}/Staircases/Curved/Project 1/king-iron-works-staircase-website-453.jpg`,
+    ],
+  },
+  {
+    id: "curved-project-2",
+    label: "Curved Project: Peacock Masterpiece",
+    photos: [
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-exterior-railing-project-261.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-chandelier-below.jpg`,
       `${IMG}/Staircases/Curved/Project 2/king-iron-works-staircase-curved-fleur-de-lis.jpg`,
@@ -147,7 +159,7 @@ export const categories: PortfolioCategory[] = [
   },
   {
     id: "floating-full",
-    label: "Floating Staircases",
+    label: "Full Floating Staircases",
     photos: [
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-exterior-railing-project-145.jpg`,
       `${IMG}/Staircases/Floating/Full Floating/king-iron-works-exterior-railing-project-235.jpg`,
