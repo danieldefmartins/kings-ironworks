@@ -20,24 +20,69 @@ import {
 } from "@/lib/portfolio-data";
 
 // ---------------------------------------------------------------------------
+// Parent / Sub-category structure
+// ---------------------------------------------------------------------------
+
+interface ParentCategory {
+  id: string;
+  label: string;
+  children: string[]; // portfolio-data category IDs
+}
+
+const parentCategories: ParentCategory[] = [
+  {
+    id: "staircases",
+    label: "Staircases",
+    children: [
+      "curved-staircases", "curved-project-1", "curved-project-2",
+      "floating-full", "floating-mono-stringer", "floating-dual-stringer",
+      "spiral-interior", "spiral-exterior", "grand-ornamental",
+    ],
+  },
+  {
+    id: "railings",
+    label: "Railings",
+    children: [
+      "exterior-railings", "interior-railings", "cable-railings",
+      "deck-railings", "commercial-railings", "small-railings",
+    ],
+  },
+  { id: "gates", label: "Gates", children: ["gates"] },
+  { id: "fire-escapes", label: "Fire Escapes", children: ["fire-escapes"] },
+  { id: "balconies-group", label: "Balconies", children: ["balconies", "juliet-balconies"] },
+  { id: "fences", label: "Fences", children: ["fences"] },
+  { id: "structural-steel", label: "Structural Steel", children: ["structural-steel"] },
+  { id: "window-wells", label: "Window Wells", children: ["window-wells", "window-guards"] },
+  { id: "ada-ramps", label: "ADA Ramps", children: ["ada-ramps"] },
+  { id: "shop-process", label: "Shop & Process", children: ["shop-process"] },
+];
+
+// ---------------------------------------------------------------------------
 // Types & Data
 // ---------------------------------------------------------------------------
 
-interface Photo {
-  src: string;
-  category: string;
-}
-
-const categoryTabs = [
-  { id: "all", label: "All" },
-  ...portfolioCategories
-    .filter((c) => c.photos.length > 0)
-    .map((c) => ({ id: c.id, label: c.label })),
-];
+interface Photo { src: string; category: string; }
 
 const photos: Photo[] = portfolioCategories.flatMap((c) =>
   c.photos.map((src) => ({ src, category: c.id })),
 );
+
+function getPhotosForParent(parentId: string): Photo[] {
+  const parent = parentCategories.find((p) => p.id === parentId);
+  if (!parent) return [];
+  return photos.filter((p) => parent.children.includes(p.category));
+}
+
+function getSubcategories(parentId: string) {
+  const parent = parentCategories.find((p) => p.id === parentId);
+  if (!parent || parent.children.length <= 1) return [];
+  return parent.children
+    .map((id) => {
+      const cat = portfolioCategories.find((c) => c.id === id);
+      return cat ? { id: cat.id, label: cat.label, count: cat.photos.length } : null;
+    })
+    .filter((c): c is NonNullable<typeof c> => c !== null && c.count > 0);
+}
 
 // ---------------------------------------------------------------------------
 // CTA + constants
@@ -53,7 +98,7 @@ const BATCH_SIZE = 24;
 const CATEGORY_SUGGEST_AFTER = 18;
 
 // ---------------------------------------------------------------------------
-// Distribute items into columns (Pinterest shortest-column-first)
+// Masonry distribution
 // ---------------------------------------------------------------------------
 
 type MasonryItem = { type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number };
@@ -165,12 +210,9 @@ function InlineCTA({ index }: { index: number }) {
 // CategorySuggestions
 // ---------------------------------------------------------------------------
 
-function CategorySuggestions({ activeCategory, onSelect }: { activeCategory: string; onSelect: (id: string) => void }) {
-  const otherCategories = categoryTabs.filter(
-    (c) => c.id !== "all" && c.id !== activeCategory,
-  ).slice(0, 6);
-
-  if (otherCategories.length === 0) return null;
+function CategorySuggestions({ activeParent, onSelect }: { activeParent: string; onSelect: (id: string) => void }) {
+  const otherParents = parentCategories.filter((p) => p.id !== activeParent).slice(0, 6);
+  if (otherParents.length === 0) return null;
 
   return (
     <div className="py-5 overflow-hidden">
@@ -178,19 +220,20 @@ function CategorySuggestions({ activeCategory, onSelect }: { activeCategory: str
         Explore more of our work
       </p>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mr-4">
-        {otherCategories.map((cat) => {
-          const preview = photos.find((p) => p.category === cat.id);
+        {otherParents.map((parent) => {
+          const parentPhotos = getPhotosForParent(parent.id);
+          const preview = parentPhotos[0];
           return (
             <button
-              key={cat.id}
-              onClick={() => onSelect(cat.id)}
+              key={parent.id}
+              onClick={() => onSelect(parent.id)}
               className="shrink-0 group relative rounded-[16px] overflow-hidden"
               style={{ width: "44vw", maxWidth: "200px", aspectRatio: "3/4" }}
             >
               {preview && (
                 <img
                   src={preview.src}
-                  alt={cat.label}
+                  alt={parent.label}
                   className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   loading="lazy"
                 />
@@ -198,8 +241,9 @@ function CategorySuggestions({ activeCategory, onSelect }: { activeCategory: str
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
               <div className="absolute bottom-0 left-0 right-0 p-4">
                 <p className="text-white text-base font-display font-bold text-left leading-tight drop-shadow-lg">
-                  {cat.label}
+                  {parent.label}
                 </p>
+                <p className="text-white/50 text-xs mt-1">{parentPhotos.length} photos</p>
               </div>
             </button>
           );
@@ -328,25 +372,39 @@ export default function Portfolio() {
   const [, setLocation] = useLocation();
   const [matchCategory, params] = useRoute("/portfolio/:category");
   const categoryFromUrl = matchCategory ? params.category : "all";
-  const activeCategory = categoryTabs.find((c) => c.id === categoryFromUrl)?.id ?? "all";
+
+  // Determine if URL is a parent or sub-category
+  const activeParent = parentCategories.find((p) => p.id === categoryFromUrl)?.id
+    ?? parentCategories.find((p) => p.children.includes(categoryFromUrl))?.id
+    ?? "all";
+  const activeSubcategory = parentCategories.some((p) => p.id === categoryFromUrl) ? null : categoryFromUrl;
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const localPhone = useLocalPhone();
 
-  const filteredPhotos = useMemo(
-    () => activeCategory === "all" ? photos : photos.filter((p) => p.category === activeCategory),
-    [activeCategory],
-  );
+  // Get filtered photos
+  const filteredPhotos = useMemo(() => {
+    if (activeParent === "all") return photos;
+    if (activeSubcategory) return photos.filter((p) => p.category === activeSubcategory);
+    return getPhotosForParent(activeParent);
+  }, [activeParent, activeSubcategory]);
 
-  const photoCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    for (const cat of categoryTabs) c[cat.id] = cat.id === "all" ? photos.length : photos.filter((p) => p.category === cat.id).length;
+  // Get subcategories for the active parent
+  const subcategories = useMemo(() => {
+    if (activeParent === "all") return [];
+    return getSubcategories(activeParent);
+  }, [activeParent]);
+
+  // Parent-level photo counts
+  const parentCounts = useMemo(() => {
+    const c: Record<string, number> = { all: photos.length };
+    for (const p of parentCategories) c[p.id] = getPhotosForParent(p.id).length;
     return c;
   }, []);
 
-  useEffect(() => { setVisibleCount(BATCH_SIZE); }, [activeCategory]);
+  useEffect(() => { setVisibleCount(BATCH_SIZE); }, [activeParent, activeSubcategory]);
 
   useEffect(() => {
     const el = loadMoreRef.current;
@@ -372,17 +430,19 @@ export default function Portfolio() {
   const secondBatch = visiblePhotos.slice(splitAt);
   const secondItems = buildItems(secondBatch, splitAt);
 
+  const activeParentLabel = activeParent === "all" ? "Portfolio" : parentCategories.find((p) => p.id === activeParent)?.label ?? "Portfolio";
+
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Category Tabs */}
+      {/* Main Category Bar */}
       <div className="bg-background border-b border-border">
         {/* Mobile + Tablet */}
         <div className="lg:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-1.5 px-3 py-2">
-            {categoryTabs.map((cat) => {
-              const count = photoCounts[cat.id];
-              if (count === 0) return null;
-              const isActive = activeCategory === cat.id;
+            {[{ id: "all", label: "All" }, ...parentCategories].map((cat) => {
+              const count = parentCounts[cat.id] ?? 0;
+              if (count === 0 && cat.id !== "all") return null;
+              const isActive = activeParent === cat.id;
               return (
                 <button
                   key={cat.id}
@@ -403,7 +463,21 @@ export default function Portfolio() {
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Link href="/" className="hover:text-foreground transition-colors flex items-center gap-1"><Home className="w-3 h-3" /> Home</Link>
               <span>/</span>
-              {activeCategory !== "all" ? (<><Link href="/portfolio" className="hover:text-foreground transition-colors">Portfolio</Link><span>/</span><span className="text-foreground font-medium">{getCategoryLabel(activeCategory)}</span></>) : (<span className="text-foreground font-medium">Portfolio</span>)}
+              {activeParent !== "all" ? (
+                <>
+                  <Link href="/portfolio" className="hover:text-foreground transition-colors">Portfolio</Link>
+                  <span>/</span>
+                  <span className="text-foreground font-medium">{activeParentLabel}</span>
+                  {activeSubcategory && (
+                    <>
+                      <span>/</span>
+                      <span className="text-foreground font-medium">{getCategoryLabel(activeSubcategory)}</span>
+                    </>
+                  )}
+                </>
+              ) : (
+                <span className="text-foreground font-medium">Portfolio</span>
+              )}
               <span className="text-muted-foreground/50 ml-1">({filteredPhotos.length})</span>
             </div>
             <div className="flex items-center gap-2">
@@ -412,14 +486,66 @@ export default function Portfolio() {
             </div>
           </div>
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-            {categoryTabs.map((cat) => { const count = photoCounts[cat.id]; const isActive = activeCategory === cat.id; return (
-              <button key={cat.id} onClick={() => setCategory(cat.id)} className={`px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap transition-all rounded-full flex-shrink-0 ${isActive ? "bg-accent text-accent-foreground" : count === 0 ? "text-muted-foreground/30" : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"}`}>
-                {cat.label}{count > 0 && !isActive && <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>}
-              </button>
-            ); })}
+            {[{ id: "all", label: "All" }, ...parentCategories].map((cat) => {
+              const count = parentCounts[cat.id] ?? 0;
+              const isActive = activeParent === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap transition-all rounded-full flex-shrink-0 ${
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : count === 0
+                        ? "text-muted-foreground/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"
+                  }`}
+                >
+                  {cat.label}
+                  {count > 0 && !isActive && <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
+
+      {/* Subcategory pills — shown when a parent with children is active */}
+      {subcategories.length > 0 && (
+        <div className="bg-background border-b border-border/50">
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-2 px-3 lg:px-8 lg:max-w-[1280px] lg:mx-auto py-2">
+              <button
+                onClick={() => setCategory(activeParent)}
+                className={`shrink-0 px-3 py-1 text-xs font-display font-bold rounded-full transition-colors ${
+                  !activeSubcategory
+                    ? "bg-sidebar text-sidebar-foreground"
+                    : "text-muted-foreground hover:bg-muted border border-border"
+                }`}
+              >
+                All {activeParentLabel}
+              </button>
+              {subcategories.map((sub) => {
+                const isActive = activeSubcategory === sub.id;
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => setCategory(sub.id)}
+                    className={`shrink-0 px-3 py-1 text-xs font-display font-bold rounded-full transition-colors ${
+                      isActive
+                        ? "bg-sidebar text-sidebar-foreground"
+                        : "text-muted-foreground hover:bg-muted border border-border"
+                    }`}
+                  >
+                    {sub.label}
+                    <span className="ml-1 text-[10px] opacity-50">{sub.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photo Grid */}
       <div className="px-3 md:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto pt-2 pb-6">
@@ -428,7 +554,7 @@ export default function Portfolio() {
             <MasonryGrid items={firstItems} onImageClick={setLightboxIndex} />
 
             {secondBatch.length > 0 && (
-              <CategorySuggestions activeCategory={activeCategory} onSelect={setCategory} />
+              <CategorySuggestions activeParent={activeParent} onSelect={setCategory} />
             )}
 
             {secondItems.length > 0 && (
