@@ -11,13 +11,24 @@ import { PhoneLink } from "@/components/PhoneLink";
 // ---------------------------------------------------------------------------
 
 const IMG = "/images/portfolio-organized/Staircases/Curved";
+const SKETCH = "/images/portfolio-organized/Design-Sketches";
+const SHOP = "/images/portfolio-organized/Shop-Process";
+
+interface JourneyPhase {
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+}
 
 interface ProjectData {
   slug: string;
   title: string;
   subtitle: string;
-  description: string[];
-  highlights: string[];
+  intro: string;
+  journey: JourneyPhase[];
+  challenges: { title: string; description: string }[];
+  stats: { label: string; value: string }[];
   heroImage: string;
   galleryImages: string[];
 }
@@ -26,18 +37,65 @@ const projects: Record<string, ProjectData> = {
   "medallion-scrollwork": {
     slug: "medallion-scrollwork",
     title: "The Medallion Scrollwork Staircase",
-    subtitle: "A Grand Curved Staircase with Hand-Forged Ornamental Ironwork",
-    description: [
-      "This sweeping curved staircase transformed a new-construction luxury home into a grand estate. Every element — from the ornamental medallion panels to the flowing scrollwork connecting them — was hand-forged in our Everett, MA fabrication shop.",
-      "The railing features repeating medallion rosettes with gold-leaf accents, connected by S-scroll balusters that create a continuous rhythm as the staircase curves upward. A warm walnut handrail caps the ironwork, providing both elegance and a natural grip.",
-      "Our team installed the railing during the home's construction phase, working closely with the general contractor to ensure perfect alignment with the curved concrete stringer. The result: a staircase that looks like it belongs in a European palace — built right here in New England.",
+    subtitle: "From a pencil sketch on paper to a two-story masterpiece in marble and iron",
+    intro: "Every great staircase begins the same way — with a conversation and a blank sheet of paper. The homeowner had a vision: a sweeping curved staircase that would command their new-construction foyer, with ornamental ironwork that felt like it belonged in a European estate. What followed was an 800-hour journey from that first rough sketch to a finished masterpiece.",
+    journey: [
+      {
+        title: "The Rough Sketch",
+        subtitle: "Where every masterpiece begins",
+        description: "It starts with pencil on paper. Our designer sat with the homeowner and sketched the curve, the proportions, the medallion panel concept — capturing the feeling before worrying about the engineering. This rough sketch became the north star for the entire project.",
+        image: `${SKETCH}/king-iron-works-design-project2-sketch-rough.png`,
+      },
+      {
+        title: "The Refined Drawing",
+        subtitle: "Engineering meets artistry",
+        description: "The rough sketch evolved into a detailed architectural rendering. Every scroll, every medallion rosette, every connection point was drawn to scale. This is where we solve the hard problems — how the curve transitions to the balcony, how the handrail terminates, how each panel connects seamlessly to the next.",
+        image: `${SKETCH}/king-iron-works-design-project2-sketch-refined.png`,
+      },
+      {
+        title: "The Final Design",
+        subtitle: "Ready for the forge",
+        description: "The approved design, refined to the last detail. From here, our fabrication team creates templates, selects materials, and begins the painstaking process of bringing this two-dimensional drawing into three-dimensional reality. Every element you see in this drawing was hand-forged in our Everett shop.",
+        image: `${SKETCH}/king-iron-works-design-project2-design.jpg`,
+      },
+      {
+        title: "Fabrication",
+        subtitle: "800 hours in our Everett shop",
+        description: "The curved stringer is built first — a massive steel spine that must follow the exact arc of the concrete staircase below. Then come the ornamental panels: each medallion rosette is forged individually, the scrollwork shaped by hand over an anvil, the gold-leaf accents applied one by one. Nothing is mass-produced. Nothing is outsourced.",
+        image: `${SHOP}/king-iron-works-shop-curved-frame-fabrication.jpg`,
+      },
+      {
+        title: "Installation",
+        subtitle: "The moment of truth",
+        description: "The railing arrives at the home in sections, each one carefully fitted to the concrete stringer. Our installation crew works with surgical precision — once the ironwork is bolted in place, the walnut handrail is steam-bent on site to follow the curve perfectly. The homeowner watches their sketch become reality.",
+        image: `${IMG}/Project 1/king-iron-works-staircase-website-440.jpg`,
+      },
+      {
+        title: "The Reveal",
+        subtitle: "A staircase that stops you mid-sentence",
+        description: "The finished staircase commands the foyer exactly as the homeowner imagined. The medallion panels catch the light, the gold accents glow warm against the black iron, and the walnut handrail flows in one continuous curve from floor to floor. This is why we do what we do.",
+        image: `${IMG}/Project 1/king-iron-works-staircase-website-425.jpg`,
+      },
     ],
-    highlights: [
-      "Hand-forged ornamental medallion panels with gold accents",
-      "Custom-bent continuous walnut handrail following the curve",
-      "Installed during new construction for seamless integration",
-      "Over 800 hours of fabrication in our Everett shop",
-      "Concrete curved stringer with marble-ready treads",
+    challenges: [
+      {
+        title: "The Continuous Curve",
+        description: "A curved staircase railing can't have any visible joints or seams. Every panel must flow into the next as if the entire railing was forged from a single piece of steel. Our team fabricated the railing in sections that lock together with hidden connections — invisible from every angle.",
+      },
+      {
+        title: "Medallion Consistency",
+        description: "Each ornamental medallion rosette must be identical in size, shape, and depth — but they're all hand-forged, not stamped. Our smiths created a master template and forged each one individually, checking dimensions against the template at every stage.",
+      },
+      {
+        title: "Gold Leaf on Iron",
+        description: "Applying gold leaf to forged ironwork is delicate work. The surface must be perfectly cleaned, primed, and sized before each leaf is laid. One wrong touch and the leaf tears. Our finisher applied over 200 individual gold accents across the entire railing.",
+      },
+    ],
+    stats: [
+      { label: "Fabrication Hours", value: "800+" },
+      { label: "Medallion Panels", value: "14" },
+      { label: "Gold Leaf Accents", value: "200+" },
+      { label: "Total Photos", value: "29" },
     ],
     heroImage: `${IMG}/Project 1/king-iron-works-staircase-website-425.jpg`,
     galleryImages: [
@@ -75,19 +133,69 @@ const projects: Record<string, ProjectData> = {
   "peacock-masterpiece": {
     slug: "peacock-masterpiece",
     title: "The Peacock Masterpiece",
-    subtitle: "A Showpiece Curved Staircase with Hand-Forged Peacock Scrollwork & Gold Leaf",
-    description: [
-      "This is the staircase that stops every visitor mid-sentence. Sweeping two full stories through a marble-floored grand foyer, the Peacock Masterpiece features hand-forged ironwork inspired by peacock feather plumes — each scroll and leaf individually shaped by our master craftsmen.",
-      "Gold leaf accents bring warmth and dimension to the flowing ironwork, catching light from the crystal chandelier above. The peacock motif panels are interspersed with organic vine scrollwork, creating a design that feels both grand and alive.",
-      "From the first sketch to the final installation, this project consumed over 1,200 hours of fabrication. The curved stringer, the railing, the balcony guard above — every component was designed, forged, and fitted as a single cohesive work of art. It's not just a staircase. It's the reason we do what we do.",
+    subtitle: "From a rough pencil concept to the most breathtaking staircase we've ever built",
+    intro: "Some projects push you beyond what you thought was possible. The homeowner brought us a simple idea — a curved staircase with peacock-inspired ironwork. What we delivered, 1,200 hours later, was a two-story sculptural masterpiece with hand-forged peacock plumes, gold leaf detailing, and a marble foyer that belongs in a museum. This is the project that defines King Iron Works.",
+    journey: [
+      {
+        title: "The First Sketch",
+        subtitle: "A dream on paper",
+        description: "The homeowner described a vision: peacock feathers flowing through iron, something no one has ever seen before. Our designer picked up a pencil and started drawing — capturing the sweep of the curve, the position of the balcony, the feeling of organic movement. This 20-minute sketch launched a year-long project.",
+        image: `${SKETCH}/king-iron-works-design-project1-sketch-rough.png`,
+      },
+      {
+        title: "The Refined Design",
+        subtitle: "Every feather, every scroll, planned in detail",
+        description: "The rough concept evolved into an intricate architectural rendering. Each peacock plume panel was drawn individually. The scrollwork connecting them was designed to flow like vines. The balcony railing above was designed to mirror the staircase below. At this stage, every weld point, every connection, every curve is planned.",
+        image: `${SKETCH}/king-iron-works-design-project1-sketch-refined.png`,
+      },
+      {
+        title: "Approved for Fabrication",
+        subtitle: "The blueprint for a masterpiece",
+        description: "The final approved drawing that our fabrication team worked from. Look closely — you can see every peacock feather panel, every scroll, every volute at the handrail termination. This drawing hung on the shop wall for months as our team brought it to life, one piece at a time.",
+        image: `${SKETCH}/king-iron-works-design-project1-design.jpg`,
+      },
+      {
+        title: "Building the Spine",
+        subtitle: "The curved stringer takes shape",
+        description: "Before any ornamental work begins, we build the structural backbone. The curved stringer — a massive steel frame that follows the exact arc of the concrete staircase — is fabricated using a custom wood jig in our shop. Every degree of the curve must match the architect's specifications precisely.",
+        image: `${SHOP}/king-iron-works-shop-curved-stringer-install.jpg`,
+      },
+      {
+        title: "Forging the Details",
+        subtitle: "1,200 hours of handwork",
+        description: "Each peacock plume is forged from flat steel bar stock, heated in the forge, and shaped over the anvil by hand. The scrollwork is bent using traditional blacksmithing techniques passed down through generations. Gold leaf accents are applied to every scroll and leaf — over 300 individual pieces across the full railing.",
+        image: `${SHOP}/king-iron-works-shop-curved-frame-fabrication.jpg`,
+      },
+      {
+        title: "The Masterpiece Revealed",
+        subtitle: "The staircase that stops every visitor mid-sentence",
+        description: "Two stories of flowing ironwork sweep through a marble grand foyer. The peacock plumes catch light from the crystal chandelier above. The gold leaf accents glow warm against the black iron. The walnut handrail follows one continuous curve from the marble floor to the second-story balcony. This isn't a staircase — it's the reason we exist.",
+        image: `${IMG}/Project 2/king-iron-works-staircase-curved-project1-hero.jpg`,
+      },
     ],
-    highlights: [
-      "Hand-forged peacock feather scrollwork — one-of-a-kind design",
-      "Gold leaf accents on every scroll and leaf detail",
-      "Two-story sweeping curve with matching balcony railing",
-      "Over 1,200 hours of master craftsmanship",
-      "Marble foyer with crystal chandelier integration",
-      "Custom walnut handrail with volute termination",
+    challenges: [
+      {
+        title: "One-of-a-Kind Peacock Panels",
+        description: "No reference existed for what the homeowner wanted. Our designer created the peacock feather motif from scratch — each panel is a unique composition of plumes, scrolls, and organic curves. There's nothing else like it anywhere in the world.",
+      },
+      {
+        title: "Two-Story Continuous Flow",
+        description: "The railing sweeps from the ground floor up to the second-story balcony without a single visual break. This required the railing to be fabricated in sections that connect with invisible joints — a feat of engineering that makes the entire piece look forged from one continuous ribbon of steel.",
+      },
+      {
+        title: "Gold Leaf at Scale",
+        description: "Over 300 individual gold leaf accents across the full installation. Each piece of gold leaf is thinner than a human hair and tears at the slightest mishandling. Our finishing specialist spent three weeks on gold leaf application alone — each accent applied by hand with a gilding brush.",
+      },
+      {
+        title: "Matching the Marble",
+        description: "The ironwork had to complement the Italian marble floor and treads without competing. We tested dozens of finish combinations before settling on satin black iron with warm-tone gold leaf — a pairing that makes both the marble and the ironwork shine.",
+      },
+    ],
+    stats: [
+      { label: "Fabrication Hours", value: "1,200+" },
+      { label: "Peacock Panels", value: "One-of-a-Kind" },
+      { label: "Gold Leaf Pieces", value: "300+" },
+      { label: "Total Photos", value: "64" },
     ],
     heroImage: `${IMG}/Project 2/king-iron-works-staircase-curved-project1-hero.jpg`,
     galleryImages: [
@@ -237,36 +345,99 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
         </div>
       </section>
 
-      {/* Story */}
+      {/* Intro */}
+      <section className="py-16 lg:py-24 bg-background">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              {project.intro}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Journey — From Sketch to Reality */}
+      <section className="bg-sidebar text-sidebar-foreground">
+        <div className="container py-16 lg:py-24">
+          <div className="max-w-3xl mx-auto text-center mb-16">
+            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>The Journey</p>
+            <h2 className="text-display text-3xl md:text-5xl">From Sketch to Reality</h2>
+          </div>
+        </div>
+
+        {project.journey.map((phase, i) => {
+          const isEven = i % 2 === 0;
+          return (
+            <div key={i} className="relative">
+              <div className="container">
+                <div className={`flex flex-col ${isEven ? "lg:flex-row" : "lg:flex-row-reverse"} gap-0 lg:gap-16 items-center pb-16 lg:pb-24`}>
+                  {/* Image */}
+                  <div className="w-full lg:w-1/2 mb-8 lg:mb-0">
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={phase.image}
+                        alt={phase.title}
+                        className="w-full h-[400px] sm:h-[500px] object-cover"
+                        loading={i < 2 ? "eager" : "lazy"}
+                      />
+                      <div className="absolute top-4 left-4 bg-accent text-accent-foreground px-3 py-1 text-xs font-display font-bold">
+                        {String(i + 1).padStart(2, "0")} / {String(project.journey.length).padStart(2, "0")}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Text */}
+                  <div className="w-full lg:w-1/2 px-1 lg:px-0">
+                    <p className="text-accent text-xs font-display font-bold tracking-wider uppercase mb-2">
+                      {phase.subtitle}
+                    </p>
+                    <h3 className="text-display text-2xl md:text-3xl mb-4">
+                      {phase.title}
+                    </h3>
+                    <p className="text-sidebar-foreground/70 leading-relaxed text-base md:text-lg">
+                      {phase.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+      {/* Challenges */}
       <section className="py-16 lg:py-24 bg-background">
         <div className="container">
           <div className="max-w-3xl mx-auto">
-            <p className="section-eyebrow mb-4">The Story</p>
-            <div className="space-y-6">
-              {project.description.map((p, i) => (
-                <p key={i} className="text-lg text-muted-foreground leading-relaxed">{p}</p>
+            <p className="section-eyebrow mb-4">The Hard Parts</p>
+            <h2 className="text-display text-3xl md:text-4xl mb-12">What Made This Project Exceptional</h2>
+            <div className="space-y-8">
+              {project.challenges.map((c, i) => (
+                <div key={i} className="flex gap-5">
+                  <div className="w-10 h-10 bg-accent/10 flex items-center justify-center shrink-0 mt-1">
+                    <span className="text-accent font-display font-bold text-sm">{String(i + 1).padStart(2, "0")}</span>
+                  </div>
+                  <div>
+                    <h3 className="text-display text-lg md:text-xl mb-2">{c.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{c.description}</p>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Highlights */}
-      <section className="py-16 lg:py-24 bg-sidebar text-sidebar-foreground">
+      {/* Stats */}
+      <section className="py-16 lg:py-20 bg-accent text-accent-foreground">
         <div className="container">
-          <div className="max-w-3xl mx-auto">
-            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>Project Highlights</p>
-            <h2 className="text-display text-2xl md:text-4xl mb-8">What Makes This Special</h2>
-            <div className="space-y-4">
-              {project.highlights.map((h, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-accent font-display font-bold text-sm">{String(i + 1).padStart(2, "0")}</span>
-                  </div>
-                  <p className="text-sidebar-foreground/80 leading-relaxed">{h}</p>
-                </div>
-              ))}
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {project.stats.map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-3xl lg:text-4xl font-display font-bold mb-1">{stat.value}</div>
+                <div className="text-sm opacity-80">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -276,12 +447,12 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
         <div className="container">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-10">
             <div>
-              <p className="section-eyebrow mb-4">Gallery</p>
+              <p className="section-eyebrow mb-4">Full Gallery</p>
               <h2 className="text-display text-2xl md:text-4xl">
-                {project.galleryImages.length} Photos
+                Every Angle, Every Detail
               </h2>
             </div>
-            <p className="text-sm text-muted-foreground mt-2 md:mt-0">Tap any image to view full size</p>
+            <p className="text-sm text-muted-foreground mt-2 md:mt-0">{project.galleryImages.length} photos — tap to view full size</p>
           </div>
 
           <div className="columns-2 md:columns-3 lg:columns-4 gap-3">
@@ -304,25 +475,26 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
       </section>
 
       {/* CTA */}
-      <section className="py-16 lg:py-24 bg-accent text-accent-foreground">
+      <section className="py-16 lg:py-24 bg-sidebar text-sidebar-foreground">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center">
+            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>Your Turn</p>
             <h2 className="text-display text-2xl md:text-4xl mb-4">
-              Want a Staircase Like This?
+              What Will Your Staircase Look Like?
             </h2>
-            <p className="text-lg opacity-80 mb-8 leading-relaxed">
+            <p className="text-lg text-sidebar-foreground/60 mb-8 leading-relaxed">
               Every masterpiece starts with a conversation. Tell us your vision —
-              we'll engineer and forge it into reality.
+              we'll sketch it, engineer it, forge it, and install it.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
-                <Button size="lg" className="bg-sidebar text-sidebar-foreground hover:bg-sidebar/90 font-display font-bold px-8 py-5">
-                  Get a Free Quote
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold px-8 py-5">
+                  Start Your Project
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
               <PhoneLink tel={localPhone.tel}>
-                <Button size="lg" variant="outline" className="border-accent-foreground/30 text-accent-foreground hover:bg-accent-foreground/10 font-display font-bold px-8 py-5">
+                <Button size="lg" variant="outline" className="border-sidebar-foreground/20 text-sidebar-foreground hover:bg-sidebar-foreground/10 font-display font-bold px-8 py-5">
                   <Phone className="mr-2 w-4 h-4" />
                   Call Now
                 </Button>
@@ -334,9 +506,9 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
 
       {/* Other Project */}
       {otherProject && (
-        <section className="py-16 lg:py-24 bg-sidebar text-sidebar-foreground">
+        <section className="py-16 lg:py-24 bg-background">
           <div className="container">
-            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>See Also</p>
+            <p className="section-eyebrow mb-4">See Also</p>
             <Link href={`/projects/${otherProject.slug}`}>
               <div className="relative group overflow-hidden rounded-sm cursor-pointer max-w-4xl mx-auto">
                 <img
@@ -350,7 +522,7 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
                   <h3 className="text-display text-2xl md:text-3xl text-white mb-2">{otherProject.title}</h3>
                   <p className="text-sm text-white/60 mb-4 max-w-lg">{otherProject.subtitle}</p>
                   <span className="inline-flex items-center gap-2 text-sm font-display font-bold text-accent group-hover:gap-3 transition-all">
-                    View Project <ArrowRight className="w-4 h-4" />
+                    View This Project <ArrowRight className="w-4 h-4" />
                   </span>
                 </div>
               </div>
