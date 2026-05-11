@@ -49,30 +49,40 @@ function StructureSelector({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(201,169,110,0.05)_0%,_transparent_70%)]" />
         <div className="relative z-10 text-center px-6 max-w-3xl">
           <motion.p
-            className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mb-6"
+            className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            Step 1 of 3
+            New England's Premier Staircase Contractor
           </motion.p>
           <motion.h1
-            className="font-display text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[0.95] mb-6"
+            className="font-display text-4xl md:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[0.95] mb-5"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.1 }}
           >
-            Choose Your{" "}
-            <em className="italic text-accent font-display">Structure</em>
+            Design Your Dream{" "}
+            <em className="italic text-accent font-display">Staircase</em>
           </motion.h1>
           <motion.p
-            className="text-base md:text-lg text-white/35 max-w-xl mx-auto mb-10"
+            className="text-sm md:text-base text-white/40 max-w-lg mx-auto mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Every dream staircase starts with a shape. Scroll to explore, then
-            tap the one that speaks to you.
+            20+ years of master craftsmanship. Thousands of staircases built.
+            The largest custom staircase fabricator in New England — from our
+            state-of-the-art Everett facility to your home.
+          </motion.p>
+          <motion.p
+            className="text-xs text-white/25 max-w-md mx-auto mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35 }}
+          >
+            Choose your structure, finish, and railing — we'll engineer and
+            forge it into reality.
           </motion.p>
           <motion.button
             onClick={scrollToFirst}
