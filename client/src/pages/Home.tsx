@@ -14,9 +14,14 @@ const HUB = "/images/staircase-hub";
 
 const heroSlides = [
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-curved-ultra-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-curved-ultra-luxury.jpg`,
-    alt: "Ultra-luxury curved staircase with hand-forged ornamental balustrade and gold leaf accents",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-curved-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-curved-staircase.jpg`,
+    alt: "Sweeping curved staircase — King Iron Works signature craftsmanship",
+  },
+  {
+    desktop: `${HUB}/heroes/desktop/king-iron-works-floating-cantilever-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-floating-cantilever-staircase.jpg`,
+    alt: "Floating cantilever staircase — gravity-defying engineering and design",
   },
   {
     desktop: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
@@ -24,57 +29,58 @@ const heroSlides = [
     alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
   },
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-cantilever-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-cantilever-luxury.jpg`,
-    alt: "Luxury floating cantilever staircase with frameless glass railing and LED lighting",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-spiral-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-spiral-staircase.jpg`,
+    alt: "Sculptural spiral staircase — a work of art that happens to be a staircase",
   },
   {
-    desktop: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
-    mobile: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
-    alt: "The master craftsman with his finished curved staircase masterpiece",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-mono-stringer-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-mono-stringer-staircase.jpg`,
+    alt: "Mono-stringer staircase — one bold steel spine supporting every step",
   },
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-spiral-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-spiral-luxury.jpg`,
-    alt: "Luxury spiral staircase with curved glass railing and LED under-tread lighting",
-  },
-  {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-mono-modern.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-mono-modern.jpg`,
-    alt: "Modern mono-stringer staircase with cable railing and open risers",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-traditional-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-traditional-staircase.jpg`,
+    alt: "Traditional staircase elevated to stunning — timeless craft done right",
   },
 ];
 
 const featuredWork = [
   {
-    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg",
-    title: "Fire Escape Installation",
-    category: "Commercial",
+    image: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
+    title: "Grand Ornamental Staircase",
+    category: "Staircases",
+    link: "/portfolio/staircases",
+  },
+  {
+    image: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-1.jpg",
+    title: "Modern Farmhouse Railing",
+    category: "Railings",
+    link: "/portfolio/railings",
   },
   {
     image: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg",
-    title: "Custom Ornamental Gate",
-    category: "Residential",
+    title: "Ornamental Entry Gate",
+    category: "Gates",
+    link: "/portfolio/gates",
   },
   {
-    image: "/images/portfolio-organized/Interior-Railing/king-iron-works-interior-railing-grid-pattern.jpg",
-    title: "Interior Railing",
-    category: "Residential",
+    image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg",
+    title: "Fire Escape System",
+    category: "Fire Escapes",
+    link: "/portfolio/fire-escapes",
   },
   {
-    image: "/images/portfolio-organized/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-stone-4.jpg",
-    title: "Exterior Railing",
-    category: "Residential",
+    image: "/images/portfolio-organized/Balcony/king-iron-works-balcony-ornamental-boston-brick.jpg",
+    title: "Boston Balcony Railing",
+    category: "Balconies",
+    link: "/portfolio/balconies",
   },
   {
-    image: "/images/portfolio-organized/Before-After/king-iron-works-before-after-curved-staircase-before.jpg",
-    title: "Historic Restoration",
-    category: "Commercial",
-  },
-  {
-    image: "/images/portfolio-organized/Gates/king-iron-works-iron-glass-entry-doors.jpg",
-    title: "Iron & Glass Doors",
-    category: "Residential",
+    image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-1.jpg",
+    title: "Commercial Steel Fabrication",
+    category: "Structural Steel",
+    link: "/portfolio/structural-steel",
   },
 ];
 
@@ -190,48 +196,78 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Services Section */}
+      {/* More Than Staircases — Marketing Section */}
       <section className="py-24 lg:py-32 bg-background">
         <div className="container">
-          <div className="text-center mb-20">
-            <p className="section-eyebrow mb-4">What We Do</p>
-            <h2 className="text-display text-3xl md:text-5xl mb-6">Crafted by Hand,<br />Built to Last</h2>
+          <div className="max-w-4xl mx-auto text-center mb-16">
+            <p className="section-eyebrow mb-4">More Than Staircases</p>
+            <h2 className="text-display text-3xl md:text-5xl mb-6">
+              If We Can Make Steel Dance,<br />
+              <span className="text-accent">Imagine What We Can Do for You.</span>
+            </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              From custom staircases to structural steel, every piece leaves our Everett shop
-              with the precision and care of twenty years of mastery.
+              Our staircases stop people mid-sentence — but that's just where we start.
+              The same master craftsmen who forge luxury staircases also build the railings,
+              gates, balconies, and fire escapes that protect and beautify properties across
+              nine states. If it's steel, we make it extraordinary.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {[
               {
-                title: "Custom Staircases & Railings",
-                description: "Curved, floating, spiral, and traditional staircases. Glass, cable, and ornamental iron railings. Designed to your exact vision.",
-                link: "/staircases",
+                title: "Railings",
+                desc: "Interior, exterior, cable, and deck railings that elevate every entrance",
+                image: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-1.jpg",
+                link: "/services",
               },
               {
-                title: "Fire Escape Services",
-                description: "Licensed installation, repair, inspection, and MA State Building Code certification. Emergency services available across New England.",
+                title: "Gates & Fences",
+                desc: "Custom entry gates, driveway gates, and ornamental fencing",
+                image: "/images/portfolio-organized/Gates/king-iron-works-gate-ornamental-black-gold-scrollwork.jpg",
+                link: "/gate",
+              },
+              {
+                title: "Fire Escapes",
+                desc: "Licensed MA installer — inspection, repair, and new installation",
+                image: "/images/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-website-VrmKyMuo.jpg",
                 link: "/fire-escape",
               },
               {
-                title: "Structural Steel & Restoration",
-                description: "Commercial fabrication, historic building restoration, and custom metalwork. Period-accurate replication for landmark properties.",
+                title: "Structural Steel",
+                desc: "Commercial fabrication, historic restoration, and custom metalwork",
+                image: "/images/portfolio-organized/Structural-Steel/king-iron-works-structural-steel-1.jpg",
                 link: "/structural-steel",
               },
-            ].map((service, i) => (
-              <Link key={i} href={service.link}>
-                <div className="group cursor-pointer">
-                  <div className="w-12 h-[2px] bg-accent mb-8 group-hover:w-20 transition-all duration-300" />
-                  <h3 className="text-display text-xl md:text-2xl mb-4 group-hover:text-accent transition-colors">{service.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-6">{service.description}</p>
-                  <span className="inline-flex items-center gap-2 text-sm font-display font-bold text-accent">
-                    Learn More
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                  </span>
+            ].map((item, i) => (
+              <Link key={i} href={item.link}>
+                <div className="group cursor-pointer relative overflow-hidden rounded-sm">
+                  <img
+                    src={item.image}
+                    alt={item.title}
+                    className="w-full h-[280px] sm:h-[320px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+                    <h3 className="text-display text-base sm:text-lg text-white mb-1">{item.title}</h3>
+                    <p className="text-xs sm:text-sm text-white/60 leading-snug mb-3 line-clamp-2">{item.desc}</p>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-display font-bold text-accent group-hover:gap-2.5 transition-all">
+                      Explore <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
                 </div>
               </Link>
             ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/services">
+              <Button size="lg" variant="outline" className="border-border hover:border-accent hover:bg-accent hover:text-accent-foreground font-display font-bold">
+                View All Services
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -274,19 +310,21 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {featuredWork.map((work, i) => (
-              <div key={i} className="relative group overflow-hidden cursor-pointer">
-                <img
-                  src={work.image}
-                  alt={work.title}
-                  className="w-full h-[380px] object-cover transition-transform duration-700 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                  <p className="text-xs text-accent font-bold tracking-wider uppercase mb-1">{work.category}</p>
-                  <h3 className="text-lg font-display font-bold text-white">{work.title}</h3>
+              <Link key={i} href={work.link}>
+                <div className="relative group overflow-hidden cursor-pointer">
+                  <img
+                    src={work.image}
+                    alt={work.title}
+                    className="w-full h-[380px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6 translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <p className="text-xs text-accent font-bold tracking-wider uppercase mb-1">{work.category}</p>
+                    <h3 className="text-lg font-display font-bold text-white">{work.title}</h3>
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

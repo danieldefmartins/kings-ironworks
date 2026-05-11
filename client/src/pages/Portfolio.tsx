@@ -14,148 +14,30 @@ import {
 import { Button } from "@/components/ui/button";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 import { PhoneLink } from "@/components/PhoneLink";
+import {
+  categories as portfolioCategories,
+  getCategoryLabel,
+} from "@/lib/portfolio-data";
 
 // ---------------------------------------------------------------------------
-// Data
+// Types & Data
 // ---------------------------------------------------------------------------
 
-const IMG = "/images/portfolio-organized";
-const LOCAL = "/images/portfolio";
+interface Photo {
+  src: string;
+  category: string;
+}
 
-interface Photo { src: string; alt: string; category: string; }
-
-const categories = [
+const categoryTabs = [
   { id: "all", label: "All" },
-  { id: "staircase", label: "Staircases" },
-  { id: "cable-railing", label: "Cable Railings" },
-  { id: "structural-steel", label: "Structural Steel" },
-  { id: "gate", label: "Gates" },
-  { id: "window-well", label: "Window Well" },
-  { id: "window", label: "Windows" },
-  { id: "balcony", label: "Balcony" },
-  { id: "interior-railing", label: "Interior Railings" },
-  { id: "fire-escape", label: "Fire Escapes" },
-  { id: "deck-railing", label: "Deck Railings" },
-  { id: "before-after", label: "Before & After" },
-  { id: "handrail", label: "Handrail" },
-  { id: "exterior-railing", label: "Exterior Railings" },
-  { id: "restoration", label: "Restoration" },
+  ...portfolioCategories
+    .filter((c) => c.photos.length > 0)
+    .map((c) => ({ id: c.id, label: c.label })),
 ];
 
-const NEW = "/images/new-portfolio/staircase";
-
-const photos: Photo[] = [
-  // Staircases — curated from 605 photos
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-spiral-above.jpg`, alt: "Where artistry meets architecture \u2014 a spiral masterpiece viewed from above" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-overhead.jpg`, alt: "Hand-forged scrollwork that turns a staircase into a masterpiece" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-marble-foyer.jpg`, alt: "Two stories of hand-forged artistry winding through a luxury foyer" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-completed.jpg`, alt: "The grand entrance redefined \u2014 iron, marble, and crystal in harmony" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-gold-accents.jpg`, alt: "Every scroll tells a story \u2014 over 1,000 hours of hand-forged ironwork" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-peacock-side.jpg`, alt: "Where old-world artistry meets new-world luxury" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-ornamental-marble-foyer.jpg`, alt: "A grand curved staircase that commands the room from the moment you walk in" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-scrollwork-detail.jpg`, alt: "Every curve tells a story \u2014 forged copper leaves and flowing iron in perfect harmony" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-railing-detail.jpg`, alt: "The details that stop you mid-step \u2014 hand-forged artistry you can feel" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-scrollwork-closeup.jpg`, alt: "Where old-world craftsmanship meets new-world luxury \u2014 our signature curved railing" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-modern-rod-railing.jpg`, alt: "A sculptural spiral that commands every room it enters" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-industrial-plant-wall.jpg`, alt: "Raw steel, refined design \u2014 an industrial spiral that owns the room" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-modern-waterfront.jpg`, alt: "When steel curves like silk \u2014 our signature curved railing" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-glass-mono-stringer.jpg`, alt: "Where engineering meets elegance \u2014 a mono-stringer floating staircase wrapped in glass" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-living-room.jpg`, alt: "Looking down through glass \u2014 an open staircase that connects every level" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-led-underlighting.jpg`, alt: "Every step glows \u2014 LED-lit floating treads that redefine what a staircase can be" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-rod-railing-led.jpg`, alt: "Floating treads meet LED lighting \u2014 modern luxury that glows from within" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-window-wall.jpg`, alt: "A bird's-eye view of floating treads bathed in light \u2014 architecture as art" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-switchback-steel-oak.jpg`, alt: "Bold steel, warm oak \u2014 a switchback staircase that commands the room" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-switchback-three-story.jpg`, alt: "Architectural drama from basement to sky \u2014 a three-story statement piece" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-glass-stainless.jpg`, alt: "Stainless steel and glass turn sunlight into sculpture" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-full-glass-panels.jpg`, alt: "Gold-tone steel and glass \u2014 luxury detailing that elevates every entrance" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-straight-rod-railing.jpg`, alt: "Clean lines, bold contrast \u2014 the modern staircase that anchors a luxury home" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-two-story-luxury.jpg`, alt: "Three stories of floating perfection \u2014 oak treads, steel spine, glass railings" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-cable-shiplap.jpg`, alt: "Modern farmhouse meets industrial steel \u2014 floating treads on a shiplap backdrop" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-cable-detail.jpg`, alt: "Thick-cut oak floating on a single steel spine \u2014 the staircase that anchors the room" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-scandinavian.jpg`, alt: "Designed to float, built to last \u2014 modern craftsmanship at its finest" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-lifestyle-greenery.jpg`, alt: "Clean lines, open living \u2014 a staircase built for the modern home" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-mono-lifestyle.jpg`, alt: "Three flights of floating precision \u2014 steel and wood in perfect balance" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-cantilever-dark.jpg`, alt: "Glass, steel, and light wood \u2014 a staircase that disappears into the architecture" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-honeycomb-laser-cut.jpg`, alt: "Where glass meets steel \u2014 a floating staircase bathed in natural light" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-rustic-rod-railing.jpg`, alt: "Reclaimed timber, forged steel \u2014 where rustic warmth meets modern craft" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-mono-install.jpg`, alt: "Step into the glow \u2014 LED-lit floating treads for dramatic nighttime impact" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-modern-zigzag-stringer.jpg`, alt: "The zigzag stringer \u2014 structural art hiding in plain sight" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-medallion-construction.jpg`, alt: "A grand entrance deserves grand ironwork \u2014 sweeping scrolls and gold accents" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-vine-leaf-panels.jpg`, alt: "When the railing is the centerpiece \u2014 ornate ironwork commanding a double-height foyer" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-rod-railing-windows.jpg`, alt: "Floating treads meet horizontal iron \u2014 contemporary railing that lets light pour through" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-curved-pre-finish.jpg`, alt: "Where it all begins \u2014 sparks fly as our craftsmen shape raw steel into art" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-curved-project1-hero.jpg`, alt: "Crafted by hand in our shop \u2014 a curved stringer ready for its new home" },
-  { category: "staircase", src: `${NEW}/king-iron-works-staircase-floating-cantilever-planters.jpg`, alt: "Born in the shop, built for a lifetime \u2014 every staircase starts with raw steel" },
-  // Structural Steel
-  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-1.jpg`, alt: "Structural steel fabrication" },
-  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-2.jpg`, alt: "Commercial structural steel installation" },
-  { category: "structural-steel", src: `${LOCAL}/structural-steel/structural-steel-3.jpg`, alt: "Steel beam construction" },
-  { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-1.jpg`, alt: "Custom cable railing system" },
-  { category: "cable-railing", src: `${LOCAL}/cable-railing/cable-railing-2.jpg`, alt: "Cable railing installation" },
-  { category: "fire-escape", src: `${IMG}/VrmKyMuovdgoFRfz.JPG`, alt: "Multi-story fire escape installation" },
-  { category: "fire-escape", src: `${IMG}/PmBUKqXwdDkeqflj.JPG`, alt: "Fire escape structural repair" },
-  { category: "fire-escape", src: `${IMG}/LIIMwNaIvkbuwmQE.JPG`, alt: "Commercial fire escape system" },
-  { category: "fire-escape", src: `${IMG}/YgqFSongHOumLnae.JPG`, alt: "Fire escape with landing platform" },
-  { category: "fire-escape", src: `${IMG}/aqPLHeShxXujREPn.JPG`, alt: "Precision fire escape welding" },
-  { category: "fire-escape", src: `${IMG}/jypAuoqruUncOLCs.JPG`, alt: "Fire escape platform installation" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-1.jpg`, alt: "Fire escape ladder and platform system" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-2.jpg`, alt: "Residential fire escape installation" },
-  { category: "fire-escape", src: `${LOCAL}/fire-escape/fire-escape-3.jpg`, alt: "Fire escape stairway fabrication" },
-  { category: "gate", src: `${IMG}/ldKpYAFGAsEGkCVX.JPG`, alt: "Ornamental wrought iron gate" },
-  { category: "gate", src: `${IMG}/aoFXjvosIbfREama.JPG`, alt: "Hand-forged estate gate" },
-  { category: "gate", src: `${IMG}/AzTrmVJOTgNkaNYM.JPG`, alt: "Custom security gate" },
-  { category: "gate", src: `${IMG}/ydWQkwicmrXamlMe.JPG`, alt: "Traditional garden gate" },
-  { category: "gate", src: `${IMG}/JjzdorsfDKYfzhbn.JPG`, alt: "Heavy-duty driveway gate" },
-  { category: "gate", src: `${IMG}/eXGgruXrInmeQsTe.JPG`, alt: "Decorative pedestrian gate" },
-  { category: "gate", src: `${LOCAL}/gate/gate-1.jpg`, alt: "Custom iron gate fabrication" },
-  { category: "gate", src: `${LOCAL}/gate/gate-2.jpg`, alt: "Ornamental garden gate" },
-  { category: "gate", src: `${LOCAL}/gate/gate-3.jpg`, alt: "Residential entry gate" },
-  { category: "interior-railing", src: `${IMG}/apLcldtAeVXzDTCh.JPG`, alt: "Custom interior staircase railing" },
-  { category: "interior-railing", src: `${IMG}/YrJVPkpgGfMkWRdT.JPG`, alt: "Elegant spiral staircase railing" },
-  { category: "interior-railing", src: `${IMG}/qOPbckSMBFnciBif.JPG`, alt: "Modern interior railing" },
-  { category: "interior-railing", src: `${IMG}/jSJklBUsKvwOXBaZ.JPG`, alt: "Residential handrail system" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-1.jpg`, alt: "Custom staircase railing design" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-2.jpg`, alt: "Interior iron balustrade" },
-  { category: "interior-railing", src: `${LOCAL}/interior-railing/interior-railings-3.jpg`, alt: "Wrought iron staircase handrail" },
-  { category: "exterior-railing", src: `${IMG}/KVrQsNoDvGzMAnwj.JPG`, alt: "Weather-resistant exterior railing" },
-  { category: "exterior-railing", src: `${IMG}/BtcNBKAOOIKUZnLV.JPG`, alt: "Powder-coated deck railing" },
-  { category: "exterior-railing", src: `${IMG}/gujHFKlEnadUYTxL.JPG`, alt: "Classic New England porch railing" },
-  { category: "exterior-railing", src: `${IMG}/IrppZGXOKBxchPDP.JPG`, alt: "Ornamental balcony railing" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-1.jpg`, alt: "Custom exterior porch railing" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-2.jpg`, alt: "Wrought iron exterior handrail" },
-  { category: "exterior-railing", src: `${LOCAL}/exterior-railing/exterior-railing-3.jpg`, alt: "Decorative exterior balustrade" },
-  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-1.jpg`, alt: "Custom deck railing system" },
-  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-2.jpg`, alt: "Iron deck railing installation" },
-  { category: "deck-railing", src: `${LOCAL}/deck-railing/deck-railings-3.jpg`, alt: "Residential deck railing" },
-  { category: "balcony", src: `${LOCAL}/balcony/balcony-1.jpg`, alt: "Custom balcony railing" },
-  { category: "balcony", src: `${LOCAL}/balcony/balcony-2.jpg`, alt: "Ornamental balcony ironwork" },
-  { category: "balcony", src: `${LOCAL}/balcony/balcony-3.jpg`, alt: "Residential balcony installation" },
-  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-1.jpg`, alt: "Pipe handrail installation" },
-  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-2.jpg`, alt: "Commercial pipe railing system" },
-  { category: "handrail", src: `${LOCAL}/handrail/pipe-handrail-3.jpg`, alt: "ADA-compliant pipe handrail" },
-  { category: "restoration", src: `${IMG}/buMcGDTPsdJzspea.jpg`, alt: "Historic ironwork restoration detail" },
-  { category: "restoration", src: `${IMG}/ZtrYnxwJFDZSmXOw.jpg`, alt: "Ornamental iron restoration" },
-  { category: "restoration", src: `${IMG}/wFpGlEabFZwcJrgX.jpg`, alt: "Boston building restoration" },
-  { category: "restoration", src: `${IMG}/XBlMdPEjsPJdjLFa.jpg`, alt: "Historic gate restoration" },
-  { category: "restoration", src: `${IMG}/NgBghqHCKpNCJSJs.jpg`, alt: "Landmark architectural ironwork" },
-  { category: "restoration", src: `${IMG}/rsujTYOxZArFMYMR.jpg`, alt: "Victorian period ironwork" },
-  { category: "restoration", src: `${IMG}/dgqYFGcJuAYrvKtp.jpg`, alt: "Historic railing replication" },
-  { category: "restoration", src: `${IMG}/DPcQhceaLWuEDbpK.jpg`, alt: "South End brownstone restoration" },
-  { category: "restoration", src: `${IMG}/SYTGvQjSziYdBQab.jpg`, alt: "Beacon Hill historic district" },
-  { category: "restoration", src: `${IMG}/GeAuXhLZDbFMhTPk.jpg`, alt: "Heritage building craftsmanship" },
-  { category: "restoration", src: `${IMG}/egdmCLWLFeuifEJv.jpg`, alt: "Custom restoration of unavailable designs" },
-  { category: "restoration", src: `${LOCAL}/restoration/restoration-1.jpg`, alt: "Historic ironwork restoration project" },
-  { category: "window-well", src: `${LOCAL}/window-well/window-well-1.jpg`, alt: "Custom window well cover" },
-  { category: "window-well", src: `${LOCAL}/window-well/window-well-2.jpg`, alt: "Iron window well grate" },
-  { category: "window-well", src: `${LOCAL}/window-well/window-well-3.jpg`, alt: "Window well guard installation" },
-  { category: "window-well", src: `${LOCAL}/window-well/window-well-4.jpg`, alt: "Decorative window well cover" },
-  { category: "window", src: `${LOCAL}/window/window-1.jpg`, alt: "Custom iron window guard" },
-  { category: "window", src: `${LOCAL}/window/window-2.jpg`, alt: "Decorative window security grille" },
-  { category: "window", src: `${LOCAL}/window/window-3.jpg`, alt: "Iron window frame installation" },
-  { category: "before-after", src: `${LOCAL}/before-after/before-after-1.jpg`, alt: "Ironwork restoration before and after" },
-  { category: "before-after", src: `${LOCAL}/before-after/before-after-2.jpg`, alt: "Railing repair transformation" },
-  { category: "before-after", src: `${LOCAL}/before-after/before-after-3.jpg`, alt: "Complete ironwork renovation" },
-];
+const photos: Photo[] = portfolioCategories.flatMap((c) =>
+  c.photos.map((src) => ({ src, category: c.id })),
+);
 
 // ---------------------------------------------------------------------------
 // CTA + constants
@@ -164,15 +46,11 @@ const photos: Photo[] = [
 const ctaMessages = [
   { headline: "Love what you see?", body: "Every piece is custom-built to your exact vision.", cta: "Free Consultation", href: "/contact", icon: Calendar },
   { headline: "Picture this at your home?", body: "20+ years of craftsmanship. Yours could be next.", cta: "Get a Free Quote", href: "/contact", icon: ArrowRight },
-  { headline: "Ready to start?", body: "From conversation to masterpiece \u2014 we make it easy.", cta: "Book Appointment", href: "/contact", icon: Sparkles },
+  { headline: "Ready to start?", body: "From conversation to masterpiece — we make it easy.", cta: "Book Appointment", href: "/contact", icon: Sparkles },
 ];
 
 const BATCH_SIZE = 24;
 const CATEGORY_SUGGEST_AFTER = 18;
-
-function getCategoryLabel(id: string) {
-  return categories.find((c) => c.id === id)?.label ?? id;
-}
 
 // ---------------------------------------------------------------------------
 // Distribute items into columns (Pinterest shortest-column-first)
@@ -180,26 +58,21 @@ function getCategoryLabel(id: string) {
 
 type MasonryItem = { type: "photo"; photo: Photo; globalIndex: number } | { type: "cta"; ctaIndex: number };
 
-// Staggered CTA insertion intervals per column — different for each column
-// so images never align side by side
-// Column indices that get a CTA prepended before any photos (breaks first-row alignment)
-const COLUMNS_WITH_INITIAL_CTA = [1]; // col B starts offset
-const COLUMN_CTA_OFFSETS = [3, 6, 4, 7]; // first CTA after N photos
-const COLUMN_CTA_INTERVALS = [5, 7, 6, 8]; // then every N photos after that
+const COLUMNS_WITH_INITIAL_CTA = [1];
+const COLUMN_CTA_OFFSETS = [3, 6, 4, 7];
+const COLUMN_CTA_INTERVALS = [5, 7, 6, 8];
 
 function distributeToColumns(items: MasonryItem[], colCount: number): MasonryItem[][] {
   const cols: MasonryItem[][] = Array.from({ length: colCount }, () => []);
   const photoCountPerCol = new Array(colCount).fill(0);
   let ctaCounter = 0;
 
-  // Prepend a CTA to specific columns so the very first row is already offset
   for (const colIdx of COLUMNS_WITH_INITIAL_CTA) {
     if (colIdx < colCount) {
       cols[colIdx].push({ type: "cta", ctaIndex: ctaCounter++ });
     }
   }
 
-  // Round-robin distribute photos into columns
   items.forEach((item, i) => {
     const col = i % colCount;
     cols[col].push(item);
@@ -247,7 +120,7 @@ function MasonryImage({ photo, index, onClick }: { photo: Photo; index: number; 
         <img
           ref={imgRef}
           src={photo.src}
-          alt={photo.alt}
+          alt={getCategoryLabel(photo.category)}
           loading={index < 8 ? "eager" : "lazy"}
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
@@ -255,9 +128,6 @@ function MasonryImage({ photo, index, onClick }: { photo: Photo; index: number; 
         />
       </div>
       <div className="mt-1.5 px-0.5">
-        <p className="text-[13px] font-display font-bold text-foreground leading-snug line-clamp-2">
-          {photo.alt}
-        </p>
         <p className="text-[11px] text-muted-foreground mt-0.5">
           {getCategoryLabel(photo.category)}
         </p>
@@ -296,8 +166,8 @@ function InlineCTA({ index }: { index: number }) {
 // ---------------------------------------------------------------------------
 
 function CategorySuggestions({ activeCategory, onSelect }: { activeCategory: string; onSelect: (id: string) => void }) {
-  const otherCategories = categories.filter(
-    (c) => c.id !== "all" && c.id !== activeCategory && photos.some((p) => p.category === c.id),
+  const otherCategories = categoryTabs.filter(
+    (c) => c.id !== "all" && c.id !== activeCategory,
   ).slice(0, 6);
 
   if (otherCategories.length === 0) return null;
@@ -386,12 +256,12 @@ function Lightbox({ photos: lbPhotos, initialIndex, onClose }: { photos: Photo[]
       <div className="flex-1 flex items-center justify-center relative overflow-hidden" onClick={onClose}>
         <button onClick={(e) => { e.stopPropagation(); prev(); }} className="hidden md:flex absolute left-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"><ChevronLeft className="w-7 h-7" /></button>
         <AnimatePresence mode="wait">
-          <motion.img key={photo.src} src={photo.src} alt={photo.alt} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1, x: swipeOffset }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="max-h-[78vh] max-w-[94vw] object-contain select-none" onClick={(e) => e.stopPropagation()} draggable={false} />
+          <motion.img key={photo.src} src={photo.src} alt={getCategoryLabel(photo.category)} initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1, x: swipeOffset }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.15 }} className="max-h-[78vh] max-w-[94vw] object-contain select-none" onClick={(e) => e.stopPropagation()} draggable={false} />
         </AnimatePresence>
         <button onClick={(e) => { e.stopPropagation(); next(); }} className="hidden md:flex absolute right-3 top-1/2 -translate-y-1/2 z-10 text-white/30 hover:text-white p-2 rounded-full hover:bg-white/10"><ChevronRight className="w-7 h-7" /></button>
       </div>
       <div className="shrink-0 px-4 py-3 flex items-center justify-between gap-3 border-t border-white/10">
-        <p className="text-white/60 text-sm truncate flex-1">{photo.alt}</p>
+        <p className="text-white/60 text-sm truncate flex-1">{getCategoryLabel(photo.category)}</p>
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/contact"><Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-xs h-9 px-3"><Calendar className="w-3.5 h-3.5 mr-1.5" />Quote</Button></Link>
           <PhoneLink tel={localPhone.tel}><Button size="sm" variant="outline" className="border-white/20 text-white/70 hover:text-white font-display text-xs h-9 px-3"><Phone className="w-3.5 h-3.5 mr-1.5" />Call</Button></PhoneLink>
@@ -411,11 +281,10 @@ function Lightbox({ photos: lbPhotos, initialIndex, onClose }: { photos: Photo[]
 }
 
 // ---------------------------------------------------------------------------
-// MasonryGrid — true Pinterest layout with alternating columns
+// MasonryGrid
 // ---------------------------------------------------------------------------
 
 function MasonryGrid({ items, onImageClick }: { items: MasonryItem[]; onImageClick: (globalIndex: number) => void }) {
-  // Use 2 cols on mobile, 3 on md, 4 on xl
   const [colCount, setColCount] = useState(2);
 
   useEffect(() => {
@@ -459,7 +328,7 @@ export default function Portfolio() {
   const [, setLocation] = useLocation();
   const [matchCategory, params] = useRoute("/portfolio/:category");
   const categoryFromUrl = matchCategory ? params.category : "all";
-  const activeCategory = categories.find((c) => c.id === categoryFromUrl)?.id ?? "all";
+  const activeCategory = categoryTabs.find((c) => c.id === categoryFromUrl)?.id ?? "all";
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -473,7 +342,7 @@ export default function Portfolio() {
 
   const photoCounts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const cat of categories) c[cat.id] = cat.id === "all" ? photos.length : photos.filter((p) => p.category === cat.id).length;
+    for (const cat of categoryTabs) c[cat.id] = cat.id === "all" ? photos.length : photos.filter((p) => p.category === cat.id).length;
     return c;
   }, []);
 
@@ -492,7 +361,6 @@ export default function Portfolio() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [setLocation]);
 
-  // Build items with CTAs interleaved
   const visiblePhotos = filteredPhotos.slice(0, visibleCount);
   const splitAt = Math.min(CATEGORY_SUGGEST_AFTER, visiblePhotos.length);
 
@@ -506,12 +374,12 @@ export default function Portfolio() {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* ── Category Tabs ── no extra spacing, sits right under nav */}
+      {/* Category Tabs */}
       <div className="bg-background border-b border-border">
         {/* Mobile + Tablet */}
         <div className="lg:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-1.5 px-3 py-2">
-            {categories.map((cat) => {
+            {categoryTabs.map((cat) => {
               const count = photoCounts[cat.id];
               if (count === 0) return null;
               const isActive = activeCategory === cat.id;
@@ -544,7 +412,7 @@ export default function Portfolio() {
             </div>
           </div>
           <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-            {categories.map((cat) => { const count = photoCounts[cat.id]; const isActive = activeCategory === cat.id; return (
+            {categoryTabs.map((cat) => { const count = photoCounts[cat.id]; const isActive = activeCategory === cat.id; return (
               <button key={cat.id} onClick={() => setCategory(cat.id)} className={`px-3 py-1.5 text-xs font-display font-bold tracking-wide whitespace-nowrap transition-all rounded-full flex-shrink-0 ${isActive ? "bg-accent text-accent-foreground" : count === 0 ? "text-muted-foreground/30" : "text-muted-foreground hover:text-foreground hover:bg-muted border border-border"}`}>
                 {cat.label}{count > 0 && !isActive && <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>}
               </button>
@@ -553,7 +421,7 @@ export default function Portfolio() {
         </div>
       </div>
 
-      {/* ── Photo Grid ── */}
+      {/* Photo Grid */}
       <div className="px-3 md:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto pt-2 pb-6">
         {filteredPhotos.length > 0 ? (
           <>
@@ -583,7 +451,7 @@ export default function Portfolio() {
         )}
       </div>
 
-      {/* ── Bottom CTA ── */}
+      {/* Bottom CTA */}
       <section className="bg-accent text-accent-foreground py-10">
         <div className="px-6 max-w-lg mx-auto text-center">
           <h2 className="text-display text-xl sm:text-2xl mb-2">Like What You See?</h2>

@@ -16,9 +16,14 @@ const HUB = "/images/staircase-hub";
 
 const heroSlides = [
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-curved-ultra-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-curved-ultra-luxury.jpg`,
-    alt: "Ultra-luxury curved staircase with hand-forged ornamental balustrade and gold leaf accents",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-curved-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-curved-staircase.jpg`,
+    alt: "Sweeping curved staircase — King Iron Works signature craftsmanship",
+  },
+  {
+    desktop: `${HUB}/heroes/desktop/king-iron-works-floating-cantilever-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-floating-cantilever-staircase.jpg`,
+    alt: "Floating cantilever staircase — gravity-defying engineering and design",
   },
   {
     desktop: "/images/portfolio-organized/Staircases/Grand-Ornamental/king-iron-works-staircase-grand-project2-hero.jpg",
@@ -26,24 +31,19 @@ const heroSlides = [
     alt: "Grand curved staircase with ornate medallion scrollwork and crystal chandelier",
   },
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-cantilever-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-cantilever-luxury.jpg`,
-    alt: "Luxury floating cantilever staircase with frameless glass railing and LED lighting",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-spiral-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-spiral-staircase.jpg`,
+    alt: "Sculptural spiral staircase — a work of art that happens to be a staircase",
   },
   {
-    desktop: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
-    mobile: "/images/portfolio-organized/Staircases/Curved/king-iron-works-staircase-curved-project1-reveal.jpg",
-    alt: "The master craftsman with his finished curved staircase masterpiece",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-mono-stringer-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-mono-stringer-staircase.jpg`,
+    alt: "Mono-stringer staircase — one bold steel spine supporting every step",
   },
   {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-spiral-luxury.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-spiral-luxury.jpg`,
-    alt: "Luxury spiral staircase with curved glass railing and LED under-tread lighting",
-  },
-  {
-    desktop: `${HUB}/tiers/desktop/king-iron-works-mono-modern.jpg`,
-    mobile: `${HUB}/tiers/mobile/king-iron-works-mono-modern.jpg`,
-    alt: "Modern mono-stringer staircase with cable railing and open risers",
+    desktop: `${HUB}/heroes/desktop/king-iron-works-traditional-staircase.jpg`,
+    mobile: `${HUB}/heroes/mobile/king-iron-works-traditional-staircase.jpg`,
+    alt: "Traditional staircase elevated to stunning — timeless craft done right",
   },
 ];
 
