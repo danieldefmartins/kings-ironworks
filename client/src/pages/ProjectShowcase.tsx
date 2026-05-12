@@ -21,12 +21,20 @@ interface JourneyPhase {
   image: string;
 }
 
+interface FinishOption {
+  name: string;
+  style: string;
+  description: string;
+  image: string;
+}
+
 interface ProjectData {
   slug: string;
   title: string;
   subtitle: string;
   intro: string;
   journey: JourneyPhase[];
+  finishOptions: FinishOption[];
   challenges: { title: string; description: string }[];
   stats: { label: string; value: string }[];
   heroImage: string;
@@ -89,6 +97,26 @@ const projects: Record<string, ProjectData> = {
       {
         title: "Gold Leaf on Iron",
         description: "Applying gold leaf to forged ironwork is delicate work. The surface must be perfectly cleaned, primed, and sized before each leaf is laid. One wrong touch and the leaf tears. Our finisher applied over 200 individual gold accents across the entire railing.",
+      },
+    ],
+    finishOptions: [
+      {
+        name: "Ornamental Iron",
+        style: "Classic Luxury",
+        description: "Hand-forged scrollwork with gold leaf accents and walnut handrail — the finish the homeowner chose",
+        image: `${SKETCH}/king-iron-works-design-project2-finished-render.jpg`,
+      },
+      {
+        name: "Frameless Glass",
+        style: "Ultra-Modern",
+        description: "Curved frameless glass panels with stainless steel handrail — maximum transparency and light",
+        image: `${SKETCH}/king-iron-works-design-render-glass-railing.jpg`,
+      },
+      {
+        name: "Metal Rod",
+        style: "Contemporary",
+        description: "Geometric rectangular pattern balusters in brushed stainless — clean lines, architectural feel",
+        image: `${SKETCH}/king-iron-works-design-render-metal-railing.jpg`,
       },
     ],
     stats: [
@@ -189,6 +217,26 @@ const projects: Record<string, ProjectData> = {
       {
         title: "Matching the Marble",
         description: "The ironwork had to complement the Italian marble floor and treads without competing. We tested dozens of finish combinations before settling on satin black iron with warm-tone gold leaf — a pairing that makes both the marble and the ironwork shine.",
+      },
+    ],
+    finishOptions: [
+      {
+        name: "Ornamental Iron",
+        style: "Classic Luxury",
+        description: "Hand-forged peacock scrollwork with gold leaf — the one-of-a-kind finish the homeowner chose",
+        image: `${SKETCH}/king-iron-works-design-project2-finished-render.jpg`,
+      },
+      {
+        name: "Frameless Glass",
+        style: "Ultra-Modern",
+        description: "Same sweeping curve, completely different personality — curved glass panels flooding the foyer with light",
+        image: `${SKETCH}/king-iron-works-design-render-glass-angle2.jpg`,
+      },
+      {
+        name: "Metal Rod",
+        style: "Contemporary",
+        description: "Vertical rod balusters with a warm metallic finish — clean, architectural, and timeless",
+        image: `${SKETCH}/king-iron-works-design-render-metal-angle2.jpg`,
       },
     ],
     stats: [
@@ -405,11 +453,61 @@ export default function ProjectShowcase({ projectSlug }: { projectSlug: string }
         })}
       </section>
 
+      {/* Choose Your Finish — Same Structure, Different Style */}
+      {project.finishOptions.length > 0 && (
+        <section className="py-16 lg:py-24 bg-background">
+          <div className="container">
+            <div className="max-w-3xl mx-auto text-center mb-12">
+              <p className="section-eyebrow mb-4">Same Structure, Different Style</p>
+              <h2 className="text-display text-3xl md:text-4xl mb-4">Choose Your Finish</h2>
+              <p className="text-muted-foreground leading-relaxed">
+                We showed the homeowner how the same staircase could look with completely
+                different railing styles. Same curve, same marble, same grandeur —
+                three totally different personalities.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {project.finishOptions.map((opt, i) => (
+                <div key={i} className="group relative overflow-hidden rounded-sm">
+                  <img
+                    src={opt.image}
+                    alt={`${opt.name} finish`}
+                    className="w-full h-[400px] sm:h-[480px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <div className="inline-block px-2 py-0.5 bg-accent/90 text-accent-foreground text-[10px] font-display font-bold tracking-wider uppercase mb-2">
+                      {opt.style}
+                    </div>
+                    <h3 className="text-display text-xl text-white mb-2">{opt.name}</h3>
+                    <p className="text-sm text-white/60 leading-snug">{opt.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-10">
+              <p className="text-muted-foreground mb-4">
+                Not sure which style is right for you? We'll create renders for YOUR space.
+              </p>
+              <Link href="/contact">
+                <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold">
+                  Get Your Free Design Consultation
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Challenges */}
-      <section className="py-16 lg:py-24 bg-background">
+      <section className="py-16 lg:py-24 bg-sidebar text-sidebar-foreground">
         <div className="container">
           <div className="max-w-3xl mx-auto">
-            <p className="section-eyebrow mb-4">The Hard Parts</p>
+            <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>The Hard Parts</p>
             <h2 className="text-display text-3xl md:text-4xl mb-12">What Made This Project Exceptional</h2>
             <div className="space-y-8">
               {project.challenges.map((c, i) => (
