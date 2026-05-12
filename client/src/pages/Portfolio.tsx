@@ -377,7 +377,7 @@ export default function Portfolio() {
   const activeParent = parentCategories.find((p) => p.id === categoryFromUrl)?.id
     ?? parentCategories.find((p) => p.children.includes(categoryFromUrl))?.id
     ?? "all";
-  const activeSubcategory = parentCategories.some((p) => p.id === categoryFromUrl) ? null : categoryFromUrl;
+  const activeSubcategory = categoryFromUrl === "all" || parentCategories.some((p) => p.id === categoryFromUrl) ? null : categoryFromUrl;
 
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -402,17 +402,46 @@ export default function Portfolio() {
       return photos.filter((p) => p.category === activeSubcategory);
     }
 
-    // Get the relevant child category IDs
-    const childIds = activeParent === "all"
-      ? portfolioCategories.map((c) => c.id)
-      : (parentCategories.find((p) => p.id === activeParent)?.children ?? []);
+    // "All" view: pick 4 featured images from each PARENT category
+    // This gives a curated overview instead of dumping 1,000+ images
+    if (activeParent === "all") {
+      const FEATURED_PER_PARENT = 4;
+      const result: Photo[] = [];
+      for (const parent of parentCategories) {
+        const parentPhotos = getPhotosForParent(parent.id);
+        // Spread picks across children for variety
+        const childQueues = parent.children
+          .map((id) => photos.filter((p) => p.category === id))
+          .filter((q) => q.length > 0);
+        let picked = 0;
+        let round = 0;
+        while (picked < FEATURED_PER_PARENT && round < 10) {
+          for (const q of childQueues) {
+            if (picked >= FEATURED_PER_PARENT) break;
+            if (round < q.length) {
+              result.push(q[round]);
+              picked++;
+            }
+          }
+          round++;
+        }
+        // Fallback if not enough variety
+        while (picked < FEATURED_PER_PARENT && picked < parentPhotos.length) {
+          if (!result.includes(parentPhotos[picked])) {
+            result.push(parentPhotos[picked]);
+          }
+          picked++;
+        }
+      }
+      return result;
+    }
 
-    // Build per-sub queues
+    // Parent category view: round-robin across its children
+    const childIds = parentCategories.find((p) => p.id === activeParent)?.children ?? [];
     const queues: Photo[][] = childIds
       .map((id) => photos.filter((p) => p.category === id))
       .filter((q) => q.length > 0);
 
-    // Round-robin interleave
     const result: Photo[] = [];
     const cursors = queues.map(() => 0);
     let exhausted = 0;

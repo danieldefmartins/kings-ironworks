@@ -304,6 +304,59 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Featured Projects — From Sketch to Reality */}
+      <section className="py-24 lg:py-32 bg-background">
+        <div className="container">
+          <div className="text-center mb-16">
+            <p className="section-eyebrow mb-4">Featured Projects</p>
+            <h2 className="text-display text-3xl md:text-5xl mb-6">From Sketch to Reality</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              See how a pencil sketch on paper becomes a masterpiece in iron and gold.
+              Follow the full journey — from first idea to final reveal.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                title: "The Peacock Masterpiece",
+                desc: "1,200 hours of hand-forged peacock scrollwork with gold leaf accents",
+                image: "/images/portfolio-organized/Staircases/Curved/Project 2/king-iron-works-staircase-curved-project1-hero.jpg",
+                link: "/projects/peacock-masterpiece",
+              },
+              {
+                title: "The Medallion Scrollwork",
+                desc: "800 hours of ornamental medallion panels with gold-leaf rosettes",
+                image: "/images/portfolio-organized/Staircases/Curved/Project 1/king-iron-works-staircase-website-425.jpg",
+                link: "/projects/medallion-scrollwork",
+              },
+            ].map((project, i) => (
+              <Link key={i} href={project.link}>
+                <div className="group cursor-pointer relative overflow-hidden rounded-sm">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-[350px] sm:h-[420px] object-cover transition-transform duration-700 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute top-4 left-4 bg-accent/90 text-accent-foreground px-3 py-1 text-[10px] font-display font-bold tracking-wider uppercase">
+                    From Sketch to Reality
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="text-display text-xl sm:text-2xl text-white mb-2">{project.title}</h3>
+                    <p className="text-sm text-white/60 mb-4">{project.desc}</p>
+                    <span className="inline-flex items-center gap-2 text-sm font-display font-bold text-accent group-hover:gap-3 transition-all">
+                      See the Full Journey <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Featured Work */}
       <section className="py-24 lg:py-32 bg-background">
         <div className="container">
