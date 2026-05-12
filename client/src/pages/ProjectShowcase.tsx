@@ -44,13 +44,13 @@ const projects: Record<string, ProjectData> = {
         title: "The Rough Sketch",
         subtitle: "Where every masterpiece begins",
         description: "It starts with pencil on paper. Our designer sat with the homeowner and sketched the curve, the proportions, the medallion panel concept — capturing the feeling before worrying about the engineering. This rough sketch became the north star for the entire project.",
-        image: `${SKETCH}/king-iron-works-design-project2-sketch-rough.png`,
+        image: `${SKETCH}/king-iron-works-design-project2-sketch-rough.jpg`,
       },
       {
         title: "The Refined Drawing",
         subtitle: "Engineering meets artistry",
         description: "The rough sketch evolved into a detailed architectural rendering. Every scroll, every medallion rosette, every connection point was drawn to scale. This is where we solve the hard problems — how the curve transitions to the balcony, how the handrail terminates, how each panel connects seamlessly to the next.",
-        image: `${SKETCH}/king-iron-works-design-project2-sketch-refined.png`,
+        image: `${SKETCH}/king-iron-works-design-project2-sketch-refined.jpg`,
       },
       {
         title: "The Final Design",
@@ -140,13 +140,13 @@ const projects: Record<string, ProjectData> = {
         title: "The First Sketch",
         subtitle: "A dream on paper",
         description: "The homeowner described a vision: peacock feathers flowing through iron, something no one has ever seen before. Our designer picked up a pencil and started drawing — capturing the sweep of the curve, the position of the balcony, the feeling of organic movement. This 20-minute sketch launched a year-long project.",
-        image: `${SKETCH}/king-iron-works-design-project1-sketch-rough.png`,
+        image: `${SKETCH}/king-iron-works-design-project1-sketch-rough.jpg`,
       },
       {
         title: "The Refined Design",
         subtitle: "Every feather, every scroll, planned in detail",
         description: "The rough concept evolved into an intricate architectural rendering. Each peacock plume panel was drawn individually. The scrollwork connecting them was designed to flow like vines. The balcony railing above was designed to mirror the staircase below. At this stage, every weld point, every connection, every curve is planned.",
-        image: `${SKETCH}/king-iron-works-design-project1-sketch-refined.png`,
+        image: `${SKETCH}/king-iron-works-design-project1-sketch-refined.jpg`,
       },
       {
         title: "Approved for Fabrication",
