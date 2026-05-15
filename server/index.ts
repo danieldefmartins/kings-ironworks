@@ -268,6 +268,15 @@ async function startServer() {
   // Serve static files (but not index.html for routes - we handle that below)
   app.use(express.static(staticPath, { index: false }));
 
+  // Serve dashboard.html directly at /dashboard
+  app.get("/dashboard", (_req, res) => {
+    const dashboardPath = path.join(staticPath, "dashboard.html");
+    if (fs.existsSync(dashboardPath)) {
+      return res.sendFile(dashboardPath);
+    }
+    res.status(404).send("Dashboard not found");
+  });
+
   // Handle all routes - inject OG tags into index.html
   app.get("*", (_req, res) => {
     // Re-read if not loaded at startup (dev mode)
