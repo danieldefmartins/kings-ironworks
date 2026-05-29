@@ -237,9 +237,63 @@ function buildOGTags(og: OGData, baseUrl: string): string {
   ].join("\n    ");
 }
 
+// GHL Contact Form API
+const GHL_PIT = "pit-b1270c35-fc30-41fb-b813-18daa4ecbbbb";
+const GHL_CUSTOM_FIELDS = {
+  serviceType: "nuvjob3P8tJaWYgTM7Ij",
+  projectAddress: "JLi4GRVaRao06kcNtBhA",
+  projectDescription: "PcBIetyHt2Jm57sMQIqD",
+  timeline: "7okj02EErxszzbHAEYvB",
+  source: "UCThj36vlVaeVXvC4JWB",
+};
+
+async function createGHLContact(data: {
+  locationId: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email: string;
+  serviceType: string;
+  projectAddress: string;
+  projectDescription: string;
+  timeline: string;
+  source: string;
+}) {
+  const body = {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    phone: data.phone,
+    email: data.email,
+    locationId: data.locationId,
+    tags: ["website-form", data.serviceType.toLowerCase().replace(/\s+/g, "-")],
+    customFields: [
+      { id: GHL_CUSTOM_FIELDS.serviceType, value: data.serviceType },
+      { id: GHL_CUSTOM_FIELDS.projectAddress, value: data.projectAddress },
+      { id: GHL_CUSTOM_FIELDS.projectDescription, value: data.projectDescription },
+      { id: GHL_CUSTOM_FIELDS.timeline, value: data.timeline },
+      { id: GHL_CUSTOM_FIELDS.source, value: data.source },
+    ],
+    source: "website-form",
+  };
+
+  const res = await fetch("https://services.leadconnectorhq.com/contacts/", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${GHL_PIT}`,
+      Version: "2021-07-28",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  return res.json();
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  app.use(express.json());
 
   const staticPath =
     process.env.NODE_ENV === "production"
@@ -267,6 +321,21 @@ async function startServer() {
 
   // Serve static files (but not index.html for routes - we handle that below)
   app.use(express.static(staticPath, { index: false }));
+
+  // Contact form API endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const result = await createGHLContact(req.body);
+      if (result.contact) {
+        res.json({ success: true, contactId: result.contact.id });
+      } else {
+        res.status(400).json({ success: false, error: result.message || "Failed to create contact" });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Server error";
+      res.status(500).json({ success: false, error: message });
+    }
+  });
 
   // Serve dashboard.html directly at /dashboard
   app.get("/dashboard", (_req, res) => {
