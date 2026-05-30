@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- ═══ HOMEPAGE ═══ -->
+  <url>
+    <loc>https://kingsironworks.com/</loc>
+    <lastmod>2026-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- ═══ CORE PAGES ═══ -->
+  <url><loc>https://kingsironworks.com/services</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio</loc><lastmod>2026-05-29</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kingsironworks.com/staircases</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kingsironworks.com/contact</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://kingsironworks.com/locations</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/about</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog</loc><lastmod>2026-05-29</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+
+  <!-- ═══ SERVICE PAGES (15) ═══ -->
+  <url><loc>https://kingsironworks.com/fire-escape</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/structural-steel</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/building-restoration</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/interior-railing</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/exterior-railing</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/fence</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/balcony</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/cable-railing</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/deck-railing</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/gate</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/handrail</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/window</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/window-well</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/custom-ironwork</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://kingsironworks.com/our-facility</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ═══ PROJECT SHOWCASES ═══ -->
+  <url><loc>https://kingsironworks.com/projects/medallion-scrollwork</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/projects/peacock-masterpiece</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/dream-staircase</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ═══ LOCATION PAGES (17) ═══ -->
+  <url><loc>https://kingsironworks.com/everett</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/cape-cod</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/worcester</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/north-shore</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/lawrence</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/lowell</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/miami</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/new-hampshire</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/portsmouth</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/nashua</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/manchester-nh</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/maine</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/rhode-island</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/new-york</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/connecticut</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/vermont</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ═══ PORTFOLIO CATEGORIES (25) ═══ -->
+  <url><loc>https://kingsironworks.com/portfolio/curved-staircases</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/curved-project-1</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/curved-project-2</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/floating-full</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/floating-mono-stringer</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/floating-dual-stringer</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/spiral-interior</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/spiral-exterior</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/grand-ornamental</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/exterior-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/interior-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/cable-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/deck-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/commercial-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/small-railings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/gates</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/fire-escapes</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/balconies</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/juliet-balconies</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/fences</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/structural-steel</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/window-wells</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/window-guards</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/ada-ramps</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://kingsironworks.com/portfolio/shop-process</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- ═══ BLOG ARTICLES (10) ═══ -->
+  <url><loc>https://kingsironworks.com/blog/massachusetts-fire-escape-inspection-requirements-2026</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/warning-signs-fire-escape-needs-repair</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/fire-escape-installation-commercial-buildings</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/failed-fire-escape-inspection-boston</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/historic-ironwork-restoration-beacon-hill</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/south-end-victorian-ironwork-guide</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/custom-iron-railings-boston-brownstones</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/wrought-iron-vs-steel</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/iron-security-gates-boston-storefronts</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://kingsironworks.com/blog/maintain-iron-railings-new-england-winters</loc><lastmod>2026-05-29</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- ═══ LEGAL ═══ -->
+  <url><loc>https://kingsironworks.com/privacy</loc><lastmod>2026-05-29</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://kingsironworks.com/terms</loc><lastmod>2026-05-29</lastmod><changefreq>yearly</changefreq><priority>0.3</priority></url>
+</urlset>
