@@ -8,7 +8,7 @@ WORKDIR /app
 ARG CACHEBUST=2
 
 COPY package.json pnpm-lock.yaml .npmrc ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY . .
 RUN pnpm run build
