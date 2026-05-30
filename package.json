@@ -37,6 +37,9 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.4.3"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["sharp", "unrs-resolver", "@tailwindcss/oxide"]
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
