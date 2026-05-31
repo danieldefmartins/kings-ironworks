@@ -38,8 +38,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/images/logo-black.png"
-                style={{ filter: "brightness(0) invert(1)" }}
+                src="/logo.png"
                 alt="King Iron Works"
                 className="h-16 w-auto object-contain"
               />
@@ -84,8 +83,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/images/logo-black.png"
-                style={{ filter: "brightness(0) invert(1)" }}
+                src="/logo.png"
                 alt="King Iron Works"
                 className="h-14 w-auto object-contain"
               />
@@ -103,7 +101,7 @@ export default function Navigation() {
               size="icon"
               variant="ghost"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="text-sidebar-foreground"
+              className="text-white hover:text-white/80"
             >
               {mobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
             </Button>

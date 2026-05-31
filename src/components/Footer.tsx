@@ -16,8 +16,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <img
-              src="/images/logo-black.png"
-              style={{ filter: "brightness(0) invert(1)" }}
+              src="/logo.png"
               alt="King Iron Works"
               className="h-12 sm:h-16 w-auto object-contain mb-4"
             />
