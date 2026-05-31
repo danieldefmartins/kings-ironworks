@@ -32,7 +32,7 @@ export default function Navigation() {
   return (
     <>
       {/* Desktop Navigation - Fixed Horizontal Top Bar */}
-      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-24 bg-sidebar border-b border-sidebar-border/30 z-50">
+      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-28 bg-black/90 backdrop-blur-sm border-b border-white/10 z-50">
         <div className="container h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
@@ -40,7 +40,7 @@ export default function Navigation() {
               <img
                 src="/logo.png"
                 alt="King Iron Works"
-                className="h-16 w-auto object-contain"
+                className="h-20 w-auto object-contain"
               />
             </div>
           </Link>
@@ -54,8 +54,8 @@ export default function Navigation() {
                     px-4 py-2 cursor-pointer transition-all border-b-2
                     ${
                       isActive(item.path)
-                        ? "border-accent text-sidebar-accent-foreground"
-                        : "border-transparent hover:border-accent/50 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                        ? "border-accent text-white"
+                        : "border-transparent hover:border-accent/50 text-white/70 hover:text-white"
                     }
                   `}
                 >
@@ -78,14 +78,14 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Navigation - Top Bar */}
-      <nav className="lg:hidden fixed top-0 left-0 right-0 h-18 bg-sidebar border-b border-sidebar-border/30 z-50">
+      <nav className="lg:hidden fixed top-0 left-0 right-0 h-18 bg-black/90 backdrop-blur-sm border-b border-white/10 z-50">
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
                 src="/logo.png"
                 alt="King Iron Works"
-                className="h-14 w-auto object-contain"
+                className="h-16 w-auto object-contain"
               />
             </div>
           </Link>
