@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import CityHero from "@/components/CityHero";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Phone, CheckCircle, ArrowRight, Shield, Award, Clock } from "lucide-react";
 import { PHONE_NUMBERS } from "@/lib/constants";
 import { PhoneLink } from "@/components/PhoneLink";
@@ -38,7 +38,7 @@ export default function MaineClient() {
 
   return (
     <div className="min-h-screen">
-      <CityHero cityName="Maine" />
+      <HeroCarousel cityName="Maine" />
 
       <section className="bg-card py-24">
         <div className="container">

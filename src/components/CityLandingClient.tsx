@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import CityHero from "@/components/CityHero";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Phone, CheckCircle, ArrowRight, Shield, Award, Clock, Wrench } from "lucide-react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 import { PhoneLink } from "@/components/PhoneLink";
@@ -34,7 +34,7 @@ export default function CityLandingClient({
 
   return (
     <div className="min-h-screen">
-      <CityHero cityName={cityName} stateName={stateName} />
+      <HeroCarousel cityName={cityName} stateName={stateName} />
 
       {/* Services */}
       <section className="py-20 bg-background">

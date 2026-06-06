@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import CityHero from "@/components/CityHero";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Phone, CheckCircle, ArrowRight, Shield, Award, Clock } from "lucide-react";
 import { PHONE_NUMBERS } from "@/lib/constants";
 import { PhoneLink } from "@/components/PhoneLink";
@@ -39,7 +39,7 @@ export default function CapeCodeClient() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <CityHero cityName="Cape Cod" stateName="MA" />
+      <HeroCarousel cityName="Cape Cod" stateName="MA" />
 
       {/* Services Section */}
       <section className="bg-card py-24">
