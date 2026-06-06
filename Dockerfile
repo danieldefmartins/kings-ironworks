@@ -2,14 +2,14 @@
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+RUN npm install -g pnpm && pnpm config set ignore-scripts true && pnpm install --no-frozen-lockfile
 
 # Stage 2: Build
 FROM node:22-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm install -g pnpm && pnpm build
+RUN npm install -g pnpm && pnpm approve-builds sharp unrs-resolver 2>/dev/null; pnpm build
 
 # Stage 3: Production
 FROM node:22-slim AS runner

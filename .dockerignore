@@ -1,9 +1,13 @@
-node_modules
-.next
-.git
+**/.git
+**/.next
+**/node_modules
+**/.DS_Store
 *.md
 .env*
-.DS_Store
+.env.local
 scraped-data
 debug-*
 print/
+.gitignore
+.eslintrc*
+tsconfig.json

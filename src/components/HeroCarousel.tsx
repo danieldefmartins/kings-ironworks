@@ -106,6 +106,15 @@ export const heroSlides = [
     link: "/deck-railing",
   },
   {
+    desktop: "/images/carousel/spiral-staircase-16x9.jpg",
+    mobile: "/images/portfolio-organized/Staircases/Spiral/Interior Spiral/king-iron-works-exterior-railing-project-200.jpg",
+    alt: "Custom spiral staircase — space-saving and stunning",
+    title: "Spiral Staircases",
+    subtitle: "Space-Saving Showpieces",
+    description: "Sculptural steel that spirals skyward. Perfect for tight footprints and open lofts. Indoor and outdoor spirals in ornamental, modern, and industrial styles. Engineered to code.",
+    link: "/portfolio/staircases",
+  },
+  {
     desktop: "/images/carousel/fire-escape-16x9.jpg",
     mobile: "/images/portfolio-organized/Fire-Escape/fire_escape_magazine_2x3.jpg",
     alt: "Fire escape installation and repair — code compliant, fully permitted",
