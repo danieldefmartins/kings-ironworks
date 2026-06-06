@@ -4,14 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Phone } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocalPhone } from "@/lib/useLocalPhone";
 import { PhoneLink } from "@/components/PhoneLink";
 
 export default function Navigation() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const localPhone = useLocalPhone();
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const navItems = [
     { path: "/", label: "Home" },
@@ -32,7 +40,13 @@ export default function Navigation() {
   return (
     <>
       {/* Desktop Navigation - Fixed Horizontal Top Bar */}
-      <nav className="hidden lg:block fixed top-0 left-0 right-0 h-28 bg-black/90 backdrop-blur-sm border-b border-white/10 z-50">
+      <nav
+        className="hidden lg:block fixed top-0 left-0 right-0 h-28 backdrop-blur-sm z-50 transition-all duration-300 border-b-2"
+        style={{
+          background: scrolled ? "rgb(0,0,0)" : "linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.80))",
+          borderBottomColor: "oklch(0.66 0.12 75)",
+        }}
+      >
         <div className="container h-full flex items-center justify-between">
           {/* Logo */}
           <Link href="/">
@@ -78,7 +92,13 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Navigation - Top Bar */}
-      <nav className="lg:hidden fixed top-0 left-0 right-0 h-18 bg-black/90 backdrop-blur-sm border-b border-white/10 z-50">
+      <nav
+        className="lg:hidden fixed top-0 left-0 right-0 h-18 backdrop-blur-sm z-50 transition-all duration-300 border-b-2"
+        style={{
+          background: scrolled ? "rgb(0,0,0)" : "linear-gradient(to bottom, rgba(0,0,0,0.95), rgba(0,0,0,0.80))",
+          borderBottomColor: "oklch(0.66 0.12 75)",
+        }}
+      >
         <div className="container h-full flex items-center justify-between">
           <Link href="/">
             <div className="flex items-center cursor-pointer">
