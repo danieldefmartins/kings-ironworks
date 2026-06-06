@@ -1,4 +1,9 @@
 node_modules
 .next
 .git
-Logo
+*.md
+.env*
+.DS_Store
+scraped-data
+debug-*
+print/
