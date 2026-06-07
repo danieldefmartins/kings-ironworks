@@ -50,6 +50,7 @@ export const heroSlides = [
     subtitle: "Elegance Meets Safety",
     description: "Add European charm to any window or door. Custom-designed Juliet balconies in ornamental, modern, and classic styles. Code-compliant and built to last a lifetime.",
     link: "/juliet-balcony",
+    objectPosition: "center center",
   },
   {
     desktop: "/images/carousel/exterior-railing-16x9.jpg",
@@ -82,18 +83,18 @@ export const heroSlides = [
     desktop: "/images/carousel/interior-railing-32-16x9.jpg",
     mobile: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-32.jpg",
     alt: "Custom interior railing with ornamental scrollwork",
-    title: "Ornamental Ironwork",
+    title: "Modern Interior Railing",
     subtitle: "Handcrafted by Master Artisans",
-    description: "Scrolls, medallions, and custom motifs forged by hand. Not mass-produced — every piece is one of a kind. This is the ironwork that turns houses into homes.",
+    description: "Clean contemporary designs with expert craftsmanship. Not mass-produced — every piece is one of a kind. This is the ironwork that turns houses into homes.",
     link: "/interior-railing",
   },
   {
     desktop: "/images/carousel/interior-railing-6-16x9.jpg",
     mobile: "/images/portfolio-organized/Railings/Interior-Railing/king-iron-works-interior-railing-6.jpg",
-    alt: "Custom iron railing with wood handrail — transitional style",
-    title: "Iron & Wood Railings",
-    subtitle: "The Perfect Combination",
-    description: "Iron balusters with wood handrails — the most popular railing style in America. We build them better: hand-forged iron, premium hardwood, flawless installation.",
+    alt: "Custom iron railing — transitional style",
+    title: "Iron Railings",
+    subtitle: "The Perfect Touch",
+    description: "Iron balusters and handrails — the most popular railing style in America. We build them better: hand-forged iron, flawless installation, built to last.",
     link: "/interior-railing",
   },
   {
@@ -184,6 +185,7 @@ export default function HeroCarousel({ cityName, stateName }: HeroCarouselProps)
                     src={slide.mobile}
                     alt={slide.alt}
                     className="w-full h-full object-cover"
+                    style={slide.objectPosition ? { objectPosition: slide.objectPosition } : undefined}
                     loading={i === 0 ? "eager" : "lazy"}
                   />
                 </picture>

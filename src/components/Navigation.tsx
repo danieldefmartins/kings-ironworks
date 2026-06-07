@@ -52,7 +52,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/logo.png"
+                src="/images/logo-white-transparent.png"
                 alt="King Iron Works"
                 className="h-20 w-auto object-contain"
               />
@@ -103,7 +103,7 @@ export default function Navigation() {
           <Link href="/">
             <div className="flex items-center cursor-pointer">
               <img
-                src="/logo.png"
+                src="/images/logo-white-transparent.png"
                 alt="King Iron Works"
                 className="h-16 w-auto object-contain"
               />
