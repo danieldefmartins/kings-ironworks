@@ -56,7 +56,7 @@ export const metadata: Metadata = {
       "Custom ironwork, fire escape installation & repair, structural steel, and historic restoration. 20+ years, 1000+ projects. Serving 9 states.",
     images: [
       {
-        url: "/images/homepage/project2-hero.jpg",
+        url: "/images/og-default.jpg",
         width: 1200,
         height: 630,
         alt: "King Iron Works — Custom Ornamental Ironwork",
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     title: "King Iron Works | Custom Ironwork & Fire Escape Specialists",
     description:
       "Custom ironwork, fire escapes, structural steel, and historic restoration. 20+ years serving NE, NY & FL.",
-    images: ["/images/homepage/project2-hero.jpg"],
+    images: ["/images/og-default.jpg"],
   },
   robots: {
     index: true,
@@ -103,7 +103,7 @@ export default function RootLayout({
               "@type": "LocalBusiness",
               "@id": "https://kingsironworks.com",
               name: "King Iron Works",
-              image: "https://kingsironworks.com/images/homepage/project2-hero.jpg",
+              image: "https://kingsironworks.com/images/og-default.jpg",
               url: "https://kingsironworks.com",
               telephone: "+1-617-404-2589",
               email: "info@kingsironworks.com",

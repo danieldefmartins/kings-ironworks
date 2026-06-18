@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     url: "https://kingsironworks.com/portfolio",
     images: [
       {
-        url: "/images/apLcldtAeVXzDTCh.JPG",
+        url: "/images/og-default.jpg",
         width: 1200,
         height: 630,
         alt: "King Iron Works Portfolio — Custom Ironwork Projects",

@@ -509,9 +509,11 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
   const activeParentLabel = activeParent === "all" ? "Portfolio" : parentCategories.find((p) => p.id === activeParent)?.label ?? "Portfolio";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden pt-18 lg:pt-24">
+    <div className="min-h-screen bg-background overflow-x-clip pt-18 lg:pt-28">
+      {/* Sticky filter stack — pins category + subcategory bars directly under the fixed nav */}
+      <div className="sticky top-18 lg:top-28 z-30">
       {/* Main Category Bar */}
-      <div className="bg-background border-b border-border sticky top-18 lg:top-24 z-30">
+      <div className="bg-background border-b border-border">
         {/* Mobile + Tablet */}
         <div className="lg:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-1.5 px-3 py-2">
@@ -622,6 +624,8 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
           </div>
         </div>
       )}
+      </div>
+      {/* end sticky filter stack */}
 
       {/* Photo Grid */}
       <div className="px-3 md:px-4 lg:px-8 lg:max-w-[1280px] lg:mx-auto pt-2 pb-6">
