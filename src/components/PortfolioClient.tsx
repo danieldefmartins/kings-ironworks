@@ -509,9 +509,9 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
   const activeParentLabel = activeParent === "all" ? "Portfolio" : parentCategories.find((p) => p.id === activeParent)?.label ?? "Portfolio";
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background overflow-x-hidden pt-18 lg:pt-24">
       {/* Main Category Bar */}
-      <div className="bg-background border-b border-border">
+      <div className="bg-background border-b border-border sticky top-18 lg:top-24 z-30">
         {/* Mobile + Tablet */}
         <div className="lg:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-1.5 px-3 py-2">
