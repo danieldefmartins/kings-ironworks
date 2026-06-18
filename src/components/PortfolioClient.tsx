@@ -413,30 +413,22 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
     }
 
     if (activeParent === "all") {
-      const FEATURED_PER_PARENT = 4;
+      // Show EVERY photo, interleaved across parent categories so the grid
+      // stays visually mixed instead of grouped by type.
+      const queues: Photo[][] = parentCategories
+        .map((parent) => getPhotosForParent(parent.id))
+        .filter((q) => q.length > 0);
+
       const result: Photo[] = [];
-      for (const parent of parentCategories) {
-        const parentPhotos = getPhotosForParent(parent.id);
-        const childQueues = parent.children
-          .map((id) => photos.filter((p) => p.category === id))
-          .filter((q) => q.length > 0);
-        let picked = 0;
-        let round = 0;
-        while (picked < FEATURED_PER_PARENT && round < 10) {
-          for (const q of childQueues) {
-            if (picked >= FEATURED_PER_PARENT) break;
-            if (round < q.length) {
-              result.push(q[round]);
-              picked++;
-            }
-          }
-          round++;
-        }
-        while (picked < FEATURED_PER_PARENT && picked < parentPhotos.length) {
-          if (!result.includes(parentPhotos[picked])) {
-            result.push(parentPhotos[picked]);
-          }
-          picked++;
+      const cursors = queues.map(() => 0);
+      let exhausted = 0;
+      while (exhausted < queues.length) {
+        for (let q = 0; q < queues.length; q++) {
+          if (cursors[q] >= queues[q].length) continue;
+          const end = Math.min(cursors[q] + IMAGES_PER_ROUND, queues[q].length);
+          for (let i = cursors[q]; i < end; i++) result.push(queues[q][i]);
+          cursors[q] = end;
+          if (cursors[q] >= queues[q].length) exhausted++;
         }
       }
       return result;
