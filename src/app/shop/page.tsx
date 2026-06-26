@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getSessionWorker } from "@/lib/shop/session";
+import { getSessionWorker, randomSeed } from "@/lib/shop/session";
 import { listJobs, getCutItems, STAGES, type Job } from "@/lib/shop/db";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import ShopTopBar from "./ShopTopBar";
@@ -59,7 +59,7 @@ export default async function ShopBoard() {
       <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} lang={lang} />
       <div className="p-4 max-w-5xl mx-auto">
         <div className="mb-4">
-          <MotivationBanner lang={lang} />
+          <MotivationBanner lang={lang} seed={randomSeed()} />
         </div>
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">

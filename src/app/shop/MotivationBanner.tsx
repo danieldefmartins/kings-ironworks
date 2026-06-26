@@ -1,22 +1,18 @@
 import { QUOTES, t, asLang } from "@/lib/shop/i18n";
 
-function dayIndex(mod: number) {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  const day = Math.floor((now.getTime() - start.getTime()) / 86400000);
-  return ((day % mod) + mod) % mod;
-}
-
-// Rotates daily so the crew sees a fresh line each morning.
+// `seed` is generated fresh on the server each request, so the quote changes
+// every login / page load. Passing it as a prop avoids hydration mismatches.
 export default function MotivationBanner({
   lang = "en",
+  seed = 0,
   compact = false,
 }: {
   lang?: string;
+  seed?: number;
   compact?: boolean;
 }) {
   const quotes = QUOTES[asLang(lang)];
-  const quote = quotes[dayIndex(quotes.length)];
+  const quote = quotes[((seed % quotes.length) + quotes.length) % quotes.length];
 
   return (
     <div
@@ -24,13 +20,13 @@ export default function MotivationBanner({
         compact ? "px-4 py-2.5" : "px-5 py-4"
       }`}
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80 mb-0.5">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80 mb-1 flex items-center gap-1.5">
+        <span aria-hidden>🔥</span>
         {t(lang, "todayFloor")}
       </div>
       <div
-        suppressHydrationWarning
-        className={`font-display font-semibold text-amber-100 ${
-          compact ? "text-sm" : "text-base"
+        className={`font-display font-semibold text-amber-50 leading-snug ${
+          compact ? "text-sm" : "text-[15px]"
         }`}
       >
         “{quote}”

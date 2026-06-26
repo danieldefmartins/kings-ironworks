@@ -38,3 +38,8 @@ export async function getSessionWorker(): Promise<Worker | null> {
   if (!id) return null;
   return getWorkerById(id);
 }
+
+// Fresh per-request seed for rotating the motivational quote each login.
+export function randomSeed(): number {
+  return crypto.randomInt(0, 1_000_000_000);
+}

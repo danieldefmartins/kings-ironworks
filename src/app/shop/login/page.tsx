@@ -1,5 +1,5 @@
 import { listWorkers } from "@/lib/shop/db";
-import { getSessionWorker } from "@/lib/shop/session";
+import { getSessionWorker, randomSeed } from "@/lib/shop/session";
 import { redirect } from "next/navigation";
 import LoginClient from "./LoginClient";
 
@@ -17,5 +17,11 @@ export default async function ShopLoginPage() {
     error = e instanceof Error ? e.message : "Could not load workers";
   }
 
-  return <LoginClient workers={workers} loadError={error} />;
+  return (
+    <LoginClient
+      workers={workers}
+      loadError={error}
+      seed={randomSeed()}
+    />
+  );
 }

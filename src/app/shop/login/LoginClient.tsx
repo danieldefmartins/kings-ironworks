@@ -15,9 +15,11 @@ interface W {
 export default function LoginClient({
   workers,
   loadError,
+  seed = 0,
 }: {
   workers: W[];
   loadError: string | null;
+  seed?: number;
 }) {
   const router = useRouter();
   const [workerId, setWorkerId] = useState("");
@@ -75,7 +77,7 @@ export default function LoginClient({
       </div>
 
       <div className="w-full max-w-xs mb-6">
-        <MotivationBanner lang={lang} />
+        <MotivationBanner lang={lang} seed={seed} />
       </div>
 
       {loadError && (
