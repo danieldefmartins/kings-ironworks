@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
 import { listJobs, getCutItems, STAGES, type Job } from "@/lib/shop/db";
+import { t, stageLabel } from "@/lib/shop/i18n";
 import ShopTopBar from "./ShopTopBar";
+import MotivationBanner from "./MotivationBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -14,12 +16,12 @@ function stageColor(stage: string) {
   return "bg-neutral-600";
 }
 
-function dueLabel(due: string | null) {
-  if (!due) return { text: "No due date", cls: "text-neutral-500" };
+function dueLabel(due: string | null, lang: string) {
+  if (!due) return { text: t(lang, "noDue"), cls: "text-neutral-500" };
   const d = new Date(due + "T00:00:00");
   const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
   const text = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  if (days < 0) return { text: `${text} · overdue`, cls: "text-red-400" };
+  if (days < 0) return { text: `${text} · ${t(lang, "overdue")}`, cls: "text-red-400" };
   if (days <= 7) return { text: `${text} · ${days}d`, cls: "text-amber-400" };
   return { text, cls: "text-neutral-400" };
 }
@@ -27,6 +29,7 @@ function dueLabel(due: string | null) {
 export default async function ShopBoard() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
+  const lang = worker.lang || "en";
 
   let jobs: Job[] = [];
   let error: string | null = null;
@@ -36,7 +39,6 @@ export default async function ShopBoard() {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
 
-  // cut-progress per job
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
     jobs.map(async (j) => {
@@ -54,23 +56,24 @@ export default async function ShopBoard() {
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title="Active Jobs" />
+      <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} lang={lang} />
       <div className="p-4 max-w-5xl mx-auto">
+        <div className="mb-4">
+          <MotivationBanner lang={lang} />
+        </div>
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
             {error}
           </div>
         )}
         {jobs.length === 0 && !error && (
-          <p className="text-neutral-500 text-center py-16">
-            No active jobs. Closed deals will appear here.
-          </p>
+          <p className="text-neutral-500 text-center py-16">{t(lang, "noJobs")}</p>
         )}
         <div className="grid gap-3 sm:grid-cols-2">
           {jobs.map((j) => {
             const p = progress[j.id] || { done: 0, total: 0 };
             const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
-            const due = dueLabel(j.due_date);
+            const due = dueLabel(j.due_date, lang);
             return (
               <Link
                 key={j.id}
@@ -91,25 +94,25 @@ export default async function ShopBoard() {
                       j.current_stage
                     )}`}
                   >
-                    {j.current_stage}
+                    {stageLabel(lang, j.current_stage)}
                   </span>
                 </div>
                 {j.finish && (
                   <div className="text-xs text-neutral-400 mt-2">
-                    Finish: <span className="text-neutral-200">{j.finish}</span>
+                    {t(lang, "finish")}:{" "}
+                    <span className="text-neutral-200">{j.finish}</span>
                   </div>
                 )}
                 <div className="mt-3 flex items-center justify-between text-xs">
-                  <span className={due.cls}>Due {due.text}</span>
+                  <span className={due.cls}>
+                    {t(lang, "due")} {due.text}
+                  </span>
                   <span className="text-neutral-400">
-                    Cut {p.done}/{p.total}
+                    {t(lang, "cutProgress")} {p.done}/{p.total}
                   </span>
                 </div>
                 <div className="mt-1.5 h-1.5 rounded-full bg-neutral-800 overflow-hidden">
-                  <div
-                    className="h-full bg-amber-500"
-                    style={{ width: `${pct}%` }}
-                  />
+                  <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
                 </div>
               </Link>
             );

@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import MotivationBanner from "../MotivationBanner";
+import { t } from "@/lib/shop/i18n";
 
 interface W {
   id: string;
   name: string;
   role: string;
+  lang?: string;
 }
 
 export default function LoginClient({
@@ -23,6 +26,7 @@ export default function LoginClient({
   const [busy, setBusy] = useState(false);
 
   const worker = workers.find((w) => w.id === workerId) || null;
+  const lang = worker?.lang || "en";
 
   async function submit(finalPin: string) {
     if (!worker) return;
@@ -36,7 +40,7 @@ export default function LoginClient({
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setErr(d.error || "Login failed");
+        setErr(d.error === "Wrong PIN" ? t(lang, "wrongPin") : d.error || "Login failed");
         setPin("");
         setBusy(false);
         return;
@@ -58,13 +62,20 @@ export default function LoginClient({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      <div className="mb-8 text-center">
-        <div className="text-3xl font-display font-bold tracking-tight text-amber-500">
-          KING IRON WORKS
+      <div className="mb-6 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/logo-white-transparent.png"
+          alt="King Iron Works"
+          className="h-20 w-auto mx-auto mb-2"
+        />
+        <div className="text-neutral-400 text-sm uppercase tracking-[0.2em]">
+          {t(lang, "shopFloor")}
         </div>
-        <div className="text-neutral-400 text-sm uppercase tracking-[0.2em] mt-1">
-          Shop Floor
-        </div>
+      </div>
+
+      <div className="w-full max-w-xs mb-6">
+        <MotivationBanner lang={lang} />
       </div>
 
       {loadError && (
@@ -75,7 +86,7 @@ export default function LoginClient({
 
       <div className="w-full max-w-xs text-center">
         <label className="block text-sm text-neutral-400 mb-2 text-left">
-          Who&apos;s working?
+          {t(lang, "whoWorking")}
         </label>
         <select
           value={workerId}
@@ -86,7 +97,7 @@ export default function LoginClient({
           }}
           className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-4 text-lg focus:border-amber-500 outline-none appearance-none mb-6"
         >
-          <option value="">Select your name…</option>
+          <option value="">{t(lang, "selectName")}</option>
           {workers.map((w) => (
             <option key={w.id} value={w.id}>
               {w.name}
@@ -97,7 +108,7 @@ export default function LoginClient({
         {worker && (
           <>
             <div className="text-xs text-neutral-500 uppercase tracking-wide mb-4">
-              Enter PIN
+              {t(lang, "enterPin")}
             </div>
             <div className="flex justify-center gap-3 mb-5 h-6">
               {[0, 1, 2, 3].map((i) => (
@@ -128,7 +139,7 @@ export default function LoginClient({
                 }}
                 className="rounded-xl py-5 text-sm text-neutral-400"
               >
-                Clear
+                {t(lang, "clear")}
               </button>
               <button
                 onClick={() => press("0")}

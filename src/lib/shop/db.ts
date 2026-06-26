@@ -28,6 +28,37 @@ export interface Worker {
   role: string;
   pin?: string;
   active: boolean;
+  can_see_prices?: boolean;
+  lang?: string;
+}
+
+// Photo categories the shop can pin an image to. "Installation — Location N"
+// covers up to 5 railings out of the box; workers can add a custom one.
+export const PRICE_CATEGORY = "Approved Estimate";
+export const PHOTO_CATEGORIES = [
+  "Design",
+  "Measurements",
+  "Existing",
+  "Inspiration",
+  "Installation — Location 1",
+  "Installation — Location 2",
+  "Installation — Location 3",
+  "Installation — Location 4",
+  "Installation — Location 5",
+  PRICE_CATEGORY,
+] as const;
+
+export interface Photo {
+  id: string;
+  job_id: string;
+  url: string; // storage object path (private bucket) — sign before display
+  category: string | null;
+  label: string | null;
+  caption: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+  signedUrl?: string;
+  uploaderName?: string;
 }
 export interface Job {
   id: string;
@@ -164,7 +195,7 @@ export async function getQc(jobId: string): Promise<QcCheck[]> {
 export async function listWorkers(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
-    "select=id,name,role,active&active=eq.true&order=name.asc"
+    "select=id,name,role,active,can_see_prices,lang&active=eq.true&order=name.asc"
   );
 }
 
@@ -174,17 +205,95 @@ export async function verifyWorkerPin(
 ): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,pin&id=eq.${workerId}&active=eq.true&limit=1`
+    `select=id,name,role,active,can_see_prices,lang,pin&id=eq.${workerId}&active=eq.true&limit=1`
   );
   const w = rows[0];
   if (!w || w.pin !== pin) return null;
-  return { id: w.id, name: w.name, role: w.role, active: w.active };
+  return {
+    id: w.id,
+    name: w.name,
+    role: w.role,
+    active: w.active,
+    can_see_prices: w.can_see_prices,
+    lang: w.lang,
+  };
 }
 
 export async function getWorkerById(id: string): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active&id=eq.${id}&limit=1`
+    `select=id,name,role,active,can_see_prices,lang&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
+}
+
+// ---- Photos & Storage -----------------------------------------------------
+
+const PHOTO_BUCKET = "kiw-shop-photos";
+
+export async function getPhotos(jobId: string): Promise<Photo[]> {
+  return sbSelect<Photo[]>(
+    "kiw_shop_photos",
+    `select=*&job_id=eq.${jobId}&order=uploaded_at.desc`
+  );
+}
+
+export async function insertPhoto(row: {
+  job_id: string;
+  url: string;
+  category: string;
+  label?: string | null;
+  caption?: string | null;
+  uploaded_by: string;
+}): Promise<void> {
+  await sbInsert("kiw_shop_photos", {
+    ...row,
+    uploaded_at: new Date().toISOString(),
+  });
+}
+
+// Upload raw bytes to the private bucket.
+export async function uploadPhotoObject(
+  path: string,
+  bytes: ArrayBuffer,
+  contentType: string
+): Promise<void> {
+  const res = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${encodeURI(path)}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": contentType,
+        "x-upsert": "true",
+      },
+      body: Buffer.from(bytes),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(`Storage upload ${res.status}: ${await res.text()}`);
+  }
+}
+
+// Create a short-lived signed URL so private photos can be viewed in the browser.
+export async function signPhotoUrl(
+  path: string,
+  expiresIn = 3600
+): Promise<string | null> {
+  const res = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/sign/${PHOTO_BUCKET}/${encodeURI(path)}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ expiresIn }),
+    }
+  );
+  if (!res.ok) return null;
+  const data = (await res.json()) as { signedURL?: string };
+  return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
 }
