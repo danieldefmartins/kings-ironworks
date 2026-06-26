@@ -36,6 +36,7 @@ export interface Worker {
 // covers up to 5 railings out of the box; workers can add a custom one.
 export const PRICE_CATEGORY = "Approved Estimate";
 export const PHOTO_CATEGORIES = [
+  "Instructions",
   "Design",
   "Measurements",
   "Existing",
@@ -52,6 +53,7 @@ export interface Photo {
   id: string;
   job_id: string;
   url: string; // storage object path (private bucket) — sign before display
+  kind: string | null; // 'image' | 'video'
   category: string | null;
   label: string | null;
   caption: string | null;
@@ -251,12 +253,14 @@ export async function getPhotos(jobId: string): Promise<Photo[]> {
 export async function insertPhoto(row: {
   job_id: string;
   url: string;
+  kind?: string;
   category: string;
   label?: string | null;
   caption?: string | null;
   uploaded_by: string;
 }): Promise<void> {
   await sbInsert("kiw_shop_photos", {
+    kind: "image",
     ...row,
     uploaded_at: new Date().toISOString(),
   });

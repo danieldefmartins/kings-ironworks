@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // allow larger photo uploads
 export const maxDuration = 60;
 
-const MAX_BYTES = 15 * 1024 * 1024; // 15MB
+const MAX_BYTES = 200 * 1024 * 1024; // 200MB (allows short videos)
 
 export async function POST(req: NextRequest) {
   const worker = await getSessionWorker();
@@ -40,23 +40,29 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_BYTES) {
       return NextResponse.json(
-        { error: "Image too large (max 15MB)" },
+        { error: "File too large (max 200MB)" },
         { status: 413 }
       );
     }
 
+    const isVideo = (file.type || "").startsWith("video");
     const bytes = await file.arrayBuffer();
-    const ext = (file.name.split(".").pop() || "jpg")
+    const ext = (file.name.split(".").pop() || (isVideo ? "mp4" : "jpg"))
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "")
       .slice(0, 5);
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${jobId}/${Date.now()}-${rand}.${ext || "jpg"}`;
 
-    await uploadPhotoObject(path, bytes, file.type || "image/jpeg");
+    await uploadPhotoObject(
+      path,
+      bytes,
+      file.type || (isVideo ? "video/mp4" : "image/jpeg")
+    );
     await insertPhoto({
       job_id: jobId,
       url: path,
+      kind: isVideo ? "video" : "image",
       category,
       label,
       caption,

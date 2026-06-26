@@ -734,8 +734,7 @@ function PhotosSection({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
-          capture="environment"
+          accept="image/*,video/*"
           onChange={onFile}
           className="hidden"
         />
@@ -766,17 +765,30 @@ function PhotosSection({
                     onClick={() => setViewer(p)}
                     className="relative aspect-square rounded-lg overflow-hidden border border-neutral-800 bg-neutral-900"
                   >
-                    {p.signedUrl ? (
+                    {!p.signedUrl ? (
+                      <span className="flex items-center justify-center w-full h-full text-xs text-neutral-600">
+                        n/a
+                      </span>
+                    ) : p.kind === "video" ? (
+                      <>
+                        <video
+                          src={p.signedUrl}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center text-3xl text-white/90 pointer-events-none">
+                          ▶
+                        </span>
+                      </>
+                    ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={p.signedUrl}
                         alt={p.category || "photo"}
                         className="w-full h-full object-cover"
                       />
-                    ) : (
-                      <span className="flex items-center justify-center w-full h-full text-xs text-neutral-600">
-                        n/a
-                      </span>
                     )}
                   </button>
                 ))}
@@ -792,12 +804,23 @@ function PhotosSection({
           onClick={() => setViewer(null)}
           className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={viewer.signedUrl}
-            alt={viewer.category || "photo"}
-            className="max-h-[85vh] max-w-full object-contain rounded-lg"
-          />
+          {viewer.kind === "video" ? (
+            <video
+              src={viewer.signedUrl}
+              controls
+              autoPlay
+              playsInline
+              onClick={(e) => e.stopPropagation()}
+              className="max-h-[85vh] max-w-full rounded-lg"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={viewer.signedUrl}
+              alt={viewer.category || "photo"}
+              className="max-h-[85vh] max-w-full object-contain rounded-lg"
+            />
+          )}
           <div className="text-sm text-neutral-300 mt-3 text-center">
             {viewer.label || categoryLabel(lang, viewer.category || "")}
             {viewer.uploaderName ? ` · ${viewer.uploaderName}` : ""}
