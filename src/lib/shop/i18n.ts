@@ -260,6 +260,33 @@ export function materialTypeLabel(lang: string | undefined, type: string): strin
   return MATERIAL_MAP[l][type] || type;
 }
 
+// Common sizes per material type (tap-to-pick). Sizes are technical, so they
+// are the same in every language. Extend these as KIW confirms what it stocks.
+export const SIZE_OPTIONS: Record<string, string[]> = {
+  Tube: [
+    '1"x1"', '1-1/4"x1-1/4"', '1-1/2"x1-1/2"', '2"x2"',
+    '2"x1"', '3"x2"', '3"x3"', '4"x4"',
+  ],
+  "Solid Bar": [
+    '1/2" sq', '5/8" sq', '3/4" sq', '1" sq',
+    '1/2" rd', '5/8" rd', '3/4" rd',
+  ],
+  "Flat Bar": [
+    '1/8"x1"', '3/16"x1"', '1/4"x1"', '1/4"x1-1/2"',
+    '1/4"x2"', '3/8"x2"', '1/2"x2"',
+  ],
+  Angle: [
+    '1"x1"x1/8"', '1-1/2"x1-1/2"x1/8"', '2"x2"x1/8"',
+    '2"x2"x1/4"', '3"x3"x1/4"', '4"x4"x1/4"',
+  ],
+  Channel: ["C3x4.1", "C4x5.4", "C5x6.7", "C6x8.2", "C8x11.5", "C10x15.3"],
+  "Structural Beam": ["W6x9", "W8x10", "W8x18", "W10x22", "W12x26", "W12x40"],
+  Plate: ['1/8"', '3/16"', '1/4"', '3/8"', '1/2"', '3/4"', '1"'],
+  "Diamond Plate": ['1/8"', '3/16"', '1/4"'],
+  Grille: ['Bar grating 1"x3/16"', 'Bar grating 1-1/4"x3/16"', "Decorative"],
+  Molding: ["Cap rail", "Shoe rail", "Collar", "Scroll", "Basket"],
+};
+
 export function t(
   lang: string | undefined | null,
   key: string,

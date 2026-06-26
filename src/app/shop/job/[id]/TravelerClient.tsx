@@ -19,6 +19,7 @@ import {
   specValue,
   materialTypeLabel,
   MATERIAL_TYPES,
+  SIZE_OPTIONS,
   SPEC_OPTIONS,
 } from "@/lib/shop/i18n";
 
@@ -310,17 +311,24 @@ function MaterialAdder({
   act: (p: Record<string, unknown>) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<string>(MATERIAL_TYPES[0]);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [type, setType] = useState<string>("");
   const [size, setSize] = useState("");
   const [qty, setQty] = useState("1");
   const [length, setLength] = useState("");
 
-  function add() {
-    act({ type: "cut_add", jobId, profile: type, size, qty, length });
+  function reset() {
+    setStep(1);
+    setType("");
     setSize("");
     setQty("1");
     setLength("");
     setOpen(false);
+  }
+
+  function add() {
+    act({ type: "cut_add", jobId, profile: type, size, qty, length });
+    reset();
   }
 
   if (!open) {
@@ -334,62 +342,102 @@ function MaterialAdder({
     );
   }
 
+  const sizes = SIZE_OPTIONS[type] || [];
+
   return (
-    <div className="mt-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3 space-y-2">
-      <div className="text-[11px] uppercase tracking-wide text-neutral-400">
-        {t(lang, "materialType")}
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {MATERIAL_TYPES.map((m) => (
+    <div className="mt-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3 space-y-3">
+      {/* Step 1 — material type */}
+      {step === 1 ? (
+        <>
+          <div className="text-[11px] uppercase tracking-wide text-neutral-400">
+            1 · {t(lang, "materialType")}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {MATERIAL_TYPES.map((m) => (
+              <button
+                key={m}
+                onClick={() => {
+                  setType(m);
+                  setSize("");
+                  setStep(2);
+                }}
+                className="px-3 py-3 rounded-lg text-sm border bg-neutral-950 border-neutral-700 text-neutral-200 font-medium active:scale-[0.98]"
+              >
+                {materialTypeLabel(lang, m)}
+              </button>
+            ))}
+          </div>
           <button
-            key={m}
-            onClick={() => setType(m)}
-            className={`px-2.5 py-1.5 rounded-full text-xs border transition ${
-              type === m
-                ? "bg-amber-500 text-black border-amber-500 font-semibold"
-                : "bg-neutral-950 border-neutral-700 text-neutral-300"
-            }`}
+            onClick={reset}
+            className="w-full rounded-lg border border-neutral-700 text-neutral-400 py-2 text-sm"
           >
-            {materialTypeLabel(lang, m)}
+            {t(lang, "cancel")}
           </button>
-        ))}
-      </div>
-      <div className="grid grid-cols-3 gap-2">
-        <input
-          value={size}
-          onChange={(e) => setSize(e.target.value)}
-          placeholder={t(lang, "size")}
-          className="col-span-3 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
-        />
-        <input
-          value={qty}
-          onChange={(e) => setQty(e.target.value)}
-          inputMode="numeric"
-          placeholder={t(lang, "qty")}
-          className="bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
-        />
-        <input
-          value={length}
-          onChange={(e) => setLength(e.target.value)}
-          placeholder={t(lang, "length")}
-          className="col-span-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
-        />
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={() => setOpen(false)}
-          className="flex-1 rounded-lg border border-neutral-700 text-neutral-300 py-2 text-sm"
-        >
-          {t(lang, "cancel")}
-        </button>
-        <button
-          disabled={busy}
-          onClick={add}
-          className="flex-1 rounded-lg bg-amber-500 text-black font-semibold py-2 text-sm disabled:opacity-50"
-        >
-          {t(lang, "addBtn")}
-        </button>
-      </div>
+        </>
+      ) : (
+        /* Step 2 — size + qty + length */
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold text-amber-400">
+              {materialTypeLabel(lang, type)}
+            </span>
+            <button
+              onClick={() => setStep(1)}
+              className="text-xs text-neutral-400 border border-neutral-700 rounded-md px-2 py-1"
+            >
+              ‹ {t(lang, "materialType")}
+            </button>
+          </div>
+          <div className="text-[11px] uppercase tracking-wide text-neutral-400">
+            2 · {t(lang, "size")}
+          </div>
+          {sizes.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {sizes.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSize(s)}
+                  className={`px-2.5 py-1.5 rounded-full text-xs border transition ${
+                    size === s
+                      ? "bg-amber-500 text-black border-amber-500 font-semibold"
+                      : "bg-neutral-950 border-neutral-700 text-neutral-300"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+          <input
+            value={size}
+            onChange={(e) => setSize(e.target.value)}
+            placeholder={t(lang, "size")}
+            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+          />
+          <div className="grid grid-cols-3 gap-2">
+            <input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              inputMode="numeric"
+              placeholder={t(lang, "qty")}
+              className="bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+            />
+            <input
+              value={length}
+              onChange={(e) => setLength(e.target.value)}
+              placeholder={t(lang, "length")}
+              className="col-span-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+            />
+          </div>
+          <button
+            disabled={busy || !size.trim()}
+            onClick={add}
+            className="w-full rounded-lg bg-amber-500 text-black font-semibold py-2.5 text-sm disabled:opacity-40"
+          >
+            {t(lang, "addBtn")}
+          </button>
+        </>
+      )}
     </div>
   );
 }
