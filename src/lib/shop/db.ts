@@ -36,6 +36,7 @@ export interface Worker {
 // covers up to 5 railings out of the box; workers can add a custom one.
 export const PRICE_CATEGORY = "Approved Estimate";
 export const PHOTO_CATEGORIES = [
+  "Plans",
   "Instructions",
   "Design",
   "Measurements",

@@ -333,6 +333,7 @@ export function stageLabel(lang: string | undefined, stage: string): string {
 const CAT_MAP: Record<Lang, Record<string, string>> = {
   en: {},
   pt: {
+    Plans: "Plantas",
     Instructions: "Instruções",
     Design: "Projeto",
     Measurements: "Medidas",
@@ -344,6 +345,7 @@ const CAT_MAP: Record<Lang, Record<string, string>> = {
     Other: "Outro",
   },
   es: {
+    Plans: "Planos",
     Instructions: "Instrucciones",
     Design: "Diseño",
     Measurements: "Medidas",
