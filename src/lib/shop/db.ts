@@ -64,6 +64,7 @@ export interface Job {
   id: string;
   job_number: string;
   customer_name: string;
+  project_type: string | null;
   address: string | null;
   phone: string | null;
   finish: string | null;

@@ -82,11 +82,16 @@ export default async function ShopBoard() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
+                    {j.project_type && (
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-amber-500 truncate">
+                        {j.project_type}
+                      </div>
+                    )}
                     <div className="text-lg font-semibold truncate">
                       {j.customer_name}
                     </div>
                     <div className="text-xs text-neutral-500 truncate">
-                      {j.job_number} · {j.address || "—"}
+                      {j.address || "—"}
                     </div>
                   </div>
                   <span

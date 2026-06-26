@@ -58,6 +58,9 @@ const STR: Record<Lang, Dict> = {
     todayFloor: "Today on the floor",
     jobLabel: "Job",
     estLabel: "Est",
+    installBy: "Install by",
+    daysLeft: "days left",
+    dayLeft: "day left",
   },
   pt: {
     shopFloor: "Oficina",
@@ -110,6 +113,9 @@ const STR: Record<Lang, Dict> = {
     todayFloor: "Hoje na oficina",
     jobLabel: "Obra",
     estLabel: "Orç.",
+    installBy: "Instalar até",
+    daysLeft: "dias restantes",
+    dayLeft: "dia restante",
   },
   es: {
     shopFloor: "Taller",
@@ -162,6 +168,9 @@ const STR: Record<Lang, Dict> = {
     todayFloor: "Hoy en el taller",
     jobLabel: "Trabajo",
     estLabel: "Pres.",
+    installBy: "Instalar antes de",
+    daysLeft: "días restantes",
+    dayLeft: "día restante",
   },
 };
 

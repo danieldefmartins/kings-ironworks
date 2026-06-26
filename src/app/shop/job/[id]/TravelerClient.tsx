@@ -75,6 +75,7 @@ export default function TravelerClient({
     }
   }
 
+  const due = dueInfo(job.due_date, lang);
   const stageIdx = STAGES.indexOf(job.current_stage as (typeof STAGES)[number]);
   const cutDone = cut.filter((c) => c.status !== "pending").length;
   const matDone = materials.filter((m) => m.pulled).length;
@@ -88,34 +89,43 @@ export default function TravelerClient({
         </div>
       )}
 
-      {/* Header card */}
+      {/* Hero image carousel */}
+      <HeroCarousel photos={photos} lang={lang} />
+
+      {/* Summary header — what's needed to complete the project */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-5">
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-          <span className="text-neutral-400">
-            {t(lang, "jobLabel")}{" "}
-            <span className="text-neutral-200">{job.job_number}</span>
+        {job.project_type && (
+          <span className="inline-block bg-amber-500 text-black text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full mb-2">
+            {job.project_type}
           </span>
-          {job.est_number && (
-            <span className="text-neutral-400">
-              {t(lang, "estLabel")}{" "}
-              <span className="text-neutral-200">{job.est_number}</span>
-            </span>
-          )}
-          {job.finish && (
-            <span className="text-neutral-400">
-              {t(lang, "finish")}{" "}
-              <span className="text-amber-400">{job.finish}</span>
-            </span>
-          )}
-        </div>
+        )}
+        <h1 className="text-2xl font-display font-bold leading-tight">
+          {job.customer_name}
+        </h1>
         {job.address && (
-          <div className="text-sm text-neutral-400 mt-1">{job.address}</div>
+          <div className="text-sm text-neutral-300 mt-2 flex items-start gap-2">
+            <span aria-hidden>📍</span>
+            <span>{job.address}</span>
+          </div>
+        )}
+        <div className={`text-sm mt-1.5 flex items-center gap-2 ${due.cls}`}>
+          <span aria-hidden>🗓️</span>
+          <span className="font-semibold">
+            {t(lang, "installBy")} {due.text}
+          </span>
+        </div>
+        {job.finish && (
+          <div className="text-sm text-neutral-400 mt-1.5">
+            {t(lang, "finish")}:{" "}
+            <span className="text-amber-400">{job.finish}</span>
+          </div>
         )}
         {job.scope && (
-          <div className="text-sm text-neutral-300 mt-2 leading-relaxed">
+          <div className="text-sm text-neutral-300 mt-3 leading-relaxed border-t border-neutral-800 pt-3">
             {job.scope}
           </div>
         )}
+        <div className="text-xs text-neutral-600 mt-2">{job.job_number}</div>
       </div>
 
       {/* Stage tracker */}
@@ -493,6 +503,107 @@ function QcRow({
           {t(lang, "fail")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function dueInfo(due: string | null, lang: string) {
+  if (!due) return { text: "—", cls: "text-neutral-400" };
+  const d = new Date(due + "T00:00:00");
+  const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+  const date = d.toLocaleDateString(
+    lang === "pt" ? "pt-BR" : lang === "es" ? "es-ES" : "en-US",
+    { weekday: "short", month: "short", day: "numeric" }
+  );
+  const unit = Math.abs(days) === 1 ? t(lang, "dayLeft") : t(lang, "daysLeft");
+  if (days < 0)
+    return { text: `${date} · ${t(lang, "overdue")}`, cls: "text-red-400" };
+  if (days <= 7)
+    return { text: `${date} · ${days} ${unit}`, cls: "text-amber-400" };
+  return { text: `${date} · ${days} ${unit}`, cls: "text-neutral-200" };
+}
+
+function HeroCarousel({ photos, lang }: { photos: Photo[]; lang: string }) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState<Photo | null>(null);
+  const shots = photos.filter((p) => p.signedUrl);
+
+  if (shots.length === 0) {
+    return (
+      <div className="mb-5 h-40 rounded-xl border border-dashed border-neutral-800 bg-neutral-900 flex items-center justify-center text-sm text-neutral-600">
+        {t(lang, "noPhotos")}
+      </div>
+    );
+  }
+
+  function scrollBy(dir: number) {
+    const el = scroller.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative mb-5">
+      <div
+        ref={scroller}
+        className="flex gap-2 overflow-x-auto snap-x snap-mandatory rounded-xl scrollbar-none"
+        style={{ scrollbarWidth: "none" }}
+      >
+        {shots.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setOpen(p)}
+            className="relative shrink-0 w-[85%] sm:w-[60%] aspect-video snap-center rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={p.signedUrl}
+              alt={p.category || "photo"}
+              className="w-full h-full object-cover"
+            />
+            <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent text-[11px] text-neutral-200 px-2 py-1 text-left">
+              {p.label || categoryLabel(lang, p.category || "")}
+            </span>
+          </button>
+        ))}
+      </div>
+      {shots.length > 1 && (
+        <>
+          <button
+            onClick={() => scrollBy(-1)}
+            className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 border border-neutral-700 text-lg"
+            aria-label="prev"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => scrollBy(1)}
+            className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 border border-neutral-700 text-lg"
+            aria-label="next"
+          >
+            ›
+          </button>
+        </>
+      )}
+      {open && open.signedUrl && (
+        <div
+          onClick={() => setOpen(null)}
+          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={open.signedUrl}
+            alt={open.category || "photo"}
+            className="max-h-[85vh] max-w-full object-contain rounded-lg"
+          />
+          <div className="text-sm text-neutral-300 mt-3 text-center">
+            {open.label || categoryLabel(lang, open.category || "")}
+            {open.uploaderName ? ` · ${open.uploaderName}` : ""}
+          </div>
+          <button className="mt-2 text-neutral-400 text-sm">
+            {t(lang, "tapClose")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
