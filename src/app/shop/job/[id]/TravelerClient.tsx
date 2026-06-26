@@ -89,11 +89,8 @@ export default function TravelerClient({
         </div>
       )}
 
-      {/* Hero image carousel */}
-      <HeroCarousel photos={photos} lang={lang} />
-
       {/* Summary header — what's needed to complete the project */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-5">
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         {job.project_type && (
           <span className="inline-block bg-amber-500 text-black text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full mb-2">
             {job.project_type}
@@ -127,6 +124,9 @@ export default function TravelerClient({
         )}
         <div className="text-xs text-neutral-600 mt-2">{job.job_number}</div>
       </div>
+
+      {/* Photos — right under the customer information */}
+      <HeroCarousel photos={photos} lang={lang} />
 
       {/* Stage tracker */}
       <Section title={t(lang, "stage")} sub={stageLabel(lang, job.current_stage)}>
