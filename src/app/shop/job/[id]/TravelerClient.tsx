@@ -12,7 +12,15 @@ import {
   type QcCheck,
   type Photo,
 } from "@/lib/shop/db";
-import { t, stageLabel, categoryLabel } from "@/lib/shop/i18n";
+import {
+  t,
+  stageLabel,
+  categoryLabel,
+  specValue,
+  materialTypeLabel,
+  MATERIAL_TYPES,
+  SPEC_OPTIONS,
+} from "@/lib/shop/i18n";
 
 const CUT_NEXT: Record<string, string> = {
   pending: "cut",
@@ -23,6 +31,12 @@ const CUT_STYLE: Record<string, string> = {
   pending: "bg-neutral-800 border-neutral-700 text-neutral-300",
   cut: "bg-blue-600/20 border-blue-500 text-blue-200",
   welded: "bg-green-600/20 border-green-500 text-green-200",
+};
+
+const COLOR_SWATCH: Record<string, string> = {
+  Black: "#111114",
+  White: "#f3f3f3",
+  Bronze: "#8c6239",
 };
 
 export default function TravelerClient({
@@ -89,7 +103,7 @@ export default function TravelerClient({
         </div>
       )}
 
-      {/* Summary header — what's needed to complete the project */}
+      {/* Customer information */}
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         {job.project_type && (
           <span className="inline-block bg-amber-500 text-black text-xs font-bold uppercase tracking-wide px-2.5 py-1 rounded-full mb-2">
@@ -111,12 +125,10 @@ export default function TravelerClient({
             {t(lang, "installBy")} {due.text}
           </span>
         </div>
-        {job.finish && (
-          <div className="text-sm text-neutral-400 mt-1.5">
-            {t(lang, "finish")}:{" "}
-            <span className="text-amber-400">{job.finish}</span>
-          </div>
-        )}
+
+        {/* Fabrication specs — loud & clear */}
+        <SpecsPanel job={job} lang={lang} busy={busy} act={act} />
+
         {job.scope && (
           <div className="text-sm text-neutral-300 mt-3 leading-relaxed border-t border-neutral-800 pt-3">
             {job.scope}
@@ -125,8 +137,16 @@ export default function TravelerClient({
         <div className="text-xs text-neutral-600 mt-2">{job.job_number}</div>
       </div>
 
-      {/* Photos — right under the customer information */}
-      <HeroCarousel photos={photos} lang={lang} />
+      {/* Photos — full section directly under the customer info */}
+      <Section title={t(lang, "photos")} sub={`${photos.length}`}>
+        <PhotosSection
+          jobId={job.id}
+          photos={photos}
+          canSeePrices={canSeePrices}
+          lang={lang}
+          refresh={() => startTransition(() => router.refresh())}
+        />
+      </Section>
 
       {/* Stage tracker */}
       <Section title={t(lang, "stage")} sub={stageLabel(lang, job.current_stage)}>
@@ -155,58 +175,70 @@ export default function TravelerClient({
         <p className="text-xs text-neutral-500 mt-2">{t(lang, "stageNote")}</p>
       </Section>
 
-      {/* Cut list */}
+      {/* Materials (build list) */}
       <Section
-        title={t(lang, "cutList")}
+        title={t(lang, "materialsList")}
         sub={`${cutDone}/${cut.length} ${t(lang, "done")}`}
       >
-        {cut.length === 0 && <Empty>{t(lang, "noCutList")}</Empty>}
         <div className="space-y-2">
-          {cut.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3"
-            >
-              <div className="w-12 shrink-0">
-                <div className="text-[10px] text-neutral-500 uppercase">
-                  {t(lang, "tag")}
-                </div>
-                <div className="font-mono text-amber-400 text-sm">
-                  {c.cut_tag || c.item_no || "—"}
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold truncate">{c.profile}</div>
-                <div className="text-xs text-neutral-400 truncate">
-                  {c.description}
-                </div>
-                <div className="text-xs text-neutral-500 mt-0.5">
-                  {t(lang, "qty")} <span className="text-neutral-300">{c.qty}</span> ·{" "}
-                  {t(lang, "length")}{" "}
-                  <span className="text-neutral-300">{c.length || "—"}</span>
-                </div>
-              </div>
-              <button
-                disabled={busy}
-                onClick={() =>
-                  act({
-                    type: "cut_set",
-                    id: c.id,
-                    status: CUT_NEXT[c.status] || "pending",
-                  })
-                }
-                className={`shrink-0 w-24 text-center px-2 py-3 rounded-lg border text-sm font-semibold active:scale-95 transition ${
-                  CUT_STYLE[c.status] || CUT_STYLE.pending
-                }`}
+          {cut.map((c) => {
+            const typeLabel = (MATERIAL_TYPES as readonly string[]).includes(
+              c.profile || ""
+            )
+              ? materialTypeLabel(lang, c.profile || "")
+              : c.profile;
+            return (
+              <div
+                key={c.id}
+                className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3"
               >
-                {cutLabel[c.status] || cutLabel.pending}
-              </button>
-            </div>
-          ))}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">
+                    {typeLabel}
+                    {c.size && (
+                      <span className="text-amber-400 font-normal"> · {c.size}</span>
+                    )}
+                  </div>
+                  {c.description && (
+                    <div className="text-xs text-neutral-400 truncate">
+                      {c.description}
+                    </div>
+                  )}
+                  <div className="text-xs text-neutral-500 mt-0.5">
+                    {t(lang, "qty")}{" "}
+                    <span className="text-neutral-300">{c.qty}</span> ·{" "}
+                    {t(lang, "length")}{" "}
+                    <span className="text-neutral-300">{c.length || "—"}</span>
+                  </div>
+                </div>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    act({
+                      type: "cut_set",
+                      id: c.id,
+                      status: CUT_NEXT[c.status] || "pending",
+                    })
+                  }
+                  className={`shrink-0 w-24 text-center px-2 py-3 rounded-lg border text-sm font-semibold active:scale-95 transition ${
+                    CUT_STYLE[c.status] || CUT_STYLE.pending
+                  }`}
+                >
+                  {cutLabel[c.status] || cutLabel.pending}
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => act({ type: "cut_delete", id: c.id })}
+                  className="shrink-0 w-8 h-8 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-neutral-800"
+                  aria-label="delete"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
         </div>
-        {cut.length > 0 && (
-          <p className="text-xs text-neutral-500 mt-2">{t(lang, "cutNote")}</p>
-        )}
+        <MaterialAdder jobId={job.id} lang={lang} busy={busy} act={act} />
       </Section>
 
       {/* Materials */}
@@ -262,17 +294,300 @@ export default function TravelerClient({
         </div>
         <p className="text-xs text-neutral-500 mt-2">{t(lang, "qcNote")}</p>
       </Section>
+    </div>
+  );
+}
 
-      {/* Photos */}
-      <Section title={t(lang, "photos")} sub={`${photos.length}`}>
-        <PhotosSection
-          jobId={job.id}
-          photos={photos}
-          canSeePrices={canSeePrices}
-          lang={lang}
-          refresh={() => startTransition(() => router.refresh())}
+function MaterialAdder({
+  jobId,
+  lang,
+  busy,
+  act,
+}: {
+  jobId: string;
+  lang: string;
+  busy: boolean;
+  act: (p: Record<string, unknown>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<string>(MATERIAL_TYPES[0]);
+  const [size, setSize] = useState("");
+  const [qty, setQty] = useState("1");
+  const [length, setLength] = useState("");
+
+  function add() {
+    act({ type: "cut_add", jobId, profile: type, size, qty, length });
+    setSize("");
+    setQty("1");
+    setLength("");
+    setOpen(false);
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-3 w-full rounded-lg border border-dashed border-neutral-700 text-amber-400 py-2.5 text-sm font-semibold active:scale-[0.99]"
+      >
+        ➕ {t(lang, "addMaterial")}
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3 space-y-2">
+      <div className="text-[11px] uppercase tracking-wide text-neutral-400">
+        {t(lang, "materialType")}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {MATERIAL_TYPES.map((m) => (
+          <button
+            key={m}
+            onClick={() => setType(m)}
+            className={`px-2.5 py-1.5 rounded-full text-xs border transition ${
+              type === m
+                ? "bg-amber-500 text-black border-amber-500 font-semibold"
+                : "bg-neutral-950 border-neutral-700 text-neutral-300"
+            }`}
+          >
+            {materialTypeLabel(lang, m)}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <input
+          value={size}
+          onChange={(e) => setSize(e.target.value)}
+          placeholder={t(lang, "size")}
+          className="col-span-3 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
         />
-      </Section>
+        <input
+          value={qty}
+          onChange={(e) => setQty(e.target.value)}
+          inputMode="numeric"
+          placeholder={t(lang, "qty")}
+          className="bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+        />
+        <input
+          value={length}
+          onChange={(e) => setLength(e.target.value)}
+          placeholder={t(lang, "length")}
+          className="col-span-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={() => setOpen(false)}
+          className="flex-1 rounded-lg border border-neutral-700 text-neutral-300 py-2 text-sm"
+        >
+          {t(lang, "cancel")}
+        </button>
+        <button
+          disabled={busy}
+          onClick={add}
+          className="flex-1 rounded-lg bg-amber-500 text-black font-semibold py-2 text-sm disabled:opacity-50"
+        >
+          {t(lang, "addBtn")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SpecsPanel({
+  job,
+  lang,
+  busy,
+  act,
+}: {
+  job: Job;
+  lang: string;
+  busy: boolean;
+  act: (p: Record<string, unknown>) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [ft, setFt] = useState(job.finish_type || "");
+  const [sheen, setSheen] = useState(job.finish_sheen || "");
+  const [color, setColor] = useState(job.color || "");
+  const [customColor, setCustomColor] = useState(
+    job.color && !["Black", "White", "Bronze"].includes(job.color) ? job.color : ""
+  );
+  const [mounting, setMounting] = useState(job.mounting || "");
+
+  const swatch = COLOR_SWATCH[job.color || ""] || "#9a7b4f";
+  const isCustomColor =
+    !!job.color && !["Black", "White", "Bronze"].includes(job.color);
+
+  function save() {
+    const finalColor =
+      color === "Custom" ? customColor.trim() || "Custom" : color || null;
+    act({
+      type: "job_spec_set",
+      jobId: job.id,
+      finish_type: ft || null,
+      finish_sheen: ft === "DTM Epoxy" ? sheen || null : null,
+      color: finalColor,
+      mounting: mounting || null,
+    });
+    setEditing(false);
+  }
+
+  return (
+    <div className="mt-3 border-t border-neutral-800 pt-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[11px] uppercase tracking-[0.15em] text-amber-500/80 font-bold">
+          {t(lang, "specs")}
+        </span>
+        <button
+          onClick={() => setEditing((v) => !v)}
+          className="text-xs text-neutral-400 border border-neutral-700 rounded-md px-2 py-1"
+        >
+          {editing ? t(lang, "cancel") : "✏️ " + t(lang, "editSpecs")}
+        </button>
+      </div>
+
+      {!editing ? (
+        <div className="grid grid-cols-3 gap-2">
+          <SpecTile label={t(lang, "finish")}>
+            {job.finish_type ? (
+              <>
+                {specValue(lang, job.finish_type)}
+                {job.finish_sheen && (
+                  <span className="block text-xs text-neutral-400 font-normal">
+                    {specValue(lang, job.finish_sheen)}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-neutral-600 font-normal">{t(lang, "notSet")}</span>
+            )}
+          </SpecTile>
+          <SpecTile label={t(lang, "colorLabel")}>
+            {job.color ? (
+              <span className="flex items-center gap-1.5">
+                <span
+                  className="w-3.5 h-3.5 rounded-full border border-neutral-600 shrink-0"
+                  style={{ background: swatch }}
+                />
+                {isCustomColor ? job.color : specValue(lang, job.color)}
+              </span>
+            ) : (
+              <span className="text-neutral-600 font-normal">{t(lang, "notSet")}</span>
+            )}
+          </SpecTile>
+          <SpecTile label={t(lang, "mounting")}>
+            {job.mounting ? (
+              specValue(lang, job.mounting)
+            ) : (
+              <span className="text-neutral-600 font-normal">{t(lang, "notSet")}</span>
+            )}
+          </SpecTile>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <ChipRow
+            label={t(lang, "finish")}
+            options={SPEC_OPTIONS.finish_type}
+            value={ft}
+            onPick={setFt}
+            display={(o) => specValue(lang, o)}
+          />
+          {ft === "DTM Epoxy" && (
+            <ChipRow
+              label={t(lang, "sheen")}
+              options={SPEC_OPTIONS.finish_sheen}
+              value={sheen}
+              onPick={setSheen}
+              display={(o) => specValue(lang, o)}
+            />
+          )}
+          <ChipRow
+            label={t(lang, "colorLabel")}
+            options={SPEC_OPTIONS.color}
+            value={color}
+            onPick={setColor}
+            display={(o) => specValue(lang, o)}
+          />
+          {color === "Custom" && (
+            <input
+              value={customColor}
+              onChange={(e) => setCustomColor(e.target.value)}
+              placeholder={t(lang, "colorLabel")}
+              className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+            />
+          )}
+          <ChipRow
+            label={t(lang, "mounting")}
+            options={SPEC_OPTIONS.mounting}
+            value={mounting}
+            onPick={setMounting}
+            display={(o) => specValue(lang, o)}
+          />
+          <button
+            disabled={busy}
+            onClick={save}
+            className="w-full rounded-lg bg-amber-500 text-black font-semibold py-2.5 active:scale-[0.99] transition disabled:opacity-50"
+          >
+            {t(lang, "save")}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SpecTile({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-neutral-950 border border-neutral-800 rounded-lg px-2.5 py-2">
+      <div className="text-[10px] uppercase tracking-wide text-neutral-500 mb-0.5">
+        {label}
+      </div>
+      <div className="text-sm font-bold text-neutral-100 leading-tight">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ChipRow({
+  label,
+  options,
+  value,
+  onPick,
+  display,
+}: {
+  label: string;
+  options: readonly string[];
+  value: string;
+  onPick: (v: string) => void;
+  display: (o: string) => string;
+}) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-wide text-neutral-400 mb-1">
+        {label}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {options.map((o) => (
+          <button
+            key={o}
+            onClick={() => onPick(o)}
+            className={`px-3 py-1.5 rounded-full text-sm border transition ${
+              value === o
+                ? "bg-amber-500 text-black border-amber-500 font-semibold"
+                : "bg-neutral-950 border-neutral-700 text-neutral-300"
+            }`}
+          >
+            {display(o)}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -521,91 +836,6 @@ function dueInfo(due: string | null, lang: string) {
   if (days <= 7)
     return { text: `${date} · ${days} ${unit}`, cls: "text-amber-400" };
   return { text: `${date} · ${days} ${unit}`, cls: "text-neutral-200" };
-}
-
-function HeroCarousel({ photos, lang }: { photos: Photo[]; lang: string }) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState<Photo | null>(null);
-  const shots = photos.filter((p) => p.signedUrl);
-
-  if (shots.length === 0) {
-    return (
-      <div className="mb-5 h-40 rounded-xl border border-dashed border-neutral-800 bg-neutral-900 flex items-center justify-center text-sm text-neutral-600">
-        {t(lang, "noPhotos")}
-      </div>
-    );
-  }
-
-  function scrollBy(dir: number) {
-    const el = scroller.current;
-    if (el) el.scrollBy({ left: dir * el.clientWidth * 0.85, behavior: "smooth" });
-  }
-
-  return (
-    <div className="relative mb-5">
-      <div
-        ref={scroller}
-        className="flex gap-2 overflow-x-auto snap-x snap-mandatory rounded-xl scrollbar-none"
-        style={{ scrollbarWidth: "none" }}
-      >
-        {shots.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setOpen(p)}
-            className="relative shrink-0 w-[85%] sm:w-[60%] aspect-video snap-center rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={p.signedUrl}
-              alt={p.category || "photo"}
-              className="w-full h-full object-cover"
-            />
-            <span className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent text-[11px] text-neutral-200 px-2 py-1 text-left">
-              {p.label || categoryLabel(lang, p.category || "")}
-            </span>
-          </button>
-        ))}
-      </div>
-      {shots.length > 1 && (
-        <>
-          <button
-            onClick={() => scrollBy(-1)}
-            className="absolute left-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 border border-neutral-700 text-lg"
-            aria-label="prev"
-          >
-            ‹
-          </button>
-          <button
-            onClick={() => scrollBy(1)}
-            className="absolute right-1 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/60 border border-neutral-700 text-lg"
-            aria-label="next"
-          >
-            ›
-          </button>
-        </>
-      )}
-      {open && open.signedUrl && (
-        <div
-          onClick={() => setOpen(null)}
-          className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={open.signedUrl}
-            alt={open.category || "photo"}
-            className="max-h-[85vh] max-w-full object-contain rounded-lg"
-          />
-          <div className="text-sm text-neutral-300 mt-3 text-center">
-            {open.label || categoryLabel(lang, open.category || "")}
-            {open.uploaderName ? ` · ${open.uploaderName}` : ""}
-          </div>
-          <button className="mt-2 text-neutral-400 text-sm">
-            {t(lang, "tapClose")}
-          </button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function Section({

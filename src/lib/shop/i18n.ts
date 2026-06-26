@@ -61,6 +61,19 @@ const STR: Record<Lang, Dict> = {
     installBy: "Install by",
     daysLeft: "days left",
     dayLeft: "day left",
+    specs: "Specs",
+    colorLabel: "Color",
+    mounting: "Mounting",
+    sheen: "Sheen",
+    editSpecs: "Edit",
+    save: "Save",
+    cancel: "Cancel",
+    notSet: "Set",
+    materialsList: "Materials",
+    addMaterial: "Add material",
+    materialType: "Type",
+    size: "Size",
+    addBtn: "Add",
   },
   pt: {
     shopFloor: "Oficina",
@@ -116,6 +129,19 @@ const STR: Record<Lang, Dict> = {
     installBy: "Instalar até",
     daysLeft: "dias restantes",
     dayLeft: "dia restante",
+    specs: "Especificações",
+    colorLabel: "Cor",
+    mounting: "Fixação",
+    sheen: "Brilho",
+    editSpecs: "Editar",
+    save: "Salvar",
+    cancel: "Cancelar",
+    notSet: "Definir",
+    materialsList: "Materiais",
+    addMaterial: "Adicionar material",
+    materialType: "Tipo",
+    size: "Tamanho",
+    addBtn: "Adicionar",
   },
   es: {
     shopFloor: "Taller",
@@ -171,8 +197,68 @@ const STR: Record<Lang, Dict> = {
     installBy: "Instalar antes de",
     daysLeft: "días restantes",
     dayLeft: "día restante",
+    specs: "Especificaciones",
+    colorLabel: "Color",
+    mounting: "Montaje",
+    sheen: "Brillo",
+    editSpecs: "Editar",
+    save: "Guardar",
+    cancel: "Cancelar",
+    notSet: "Definir",
+    materialsList: "Materiales",
+    addMaterial: "Agregar material",
+    materialType: "Tipo",
+    size: "Medida",
+    addBtn: "Agregar",
   },
 };
+
+// Material catalog — extend this list as you confirm what KIW stocks/uses.
+export const MATERIAL_TYPES = [
+  "Tube",
+  "Solid Bar",
+  "Flat Bar",
+  "Angle",
+  "Channel",
+  "Structural Beam",
+  "Plate",
+  "Diamond Plate",
+  "Grille",
+  "Molding",
+] as const;
+
+const MATERIAL_MAP: Record<Lang, Record<string, string>> = {
+  en: {},
+  pt: {
+    Tube: "Tubo",
+    "Solid Bar": "Barra Maciça",
+    "Flat Bar": "Barra Chata",
+    Angle: "Cantoneira",
+    Channel: "Perfil U",
+    "Structural Beam": "Viga",
+    Plate: "Chapa",
+    "Diamond Plate": "Chapa Xadrez",
+    Grille: "Grade",
+    Molding: "Moldura",
+  },
+  es: {
+    Tube: "Tubo",
+    "Solid Bar": "Barra Maciza",
+    "Flat Bar": "Solera",
+    Angle: "Ángulo",
+    Channel: "Canal",
+    "Structural Beam": "Viga",
+    Plate: "Placa",
+    "Diamond Plate": "Placa Antideslizante",
+    Grille: "Rejilla",
+    Molding: "Moldura",
+  },
+};
+export function materialTypeLabel(lang: string | undefined, type: string): string {
+  const l = asLang(lang);
+  if (l === "en") return type;
+  return MATERIAL_MAP[l][type] || type;
+}
 
 export function t(
   lang: string | undefined | null,
@@ -249,6 +335,53 @@ export function categoryLabel(lang: string | undefined, cat: string): string {
   const match = cat.match(/^Installation\s*—\s*Location\s*(\d+)$/i);
   if (match) return `${m.Installation} — ${m.Location} ${match[1]}`;
   return cat; // custom free-text stays as typed
+}
+
+export const SPEC_OPTIONS = {
+  finish_type: ["DTM Epoxy", "Galvanizing", "Powder Coat"],
+  finish_sheen: ["Flat", "Semi-gloss", "Gloss"],
+  color: ["Black", "White", "Bronze", "Custom"],
+  mounting: ["Metal base plate", "Core-drill + concrete"],
+} as const;
+
+const SPEC_MAP: Record<Lang, Record<string, string>> = {
+  en: {},
+  pt: {
+    "DTM Epoxy": "DTM Epóxi",
+    Galvanizing: "Galvanização",
+    "Powder Coat": "Pintura a Pó",
+    "Per plans": "Conforme projeto",
+    Flat: "Fosco",
+    "Semi-gloss": "Semibrilho",
+    Gloss: "Brilhante",
+    Black: "Preto",
+    White: "Branco",
+    Bronze: "Bronze",
+    Custom: "Personalizado",
+    "Metal base plate": "Placa de base metálica",
+    "Core-drill + concrete": "Perfuração + concreto",
+  },
+  es: {
+    "DTM Epoxy": "DTM Epóxico",
+    Galvanizing: "Galvanizado",
+    "Powder Coat": "Pintura en Polvo",
+    "Per plans": "Según planos",
+    Flat: "Mate",
+    "Semi-gloss": "Semibrillo",
+    Gloss: "Brillante",
+    Black: "Negro",
+    White: "Blanco",
+    Bronze: "Bronce",
+    Custom: "Personalizado",
+    "Metal base plate": "Placa base metálica",
+    "Core-drill + concrete": "Perforación + concreto",
+  },
+};
+export function specValue(lang: string | undefined, value: string | null): string {
+  if (!value) return "";
+  const l = asLang(lang);
+  if (l === "en") return value;
+  return SPEC_MAP[l][value] || value;
 }
 
 export const QUOTES: Record<Lang, string[]> = {

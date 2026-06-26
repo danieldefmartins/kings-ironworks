@@ -68,6 +68,10 @@ export interface Job {
   address: string | null;
   phone: string | null;
   finish: string | null;
+  finish_type: string | null;
+  finish_sheen: string | null;
+  color: string | null;
+  mounting: string | null;
   due_date: string | null;
   current_stage: string;
   est_number: string | null;
@@ -80,7 +84,8 @@ export interface CutItem {
   id: string;
   job_id: string;
   item_no: number | null;
-  profile: string | null;
+  profile: string | null; // material type (Tube, Flat Bar, Angle, …)
+  size: string | null; // e.g. 2x2x1/4
   description: string | null;
   qty: number | null;
   length: string | null;
@@ -155,6 +160,10 @@ export function sbUpdate<T>(
     headers: { Prefer: "return=representation" },
     body: JSON.stringify(patch),
   });
+}
+
+export function sbDelete(table: string, query: string): Promise<unknown> {
+  return rest(`${table}?${query}`, { method: "DELETE" });
 }
 
 // ---- Domain helpers -------------------------------------------------------

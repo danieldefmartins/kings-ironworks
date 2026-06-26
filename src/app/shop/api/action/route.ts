@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWorker } from "@/lib/shop/session";
-import { sbUpdate, sbInsert, STAGES } from "@/lib/shop/db";
+import { sbUpdate, sbInsert, sbDelete, STAGES } from "@/lib/shop/db";
 
 export const runtime = "nodejs";
 
@@ -63,6 +63,37 @@ export async function POST(req: NextRequest) {
           passed: passed === null ? null : !!passed,
           checked_by: passed === null ? null : worker.id,
           checked_at: passed === null ? null : now,
+        });
+        break;
+      }
+
+      // Add a material line to the job
+      case "cut_add": {
+        const { jobId, profile, size, qty, length } = body;
+        await sbInsert("kiw_shop_cut_items", {
+          job_id: jobId,
+          profile: profile || null,
+          size: size || null,
+          qty: qty ? Number(qty) : 1,
+          length: length || null,
+          status: "pending",
+        });
+        break;
+      }
+
+      case "cut_delete": {
+        await sbDelete("kiw_shop_cut_items", `id=eq.${body.id}`);
+        break;
+      }
+
+      // Set fabrication specs (finish / color / mounting) on the job
+      case "job_spec_set": {
+        const { jobId, finish_type, finish_sheen, color, mounting } = body;
+        await sbUpdate("kiw_shop_jobs", `id=eq.${jobId}`, {
+          finish_type: finish_type ?? null,
+          finish_sheen: finish_sheen ?? null,
+          color: color ?? null,
+          mounting: mounting ?? null,
         });
         break;
       }
