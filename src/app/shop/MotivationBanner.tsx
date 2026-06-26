@@ -1,18 +1,24 @@
-import { QUOTES, t, asLang } from "@/lib/shop/i18n";
+import { QUOTES } from "@/lib/shop/i18n";
+
+function dayIndex(mod: number) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const day = Math.floor((now.getTime() - start.getTime()) / 86400000);
+  return ((day % mod) + mod) % mod;
+}
 
 // `seed` is generated fresh on the server each request, so the quote changes
-// every login / page load. Passing it as a prop avoids hydration mismatches.
+// every login / page load. Shows English (top) and Portuguese (bottom).
 export default function MotivationBanner({
-  lang = "en",
-  seed = 0,
+  seed,
   compact = false,
 }: {
-  lang?: string;
+  lang?: string; // kept for compatibility; quote always shows EN + PT
   seed?: number;
   compact?: boolean;
 }) {
-  const quotes = QUOTES[asLang(lang)];
-  const quote = quotes[((seed % quotes.length) + quotes.length) % quotes.length];
+  const len = QUOTES.en.length;
+  const i = typeof seed === "number" ? ((seed % len) + len) % len : dayIndex(len);
 
   return (
     <div
@@ -20,16 +26,23 @@ export default function MotivationBanner({
         compact ? "px-4 py-2.5" : "px-5 py-4"
       }`}
     >
-      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80 mb-1 flex items-center gap-1.5">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80 mb-1.5 flex items-center gap-1.5">
         <span aria-hidden>🔥</span>
-        {t(lang, "todayFloor")}
+        Today on the floor · Hoje na oficina
       </div>
       <div
         className={`font-display font-semibold text-amber-50 leading-snug ${
           compact ? "text-sm" : "text-[15px]"
         }`}
       >
-        “{quote}”
+        “{QUOTES.en[i]}”
+      </div>
+      <div
+        className={`font-display text-amber-200/80 italic leading-snug mt-1 ${
+          compact ? "text-xs" : "text-sm"
+        }`}
+      >
+        “{QUOTES.pt[i]}”
       </div>
     </div>
   );
