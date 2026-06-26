@@ -414,7 +414,7 @@ export function specValue(lang: string | undefined, value: string | null): strin
 export const QUOTES: Record<Lang, string[]> = {
   en: [
     "Steel doesn't bend itself. Today, that's your job — and nobody does it better.",
-    "Every great building in Boston started as raw steel and stubborn people. Be both.",
+    "Every great building in Boston started as raw steel and people who refused to quit. Be both.",
     "Fire, pressure, and time turn iron into legend. Same goes for you.",
     "The weld you grind today is the handrail a family trusts for 30 years.",
     "Anyone can stack steel. We make it art.",
@@ -436,7 +436,7 @@ export const QUOTES: Record<Lang, string[]> = {
   ],
   pt: [
     "O aço não se dobra sozinho. Hoje esse é o seu trabalho — e ninguém faz melhor.",
-    "Todo grande prédio de Boston começou como aço bruto e gente teimosa. Seja os dois.",
+    "Todo grande prédio de Boston começou como aço bruto e gente que não desiste. Seja os dois.",
     "Fogo, pressão e tempo transformam ferro em lenda. Com você é igual.",
     "A solda que você esmerilha hoje é o corrimão em que uma família confia por 30 anos.",
     "Qualquer um empilha aço. Nós o transformamos em arte.",
@@ -458,7 +458,7 @@ export const QUOTES: Record<Lang, string[]> = {
   ],
   es: [
     "El acero no se dobla solo. Hoy ese es tu trabajo — y nadie lo hace mejor.",
-    "Todo gran edificio de Boston empezó como acero crudo y gente terca. Sé ambos.",
+    "Todo gran edificio de Boston empezó como acero crudo y gente que no se rinde. Sé ambos.",
     "Fuego, presión y tiempo convierten el hierro en leyenda. Contigo es igual.",
     "La soldadura que pules hoy es el pasamanos en que una familia confía 30 años.",
     "Cualquiera apila acero. Nosotros lo hacemos arte.",
