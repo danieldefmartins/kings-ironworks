@@ -8,11 +8,14 @@ import {
   getPhotos,
   listWorkers,
   signPhotoUrl,
+  getJobTimeEntries,
+  entryHours,
   PRICE_CATEGORY,
   type Photo,
 } from "@/lib/shop/db";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
+import TimeClock from "./TimeClock";
 
 export const dynamic = "force-dynamic";
 
@@ -30,15 +33,26 @@ export default async function JobTravelerPage({
   const job = await getJob(id);
   if (!job) notFound();
 
-  const [cut, materials, qc, rawPhotos, workers] = await Promise.all([
-    getCutItems(id),
-    getMaterials(id),
-    getQc(id),
-    getPhotos(id),
-    listWorkers(),
-  ]);
+  const [cut, materials, qc, rawPhotos, workers, timeEntries] =
+    await Promise.all([
+      getCutItems(id),
+      getMaterials(id),
+      getQc(id),
+      getPhotos(id),
+      listWorkers(),
+      getJobTimeEntries(id),
+    ]);
 
   const nameById = new Map(workers.map((w) => [w.id, w.name]));
+
+  // Time clock state for this worker + the whole job
+  const myRunning = timeEntries.find(
+    (e) => !e.ended_at && e.worker_id === worker.id
+  );
+  const othersRunning = timeEntries
+    .filter((e) => !e.ended_at && e.worker_id !== worker.id)
+    .map((e) => nameById.get(e.worker_id) || "?");
+  const totalHours = timeEntries.reduce((sum, e) => sum + entryHours(e), 0);
 
   // Hide price-sensitive photos from workers without access, then sign URLs.
   const visible = rawPhotos.filter(
@@ -59,7 +73,17 @@ export default async function JobTravelerPage({
         title={job.customer_name}
         back="/shop"
         lang={lang}
+        adminLink={!!worker.is_admin}
       />
+      <div className="px-4 pt-4 max-w-4xl mx-auto">
+        <TimeClock
+          jobId={job.id}
+          lang={lang}
+          myStartedAt={myRunning ? myRunning.started_at : null}
+          activeWorkers={othersRunning}
+          totalHours={totalHours}
+        />
+      </div>
       <TravelerClient
         job={job}
         cut={cut}

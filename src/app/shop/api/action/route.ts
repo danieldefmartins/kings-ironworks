@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWorker } from "@/lib/shop/session";
-import { sbUpdate, sbInsert, sbDelete, STAGES } from "@/lib/shop/db";
+import {
+  sbUpdate,
+  sbInsert,
+  sbDelete,
+  STAGES,
+  startTimeEntry,
+  stopTimeEntry,
+} from "@/lib/shop/db";
 
 export const runtime = "nodejs";
 
@@ -95,6 +102,48 @@ export async function POST(req: NextRequest) {
           color: color ?? null,
           mounting: mounting ?? null,
         });
+        break;
+      }
+
+      // Job time clock — START (auto-closes any running timer for this worker)
+      case "time_start": {
+        await startTimeEntry(worker.id, String(body.jobId));
+        break;
+      }
+
+      // Job time clock — DONE
+      case "time_stop": {
+        await stopTimeEntry(worker.id, String(body.jobId));
+        break;
+      }
+
+      // ---- Admin-only (Daniel) --------------------------------------------
+      case "rate_set": {
+        if (!worker.is_admin) {
+          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        }
+        const rate = body.rate === null || body.rate === "" ? null : Number(body.rate);
+        await sbUpdate("kiw_shop_workers", `id=eq.${body.workerId}`, {
+          hourly_rate: rate,
+        });
+        break;
+      }
+
+      case "entry_stop": {
+        if (!worker.is_admin) {
+          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        }
+        await sbUpdate("kiw_shop_time_entries", `id=eq.${body.id}`, {
+          ended_at: new Date().toISOString(),
+        });
+        break;
+      }
+
+      case "entry_delete": {
+        if (!worker.is_admin) {
+          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        }
+        await sbDelete("kiw_shop_time_entries", `id=eq.${body.id}`);
         break;
       }
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionWorker, randomSeed } from "@/lib/shop/session";
-import { listJobs, getCutItems, STAGES, type Job } from "@/lib/shop/db";
+import { listJobs, getCutItems, getRunningEntries, STAGES, type Job } from "@/lib/shop/db";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import ShopTopBar from "./ShopTopBar";
 import MotivationBanner from "./MotivationBanner";
@@ -33,8 +33,13 @@ export default async function ShopBoard() {
 
   let jobs: Job[] = [];
   let error: string | null = null;
+  const workingCount: Record<string, number> = {};
   try {
     jobs = await listJobs();
+    const running = await getRunningEntries();
+    for (const r of running) {
+      workingCount[r.job_id] = (workingCount[r.job_id] || 0) + 1;
+    }
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
@@ -56,7 +61,7 @@ export default async function ShopBoard() {
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} lang={lang} />
+      <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} lang={lang} adminLink={!!worker.is_admin} />
       <div className="p-4 max-w-5xl mx-auto">
         <div className="mb-4">
           <MotivationBanner lang={lang} seed={randomSeed()} />
@@ -102,6 +107,11 @@ export default async function ShopBoard() {
                     {stageLabel(lang, j.current_stage)}
                   </span>
                 </div>
+                {workingCount[j.id] > 0 && (
+                  <div className="text-xs text-green-400 mt-2 font-semibold">
+                    ● {workingCount[j.id]} {t(lang, "working")}
+                  </div>
+                )}
                 {j.finish && (
                   <div className="text-xs text-neutral-400 mt-2">
                     {t(lang, "finish")}:{" "}

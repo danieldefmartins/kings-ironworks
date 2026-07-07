@@ -30,6 +30,19 @@ export interface Worker {
   active: boolean;
   can_see_prices?: boolean;
   lang?: string;
+  hourly_rate?: number | null;
+  is_admin?: boolean;
+}
+
+export interface TimeEntry {
+  id: string;
+  job_id: string;
+  worker_id: string;
+  started_at: string;
+  ended_at: string | null;
+  note: string | null;
+  workerName?: string;
+  jobLabel?: string;
 }
 
 // Photo categories the shop can pin an image to. "Installation — Location N"
@@ -208,7 +221,7 @@ export async function getQc(jobId: string): Promise<QcCheck[]> {
 export async function listWorkers(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
-    "select=id,name,role,active,can_see_prices,lang&active=eq.true&order=name.asc"
+    "select=id,name,role,active,can_see_prices,lang,is_admin&active=eq.true&order=name.asc"
   );
 }
 
@@ -218,7 +231,7 @@ export async function verifyWorkerPin(
 ): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,can_see_prices,lang,pin&id=eq.${workerId}&active=eq.true&limit=1`
+    `select=id,name,role,active,can_see_prices,lang,is_admin,pin&id=eq.${workerId}&active=eq.true&limit=1`
   );
   const w = rows[0];
   if (!w || w.pin !== pin) return null;
@@ -229,15 +242,86 @@ export async function verifyWorkerPin(
     active: w.active,
     can_see_prices: w.can_see_prices,
     lang: w.lang,
+    is_admin: w.is_admin,
   };
 }
 
 export async function getWorkerById(id: string): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,can_see_prices,lang&id=eq.${id}&limit=1`
+    `select=id,name,role,active,can_see_prices,lang,is_admin&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
+}
+
+// ---- Time tracking (job clock) --------------------------------------------
+
+// The worker's currently running entry, if any (one at a time per worker).
+export async function getRunningEntry(workerId: string): Promise<TimeEntry | null> {
+  const rows = await sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    `select=*&worker_id=eq.${workerId}&ended_at=is.null&order=started_at.desc&limit=1`
+  );
+  return rows[0] || null;
+}
+
+// Start the clock on a job. Any running entry for this worker is closed first,
+// so a forgotten timer never double-counts.
+export async function startTimeEntry(workerId: string, jobId: string): Promise<void> {
+  await sbUpdate(
+    "kiw_shop_time_entries",
+    `worker_id=eq.${workerId}&ended_at=is.null`,
+    { ended_at: new Date().toISOString() }
+  );
+  await sbInsert("kiw_shop_time_entries", {
+    worker_id: workerId,
+    job_id: jobId,
+    started_at: new Date().toISOString(),
+  });
+}
+
+export async function stopTimeEntry(workerId: string, jobId: string): Promise<void> {
+  await sbUpdate(
+    "kiw_shop_time_entries",
+    `worker_id=eq.${workerId}&job_id=eq.${jobId}&ended_at=is.null`,
+    { ended_at: new Date().toISOString() }
+  );
+}
+
+export async function getJobTimeEntries(jobId: string): Promise<TimeEntry[]> {
+  return sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    `select=*&job_id=eq.${jobId}&order=started_at.desc`
+  );
+}
+
+export async function getAllTimeEntries(): Promise<TimeEntry[]> {
+  return sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    "select=*&order=started_at.desc&limit=500"
+  );
+}
+
+// Running entries across the whole shop (for the board's live indicator).
+export async function getRunningEntries(): Promise<TimeEntry[]> {
+  return sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    "select=*&ended_at=is.null&order=started_at.asc"
+  );
+}
+
+// Admin: full worker list including pay rates.
+export async function listWorkersWithRates(): Promise<Worker[]> {
+  return sbSelect<Worker[]>(
+    "kiw_shop_workers",
+    "select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate&active=eq.true&order=name.asc"
+  );
+}
+
+export function entryHours(e: TimeEntry, now = Date.now()): number {
+  const start = new Date(e.started_at).getTime();
+  const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
+  return Math.max(0, (end - start) / 3600000);
 }
 
 // ---- Photos & Storage -----------------------------------------------------

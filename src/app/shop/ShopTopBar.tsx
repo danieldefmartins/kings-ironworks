@@ -9,11 +9,13 @@ export default function ShopTopBar({
   title,
   back,
   lang = "en",
+  adminLink = false,
 }: {
   workerName: string;
   title: string;
   back?: string;
   lang?: string;
+  adminLink?: boolean;
 }) {
   const router = useRouter();
   async function logout() {
@@ -49,6 +51,14 @@ export default function ShopTopBar({
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        {adminLink && (
+          <Link
+            href="/shop/admin"
+            className="rounded-lg border border-amber-600/50 text-amber-400 px-3 py-2 text-sm hover:bg-neutral-800"
+          >
+            ⚙ Admin
+          </Link>
+        )}
         <span className="text-sm text-neutral-300 hidden sm:inline">
           {workerName}
         </span>
