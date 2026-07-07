@@ -107,13 +107,21 @@ export async function POST(req: NextRequest) {
 
       // Job time clock — START (auto-closes any running timer for this worker)
       case "time_start": {
-        await startTimeEntry(worker.id, String(body.jobId));
+        const loc =
+          typeof body.lat === "number" && typeof body.lng === "number"
+            ? { lat: body.lat, lng: body.lng }
+            : null;
+        await startTimeEntry(worker.id, String(body.jobId), loc);
         break;
       }
 
       // Job time clock — DONE
       case "time_stop": {
-        await stopTimeEntry(worker.id, String(body.jobId));
+        const loc =
+          typeof body.lat === "number" && typeof body.lng === "number"
+            ? { lat: body.lat, lng: body.lng }
+            : null;
+        await stopTimeEntry(worker.id, String(body.jobId), loc);
         break;
       }
 

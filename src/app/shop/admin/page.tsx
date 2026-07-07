@@ -80,6 +80,10 @@ export default async function ShopAdminPage() {
     started_at: e.started_at,
     ended_at: e.ended_at,
     hours: entryHours(e),
+    start_lat: e.start_lat,
+    start_lng: e.start_lng,
+    end_lat: e.end_lat,
+    end_lng: e.end_lng,
   }));
 
   return (

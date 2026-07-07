@@ -41,6 +41,10 @@ export interface TimeEntry {
   started_at: string;
   ended_at: string | null;
   note: string | null;
+  start_lat: number | null;
+  start_lng: number | null;
+  end_lat: number | null;
+  end_lng: number | null;
   workerName?: string;
   jobLabel?: string;
 }
@@ -267,7 +271,11 @@ export async function getRunningEntry(workerId: string): Promise<TimeEntry | nul
 
 // Start the clock on a job. Any running entry for this worker is closed first,
 // so a forgotten timer never double-counts.
-export async function startTimeEntry(workerId: string, jobId: string): Promise<void> {
+export async function startTimeEntry(
+  workerId: string,
+  jobId: string,
+  loc?: { lat: number; lng: number } | null
+): Promise<void> {
   await sbUpdate(
     "kiw_shop_time_entries",
     `worker_id=eq.${workerId}&ended_at=is.null`,
@@ -277,14 +285,24 @@ export async function startTimeEntry(workerId: string, jobId: string): Promise<v
     worker_id: workerId,
     job_id: jobId,
     started_at: new Date().toISOString(),
+    start_lat: loc?.lat ?? null,
+    start_lng: loc?.lng ?? null,
   });
 }
 
-export async function stopTimeEntry(workerId: string, jobId: string): Promise<void> {
+export async function stopTimeEntry(
+  workerId: string,
+  jobId: string,
+  loc?: { lat: number; lng: number } | null
+): Promise<void> {
   await sbUpdate(
     "kiw_shop_time_entries",
     `worker_id=eq.${workerId}&job_id=eq.${jobId}&ended_at=is.null`,
-    { ended_at: new Date().toISOString() }
+    {
+      ended_at: new Date().toISOString(),
+      end_lat: loc?.lat ?? null,
+      end_lng: loc?.lng ?? null,
+    }
   );
 }
 

@@ -24,6 +24,15 @@ interface EntryRow {
   started_at: string;
   ended_at: string | null;
   hours: number;
+  start_lat?: number | null;
+  start_lng?: number | null;
+  end_lat?: number | null;
+  end_lng?: number | null;
+}
+
+function mapLink(lat?: number | null, lng?: number | null) {
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+  return `https://maps.google.com/?q=${lat},${lng}`;
 }
 
 function money(n: number) {
@@ -90,6 +99,17 @@ export default function AdminClient({
                   <span className="text-neutral-400"> · {e.job}</span>
                   <span className="block text-xs text-neutral-500">
                     since {fmtDT(e.started_at)} · {e.hours.toFixed(1)} h
+                    {mapLink(e.start_lat, e.start_lng) && (
+                      <a
+                        href={mapLink(e.start_lat, e.start_lng)!}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="ml-2 text-amber-400 underline"
+                        onClick={(ev) => ev.stopPropagation()}
+                      >
+                        📍 map
+                      </a>
+                    )}
                   </span>
                 </div>
                 <button
@@ -217,6 +237,26 @@ export default function AdminClient({
                   {fmtDT(e.started_at)}
                   {e.ended_at ? ` → ${fmtDT(e.ended_at)}` : " → running"} ·{" "}
                   {e.hours.toFixed(2)} h
+                  {mapLink(e.start_lat, e.start_lng) && (
+                    <a
+                      href={mapLink(e.start_lat, e.start_lng)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-2 text-amber-400 underline"
+                    >
+                      📍 start
+                    </a>
+                  )}
+                  {mapLink(e.end_lat, e.end_lng) && (
+                    <a
+                      href={mapLink(e.end_lat, e.end_lng)!}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="ml-1.5 text-amber-400 underline"
+                    >
+                      📍 end
+                    </a>
+                  )}
                 </span>
               </div>
               <button
