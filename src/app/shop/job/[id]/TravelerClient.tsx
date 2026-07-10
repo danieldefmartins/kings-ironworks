@@ -331,6 +331,15 @@ function MaterialAdder({
     reset();
   }
 
+  // Rapid entry: log this line but stay on the same profile with size/length
+  // cleared, so workers can add several sizes of the same steel in a row.
+  function addAnother() {
+    act({ type: "cut_add", jobId, profile: type, size, qty, length });
+    setSize("");
+    setLength("");
+    setQty("1");
+  }
+
   if (!open) {
     return (
       <button
@@ -429,13 +438,22 @@ function MaterialAdder({
               className="col-span-2 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
             />
           </div>
-          <button
-            disabled={busy || !size.trim()}
-            onClick={add}
-            className="w-full rounded-lg bg-amber-500 text-black font-semibold py-2.5 text-sm disabled:opacity-40"
-          >
-            {t(lang, "addBtn")}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              disabled={busy || !size.trim()}
+              onClick={addAnother}
+              className="rounded-lg border border-amber-500 text-amber-400 font-semibold py-2.5 text-sm disabled:opacity-40 active:scale-[0.99]"
+            >
+              ＋ {t(lang, "addAnother")}
+            </button>
+            <button
+              disabled={busy || !size.trim()}
+              onClick={add}
+              className="rounded-lg bg-amber-500 text-black font-semibold py-2.5 text-sm disabled:opacity-40 active:scale-[0.99]"
+            >
+              {t(lang, "addBtn")}
+            </button>
+          </div>
         </>
       )}
     </div>

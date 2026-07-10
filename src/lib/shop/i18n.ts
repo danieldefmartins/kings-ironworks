@@ -82,6 +82,7 @@ const STR: Record<Lang, Dict> = {
     materialType: "Type",
     size: "Size",
     addBtn: "Add",
+    addAnother: "Add & next",
   },
   pt: {
     shopFloor: "Oficina",
@@ -158,6 +159,7 @@ const STR: Record<Lang, Dict> = {
     materialType: "Tipo",
     size: "Tamanho",
     addBtn: "Adicionar",
+    addAnother: "Adicionar e próximo",
   },
   es: {
     shopFloor: "Taller",
@@ -234,48 +236,68 @@ const STR: Record<Lang, Dict> = {
     materialType: "Tipo",
     size: "Medida",
     addBtn: "Agregar",
+    addAnother: "Agregar y siguiente",
   },
 };
 
-// Material catalog — extend this list as you confirm what KIW stocks/uses.
+// Material catalog — ordered so the crew's most-used profiles come first.
+// Extend this list as you confirm what KIW stocks/uses.
 export const MATERIAL_TYPES = [
-  "Tube",
-  "Solid Bar",
+  "Tube",          // square / rectangular HSS
+  "Pipe",          // round hollow (railings)
   "Flat Bar",
   "Angle",
   "Channel",
-  "Structural Beam",
+  "Beam",
+  "Solid Square",  // solid square bar
+  "Solid Round",   // solid round bar
+  "Rebar",
   "Plate",
   "Diamond Plate",
-  "Grille",
+  "Grating",
   "Molding",
 ] as const;
 
+// Older rows may still carry legacy profile names; keep labels so they display.
 const MATERIAL_MAP: Record<Lang, Record<string, string>> = {
   en: {},
   pt: {
     Tube: "Tubo",
-    "Solid Bar": "Barra Maciça",
+    Pipe: "Cano Redondo",
     "Flat Bar": "Barra Chata",
     Angle: "Cantoneira",
     Channel: "Perfil U",
-    "Structural Beam": "Viga",
+    Beam: "Viga",
+    "Solid Square": "Barra Maciça Quadrada",
+    "Solid Round": "Barra Maciça Redonda",
+    Rebar: "Vergalhão",
     Plate: "Chapa",
     "Diamond Plate": "Chapa Xadrez",
-    Grille: "Grade",
+    Grating: "Grade",
     Molding: "Moldura",
+    // legacy
+    "Solid Bar": "Barra Maciça",
+    "Structural Beam": "Viga",
+    Grille: "Grade",
   },
   es: {
     Tube: "Tubo",
-    "Solid Bar": "Barra Maciza",
+    Pipe: "Tubo Redondo",
     "Flat Bar": "Solera",
     Angle: "Ángulo",
     Channel: "Canal",
-    "Structural Beam": "Viga",
+    Beam: "Viga",
+    "Solid Square": "Barra Maciza Cuadrada",
+    "Solid Round": "Barra Maciza Redonda",
+    Rebar: "Varilla",
     Plate: "Placa",
     "Diamond Plate": "Placa Antideslizante",
-    Grille: "Rejilla",
+    Grating: "Rejilla",
     Molding: "Moldura",
+    // legacy
+    "Solid Bar": "Barra Maciza",
+    "Structural Beam": "Viga",
+    Grille: "Rejilla",
   },
 };
 export function materialTypeLabel(lang: string | undefined, type: string): string {
@@ -291,9 +313,9 @@ export const SIZE_OPTIONS: Record<string, string[]> = {
     '1"x1"', '1-1/4"x1-1/4"', '1-1/2"x1-1/2"', '2"x2"',
     '2"x1"', '3"x2"', '3"x3"', '4"x4"',
   ],
-  "Solid Bar": [
-    '1/2" sq', '5/8" sq', '3/4" sq', '1" sq',
-    '1/2" rd', '5/8" rd', '3/4" rd',
+  Pipe: [
+    '1/2" NPS', '3/4" NPS', '1" NPS', '1-1/4" NPS', '1-1/2" NPS', '2" NPS',
+    '1" OD', '1-1/4" OD', '1-1/2" OD',
   ],
   "Flat Bar": [
     '1/8"x1"', '3/16"x1"', '1/4"x1"', '1/4"x1-1/2"',
@@ -304,10 +326,13 @@ export const SIZE_OPTIONS: Record<string, string[]> = {
     '2"x2"x1/4"', '3"x3"x1/4"', '4"x4"x1/4"',
   ],
   Channel: ["C3x4.1", "C4x5.4", "C5x6.7", "C6x8.2", "C8x11.5", "C10x15.3"],
-  "Structural Beam": ["W6x9", "W8x10", "W8x18", "W10x22", "W12x26", "W12x40"],
+  Beam: ["W6x9", "W8x10", "W8x18", "W10x22", "W12x26", "W12x40"],
+  "Solid Square": ['1/4" sq', '3/8" sq', '1/2" sq', '5/8" sq', '3/4" sq', '1" sq'],
+  "Solid Round": ['1/4" rd', '3/8" rd', '1/2" rd', '5/8" rd', '3/4" rd', '1" rd'],
+  Rebar: ['#3 (3/8")', '#4 (1/2")', '#5 (5/8")', '#6 (3/4")'],
   Plate: ['1/8"', '3/16"', '1/4"', '3/8"', '1/2"', '3/4"', '1"'],
   "Diamond Plate": ['1/8"', '3/16"', '1/4"'],
-  Grille: ['Bar grating 1"x3/16"', 'Bar grating 1-1/4"x3/16"', "Decorative"],
+  Grating: ['Bar grating 1"x3/16"', 'Bar grating 1-1/4"x3/16"', "Decorative"],
   Molding: ["Cap rail", "Shoe rail", "Collar", "Scroll", "Basket"],
 };
 
