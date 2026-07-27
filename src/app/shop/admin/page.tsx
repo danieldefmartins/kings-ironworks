@@ -101,9 +101,15 @@ export default async function ShopAdminPage() {
     email: j.email,
     address: j.address,
     followUp: j.notes,
+    archived: !!j.archived,
     laborCost: rollup.get(j.id)?.totalCost ?? 0,
   }));
   const depositTotal = deposits.reduce((s, d) => s + d.amount, 0);
+  // Archived jobs drop off the board but the money is still held, so the
+  // ledger keeps them — called out separately so the totals reconcile.
+  const archivedDepositTotal = deposits
+    .filter((d) => d.archived)
+    .reduce((s, d) => s + d.amount, 0);
 
   return (
     <div>
@@ -119,6 +125,7 @@ export default async function ShopAdminPage() {
         entries={entryRows}
         deposits={deposits}
         depositTotal={depositTotal}
+        archivedDepositTotal={archivedDepositTotal}
       />
     </div>
   );

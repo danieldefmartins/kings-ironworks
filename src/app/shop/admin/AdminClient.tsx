@@ -42,6 +42,7 @@ interface DepositRow {
   email: string | null;
   address: string | null;
   followUp: string | null;
+  archived: boolean;
   laborCost: number;
 }
 
@@ -68,12 +69,14 @@ export default function AdminClient({
   entries,
   deposits,
   depositTotal,
+  archivedDepositTotal,
 }: {
   workers: WorkerRow[];
   jobs: JobRow[];
   entries: EntryRow[];
   deposits: DepositRow[];
   depositTotal: number;
+  archivedDepositTotal: number;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -156,6 +159,11 @@ export default function AdminClient({
             <div className="text-[10px] text-neutral-500 uppercase">
               {deposits.length} customers
             </div>
+            {archivedDepositTotal > 0 && (
+              <div className="text-[10px] text-amber-500/80 normal-case">
+                incl. {money(archivedDepositTotal)} on archived jobs
+              </div>
+            )}
           </div>
         </div>
         {deposits.length === 0 && (
@@ -172,7 +180,14 @@ export default function AdminClient({
                 className="w-full flex items-center justify-between gap-3 p-3 text-left"
               >
                 <div className="min-w-0">
-                  <div className="font-semibold truncate">{d.customer}</div>
+                  <div className="font-semibold truncate">
+                    {d.customer}
+                    {d.archived && (
+                      <span className="ml-2 align-middle text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-neutral-800 border border-neutral-700 text-neutral-400">
+                        archived
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-neutral-500 truncate">
                     {d.jobNumber}
                     {d.projectType ? ` · ${d.projectType}` : ""}
