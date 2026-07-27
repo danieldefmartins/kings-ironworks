@@ -37,6 +37,7 @@ interface DepositRow {
   customer: string;
   projectType: string | null;
   amount: number;
+  contractAmount: number;
   note: string | null;
   phone: string | null;
   email: string | null;
@@ -214,6 +215,12 @@ export default function AdminClient({
                       <a href={`mailto:${d.email}`} className="text-amber-400 underline">
                         {d.email}
                       </a>
+                    </div>
+                  )}
+                  {d.contractAmount > 0 && (
+                    <div className="flex justify-between text-neutral-400 pt-1">
+                      <span>Contract price</span>
+                      <span>{money(d.contractAmount)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-neutral-400 pt-1">

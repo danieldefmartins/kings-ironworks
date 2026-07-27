@@ -89,6 +89,7 @@ export interface Job {
   phone: string | null;
   email: string | null;
   // Money fields — only ever rendered for workers with can_see_prices/is_admin.
+  contract_amount: number | string | null; // total sell price for the job
   deposit_amount: number | string | null; // PostgREST returns numeric as a string
   deposit_note: string | null;
   deposit_received_on: string | null;
@@ -209,9 +210,16 @@ export async function listJobsWithDeposits(): Promise<Job[]> {
 }
 
 // numeric columns arrive as strings over PostgREST; normalise once.
-export function depositValue(j: Pick<Job, "deposit_amount">): number {
-  const n = Number(j.deposit_amount);
+function num(v: number | string | null): number {
+  if (v === null) return 0;
+  const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+export function depositValue(j: Pick<Job, "deposit_amount">): number {
+  return num(j.deposit_amount);
+}
+export function contractValue(j: Pick<Job, "contract_amount">): number {
+  return num(j.contract_amount);
 }
 
 export async function getJob(id: string): Promise<Job | null> {

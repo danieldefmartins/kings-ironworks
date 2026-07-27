@@ -6,6 +6,7 @@ import {
   getCutItems,
   getRunningEntries,
   depositValue,
+  contractValue,
   STAGES,
   type Job,
 } from "@/lib/shop/db";
@@ -148,11 +149,18 @@ export default async function ShopBoard() {
                     ● {workingCount[j.id]} {t(lang, "working")}
                   </div>
                 )}
-                {canSeeMoney && depositValue(j) > 0 && (
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-700 text-emerald-300">
-                      {t(lang, "depositPaid")} {money(depositValue(j))}
-                    </span>
+                {canSeeMoney && (contractValue(j) > 0 || depositValue(j) > 0) && (
+                  <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                    {contractValue(j) > 0 && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-950/60 border border-amber-700 text-amber-300">
+                        {t(lang, "contractPrice")} {money(contractValue(j))}
+                      </span>
+                    )}
+                    {depositValue(j) > 0 && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-700 text-emerald-300">
+                        {t(lang, "depositPaid")} {money(depositValue(j))}
+                      </span>
+                    )}
                     {j.deposit_note && (
                       <span className="text-[11px] text-neutral-500 truncate">
                         {j.deposit_note}
