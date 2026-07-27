@@ -87,6 +87,11 @@ export interface Job {
   project_type: string | null;
   address: string | null;
   phone: string | null;
+  email: string | null;
+  // Money fields — only ever rendered for workers with can_see_prices/is_admin.
+  deposit_amount: number | string | null; // PostgREST returns numeric as a string
+  deposit_note: string | null;
+  deposit_received_on: string | null;
   finish: string | null;
   finish_type: string | null;
   finish_sheen: string | null;
@@ -193,6 +198,20 @@ export async function listJobs(): Promise<Job[]> {
     "kiw_shop_jobs",
     "select=*&archived=eq.false&order=due_date.asc.nullslast"
   );
+}
+
+// Every job carrying a customer deposit, biggest first. Admin-only view.
+export async function listJobsWithDeposits(): Promise<Job[]> {
+  return sbSelect<Job[]>(
+    "kiw_shop_jobs",
+    "select=*&deposit_amount=not.is.null&order=deposit_amount.desc"
+  );
+}
+
+// numeric columns arrive as strings over PostgREST; normalise once.
+export function depositValue(j: Pick<Job, "deposit_amount">): number {
+  const n = Number(j.deposit_amount);
+  return Number.isFinite(n) ? n : 0;
 }
 
 export async function getJob(id: string): Promise<Job | null> {

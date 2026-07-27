@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionWorker, randomSeed } from "@/lib/shop/session";
-import { listJobs, getCutItems, getRunningEntries, STAGES, type Job } from "@/lib/shop/db";
+import {
+  listJobs,
+  getCutItems,
+  getRunningEntries,
+  depositValue,
+  STAGES,
+  type Job,
+} from "@/lib/shop/db";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import ShopTopBar from "./ShopTopBar";
 import MotivationBanner from "./MotivationBanner";
@@ -14,6 +21,14 @@ function stageColor(stage: string) {
   if (i >= STAGES.indexOf("QC")) return "bg-amber-500 text-black";
   if (i >= STAGES.indexOf("Cut")) return "bg-blue-600";
   return "bg-neutral-600";
+}
+
+function money(n: number) {
+  return n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  });
 }
 
 function dueLabel(due: string | null, lang: string) {
@@ -30,6 +45,8 @@ export default async function ShopBoard() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
+  // Deposits are customer money — same gate as the approved-estimate photos.
+  const canSeeMoney = !!worker.can_see_prices || !!worker.is_admin;
 
   let jobs: Job[] = [];
   let error: string | null = null;
@@ -43,6 +60,10 @@ export default async function ShopBoard() {
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
+
+  const withDeposit = jobs.filter((j) => depositValue(j) > 0);
+  const depositTotal = withDeposit.reduce((s, j) => s + depositValue(j), 0);
+  const depositCount = withDeposit.length;
 
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
@@ -66,6 +87,21 @@ export default async function ShopBoard() {
         <div className="mb-4">
           <MotivationBanner lang={lang} seed={randomSeed()} />
         </div>
+        {canSeeMoney && depositTotal > 0 && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-800 bg-emerald-950/40 px-4 py-3">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-500">
+                {t(lang, "depositsHeld")}
+              </div>
+              <div className="text-xs text-neutral-400">
+                {depositCount} {t(lang, "depositJobs")}
+              </div>
+            </div>
+            <div className="text-2xl font-bold text-emerald-300">
+              {money(depositTotal)}
+            </div>
+          </div>
+        )}
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
             {error}
@@ -110,6 +146,18 @@ export default async function ShopBoard() {
                 {workingCount[j.id] > 0 && (
                   <div className="text-xs text-green-400 mt-2 font-semibold">
                     ● {workingCount[j.id]} {t(lang, "working")}
+                  </div>
+                )}
+                {canSeeMoney && depositValue(j) > 0 && (
+                  <div className="mt-2 flex items-baseline gap-2">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-700 text-emerald-300">
+                      {t(lang, "depositPaid")} {money(depositValue(j))}
+                    </span>
+                    {j.deposit_note && (
+                      <span className="text-[11px] text-neutral-500 truncate">
+                        {j.deposit_note}
+                      </span>
+                    )}
                   </div>
                 )}
                 {j.finish && (

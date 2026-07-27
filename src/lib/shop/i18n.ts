@@ -83,6 +83,9 @@ const STR: Record<Lang, Dict> = {
     size: "Size",
     addBtn: "Add",
     addAnother: "Add & next",
+    depositPaid: "Deposit",
+    depositsHeld: "Deposits received",
+    depositJobs: "jobs with a deposit on file",
   },
   pt: {
     shopFloor: "Oficina",
@@ -160,6 +163,9 @@ const STR: Record<Lang, Dict> = {
     size: "Tamanho",
     addBtn: "Adicionar",
     addAnother: "Adicionar e próximo",
+    depositPaid: "Sinal",
+    depositsHeld: "Sinais recebidos",
+    depositJobs: "obras com sinal registrado",
   },
   es: {
     shopFloor: "Taller",
@@ -237,6 +243,9 @@ const STR: Record<Lang, Dict> = {
     size: "Medida",
     addBtn: "Agregar",
     addAnother: "Agregar y siguiente",
+    depositPaid: "Anticipo",
+    depositsHeld: "Anticipos recibidos",
+    depositJobs: "trabajos con anticipo registrado",
   },
 };
 

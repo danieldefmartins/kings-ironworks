@@ -3,6 +3,8 @@ import { getSessionWorker } from "@/lib/shop/session";
 import {
   listWorkersWithRates,
   getAllTimeEntries,
+  listJobsWithDeposits,
+  depositValue,
   entryHours,
   sbSelect,
   type Job,
@@ -17,13 +19,14 @@ export default async function ShopAdminPage() {
   if (!worker) redirect("/shop/login");
   if (!worker.is_admin) redirect("/shop");
 
-  const [workers, entries, jobs] = await Promise.all([
+  const [workers, entries, jobs, depositJobs] = await Promise.all([
     listWorkersWithRates(),
     getAllTimeEntries(),
     sbSelect<Job[]>(
       "kiw_shop_jobs",
       "select=id,job_number,customer_name,project_type,archived&order=job_number.asc"
     ),
+    listJobsWithDeposits(),
   ]);
 
   const workerById = new Map(workers.map((w) => [w.id, w]));
@@ -86,6 +89,22 @@ export default async function ShopAdminPage() {
     end_lng: e.end_lng,
   }));
 
+  // Deposits on file, with labor burned against each so far.
+  const deposits = depositJobs.map((j) => ({
+    id: j.id,
+    jobNumber: j.job_number,
+    customer: j.customer_name,
+    projectType: j.project_type,
+    amount: depositValue(j),
+    note: j.deposit_note,
+    phone: j.phone,
+    email: j.email,
+    address: j.address,
+    followUp: j.notes,
+    laborCost: rollup.get(j.id)?.totalCost ?? 0,
+  }));
+  const depositTotal = deposits.reduce((s, d) => s + d.amount, 0);
+
   return (
     <div>
       <ShopTopBar workerName={worker.name} title="Admin — Labor & Costs" back="/shop" />
@@ -98,6 +117,8 @@ export default async function ShopAdminPage() {
         }))}
         jobs={[...rollup.values()].sort((a, b) => b.totalHours - a.totalHours)}
         entries={entryRows}
+        deposits={deposits}
+        depositTotal={depositTotal}
       />
     </div>
   );
