@@ -369,6 +369,25 @@ export function entryHours(e: TimeEntry, now = Date.now()): number {
   return Math.max(0, (end - start) / 3600000);
 }
 
+// ---- Field measure sheets -------------------------------------------------
+
+import type { MeasureSheet } from "./measure";
+
+export async function getMeasureSheets(jobId: string): Promise<MeasureSheet[]> {
+  return sbSelect<MeasureSheet[]>(
+    "kiw_shop_measure_sheets",
+    `select=*&job_id=eq.${jobId}&order=created_at.asc`
+  );
+}
+
+export async function getMeasureSheet(id: string): Promise<MeasureSheet | null> {
+  const rows = await sbSelect<MeasureSheet[]>(
+    "kiw_shop_measure_sheets",
+    `select=*&id=eq.${id}&limit=1`
+  );
+  return rows[0] || null;
+}
+
 // ---- Photos & Storage -----------------------------------------------------
 
 const PHOTO_BUCKET = "kiw-shop-photos";

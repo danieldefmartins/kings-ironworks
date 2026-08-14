@@ -33,6 +33,11 @@ key from the server. No shop data is exposed to the browser or to Tavvy's anon k
 - `qc_checks` (label, expected, measured, passed, checked_by, checked_at)
 - `stage_log` (job_id, stage, worker_id, entered_at) — audit trail of stage moves
 - `photos` (reserved for QC photo proof — next phase)
+- `measure_sheets` (field-measure sheets: shape, status, JSONB `data` with per-step
+  rise/run/nosing, posts + mounts, angles, platform slope, rail + materials specs).
+  UI at `/shop/job/[id]/measure` — pick a shape + step count, a sketch is generated
+  with blank boxes, crew fills it on the tablet; photo markup saves annotated site
+  photos to `photos` under the Measurements category; prints as a branded sheet.
 
 ## Seeded logins (rename later)
 | Worker | Role | PIN |

@@ -22,6 +22,7 @@ import {
   SIZE_OPTIONS,
   SPEC_OPTIONS,
 } from "@/lib/shop/i18n";
+import { mt } from "@/lib/shop/measure-i18n";
 
 const CUT_NEXT: Record<string, string> = {
   pending: "cut",
@@ -137,6 +138,20 @@ export default function TravelerClient({
         )}
         <div className="text-xs text-neutral-600 mt-2">{job.job_number}</div>
       </div>
+
+      {/* Field measure — pre-fabrication measurement sheets */}
+      <button
+        onClick={() => router.push(`/shop/job/${job.id}/measure`)}
+        className="w-full mb-4 bg-neutral-900 border border-amber-600/60 rounded-xl p-4 flex items-center gap-3 text-left active:bg-neutral-800"
+      >
+        <span className="text-2xl" aria-hidden>
+          📐
+        </span>
+        <span className="flex-1 font-bold">{mt(lang, "fieldMeasure")}</span>
+        <span className="text-amber-400 text-xl" aria-hidden>
+          ›
+        </span>
+      </button>
 
       {/* Photos — full section directly under the customer info */}
       <Section title={t(lang, "photos")} sub={`${photos.length}`}>
