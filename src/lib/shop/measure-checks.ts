@@ -7,6 +7,8 @@ import {
   requiredPhotoSlots,
   METHODS_BY_ATTACH,
   HARDWARE_METHODS,
+  HW_REQUIRED,
+  FASTENER_METHODS,
   type FlightSegment,
   type MeasureData,
   type MeasureShape,
@@ -473,13 +475,17 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     gaps.push({ key: "span_missing" });
   }
   const termPhotos = new Set(data.photos.map((p) => p.slot));
+  const postIds = new Set(data.posts.map((p) => p.id));
+  const spanIds = new Set(data.spans.map((sp) => sp.id));
   data.spans.forEach((sp, i) => {
     const tag = `#${i + 1}`;
     if (!has(sp.topSpan)) gaps.push({ key: "span_top", detail: tag });
     const anyMolding = sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "";
     if (anyMolding && !has(sp.lowerSpan)) gaps.push({ key: "span_lower", detail: tag });
     (["start", "end"] as const).forEach((endKey) => {
-      gaps.push(...terminationGaps(sp[endKey], `${tag} ${endKey}`, termPhotos, `term_${sp.id}_${endKey}`));
+      gaps.push(
+        ...terminationGaps(sp[endKey], `${tag} ${endKey}`, termPhotos, `term_${sp.id}_${endKey}`, postIds, spanIds, sp.id)
+      );
     });
   });
 
@@ -544,7 +550,10 @@ function terminationGaps(
   t: Termination,
   tag: string,
   photoSlots: Set<string>,
-  photoSlot: string
+  photoSlot: string,
+  postIds: Set<string>,
+  spanIds: Set<string>,
+  ownSpanId: string
 ): Gap[] {
   const gaps: Gap[] = [];
   const has = (v: string | undefined | null) => !!v && v.trim() !== "";
@@ -552,6 +561,17 @@ function terminationGaps(
   if (!has(t.attachTo)) {
     gaps.push({ key: "term_target", detail: tag });
     return gaps; // nothing else can be validated yet
+  }
+  // topology: a free post END is a real measured post; "continue" points at
+  // the adjoining span — never free text
+  if (t.attachTo === "free_post" && (!has(t.postId) || !postIds.has(t.postId))) {
+    gaps.push({ key: "term_postref", detail: tag });
+  }
+  if (
+    t.attachTo === "continue" &&
+    (!has(t.spanRef) || !spanIds.has(t.spanRef) || t.spanRef === ownSpanId)
+  ) {
+    gaps.push({ key: "term_spanref", detail: tag });
   }
   const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
   if (allowed.length > 0) {
@@ -582,10 +602,16 @@ function terminationGaps(
   if (has(t.molding) && !has(t.moldingHeight)) gaps.push({ key: "term_molding_h", detail: tag });
   if (has(t.method) && (HARDWARE_METHODS as string[]).includes(t.method)) {
     const hw = t.hardware;
-    if (!has(hw.fastener)) gaps.push({ key: "term_fastener", detail: tag });
-    if (!has(hw.qty)) gaps.push({ key: "term_qty", detail: tag });
+    if ((FASTENER_METHODS as string[]).includes(t.method)) {
+      if (!has(hw.fastener)) gaps.push({ key: "term_fastener", detail: tag });
+      if (!has(hw.qty)) gaps.push({ key: "term_qty", detail: tag });
+    }
     if (!has(hw.elevation)) gaps.push({ key: "term_elevation", detail: tag });
     if (!has(hw.shopField)) gaps.push({ key: "term_shopfield", detail: tag });
+    // the dimensions the shop needs to actually FABRICATE this connection
+    for (const field of HW_REQUIRED[t.method] || []) {
+      if (!has(hw[field])) gaps.push({ key: `term_hw_${field}`, detail: tag });
+    }
     if (!photoSlots.has(photoSlot)) gaps.push({ key: "term_photo", detail: tag });
   }
   return gaps;

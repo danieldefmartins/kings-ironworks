@@ -524,19 +524,43 @@ export default function PrintSheet({
                         {mt(lang, ek === "start" ? "startTerm" : "endTerm")}: <Val v="" />
                       </div>
                     );
+                    const hw = t.hardware;
+                    const postNo = t.postId ? posts.findIndex((po) => po.id === t.postId) : -1;
+                    const hwDims = (
+                      [
+                        ["hwProfile", hw.profile],
+                        ["hwThickness", hw.thickness],
+                        ["hwHoleDia", hw.holeDia],
+                        ["hwHoleSpacing", hw.holeSpacing],
+                        ["hwEdgeDist", hw.edgeDist],
+                        ["hwEmbedment", hw.embedment],
+                        ["hwOrientation", hw.orientation],
+                        ["hwWeldSize", hw.weldSize],
+                      ] as [string, string][]
+                    ).filter(([, v]) => v && v.trim() !== "");
                     return (
                       <div key={ek} style={{ paddingLeft: 10 }}>
                         {mt(lang, ek === "start" ? "startTerm" : "endTerm")}:{" "}
                         <b>{mt(lang, `attach_${t.attachTo}`)}</b>
+                        {t.attachTo === "free_post" && postNo >= 0 ? <> → <b>P{postNo + 1}</b></> : null}
+                        {t.attachTo === "continue" && t.spanRef
+                          ? ` → #${data.spans.findIndex((x) => x.id === t.spanRef) + 1}`
+                          : ""}
                         {t.method ? <> · <b>{mt(lang, `method_${t.method}`)}</b></> : null}
                         {t.material ? ` · ${optLabel(lang, t.material)}` : ""}
                         {t.columnW ? ` · ${t.columnW}×${t.columnD || "?"}` : ""}
                         {t.molding ? ` · ${mt(lang, "moldingLbl").split(" (")[0]}: ${t.molding} @ ${t.moldingHeight || "?"}` : ""}
-                        {t.hardware.fastener
-                          ? ` · ${t.hardware.qty || "?"}× ${t.hardware.fastener} @ ${t.hardware.elevation || "?"} (${t.hardware.shopField ? mt(lang, t.hardware.shopField) : "?"})`
-                          : ""}
+                        {t.plumb ? ` · ${mt(lang, "plumbLbl")}: ${t.plumb}` : ""}
+                        {hw.fastener ? ` · ${hw.qty || "?"}× ${hw.fastener}` : ""}
+                        {hw.elevation ? ` @ ${hw.elevation}` : ""}
+                        {hw.shopField ? ` (${mt(lang, hw.shopField)})` : ""}
                         {t.backing ? ` · ${t.backing}` : ""}
-                        {t.note ? ` · ${t.note}` : ""}
+                        {hwDims.length > 0 && (
+                          <div style={{ paddingLeft: 14, fontSize: 11 }}>
+                            {hwDims.map(([lbl, v]) => `${mt(lang, lbl)}: ${v}`).join(" · ")}
+                          </div>
+                        )}
+                        {t.note ? <div style={{ paddingLeft: 14, fontSize: 11 }}>{t.note}</div> : null}
                       </div>
                     );
                   })}

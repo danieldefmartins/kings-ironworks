@@ -26,9 +26,10 @@ export default function LoginClient({
   const [pin, setPin] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [langChoice, setLangChoice] = useState<string | null>(null);
 
   const worker = workers.find((w) => w.id === workerId) || null;
-  const lang = worker?.lang || "en";
+  const lang = langChoice || worker?.lang || "en";
 
   async function submit(finalPin: string) {
     if (!worker) return;
@@ -64,6 +65,22 @@ export default function LoginClient({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
+      {/* language choice for the login screen itself */}
+      <div className="flex gap-2 mb-6">
+        {(["en", "pt", "es"] as const).map((l) => (
+          <button
+            key={l}
+            onClick={() => setLangChoice(l)}
+            className={`px-4 py-2 rounded-full border text-sm font-bold uppercase ${
+              lang === l
+                ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                : "border-neutral-700 text-neutral-400"
+            }`}
+          >
+            {l}
+          </button>
+        ))}
+      </div>
       <div className="mb-6 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

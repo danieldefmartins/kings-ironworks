@@ -105,6 +105,16 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Worker picks their interface language (persists on their profile)
+      case "lang_set": {
+        const lang = body.lang as string;
+        if (!["en", "pt", "es"].includes(lang)) {
+          return NextResponse.json({ error: "Bad language" }, { status: 400 });
+        }
+        await sbUpdate("kiw_shop_workers", `id=eq.${worker.id}`, { lang });
+        break;
+      }
+
       // Job time clock — START (auto-closes any running timer for this worker)
       case "time_start": {
         const loc =

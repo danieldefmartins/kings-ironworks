@@ -14,6 +14,9 @@ import {
   ATTACH_TARGETS,
   METHODS_BY_ATTACH,
   HARDWARE_METHODS,
+  HW_REQUIRED,
+  FASTENER_METHODS,
+  type TermHardware,
   requiredPhotoSlots,
   OPTIONAL_PHOTO_SLOTS,
   sheetProgress,
@@ -998,6 +1001,10 @@ export default function MeasureEditor({
                     lang={lang}
                     title={mt(lang, endKey === "start" ? "startTerm" : "endTerm")}
                     t={sp[endKey]}
+                    postOptions={posts.map((po, pi) => [po.id, `P${pi + 1}`] as [string, string])}
+                    spanOptions={data.spans
+                      .map((other, oi) => [other.id, `${mt(lang, "spanLabel")} #${oi + 1}${other.label ? ` — ${other.label}` : ""}`] as [string, string])
+                      .filter(([oid]) => oid !== sp.id)}
                     hasPhoto={data.photos.some((ph) => ph.slot === `term_${sp.id}_${endKey}`)}
                     onField={(k, v) => setTerm(si, endKey, k, v)}
                     onHw={(k, v) => setHw(si, endKey, k, v)}
@@ -1461,6 +1468,7 @@ function MSelect({
   onChange,
   lang,
   spec = false,
+  labels,
 }: {
   label: string;
   value: string;
@@ -1468,6 +1476,7 @@ function MSelect({
   onChange: (v: string) => void;
   lang: string;
   spec?: boolean;
+  labels?: Record<string, string>;
 }) {
   return (
     <label className="block min-w-0">
@@ -1480,7 +1489,7 @@ function MSelect({
         <option value="">—</option>
         {options.map((o) => (
           <option key={o} value={o}>
-            {spec ? specValue(lang, o) : optLabel(lang, o)}
+            {labels?.[o] ?? (spec ? specValue(lang, o) : optLabel(lang, o))}
           </option>
         ))}
       </select>
@@ -1659,6 +1668,8 @@ function TermEditor({
   lang,
   title,
   t,
+  postOptions,
+  spanOptions,
   hasPhoto,
   onField,
   onHw,
@@ -1667,6 +1678,8 @@ function TermEditor({
   lang: string;
   title: string;
   t: Termination;
+  postOptions: [string, string][];
+  spanOptions: [string, string][];
   hasPhoto: boolean;
   onField: (key: string, value: string) => void;
   onHw: (key: string, value: string) => void;
@@ -1674,9 +1687,24 @@ function TermEditor({
 }) {
   const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
   const needsHw = !!t.method && (HARDWARE_METHODS as string[]).includes(t.method);
+  const needsFastener = !!t.method && (FASTENER_METHODS as string[]).includes(t.method);
+  const requiredDims = new Set(HW_REQUIRED[t.method] || []);
   const isWall = t.attachTo === "wall";
   const isColumn = t.attachTo === "existing_post";
   const isWoodFloor = t.attachTo === "floor" && t.material === "Wood";
+
+  const HW_FIELDS: [keyof TermHardware, string][] = [
+    ["profile", "hwProfile"],
+    ["thickness", "hwThickness"],
+    ["holeDia", "hwHoleDia"],
+    ["holeSpacing", "hwHoleSpacing"],
+    ["edgeDist", "hwEdgeDist"],
+    ["embedment", "hwEmbedment"],
+    ["orientation", "hwOrientation"],
+    ["weldSize", "hwWeldSize"],
+  ];
+  const requiredFields = HW_FIELDS.filter(([k]) => requiredDims.has(k));
+  const optionalFields = HW_FIELDS.filter(([k]) => !requiredDims.has(k));
 
   return (
     <div className="mt-3 border border-neutral-800 rounded-lg p-3">
@@ -1690,6 +1718,23 @@ function TermEditor({
           onField("method", ""); // methods depend on the target
         }}
       />
+      {/* topology: this end must point at a real post / span */}
+      {t.attachTo === "free_post" && (
+        <div className="mt-3">
+          <MSelect label={`${mt(lang, "postRefLblSel")} *`} value={t.postId}
+            options={postOptions.map(([id]) => id)} lang={lang}
+            labels={Object.fromEntries(postOptions)}
+            onChange={(v) => onField("postId", v)} />
+        </div>
+      )}
+      {t.attachTo === "continue" && (
+        <div className="mt-3">
+          <MSelect label={`${mt(lang, "spanRefLblSel")} *`} value={t.spanRef}
+            options={spanOptions.map(([id]) => id)} lang={lang}
+            labels={Object.fromEntries(spanOptions)}
+            onChange={(v) => onField("spanRef", v)} />
+        </div>
+      )}
       {allowed.length > 0 && (
         <div className="mt-3">
           <ChipRow
@@ -1737,10 +1782,14 @@ function TermEditor({
         <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-900/60">
           <div className="text-xs font-bold text-neutral-400 mb-2">🔩 {mt(lang, "hardwareTitle")}</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <MInput label={`${mt(lang, "hwFastener")} *`} placeholder="—" value={t.hardware.fastener}
-              onChange={(v) => onHw("fastener", v)} />
-            <MInput label={`${mt(lang, "hwQty")} *`} placeholder="—" value={t.hardware.qty}
-              onChange={(v) => onHw("qty", v)} />
+            {needsFastener && (
+              <>
+                <MInput label={`${mt(lang, "hwFastener")} *`} placeholder="—" value={t.hardware.fastener}
+                  onChange={(v) => onHw("fastener", v)} />
+                <MInput label={`${mt(lang, "hwQty")} *`} placeholder="—" value={t.hardware.qty}
+                  onChange={(v) => onHw("qty", v)} />
+              </>
+            )}
             <MInput label={`${mt(lang, "hwElevation")} *`} value={t.hardware.elevation}
               onChange={(v) => onHw("elevation", v)} />
             <ChipRow
@@ -1752,28 +1801,29 @@ function TermEditor({
               ]}
               onChange={(v) => onHw("shopField", v)}
             />
+            {/* the dimensions the shop needs to FABRICATE this connection */}
+            {requiredFields.map(([k, lbl]) => (
+              <MInput key={k} label={`${mt(lang, lbl)} *`}
+                placeholder={k === "profile" || k === "orientation" ? "—" : undefined}
+                value={t.hardware[k]}
+                onChange={(v) => onHw(k, v)} />
+            ))}
           </div>
-          <details className="mt-2">
-            <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
-              + {mt(lang, "postMore")}
-            </summary>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-              <MInput label={mt(lang, "hwProfile")} placeholder="—" value={t.hardware.profile}
-                onChange={(v) => onHw("profile", v)} />
-              <MInput label={mt(lang, "hwThickness")} value={t.hardware.thickness}
-                onChange={(v) => onHw("thickness", v)} />
-              <MInput label={mt(lang, "hwHoleDia")} value={t.hardware.holeDia}
-                onChange={(v) => onHw("holeDia", v)} />
-              <MInput label={mt(lang, "hwHoleSpacing")} value={t.hardware.holeSpacing}
-                onChange={(v) => onHw("holeSpacing", v)} />
-              <MInput label={mt(lang, "hwEdgeDist")} value={t.hardware.edgeDist}
-                onChange={(v) => onHw("edgeDist", v)} />
-              <MInput label={mt(lang, "hwOrientation")} placeholder="—" value={t.hardware.orientation}
-                onChange={(v) => onHw("orientation", v)} />
-              <MInput label={mt(lang, "hwWeldSize")} value={t.hardware.weldSize}
-                onChange={(v) => onHw("weldSize", v)} />
-            </div>
-          </details>
+          {optionalFields.length > 0 && (
+            <details className="mt-2">
+              <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
+                + {mt(lang, "postMore")}
+              </summary>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                {optionalFields.map(([k, lbl]) => (
+                  <MInput key={k} label={mt(lang, lbl)}
+                    placeholder={k === "profile" || k === "orientation" ? "—" : undefined}
+                    value={t.hardware[k]}
+                    onChange={(v) => onHw(k, v)} />
+                ))}
+              </div>
+            </details>
+          )}
           <button
             onClick={onPhoto}
             className={`mt-3 px-3 py-2.5 rounded-lg border text-sm font-bold ${

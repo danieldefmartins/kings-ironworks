@@ -134,11 +134,14 @@ const HardwareSchema = z.object({
   holeDia: meas,
   holeSpacing: meas,
   edgeDist: meas,
+  embedment: meas,
   orientation: z.string().max(120),
   weldSize: meas,
 });
 const TerminationSchema = z.object({
   attachTo: z.enum(["", "free_post", "wall", "existing_post", "floor", "continue", "splice", "open"]),
+  postId: z.string().max(40),
+  spanRef: z.string().max(40),
   method: z.enum([
     "", "clip", "wall_plate", "anchor", "plate", "bolt_through", "weld",
     "base_plate", "core_drill", "embedded", "field_bolt",
@@ -208,7 +211,6 @@ const MeasureDataSchema = z.object({
 });
 
 const TABLE = "kiw_shop_measure_sheets";
-const REV_TABLE = "kiw_shop_measure_revisions";
 
 // Sheet filter: always by id; also by job when the client sends it, so a
 // request can never touch a sheet on a different job than the page it came from.

@@ -88,7 +88,18 @@ function completeData(photos) {
         ctrlRun: "",
       },
     ],
-    posts: [],
+    posts: [
+      {
+        id: "p1", segIdx: 0, stepIdx: 0, pos: "", fromNosing: "3", fromEdge: "2",
+        mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
+        substrate: "granite 6", edgeDist: "", obstruction: "none",
+      },
+      {
+        id: "p2", segIdx: 0, stepIdx: 1, pos: "", fromNosing: "3", fromEdge: "2",
+        mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
+        substrate: "granite 6", edgeDist: "", obstruction: "none",
+      },
+    ],
     spiral: null,
     rail: {
       kind: "Guardrail",
@@ -155,17 +166,17 @@ function completeData(photos) {
         label: "main rail",
         topSpan: "60",
         lowerSpan: "",
-        start: freeEnd(),
-        end: freeEnd(),
+        start: freeEnd("p1"),
+        end: freeEnd("p2"),
         note: "",
       },
     ],
   };
 }
 
-function freeEnd() {
+function freeEnd(postId = "p1") {
   return {
-    attachTo: "free_post", method: "", material: "", backing: "",
+    attachTo: "free_post", method: "", postId, spanRef: "", material: "", backing: "",
     columnW: "", columnD: "", molding: "", moldingHeight: "", plumb: "",
     hardware: blankHw(), note: "",
   };
@@ -174,7 +185,7 @@ function blankHw() {
   return {
     fastener: "", qty: "", elevation: "", shopField: "",
     profile: "", thickness: "", holeDia: "", holeSpacing: "",
-    edgeDist: "", orientation: "", weldSize: "",
+    edgeDist: "", embedment: "", orientation: "", weldSize: "",
   };
 }
 function columnEnd(extra = {}) {
@@ -184,7 +195,9 @@ function columnEnd(extra = {}) {
     columnW: "5 1/2", columnD: "5 1/2", molding: "3/4", moldingHeight: "6",
     hardware: {
       ...blankHw(),
-      fastener: '2x 3/8" lag', qty: "2", elevation: "34", shopField: "field_bolt",
+      fastener: '3/8" lag', qty: "2", elevation: "34", shopField: "field_bolt",
+      profile: 'L2x2x3/16 x 3"', thickness: "3/16", holeDia: "7/16",
+      holeSpacing: "1 1/2", orientation: "vertical leg up",
     },
     ...extra,
   };
@@ -371,6 +384,24 @@ noHw.spans[0].end = columnEnd({ hardware: blankHw() });
 noHw.spans[0].lowerSpan = "59 1/4";
 await api({ type: "update", id: spanId, jobId: JOB, data: noHw }, cookie2);
 check("clip without hardware → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// free_post end not linked to a measured post → blocked
+const unlinked = completeData(realPhotos);
+unlinked.spans[0].end = { ...freeEnd(""), postId: "" };
+await api({ type: "update", id: spanId, jobId: JOB, data: unlinked }, cookie2);
+check("free post without postId → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// clip without its fabrication dimensions → blocked
+const noDims = completeData(realPhotos);
+noDims.spans[0].end = columnEnd();
+noDims.spans[0].lowerSpan = "59 1/4";
+noDims.spans[0].end.hardware.profile = "";
+noDims.photos = [
+  ...realPhotos,
+  { slot: "term_sp1_end", path: termPhotoPathEnd, takenAt: "2026-01-01T00:00:00Z" },
+];
+await api({ type: "update", id: spanId, jobId: JOB, data: noDims }, cookie2);
+check("clip without profile dims → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
 
 // dual-molding span: 60 top, 58 1/2 lower, 3/4 + 3/4 moldings → consistent
 const dual = completeData(realPhotos);

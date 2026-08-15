@@ -51,6 +51,23 @@ export default function ShopTopBar({
         </div>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        <select
+          value={lang}
+          onChange={async (e) => {
+            await fetch("/shop/api/action", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ type: "lang_set", lang: e.target.value }),
+            });
+            router.refresh();
+          }}
+          aria-label="Language"
+          className="rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-sm appearance-none"
+        >
+          <option value="en">EN</option>
+          <option value="pt">PT</option>
+          <option value="es">ES</option>
+        </select>
         {adminLink && (
           <Link
             href="/shop/admin"

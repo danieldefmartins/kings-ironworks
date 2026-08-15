@@ -239,25 +239,59 @@ export const HARDWARE_METHODS: AttachMethod[] = [
   "base_plate",
   "core_drill",
   "embedded",
+  "weld",
+  "field_bolt",
 ];
 
 export interface TermHardware {
-  fastener: string; // fastener/anchor spec (required)
-  qty: string; // quantity (required)
-  elevation: string; // connection centerline height from finished floor (required)
-  shopField: "" | "shop_weld" | "field_bolt"; // how it joins the railing (required)
-  profile: string; // clip/plate profile + dimensions
+  fastener: string; // fastener/anchor spec
+  qty: string; // quantity
+  elevation: string; // connection centerline height from finished floor
+  shopField: "" | "shop_weld" | "field_bolt"; // how it joins the railing
+  profile: string; // clip/plate/member profile + dimensions
   thickness: string;
   holeDia: string;
   holeSpacing: string;
   edgeDist: string;
+  embedment: string; // anchor/core-drill embedment depth
   orientation: string;
   weldSize: string;
 }
 
+// Which hardware fields the SHOP needs to fabricate each connection type,
+// beyond the base set. A record saying "clip, two lags, 34 in" cannot be
+// manufactured — the clip itself needs dimensions.
+export const HW_REQUIRED: Record<string, (keyof TermHardware)[]> = {
+  clip: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
+  wall_plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
+  plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
+  base_plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
+  bolt_through: ["holeDia", "holeSpacing", "edgeDist"],
+  anchor: ["embedment", "edgeDist"],
+  weld: ["profile", "weldSize", "orientation"],
+  field_bolt: ["profile", "holeDia", "holeSpacing", "orientation"],
+  core_drill: ["holeDia", "embedment"],
+  embedded: ["embedment"],
+};
+
+// Methods where a fastener spec + quantity make sense (everything but pure welds).
+export const FASTENER_METHODS: AttachMethod[] = [
+  "clip",
+  "wall_plate",
+  "anchor",
+  "plate",
+  "bolt_through",
+  "base_plate",
+  "core_drill",
+  "embedded",
+  "field_bolt",
+];
+
 export interface Termination {
   attachTo: AttachTarget;
   method: AttachMethod;
+  postId: string; // free_post: which measured post carries this end
+  spanRef: string; // continue: id of the adjoining span
   material: string; // wall/column/floor material
   backing: string; // wall: structural backing behind finish; wood floor: blocking/through-bolt detail
   columnW: string; // existing column width facing the rail (at attachment elevation)
@@ -283,6 +317,8 @@ export function newTermination(): Termination {
   return {
     attachTo: "",
     method: "",
+    postId: "",
+    spanRef: "",
     material: "",
     backing: "",
     columnW: "",
@@ -300,6 +336,7 @@ export function newTermination(): Termination {
       holeDia: "",
       holeSpacing: "",
       edgeDist: "",
+      embedment: "",
       orientation: "",
       weldSize: "",
     },
