@@ -466,6 +466,17 @@ export async function uploadPhotoObject(
   }
 }
 
+// Remove an object from the private bucket (admin photo deletion).
+export async function deletePhotoObject(path: string): Promise<void> {
+  await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${encodeURI(path)}`, {
+    method: "DELETE",
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+    },
+  });
+}
+
 // Create a short-lived signed URL so private photos can be viewed in the browser.
 export async function signPhotoUrl(
   path: string,

@@ -41,6 +41,7 @@ const JPEG = Buffer.from(
   "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
   "base64"
 );
+const uploadedPhotoIds = [];
 async function uploadPhoto(label) {
   const form = new FormData();
   form.append("file", new File([JPEG], "t.jpg", { type: "image/jpeg" }));
@@ -54,6 +55,7 @@ async function uploadPhoto(label) {
   });
   const d = await res.json();
   if (!res.ok || !d.path) throw new Error("photo upload failed");
+  if (d.id) uploadedPhotoIds.push(d.id);
   return d.path;
 }
 
@@ -427,6 +429,18 @@ check("delete span sheet → 200", (await api({ type: "delete", id: spanId, jobI
 // ---- cleanup ---------------------------------------------------------------
 check("delete → 200", (await api({ type: "delete", id, jobId: JOB })).status === 200);
 check("delete custom → 200", (await api({ type: "delete", id: customId, jobId: JOB })).status === 200);
+
+// remove the test photos this suite uploaded (records + storage objects)
+let photoCleanupOk = true;
+for (const pid of uploadedPhotoIds) {
+  const r = await fetch(`${BASE}/shop/api/action`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", cookie },
+    body: JSON.stringify({ type: "photo_delete", id: pid }),
+  });
+  if (!r.ok) photoCleanupOk = false;
+}
+check(`test photos cleaned up (${uploadedPhotoIds.length})`, photoCleanupOk);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

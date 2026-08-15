@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWorker } from "@/lib/shop/session";
 import {
+  sbSelect,
   sbUpdate,
   sbInsert,
   sbDelete,
   STAGES,
   startTimeEntry,
   stopTimeEntry,
+  deletePhotoObject,
 } from "@/lib/shop/db";
 
 export const runtime = "nodejs";
@@ -136,6 +138,22 @@ export async function POST(req: NextRequest) {
       }
 
       // ---- Admin-only (Daniel) --------------------------------------------
+      // Delete a photo record + its storage object (cleanup of bad uploads).
+      case "photo_delete": {
+        if (!worker.is_admin) {
+          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        }
+        const rows = await sbSelect<{ id: string; url: string }[]>(
+          "kiw_shop_photos",
+          `select=id,url&id=eq.${body.id}&limit=1`
+        );
+        if (rows[0]) {
+          await deletePhotoObject(rows[0].url);
+          await sbDelete("kiw_shop_photos", `id=eq.${rows[0].id}`);
+        }
+        break;
+      }
+
       case "rate_set": {
         if (!worker.is_admin) {
           return NextResponse.json({ error: "Admin only" }, { status: 403 });
