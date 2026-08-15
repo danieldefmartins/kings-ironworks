@@ -5,6 +5,7 @@
 // as "—" — and lets the crew tap a tread to place a post.
 
 import type {
+  CurveSegment,
   FlightSegment,
   MeasureData,
   MeasureShape,
@@ -209,7 +210,201 @@ function PlanSketch({
     return { x: cx + r.x, y: cy + r.y };
   };
 
+  const stepTurn = (st: FlightSegment["steps"][number]): number => {
+    if (!st.winder) return 0;
+    const t = parseMeas(st.turnDeg || "");
+    return t === null ? 0 : t;
+  };
+
   data.segments.forEach((seg, segIdx) => {
+    if (seg.kind === "flight" && (seg as FlightSegment).steps.some((st) => stepTurn(st) !== 0)) {
+      // winder flight: each tread renders in its own frame; the direction of
+      // travel rotates after every turning tread — drawing the wedges
+      const fl = seg as FlightSegment;
+      const wv = v(fl.width, p);
+      fl.steps.forEach((st, i) => {
+        const els: React.ReactNode[] = [
+          <line key="t" x1={0} y1={-PLAN_W / 2} x2={0} y2={PLAN_W / 2} stroke={p.ghost} strokeWidth={1.2} />,
+          <line key="e1" x1={0} y1={-PLAN_W / 2} x2={PLAN_TREAD} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+          <line key="e2" x1={0} y1={PLAN_W / 2} x2={PLAN_TREAD} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+        ];
+        if (st.winder) {
+          els.push(
+            <text key="w" x={PLAN_TREAD / 2} y={4} fontSize={7} textAnchor="middle" fill={p.post}>
+              ◺
+            </text>
+          );
+        }
+        const stepPosts = data.posts.filter((po) => po.segIdx === segIdx && po.stepIdx === i);
+        if (!wallRail) {
+          stepPosts.forEach((po) => {
+            postNo += 1;
+            const py = openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
+            els.push(
+              <g key={`p${po.id}`}>
+                <circle cx={PLAN_TREAD / 2} cy={py} r={4} fill={p.post} />
+                <text x={PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
+                  P{postNo}
+                </text>
+              </g>
+            );
+          });
+          if (onTapStep) {
+            els.push(
+              <rect key="tap" x={0} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
+                fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapStep(segIdx, i)} />
+            );
+          }
+        }
+        if (i === 0) {
+          els.push(
+            <text key="wl" x={-8} y={4} fontSize={8.5} textAnchor="end" fill={wv.fill}>
+              {wv.text}
+            </text>
+          );
+        }
+        groups.push({
+          node: (
+            <g key={`wfl${segIdx}-${i}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+              {els}
+            </g>
+          ),
+          corners: [world(0, -PLAN_W / 2 - 20), world(PLAN_TREAD, -PLAN_W / 2 - 20), world(0, PLAN_W / 2 + 20), world(PLAN_TREAD, PLAN_W / 2 + 20)],
+        });
+        const end = world(PLAN_TREAD, 0);
+        cx = end.x;
+        cy = end.y;
+        ang += stepTurn(st); // the wedge turns the travel direction
+      });
+      return;
+    }
+    if (seg.kind === "curve") {
+      // radius section: edge arcs at ±W/2 around the centerline radius
+      const cv = seg as CurveSegment;
+      const sweepMeas = parseMeas(cv.sweepDeg);
+      const Rm = parseMeas(cv.radius);
+      const Cm = parseMeas(cv.chord);
+      let sweep = sweepMeas !== null && sweepMeas > 0 ? sweepMeas : null;
+      if (sweep === null && Rm !== null && Rm > 0 && Cm !== null && Cm > 0 && Cm / (2 * Rm) <= 1) {
+        sweep = (2 * Math.asin(Cm / (2 * Rm)) * 180) / Math.PI;
+      }
+      if (sweep === null) sweep = 90;
+      const sgn = cv.direction === "left" ? -1 : 1;
+      const Rd = 78; // display radius
+      const rv = v(cv.radius, p);
+      const av = v(cv.arc, p);
+      // circle center is perpendicular to travel
+      const centerLocal = { x: 0, y: sgn * Rd };
+      const th = (sweep * Math.PI) / 180;
+      const rotPt = (px: number, py: number) => {
+        // rotate local point around centerLocal by sgn*th
+        const dx = px - centerLocal.x;
+        const dy = py - centerLocal.y;
+        const c = Math.cos(sgn * th);
+        const sn = Math.sin(sgn * th);
+        return { x: centerLocal.x + dx * c - dy * sn, y: centerLocal.y + dx * sn + dy * c };
+      };
+      const endLocal = rotPt(0, 0);
+      const largeArc = sweep > 180 ? 1 : 0;
+      const svgSweep = sgn === 1 ? 1 : 0;
+      const edge = (off: number) => {
+        const r = Rd - sgn * off;
+        const s0 = { x: 0, y: off };
+        const s1 = rotPt(0, off);
+        return `M ${s0.x} ${s0.y} A ${Math.abs(r)} ${Math.abs(r)} 0 ${largeArc} ${svgSweep} ${s1.x} ${s1.y}`;
+      };
+      const mid = rotHalf(centerLocal, sgn, th / 2);
+      const els: React.ReactNode[] = [
+        <path key="e1" d={edge(-PLAN_W / 2)} fill="none" stroke={p.line} strokeWidth={2} />,
+        <path key="e2" d={edge(PLAN_W / 2)} fill="none" stroke={p.line} strokeWidth={2} />,
+        <path key="cl" d={edge(0)} fill="none" stroke={p.ghost} strokeWidth={1} strokeDasharray="4 4" />,
+        <text key="r" x={mid.x} y={mid.y - sgn * 14} fontSize={8.5} textAnchor="middle" fill={rv.fill}>
+          R {rv.text}
+        </text>,
+        <text key="a" x={mid.x} y={mid.y - sgn * 14 + 11} fontSize={8.5} textAnchor="middle" fill={av.fill}>
+          ⌒ {av.text}
+        </text>,
+      ];
+      const curvePosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      curvePosts.forEach((po, idx) => {
+        postNo += 1;
+        const frac = (idx + 1) / (curvePosts.length + 1);
+        const pp = rotPt2(centerLocal, sgn, th * frac, 0, (sgn * -PLAN_W) / 2);
+        els.push(
+          <g key={`cp${po.id}`}>
+            <circle cx={pp.x} cy={pp.y} r={4} fill={p.post} />
+            <text x={pp.x + 5} y={pp.y - 5} fontSize={8} fontWeight={700} fill={p.post}>
+              P{postNo}
+            </text>
+          </g>
+        );
+      });
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <path key="tap" d={edge(0)} fill="none" stroke="transparent" strokeWidth={PLAN_W}
+            style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+        );
+      }
+      groups.push({
+        node: (
+          <g key={`cu${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+            {els}
+          </g>
+        ),
+        corners: [
+          world(0, -Rd - PLAN_W),
+          world(0, Rd + PLAN_W),
+          world(endLocal.x, endLocal.y - PLAN_W),
+          world(endLocal.x, endLocal.y + PLAN_W),
+          world(Rd + PLAN_W, 0),
+          world(-Rd - PLAN_W, 0),
+        ],
+      });
+      const endW = world(endLocal.x, endLocal.y);
+      cx = endW.x;
+      cy = endW.y;
+      ang += sgn * sweep;
+      return;
+    }
+    if (seg.kind === "ramp") {
+      const rp = seg as RampSegment;
+      const len = 90;
+      const lv = v(rp.length, p);
+      const els: React.ReactNode[] = [
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+        <line key="ar" x1={8} y1={0} x2={len - 8} y2={0} stroke={p.ghost} strokeWidth={1.2} />,
+        <text key="l" x={len / 2} y={-PLAN_W / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
+          {lv.text}
+        </text>,
+      ];
+      const rampPosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      rampPosts.forEach((po, idx) => {
+        postNo += 1;
+        const frac = (idx + 1) / (rampPosts.length + 1);
+        els.push(
+          <circle key={`rp${po.id}`} cx={frac * len} cy={openRight ? PLAN_W / 2 : -PLAN_W / 2} r={4} fill={p.post} />
+        );
+      });
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <rect key="tap" x={0} y={-PLAN_W / 2} width={len} height={PLAN_W}
+            fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+        );
+      }
+      groups.push({
+        node: (
+          <g key={`rpg${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+            {els}
+          </g>
+        ),
+        corners: [world(0, -PLAN_W), world(len, -PLAN_W), world(0, PLAN_W), world(len, PLAN_W)],
+      });
+      const end = world(len, 0);
+      cx = end.x;
+      cy = end.y;
+      return;
+    }
     if (seg.kind === "flight") {
       const fl = seg as FlightSegment;
       const len = fl.steps.length * PLAN_TREAD;
@@ -449,6 +644,12 @@ function StairSketch({
       hRise += seg.steps.length * RISE;
     } else if (seg.kind === "platform") {
       w += PLAT;
+    } else if (seg.kind === "curve") {
+      w += 110;
+      if (seg.rise.trim() !== "") hRise += 60;
+    } else if (seg.kind === "ramp") {
+      w += 130;
+      hRise += 60;
     }
   }
   const H = hRise + 130;
@@ -583,6 +784,47 @@ function StairSketch({
         );
       }
       x += PLAT;
+    } else if (seg.kind === "curve") {
+      // side view of a curve: wavy line, rising when it climbs
+      const cv = seg as CurveSegment;
+      const len = 110;
+      const drop = cv.rise.trim() === "" ? 0 : 60;
+      const av = v(cv.arc, p);
+      outline += ` q ${len / 3} ${-drop / 2 - 8} ${len / 2} ${-drop / 2}`;
+      outline += ` q ${len / 6} ${8 - drop / 2} ${len / 2} ${-drop / 2}`;
+      els.push(
+        <text key={`cv${segIdx}`} x={x + len / 2} y={y - drop / 2 - 16} fontSize={9} textAnchor="middle" fill={av.fill}>
+          ⌒ {av.text}
+        </text>
+      );
+      if (onTapPlatform && !wallRail) {
+        taps.push(
+          <rect key={`tc${segIdx}`} x={x} y={y - drop - 66} width={len} height={66 + drop}
+            fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+        );
+      }
+      x += len;
+      y -= drop;
+    } else if (seg.kind === "ramp") {
+      const rp = seg as RampSegment;
+      const len = 130;
+      const drop = 60;
+      const lv = v(rp.length, p);
+      outline += ` L ${x + len} ${y - drop}`;
+      els.push(
+        <text key={`rp${segIdx}`} x={x + len / 2} y={y - drop / 2 - 10} fontSize={9} textAnchor="middle" fill={lv.fill}
+          transform={`rotate(${(Math.atan2(-drop, len) * 180) / Math.PI} ${x + len / 2} ${y - drop / 2 - 10})`}>
+          {lv.text}
+        </text>
+      );
+      if (onTapPlatform && !wallRail) {
+        taps.push(
+          <rect key={`tr${segIdx}`} x={x} y={y - drop - 66} width={len} height={66 + drop}
+            fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+        );
+      }
+      x += len;
+      y -= drop;
     }
   });
 
@@ -669,6 +911,28 @@ function StairSketch({
 function firstFlightAngle(data: MeasureData): string {
   for (const s of data.segments) if (s.kind === "flight") return s.angleDeg;
   return "";
+}
+
+// midpoint of an arc around a local center (used for curve labels)
+function rotHalf(center: { x: number; y: number }, sgn: number, halfTh: number) {
+  const dx = 0 - center.x;
+  const dy = 0 - center.y;
+  const c = Math.cos(sgn * halfTh);
+  const sn = Math.sin(sgn * halfTh);
+  return { x: center.x + dx * c - dy * sn, y: center.y + dx * sn + dy * c };
+}
+function rotPt2(
+  center: { x: number; y: number },
+  sgn: number,
+  th: number,
+  px: number,
+  py: number
+) {
+  const dx = px - center.x;
+  const dy = py - center.y;
+  const c = Math.cos(sgn * th);
+  const sn = Math.sin(sgn * th);
+  return { x: center.x + dx * c - dy * sn, y: center.y + dx * sn + dy * c };
 }
 
 function PostGlyph({ x, y, n, p }: { x: number; y: number; n: number; p: Palette }) {

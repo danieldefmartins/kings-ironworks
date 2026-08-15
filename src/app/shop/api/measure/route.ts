@@ -30,7 +30,15 @@ const short = z.string().max(300);
 const note = z.string().max(2000);
 const uuid = z.string().uuid();
 
-const StepSchema = z.object({ rise: meas, run: meas, nosing: meas });
+const StepSchema = z.object({
+  rise: meas,
+  run: meas,
+  nosing: meas,
+  winder: z.boolean().optional(),
+  runIn: meas.optional(),
+  runOut: meas.optional(),
+  turnDeg: meas.optional(),
+});
 const FlightSchema = z.object({
   kind: z.literal("flight"),
   steps: z.array(StepSchema).min(1).max(60),
@@ -56,6 +64,16 @@ const RampSchema = z.object({
   runH: meas,
   rise: meas,
   angleDeg: meas,
+  width: meas,
+});
+const CurveSchema = z.object({
+  kind: z.literal("curve"),
+  radius: meas,
+  chord: meas,
+  arc: meas,
+  sweepDeg: meas,
+  rise: meas,
+  direction: z.enum(["left", "right"]),
   width: meas,
 });
 const PostSchema = z.object({
@@ -178,7 +196,7 @@ const SpanSchema = z.object({
 
 const MeasureDataSchema = z.object({
   segments: z
-    .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema]))
+    .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
     .max(12),
   posts: z.array(PostSchema).max(120),
   spiral: SpiralSchema,

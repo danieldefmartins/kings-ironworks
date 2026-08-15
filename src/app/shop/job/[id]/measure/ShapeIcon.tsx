@@ -82,6 +82,17 @@ export default function ShapeIcon({
           <path d="M24 24V7M24 24l12 12M24 24L7 24M24 24l12-12M24 24l-12 12" strokeWidth={1.6} />
         </svg>
       );
+    case "builder":
+      return (
+        <svg {...common}>
+          <path d="M4 42h6v-6h6v-6h6" />
+          <path d="M22 30h8" />
+          <path d="M30 30c6 0 10-4 10-10" />
+          <path d="M40 20v-8h4" />
+          <circle cx="22" cy="30" r="1.8" fill="currentColor" stroke="none" />
+          <circle cx="30" cy="30" r="1.8" fill="currentColor" stroke="none" />
+        </svg>
+      );
     case "custom":
       return (
         <svg {...common}>

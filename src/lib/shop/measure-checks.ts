@@ -9,11 +9,13 @@ import {
   HARDWARE_METHODS,
   HW_REQUIRED,
   FASTENER_METHODS,
+  type CurveSegment,
   type FlightSegment,
   type MeasureData,
   type MeasureShape,
   type PlatformSegment,
   type PostMeasure,
+  type RampSegment,
   type Termination,
 } from "./measure";
 
@@ -141,8 +143,38 @@ function compare(
 // and proves nothing.
 function stairTurns(data: MeasureData): boolean {
   return data.segments.some(
-    (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
+    (s) =>
+      (s.kind === "platform" && (s as PlatformSegment).turn !== "none") ||
+      s.kind === "curve" ||
+      (s.kind === "flight" &&
+        (s as FlightSegment).steps.some((st) => st.winder && (st.turnDeg || "").trim() !== ""))
   );
+}
+
+// Circular-arc redundancy: chord = 2R·sin(θ/2), arc = R·θ. With radius plus
+// either sweep or chord, the other two are computable and cross-checked.
+function curveChecks(seg: CurveSegment, tol: Tolerances, tag?: string): CheckResult[] {
+  const out: CheckResult[] = [];
+  const R = parseMeas(seg.radius);
+  const chord = parseMeas(seg.chord);
+  const arc = parseMeas(seg.arc);
+  const sweep = parseMeas(seg.sweepDeg);
+  let theta: number | null = null; // radians
+  if (R !== null && R > 0) {
+    if (sweep !== null && sweep > 0) theta = (sweep * Math.PI) / 180;
+    else if (chord !== null && chord > 0 && chord / (2 * R) <= 1) {
+      theta = 2 * Math.asin(chord / (2 * R));
+    }
+  }
+  const calcArc = theta !== null && R !== null ? R * theta : null;
+  out.push(compare("curve_arc", calcArc, arc, tol.rake, "in", tag));
+  if (sweep !== null && R !== null && theta !== null) {
+    const calcChord = 2 * R * Math.sin(theta / 2);
+    out.push(compare("curve_chord", calcChord, chord, tol.rake, "in", tag));
+  } else {
+    out.push({ key: "curve_chord", level: "na", expected: null, actual: null, delta: null, unit: "in", detail: tag });
+  }
+  return out;
 }
 
 export function runChecks(
@@ -173,10 +205,17 @@ export function runChecks(
     }
     return { r, u };
   });
-  const riseSum = sums.reduce<number | null>(
+  let riseSum = sums.reduce<number | null>(
     (acc, x) => (acc === null || x.r === null ? null : acc + x.r),
     0
   );
+  // curves and ramps in a mixed assembly contribute to the total rise
+  for (const seg of data.segments) {
+    if (seg.kind === "curve" || seg.kind === "ramp") {
+      const rv = seg.rise.trim() === "" ? 0 : parseMeas(seg.rise);
+      riseSum = riseSum === null || rv === null ? null : riseSum + rv;
+    }
+  }
 
   // 1) sum of ALL risers vs floor-to-floor — vertical heights add regardless
   // of turns, so this stays global.
@@ -236,6 +275,24 @@ export function runChecks(
     out.push(
       compare("angle", calc, meas, tol.angle, "deg", multi ? `#${i + 1}` : undefined)
     );
+  });
+
+  // curve + ramp segments inside a mixed assembly
+  data.segments.forEach((seg, si) => {
+    const tag = data.segments.length > 1 ? `#${si + 1}` : undefined;
+    if (seg.kind === "curve") out.push(...curveChecks(seg as CurveSegment, tol, tag));
+    if (seg.kind === "ramp") {
+      const rp = seg as RampSegment;
+      const runH = parseMeas(rp.runH);
+      const rise = parseMeas(rp.rise);
+      const calcAng =
+        runH !== null && rise !== null && runH > 0
+          ? (Math.atan2(rise, runH) * 180) / Math.PI
+          : null;
+      out.push(compare("angle", calcAng, parseMeas(rp.angleDeg), tol.angle, "deg", tag));
+      const calcSlope = runH !== null && rise !== null ? Math.hypot(runH, rise) : null;
+      out.push(compare("ramp_slope", calcSlope, parseMeas(rp.length), tol.rake, "in", tag));
+    }
   });
 
   out.push(...spanChecks(data));
@@ -423,9 +480,13 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     }
   } else {
     let missingSteps = 0;
+    let missingWinder = 0;
     flights.forEach((fl, fi) => {
       fl.steps.forEach((st) => {
         if (!has(st.rise) || !has(st.run)) missingSteps += 1;
+        if (st.winder && (!has(st.runIn) || !has(st.runOut) || !has(st.turnDeg))) {
+          missingWinder += 1;
+        }
       });
       if (!has(fl.width)) gaps.push({ key: "flight_width", detail: `#${fi + 1}` });
       if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: `#${fi + 1}` });
@@ -438,6 +499,23 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       }
     });
     if (missingSteps > 0) gaps.push({ key: "steps", detail: `${missingSteps}` });
+    if (missingWinder > 0) gaps.push({ key: "winder", detail: `${missingWinder}` });
+    // mixed-assembly curve and ramp segments must be measurable
+    data.segments.forEach((seg, si) => {
+      const tag = `#${si + 1}`;
+      if (seg.kind === "curve") {
+        const c = seg as CurveSegment;
+        if (!has(c.radius) || !has(c.chord) || !has(c.arc) || !has(c.width)) {
+          gaps.push({ key: "curve_geometry", detail: tag });
+        }
+      }
+      if (seg.kind === "ramp" && shape === "builder") {
+        const rp = seg as RampSegment;
+        if (!has(rp.rise) || !has(rp.runH) || !has(rp.length) || !has(rp.angleDeg) || !has(rp.width)) {
+          gaps.push({ key: "ramp_geometry", detail: tag });
+        }
+      }
+    });
     if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise)) {
       gaps.push({ key: "floor_to_floor" });
     }

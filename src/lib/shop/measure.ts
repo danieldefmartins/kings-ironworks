@@ -12,6 +12,7 @@ export type MeasureShape =
   | "ramp"
   | "wall_rail"
   | "spiral"
+  | "builder"
   | "custom";
 
 export const MEASURE_SHAPES: MeasureShape[] = [
@@ -23,6 +24,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "ramp",
   "wall_rail",
   "spiral",
+  "builder",
   "custom",
 ];
 
@@ -31,8 +33,13 @@ export const TWO_FLIGHT_SHAPES: MeasureShape[] = ["l_shape", "u_shape"];
 
 export interface StepMeasure {
   rise: string; // riser height
-  run: string; // tread depth, nose to riser
+  run: string; // tread depth at the walkline, nose to riser
   nosing: string; // nosing overhang ("Back 5" on field sheets)
+  // Winder treads (triangular/kite steps that turn the stair):
+  winder?: boolean;
+  runIn?: string; // tread depth at the inside (narrow) edge
+  runOut?: string; // tread depth at the outside (wide) edge
+  turnDeg?: string; // how much this tread turns the direction of travel
 }
 
 export interface PostMeasure {
@@ -84,7 +91,21 @@ export interface RampSegment {
   width: string;
 }
 
-export type Segment = FlightSegment | PlatformSegment | RampSegment;
+// Curved / radius rail section. Redundant geometry: for a circular arc,
+// chord = 2R·sin(θ/2) and arc = R·θ — so radius, chord and arc are
+// cross-checked against each other.
+export interface CurveSegment {
+  kind: "curve";
+  radius: string; // to the rail centerline
+  chord: string; // straight line end-to-end
+  arc: string; // length along the curve
+  sweepDeg: string; // total turn (optional — derivable from radius+chord)
+  rise: string; // total rise across the curve ("" = level radius rail)
+  direction: "left" | "right";
+  width: string;
+}
+
+export type Segment = FlightSegment | PlatformSegment | RampSegment | CurveSegment;
 
 export interface SpiralData {
   floorToFloor: string;
@@ -449,6 +470,13 @@ function blankStep(): StepMeasure {
   return { rise: "", run: "", nosing: "" };
 }
 
+export function newFlightSegment(steps = 3): FlightSegment {
+  return blankFlight(steps);
+}
+export function newPlatformSegment(turn: PlatformSegment["turn"] = "left"): PlatformSegment {
+  return blankPlatform(turn);
+}
+
 function blankFlight(steps: number): FlightSegment {
   return {
     kind: "flight",
@@ -460,6 +488,23 @@ function blankFlight(steps: number): FlightSegment {
     ctrlRise: "",
     ctrlRun: "",
   };
+}
+
+export function blankCurve(): CurveSegment {
+  return {
+    kind: "curve",
+    radius: "",
+    chord: "",
+    arc: "",
+    sweepDeg: "",
+    rise: "",
+    direction: "left",
+    width: "",
+  };
+}
+
+export function blankRamp(): RampSegment {
+  return { kind: "ramp", length: "", runH: "", rise: "", angleDeg: "", width: "" };
 }
 
 function blankPlatform(turn: PlatformSegment["turn"] = "none"): PlatformSegment {
@@ -494,6 +539,9 @@ export function newMeasureData(
       segments = [{ kind: "ramp", length: "", runH: "", rise: "", angleDeg: "", width: "" }];
       break;
     case "wall_rail":
+      segments = [blankFlight(steps1)];
+      break;
+    case "builder":
       segments = [blankFlight(steps1)];
       break;
     case "custom":
@@ -623,6 +671,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       }
       if (seg.kind === "platform") return { ...seg, diag: seg.diag ?? "" };
       if (seg.kind === "ramp") return { ...seg, runH: seg.runH ?? "" };
+      if (seg.kind === "curve") return { ...blankCurve(), ...seg };
       return seg;
     }),
     posts: (d.posts || []).map((p) => ({
@@ -699,8 +748,10 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       vals.push(seg.width, seg.angleDeg);
     } else if (seg.kind === "platform") {
       vals.push(seg.length, seg.depth);
-    } else {
+    } else if (seg.kind === "ramp") {
       vals.push(seg.length, seg.rise, seg.angleDeg, seg.width);
+    } else if (seg.kind === "curve") {
+      vals.push(seg.radius, seg.chord, seg.arc, seg.width);
     }
   }
   for (const p of data.posts) vals.push(p.fromNosing, p.fromEdge, p.mount);

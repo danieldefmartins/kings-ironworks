@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import type { Job } from "@/lib/shop/db";
 import type {
+  CurveSegment,
   FlightSegment,
   MeasureData,
   MeasureSheet,
@@ -80,6 +81,8 @@ export default function PrintSheet({
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
+  const curveSegs = data.segments.filter((s) => s.kind === "curve") as CurveSegment[];
+  const anyWinder = flights.some((fl) => fl.steps.some((st) => st.winder));
   // step numbering continues across flights (bottom flight first)
   const flightOffsets: number[] = [];
   for (let i = 0, acc = 0; i < flights.length; i++) {
@@ -333,16 +336,30 @@ export default function PrintSheet({
                   <Th>{mt(lang, "rise")}</Th>
                   <Th>{mt(lang, "run")}</Th>
                   <Th>{mt(lang, "nosing")}</Th>
+                  {anyWinder && (
+                    <>
+                      <Th>{mt(lang, "winderRunIn")}</Th>
+                      <Th>{mt(lang, "winderRunOut")}</Th>
+                      <Th>{mt(lang, "winderTurn")}</Th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {flights.flatMap((fl, fi) =>
                   fl.steps.map((st, si) => (
                     <tr key={`${fi}-${si}`}>
-                      <Td>{flightOffsets[fi] + si + 1}</Td>
+                      <Td>{flightOffsets[fi] + si + 1}{st.winder ? " ◺" : ""}</Td>
                       <Td><Val v={st.rise} /></Td>
                       <Td><Val v={st.run} /></Td>
                       <Td><Val v={st.nosing} /></Td>
+                      {anyWinder && (
+                        <>
+                          <Td>{st.winder ? <Val v={st.runIn || ""} /> : "—"}</Td>
+                          <Td>{st.winder ? <Val v={st.runOut || ""} /> : "—"}</Td>
+                          <Td>{st.winder ? <Val v={st.turnDeg || ""} /> : "—"}</Td>
+                        </>
+                      )}
                     </tr>
                   ))
                 )}
@@ -443,6 +460,18 @@ export default function PrintSheet({
               {mt(lang, "length")}: <Val v={pl.length} /> · {mt(lang, "depth")}:{" "}
               <Val v={pl.depth} /> · {mt(lang, "slope")}: <Val v={pl.slope} />
               {pl.slopeDir && pl.slopeDir.trim() !== "" && <> → {pl.slopeDir}</>}
+            </div>
+          ))}
+
+          {curveSegs.map((cv, i) => (
+            <div key={`cv${i}`} className="mt-2">
+              <b>{mt(lang, "curveTitle")}: </b>
+              R <Val v={cv.radius} /> · {mt(lang, "curveChord")}: <Val v={cv.chord} /> ·{" "}
+              {mt(lang, "curveArc")}: <Val v={cv.arc} />
+              {cv.sweepDeg ? <> · {cv.sweepDeg}°</> : null}
+              {cv.rise ? <> · {mt(lang, "totalRise")}: <b>{cv.rise}</b></> : null} ·{" "}
+              {mt(lang, "width")}: <Val v={cv.width} /> ·{" "}
+              {cv.direction === "left" ? "↰" : "↱"}
             </div>
           ))}
 

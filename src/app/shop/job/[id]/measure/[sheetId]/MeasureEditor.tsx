@@ -11,6 +11,10 @@ import {
   RAIL_SIDE_OPTIONS,
   newPost,
   newSpan,
+  newFlightSegment,
+  newPlatformSegment,
+  blankRamp,
+  blankCurve,
   ATTACH_TARGETS,
   METHODS_BY_ATTACH,
   HARDWARE_METHODS,
@@ -26,6 +30,7 @@ import {
   type PlatformSegment,
   type PostMeasure,
   type RampSegment,
+  type CurveSegment,
   type Termination,
 } from "@/lib/shop/measure";
 import {
@@ -437,7 +442,13 @@ export default function MeasureEditor({
   const platforms = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "platform") as { seg: PlatformSegment; i: number }[];
-  const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
+  const ramps = data.segments
+    .map((s, i) => ({ seg: s, i }))
+    .filter((x) => x.seg.kind === "ramp") as { seg: RampSegment; i: number }[];
+  const curves = data.segments
+    .map((s, i) => ({ seg: s, i }))
+    .filter((x) => x.seg.kind === "curve") as { seg: CurveSegment; i: number }[];
+  const isBuilder = sheet.shape === "builder";
   const turns = data.segments.some(
     (sg) => sg.kind === "platform" && (sg as PlatformSegment).turn !== "none"
   );
@@ -621,6 +632,40 @@ export default function MeasureEditor({
           </div>
         </Card>
 
+        {/* Mixed assembly: build the staircase segment by segment */}
+        {isBuilder && (
+          <Card title={`🧱 ${mt(lang, "segmentsTitle")}`}>
+            <div className="text-xs text-neutral-500 mb-3">{mt(lang, "segmentsHint")}</div>
+            <div className="flex flex-wrap gap-2">
+              <SmallBtn onClick={() => set((d) => void d.segments.push(newFlightSegment(3)))}>
+                {mt(lang, "addFlightSeg")}
+              </SmallBtn>
+              <SmallBtn onClick={() => set((d) => void d.segments.push(newPlatformSegment("left")))}>
+                {mt(lang, "addLandingSeg")}
+              </SmallBtn>
+              <SmallBtn onClick={() => set((d) => void d.segments.push(blankRamp()))}>
+                {mt(lang, "addRampSeg")}
+              </SmallBtn>
+              <SmallBtn onClick={() => set((d) => void d.segments.push(blankCurve()))}>
+                {mt(lang, "addCurveSeg")}
+              </SmallBtn>
+              {data.segments.length > 1 && (
+                <SmallBtn
+                  onClick={() =>
+                    set((d) => {
+                      const last = d.segments.length - 1;
+                      d.segments.pop();
+                      d.posts = d.posts.filter((po) => po.segIdx !== last);
+                    })
+                  }
+                >
+                  {mt(lang, "removeLastSeg")}
+                </SmallBtn>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* Sketch (custom shapes draw their own plan below instead) */}
         {!isCustom && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
@@ -752,16 +797,17 @@ export default function MeasureEditor({
             />
 
             {/* header row only where the compact grid shows (sm+) */}
-            <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr] gap-2 items-end mb-1 text-[11px] text-neutral-400">
+            <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr_3rem] gap-2 items-end mb-1 text-[11px] text-neutral-400">
               <span>#</span>
               <span>{mt(lang, "rise")}</span>
               <span>{mt(lang, "run")}</span>
               <span>{mt(lang, "nosing")}</span>
+              <span>◺</span>
             </div>
             {seg.steps.map((st, si) => (
               <div
                 key={si}
-                className="mb-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3 sm:mb-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:grid sm:grid-cols-[2.2rem_1fr_1fr_1fr] sm:gap-2 sm:items-center"
+                className="mb-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3 sm:mb-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:grid sm:grid-cols-[2.2rem_1fr_1fr_1fr_3rem] sm:gap-2 sm:items-center"
               >
                 <div className="sm:hidden text-xs font-bold text-amber-400 mb-2">
                   {mt(lang, "step")} {stepNumber(flights, fi, si)}
@@ -777,8 +823,35 @@ export default function MeasureEditor({
                   <MInput label={mt(lang, "nosing")} labelClass="sm:hidden" value={st.nosing}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].nosing = v))} />
                 </div>
+                {/* winder toggle — triangular tread that turns the stair */}
+                <button
+                  onClick={() =>
+                    set((d) => {
+                      const stp = (d.segments[i] as FlightSegment).steps[si];
+                      stp.winder = !stp.winder;
+                    })
+                  }
+                  className={`mt-2 sm:mt-0 px-2 py-2 rounded-lg border text-sm font-bold ${
+                    st.winder
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-800 text-neutral-500"
+                  }`}
+                  title={mt(lang, "winderLbl")}
+                >
+                  ◺
+                </button>
+                {st.winder && (
+                  <div className="mt-2 sm:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-2 border border-amber-900/50 rounded-lg p-2 bg-amber-500/5">
+                    <MInput label={mt(lang, "winderRunIn")} value={st.runIn || ""}
+                      onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runIn = v))} />
+                    <MInput label={mt(lang, "winderRunOut")} value={st.runOut || ""}
+                      onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runOut = v))} />
+                    <MInput label={mt(lang, "winderTurn")} placeholder="°" value={st.turnDeg || ""}
+                      onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].turnDeg = v))} />
+                  </div>
+                )}
                 {si === 0 && (
-                  <div className="mt-2 sm:mt-0 sm:col-span-4">
+                  <div className="mt-2 sm:mt-0 sm:col-span-5">
                     <SmallBtn
                       onClick={() =>
                         set((d) => {
@@ -877,23 +950,56 @@ export default function MeasureEditor({
           </Card>
         ))}
 
-        {/* Ramp */}
-        {ramp && (
-          <Card title={mt(lang, "shape_ramp")}>
+        {/* Ramps (one card per ramp segment) */}
+        {ramps.map(({ seg, i }, ri) => (
+          <Card key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
-              <MInput label={mt(lang, "rampSlopeLen")} value={ramp.length}
-                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).length = v))} />
-              <MInput label={mt(lang, "rampRunH")} value={ramp.runH}
-                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).runH = v))} />
-              <MInput label={mt(lang, "totalRise")} value={ramp.rise}
-                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).rise = v))} />
-              <MInput label={mt(lang, "stairAngle")} value={ramp.angleDeg} placeholder="°"
-                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).angleDeg = v))} />
-              <MInput label={mt(lang, "width")} value={ramp.width}
-                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).width = v))} />
+              <MInput label={mt(lang, "rampSlopeLen")} value={seg.length}
+                onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).length = v))} />
+              <MInput label={mt(lang, "rampRunH")} value={seg.runH}
+                onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).runH = v))} />
+              <MInput label={mt(lang, "totalRise")} value={seg.rise}
+                onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).rise = v))} />
+              <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
+                onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).angleDeg = v))} />
+              <MInput label={mt(lang, "width")} value={seg.width}
+                onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).width = v))} />
             </Grid>
           </Card>
-        )}
+        ))}
+
+        {/* Curves */}
+        {curves.map(({ seg, i }) => (
+          <Card key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
+            <Grid>
+              <MInput label={mt(lang, "curveRadius")} value={seg.radius}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).radius = v))} />
+              <MInput label={mt(lang, "curveChord")} value={seg.chord}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).chord = v))} />
+              <MInput label={mt(lang, "curveArc")} value={seg.arc}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).arc = v))} />
+              <MInput label={mt(lang, "curveSweep")} placeholder="°" value={seg.sweepDeg}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).sweepDeg = v))} />
+              <MInput label={mt(lang, "curveRise")} value={seg.rise}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).rise = v))} />
+              <MInput label={mt(lang, "width")} value={seg.width}
+                onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).width = v))} />
+            </Grid>
+            <div className="mt-3">
+              <ChipRow
+                label={mt(lang, "turn")}
+                value={seg.direction}
+                options={[
+                  ["left", `↰ ${mt(lang, "turnLeft")}`],
+                  ["right", `↱ ${mt(lang, "turnRight")}`],
+                ]}
+                onChange={(v) =>
+                  set((d) => void ((d.segments[i] as CurveSegment).direction = (v || "left") as "left" | "right"))
+                }
+              />
+            </div>
+          </Card>
+        ))}
 
         {/* Posts */}
         {!isSpiral && !isWallRail && !isCustom && (
