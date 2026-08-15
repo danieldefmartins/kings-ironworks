@@ -11,6 +11,8 @@ import {
   type Job,
 } from "@/lib/shop/db";
 import { t, stageLabel } from "@/lib/shop/i18n";
+import { mt } from "@/lib/shop/measure-i18n";
+import NewFieldMeasure from "./NewFieldMeasure";
 import ShopTopBar from "./ShopTopBar";
 import MotivationBanner from "./MotivationBanner";
 
@@ -62,6 +64,11 @@ export default async function ShopBoard() {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
 
+  // Sales field-measurement leads live in their own section, out of the
+  // fabrication board; closing the deal moves their stage into the flow.
+  const leads = jobs.filter((j) => j.current_stage === "Lead");
+  jobs = jobs.filter((j) => j.current_stage !== "Lead");
+
   const withDeposit = jobs.filter((j) => depositValue(j) > 0);
   const depositTotal = withDeposit.reduce((s, j) => s + depositValue(j), 0);
   const depositCount = withDeposit.length;
@@ -106,6 +113,43 @@ export default async function ShopBoard() {
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Sellers: start measuring a project that is not in the shop yet */}
+        <NewFieldMeasure lang={lang} />
+        {leads.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-neutral-400 mb-2">
+              {mt(lang, "leadsSection")}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {leads.map((j) => (
+                <Link
+                  key={j.id}
+                  href={`/shop/job/${j.id}/measure`}
+                  className="block bg-neutral-900 border border-neutral-800 rounded-xl p-4 hover:border-amber-600/60 active:scale-[0.99] transition"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      {j.project_type && (
+                        <div className="text-[11px] font-bold uppercase tracking-wide text-amber-500 truncate">
+                          {j.project_type}
+                        </div>
+                      )}
+                      <div className="text-lg font-semibold truncate">{j.customer_name}</div>
+                      <div className="text-xs text-neutral-500 truncate">{j.address || "—"}</div>
+                      {j.phone && (
+                        <div className="text-xs text-neutral-500 truncate">☎ {j.phone}</div>
+                      )}
+                    </div>
+                    <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500 text-amber-300">
+                      📐 {mt(lang, "leadChip")}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
         )}
         {jobs.length === 0 && !error && (

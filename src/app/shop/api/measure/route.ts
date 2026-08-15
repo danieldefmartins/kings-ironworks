@@ -213,6 +213,26 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true, id: rows[0]?.id });
       }
 
+      // Seller flow: start a field measurement for a project that is not in
+      // the shop yet. Creates a lightweight lead job (stage "Lead") that the
+      // measure sheets hang off; closing the deal later just moves its stage.
+      case "create_lead": {
+        const customer = String(body.customer || "").trim().slice(0, 120);
+        if (!customer) return bad("Customer name required");
+        const stamp = new Date().toISOString().slice(2, 16).replace(/[-T:]/g, "");
+        const rows = await sbInsert<{ id: string }[]>("kiw_shop_jobs", {
+          job_number: `FM-${stamp}`,
+          customer_name: customer,
+          address: String(body.address || "").trim().slice(0, 300) || null,
+          phone: String(body.phone || "").trim().slice(0, 40) || null,
+          project_type: String(body.projectType || "").trim().slice(0, 80) || null,
+          scope: String(body.notes || "").trim().slice(0, 1000) || null,
+          current_stage: "Lead",
+        });
+        if (!rows[0]?.id) return bad("Could not create lead", 500);
+        return NextResponse.json({ ok: true, jobId: rows[0].id });
+      }
+
       // Autosave: full validated payload, optimistic-concurrency via updated_at.
       // Any edit takes the sheet back to "in_progress" — an approved record can
       // never silently drift from what fabrication started with.
