@@ -54,7 +54,12 @@ export default function PrintSheet({
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
-  let stepNo = 0;
+  // step numbering continues across flights (bottom flight first)
+  const flightOffsets: number[] = [];
+  for (let i = 0, acc = 0; i < flights.length; i++) {
+    flightOffsets.push(acc);
+    acc += flights[i].steps.length;
+  }
 
   return (
     <div className="hidden print:block bg-white text-black p-6" style={{ fontSize: 12 }}>
@@ -136,17 +141,14 @@ export default function PrintSheet({
               </thead>
               <tbody>
                 {flights.flatMap((fl, fi) =>
-                  fl.steps.map((st, si) => {
-                    stepNo += 1;
-                    return (
-                      <tr key={`${fi}-${si}`}>
-                        <Td>{stepNo}</Td>
-                        <Td><Val v={st.rise} /></Td>
-                        <Td><Val v={st.run} /></Td>
-                        <Td><Val v={st.nosing} /></Td>
-                      </tr>
-                    );
-                  })
+                  fl.steps.map((st, si) => (
+                    <tr key={`${fi}-${si}`}>
+                      <Td>{flightOffsets[fi] + si + 1}</Td>
+                      <Td><Val v={st.rise} /></Td>
+                      <Td><Val v={st.run} /></Td>
+                      <Td><Val v={st.nosing} /></Td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>

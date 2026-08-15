@@ -188,8 +188,12 @@ export function sbUpdate<T>(
   });
 }
 
-export function sbDelete(table: string, query: string): Promise<unknown> {
-  return rest(`${table}?${query}`, { method: "DELETE" });
+export function sbDelete<T = unknown>(table: string, query: string): Promise<T> {
+  // return=representation so callers can verify a row was actually deleted
+  return rest<T>(`${table}?${query}`, {
+    method: "DELETE",
+    headers: { Prefer: "return=representation" },
+  });
 }
 
 // ---- Domain helpers -------------------------------------------------------

@@ -80,10 +80,80 @@ export default function MeasureEditor({
   const [data, setData] = useState<MeasureData>(sheet.data);
   const [name, setName] = useState(sheet.name || "");
   const [status, setStatus] = useState(sheet.status);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveState, setSaveState] = useState<
+    "idle" | "dirty" | "saving" | "saved" | "error" | "conflict"
+  >("idle");
+  const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
   const [view, setView] = useState<"side" | "front">("side");
   const firstRender = useRef(true);
+
+  // Serialized mutation pipeline: autosave/rename/status/delete run one at a
+  // time in order, so responses can't apply out of order and the concurrency
+  // base (updated_at) stays fresh.
+  const dataRef = useRef(data);
+  const dirtyRef = useRef(false);
+  const conflictRef = useRef(false);
+  const baseUpdatedAt = useRef(sheet.updated_at);
+  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const saveQueuedRef = useRef(false);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
+
+  function enqueue<T>(fn: () => Promise<T>): Promise<T> {
+    const p = queueRef.current.then(fn, fn);
+    queueRef.current = p.then(
+      () => undefined,
+      () => undefined
+    );
+    return p;
+  }
+
+  async function doSave(): Promise<void> {
+    if (conflictRef.current) return;
+    const payload = dataRef.current;
+    setSaveState("saving");
+    try {
+      const res = await fetch("/shop/api/measure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "update",
+          id: sheet.id,
+          jobId: job.id,
+          data: payload,
+          baseUpdatedAt: baseUpdatedAt.current,
+        }),
+      });
+      if (res.status === 409) {
+        conflictRef.current = true;
+        setSaveState("conflict");
+        return;
+      }
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Save failed");
+      if (d.updated_at) baseUpdatedAt.current = d.updated_at;
+      if (dataRef.current === payload) {
+        dirtyRef.current = false;
+        setSaveState("saved");
+      }
+      // else: newer edits exist; their own debounce triggers the next save
+    } catch {
+      setSaveState("error");
+    }
+  }
+
+  function requestSave() {
+    if (saveQueuedRef.current || conflictRef.current) return;
+    saveQueuedRef.current = true;
+    enqueue(async () => {
+      saveQueuedRef.current = false;
+      if (!dirtyRef.current) return;
+      await doSave();
+    });
+  }
 
   const units = data.units || "in";
   const unitPh = units === "ftin" ? `0' 0"` : `0"`;
@@ -96,21 +166,50 @@ export default function MeasureEditor({
       firstRender.current = false;
       return;
     }
-    setSaveState("saving");
-    const t = setTimeout(async () => {
+    dirtyRef.current = true;
+    setSaveState("dirty");
+    const t = setTimeout(requestSave, 900);
+    return () => clearTimeout(t);
+    // requestSave reads only refs, so it is stable across renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  // Protect measurements on the way out: warn before closing with unsaved
+  // edits, and fire a keepalive save when the page or component goes away.
+  useEffect(() => {
+    const flush = () => {
+      if (!dirtyRef.current || conflictRef.current) return;
       try {
-        const res = await fetch("/shop/api/measure", {
+        fetch("/shop/api/measure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "update", id: sheet.id, data }),
+          keepalive: true,
+          body: JSON.stringify({
+            type: "update",
+            id: sheet.id,
+            jobId: job.id,
+            data: dataRef.current,
+            baseUpdatedAt: baseUpdatedAt.current,
+          }),
         });
-        setSaveState(res.ok ? "saved" : "idle");
       } catch {
-        setSaveState("idle");
+        // last-chance save; nothing further to do
       }
-    }, 900);
-    return () => clearTimeout(t);
-  }, [data, sheet.id]);
+    };
+    const warn = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", warn);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", warn);
+      flush(); // in-app navigation unmounts the editor
+    };
+  }, [sheet.id, job.id]);
 
   // Show the fraction bar only while a measurement input is focused.
   useEffect(() => {
@@ -179,32 +278,50 @@ export default function MeasureEditor({
     });
   }
 
-  async function saveName(n: string) {
-    await fetch("/shop/api/measure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "rename", id: sheet.id, name: n }),
+  // Small mutations share the queue and surface failures instead of
+  // pretending they worked.
+  async function mutate(
+    body: Record<string, unknown>,
+    failMsg: string
+  ): Promise<boolean> {
+    return enqueue(async () => {
+      try {
+        const res = await fetch("/shop/api/measure", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...body, id: sheet.id, jobId: job.id }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(d.error || failMsg);
+        if (d.updated_at) baseUpdatedAt.current = d.updated_at;
+        setOpErr(null);
+        return true;
+      } catch (e) {
+        setOpErr(e instanceof Error ? e.message : failMsg);
+        return false;
+      }
     });
   }
 
+  async function saveName(n: string) {
+    await mutate({ type: "rename", name: n }, "Rename failed");
+  }
+
   async function toggleStatus() {
+    const prev = status;
     const next = status === "ready" ? "in_progress" : "ready";
     setStatus(next);
-    await fetch("/shop/api/measure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "status", id: sheet.id, status: next }),
-    });
+    const ok = await mutate({ type: "status", status: next }, "Status change failed");
+    if (!ok) setStatus(prev);
   }
 
   async function deleteSheet() {
     if (!confirm(mt(lang, "confirmDelete"))) return;
-    await fetch("/shop/api/measure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "delete", id: sheet.id }),
-    });
-    router.push(`/shop/job/${job.id}/measure`);
+    const ok = await mutate({ type: "delete" }, "Delete failed");
+    if (ok) {
+      dirtyRef.current = false; // nothing left to save on unmount
+      router.push(`/shop/job/${job.id}/measure`);
+    }
   }
 
   const prog = sheetProgress(data);
@@ -222,6 +339,24 @@ export default function MeasureEditor({
   return (
     <PlaceholderCtx.Provider value={unitPh}>
       <div className="p-4 max-w-4xl mx-auto pb-32 print:hidden">
+        {saveState === "conflict" && (
+          <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 mb-4 flex items-center gap-3">
+            <span className="text-sm text-red-200 flex-1">
+              ⚠ {mt(lang, "conflictMsg")}
+            </span>
+            <button
+              onClick={() => window.location.reload()}
+              className="text-xs font-bold bg-red-700 text-white rounded-full px-3 py-2 shrink-0"
+            >
+              {mt(lang, "reload")}
+            </button>
+          </div>
+        )}
+        {opErr && (
+          <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 mb-4 text-sm text-red-200">
+            ⚠ {opErr}
+          </div>
+        )}
         {/* Header */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
@@ -261,12 +396,24 @@ export default function MeasureEditor({
             >
               {mt(lang, "deleteSheet")}
             </button>
-            <span className="ml-auto text-xs text-neutral-500">
-              {saveState === "saving"
-                ? mt(lang, "saving")
-                : saveState === "saved"
-                  ? `✓ ${mt(lang, "savedAll")}`
-                  : ""}
+            <span className="ml-auto text-xs">
+              {saveState === "saving" && (
+                <span className="text-neutral-500">{mt(lang, "saving")}</span>
+              )}
+              {saveState === "saved" && (
+                <span className="text-neutral-500">✓ {mt(lang, "savedAll")}</span>
+              )}
+              {saveState === "dirty" && (
+                <span className="text-amber-400">● {mt(lang, "unsaved")}</span>
+              )}
+              {saveState === "error" && (
+                <button
+                  onClick={requestSave}
+                  className="text-red-300 border border-red-800 bg-red-950/40 rounded-full px-2.5 py-1 font-bold"
+                >
+                  ⚠ {mt(lang, "saveFailed")} — {mt(lang, "retry")}
+                </button>
+              )}
             </span>
           </div>
           {/* Units */}

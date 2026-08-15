@@ -9,7 +9,6 @@ import type {
   MeasureData,
   MeasureShape,
   PlatformSegment,
-  PostMeasure,
   RampSegment,
   SpiralData,
 } from "@/lib/shop/measure";
