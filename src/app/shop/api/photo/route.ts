@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Price-sensitive category is restricted.
-    if (category === PRICE_CATEGORY && !worker.can_see_prices) {
+    if (category === PRICE_CATEGORY && !worker.is_admin) {
       return NextResponse.json(
         { error: "Not allowed to add Approved Estimate photos" },
         { status: 403 }

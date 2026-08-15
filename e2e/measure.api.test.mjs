@@ -426,6 +426,70 @@ await api({ type: "update", id: spanId, jobId: JOB, data: dualBad }, cookie2);
 check("dual-molding mismatch → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
 check("delete span sheet → 200", (await api({ type: "delete", id: spanId, jobId: JOB })).status === 200);
 
+// ---- mixed assemblies: builder + curves + winders ---------------------------
+const landingPhotoPath = await uploadPhoto("e2e landing");
+function mixedData(photos) {
+  const base = completeData(photos);
+  const st = (w) => ({
+    rise: "7", run: "10", nosing: "1",
+    ...(w ? { winder: true, runIn: "6", runOut: "14", turnDeg: "30" } : {}),
+  });
+  base.segments = [
+    {
+      kind: "flight",
+      steps: [st(), st(), st(true), st(true)],
+      width: "42", angleDeg: "35", angleBreak: "",
+      rake: "48 7/8", ctrlRise: "28", ctrlRun: "40",
+    },
+    { kind: "platform", length: "40", depth: "40", diag: "56 9/16", slope: "", slopeDir: "", turn: "left" },
+    // 90° curve, R=48: chord = 67.88", arc = 75.40"
+    { kind: "curve", radius: "48", chord: "67 7/8", arc: "75 3/8", sweepDeg: "90", rise: "", direction: "right", width: "42" },
+    {
+      kind: "flight",
+      steps: [st(), st(), st()],
+      width: "42", angleDeg: "35", angleBreak: "",
+      rake: "36 5/8", ctrlRise: "21", ctrlRun: "30",
+    },
+  ];
+  base.overall.floorToFloor = "49"; // 7 risers × 7"
+  base.overall.totalRise = "49";
+  base.posts = base.posts.map((po) => po); // core-drill posts stay on flight 0
+  base.photos = [
+    ...photos,
+    { slot: "landing", path: landingPhotoPath, takenAt: "2026-01-01T00:00:00Z" },
+  ];
+  return base;
+}
+
+const mb = await api({ type: "create", jobId: JOB, shape: "builder", steps1: 4, name: "API MIXED" }, cookie2);
+const mixedId = (await mb.json()).id;
+check("builder create → 200", mb.status === 200 && !!mixedId);
+
+// winder walkline run inconsistent with inside/outside → red → blocked
+const badWinder = mixedData(realPhotos);
+badWinder.segments[0].steps[2].runIn = "2";
+badWinder.segments[0].steps[2].runOut = "24"; // avg 13 vs walkline 10 → red
+await api({ type: "update", id: mixedId, jobId: JOB, data: badWinder }, cookie2);
+check("inconsistent winder → submit 422", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 422);
+
+// winder missing its outside run → gap → blocked
+const gapWinder = mixedData(realPhotos);
+gapWinder.segments[0].steps[2].runOut = "";
+await api({ type: "update", id: mixedId, jobId: JOB, data: gapWinder }, cookie2);
+check("winder missing field → submit 422", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 422);
+
+// curve arc inconsistent with radius → red → blocked
+const badCurve = mixedData(realPhotos);
+badCurve.segments[2].arc = "82"; // vs calc 75.4 → off 6.6" → red
+await api({ type: "update", id: mixedId, jobId: JOB, data: badCurve }, cookie2);
+check("inconsistent curve arc → submit 422", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 422);
+
+// fully consistent mixed assembly (winders, curve, two flights, landing) → OK
+await api({ type: "update", id: mixedId, jobId: JOB, data: mixedData(realPhotos) }, cookie2);
+const mixedSubmit = await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2);
+check("consistent mixed assembly → submit 200", mixedSubmit.status === 200, JSON.stringify(await mixedSubmit.json().catch(() => ({}))));
+check("delete mixed → 200", (await api({ type: "delete", id: mixedId, jobId: JOB })).status === 200);
+
 // ---- cleanup ---------------------------------------------------------------
 check("delete → 200", (await api({ type: "delete", id, jobId: JOB })).status === 200);
 check("delete custom → 200", (await api({ type: "delete", id: customId, jobId: JOB })).status === 200);

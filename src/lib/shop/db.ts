@@ -13,8 +13,24 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // in this file is scoped to it, and composite DB foreign keys guarantee that
 // child rows can never reference another organization's data even if a
 // filter were ever missed. KIW is tenant #1.
-export const ORG_ID =
-  process.env.SHOP_ORG_ID || "a0000000-0000-4000-8000-000000000001";
+export const ORG_ID = (() => {
+  const v = process.env.SHOP_ORG_ID;
+  if (v) return v;
+  // Fail closed: a deployed instance must say which organization it serves.
+  // Silently defaulting could open the wrong company's data on a
+  // misconfigured customer deployment. Local dev may opt into the KIW
+  // default with SHOP_ALLOW_DEFAULT_ORG=1.
+  if (
+    process.env.NODE_ENV === "production" &&
+    process.env.NEXT_PHASE !== "phase-production-build" && // build has no env
+    process.env.SHOP_ALLOW_DEFAULT_ORG !== "1"
+  ) {
+    throw new Error(
+      "SHOP_ORG_ID is not set — refusing to serve without an explicit organization."
+    );
+  }
+  return "a0000000-0000-4000-8000-000000000001";
+})();
 
 export const STAGES = [
   "Awarded",

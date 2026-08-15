@@ -26,7 +26,8 @@ export default async function JobTravelerPage({
 }) {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
-  const canSeePrices = !!worker.can_see_prices;
+  // Money is admin-only (Daniel + Kayky).
+  const canSeePrices = !!worker.is_admin;
   const lang = worker.lang || "en";
 
   const { id } = await params;
@@ -71,7 +72,7 @@ export default async function JobTravelerPage({
       <ShopTopBar
         workerName={worker.name}
         title={job.customer_name}
-        back="/shop"
+        back="/shop/jobs"
         lang={lang}
         adminLink={!!worker.is_admin}
       />

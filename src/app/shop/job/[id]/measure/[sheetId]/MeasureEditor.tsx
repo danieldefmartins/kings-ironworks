@@ -787,10 +787,11 @@ export default function MeasureEditor({
               onFill={(nr, nu) =>
                 set((d) => {
                   const fl = d.segments[i] as FlightSegment;
+                  // spread first: winder fields and nosing survive the fill
                   fl.steps = fl.steps.map((st) => ({
+                    ...st,
                     rise: nr || st.rise,
                     run: nu || st.run,
-                    nosing: st.nosing,
                   }));
                 })
               }
@@ -857,7 +858,14 @@ export default function MeasureEditor({
                         set((d) => {
                           const fl = d.segments[i] as FlightSegment;
                           const s1 = fl.steps[0];
-                          fl.steps = fl.steps.map(() => ({ ...s1 }));
+                          // copy dimensions only — each step keeps its own
+                          // winder flag and winder measurements
+                          fl.steps = fl.steps.map((st) => ({
+                            ...st,
+                            rise: s1.rise,
+                            run: s1.run,
+                            nosing: s1.nosing,
+                          }));
                         })
                       }
                     >

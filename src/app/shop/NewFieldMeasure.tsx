@@ -7,9 +7,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { mt } from "@/lib/shop/measure-i18n";
 
-export default function NewFieldMeasure({ lang }: { lang: string }) {
+export default function NewFieldMeasure({
+  lang,
+  startOpen = false,
+}: {
+  lang: string;
+  startOpen?: boolean;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [customer, setCustomer] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");

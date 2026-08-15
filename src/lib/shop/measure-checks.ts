@@ -277,6 +277,30 @@ export function runChecks(
     );
   });
 
+  // winder treads: the walkline run should sit between the inside and
+  // outside runs — for a linearly tapered tread measured at mid-width it is
+  // their average. (The turn angle itself has no closed check without the
+  // wedge vertex position, so it is captured but not cross-verified.)
+  flights.forEach((fl, fi) => {
+    fl.steps.forEach((st, si) => {
+      if (!st.winder) return;
+      const rIn = parseMeas(st.runIn || "");
+      const rOut = parseMeas(st.runOut || "");
+      const rWalk = parseMeas(st.run);
+      const avg = rIn !== null && rOut !== null ? (rIn + rOut) / 2 : null;
+      out.push(
+        compare(
+          "winder_run",
+          avg,
+          rWalk,
+          tol.runSum,
+          "in",
+          `${multi ? `#${fi + 1} ` : ""}${mtStep(fl, si)}`
+        )
+      );
+    });
+  });
+
   // curve + ramp segments inside a mixed assembly
   data.segments.forEach((seg, si) => {
     const tag = data.segments.length > 1 ? `#${si + 1}` : undefined;
@@ -323,6 +347,10 @@ export function runChecks(
 // Span molding math: the top clear span minus the lower clear span must equal
 // the SUM of both end molding projections (blank molding counts as 0). This
 // verifies the whole piece, including rails fitted between TWO molded columns.
+function mtStep(fl: FlightSegment, si: number): string {
+  return `s${si + 1}`;
+}
+
 function spanChecks(data: MeasureData, tol: Tolerances = TOLERANCES): CheckResult[] {
   const out: CheckResult[] = [];
   data.spans.forEach((sp, i) => {
