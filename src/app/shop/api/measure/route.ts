@@ -297,6 +297,42 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true, id: rows[0]?.id });
       }
 
+      // Seller convenience: turn the device's GPS fix into a street address
+      // via OpenStreetMap Nominatim (free; requires an identifying UA, so it
+      // must be proxied here rather than called from the browser).
+      case "reverse_geocode": {
+        const lat = Number(body.lat);
+        const lng = Number(body.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return bad("Bad coordinates");
+        }
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+            {
+              headers: { "User-Agent": "KIW-ShopFloor/1.0 (info@kingsironworks.com)" },
+              cache: "no-store",
+            }
+          );
+          if (!res.ok) return bad("Geocoder unavailable", 502);
+          const g = (await res.json()) as {
+            address?: Record<string, string>;
+            display_name?: string;
+          };
+          const a = g.address || {};
+          const street = [a.house_number, a.road].filter(Boolean).join(" ");
+          const city = a.city || a.town || a.village || a.hamlet || "";
+          const address =
+            [street, city, [a.state, a.postcode].filter(Boolean).join(" ")]
+              .filter(Boolean)
+              .join(", ") || g.display_name || "";
+          if (!address) return bad("No address at this location", 404);
+          return NextResponse.json({ ok: true, address });
+        } catch {
+          return bad("Geocoder unavailable", 502);
+        }
+      }
+
       // Seller flow: start a field measurement for a project that is not in
       // the shop yet. Creates a lightweight lead job (stage "Lead") that the
       // measure sheets hang off; closing the deal later just moves its stage.

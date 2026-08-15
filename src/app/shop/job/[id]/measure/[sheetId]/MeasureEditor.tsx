@@ -81,6 +81,7 @@ export default function MeasureEditor({
   isAdmin = false,
   nameById = {},
   orgSettings,
+  history = [],
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -89,6 +90,7 @@ export default function MeasureEditor({
   isAdmin?: boolean;
   nameById?: Record<string, string>;
   orgSettings?: OrgSettings;
+  history?: { at: string; action: string; workerId: string | null }[];
 }) {
   const router = useRouter();
   const [data, setData] = useState<MeasureData>(sheet.data);
@@ -98,6 +100,8 @@ export default function MeasureEditor({
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
+  const [slotBusy, setSlotBusy] = useState<string | null>(null);
+  const [slotErr, setSlotErr] = useState<string | null>(null);
   const statusRef = useRef(sheet.status);
   useEffect(() => {
     statusRef.current = status;
@@ -453,6 +457,34 @@ export default function MeasureEditor({
     (sg) => sg.kind === "platform" && (sg as PlatformSegment).turn !== "none"
   );
   const multiFlight = flights.length > 1 || turns;
+
+  // Direct slot photo: the native OS picker (camera / photo library) uploads
+  // straight into the slot — the markup modal stays a separate, optional step.
+  async function directSlotPhoto(slot: string, label: string, file: File) {
+    setSlotBusy(slot);
+    setSlotErr(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("jobId", job.id);
+      form.append("category", "Measurements");
+      form.append("label", `${name || shapeLabel(lang, sheet.shape)} — ${label}`);
+      const res = await fetch("/shop/api/photo", { method: "POST", body: form });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok || !d.path) throw new Error(d.error || "");
+      set((dd) => {
+        dd.photos = [
+          ...dd.photos.filter((p) => p.slot !== slot),
+          { slot, path: d.path, takenAt: new Date().toISOString() },
+        ];
+      });
+    } catch (e) {
+      const msg = e instanceof Error && e.message ? `: ${e.message}` : "";
+      setSlotErr(`${label} — ${mt(lang, "uploadFailed")}${msg}`);
+    } finally {
+      setSlotBusy(null);
+    }
+  }
 
   return (
     <PlaceholderCtx.Provider value={unitPh}>
@@ -961,7 +993,7 @@ export default function MeasureEditor({
         ))}
 
         {/* Ramps (one card per ramp segment) */}
-        {ramps.map(({ seg, i }, ri) => (
+        {ramps.map(({ seg, i }) => (
           <Card key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
               <MInput label={mt(lang, "rampSlopeLen")} value={seg.length}
@@ -1346,19 +1378,75 @@ export default function MeasureEditor({
         {/* Photo checklist — required evidence, slot by slot */}
         <Card title={`📷 ${mt(lang, "photoChecklist")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "photosHint")}</div>
+          {slotErr && (
+            <div className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-2.5 mb-3">
+              {slotErr}
+            </div>
+          )}
           <div className="space-y-2">
             {requiredPhotoSlots(sheet.shape).map((slot) => (
               <SlotRow key={slot} slot={slot} label={mt(lang, `slot_${slot}`)} required
-                data={data} lang={lang}
+                data={data} lang={lang} busy={slotBusy === slot}
+                onFile={(f) => directSlotPhoto(slot, mt(lang, `slot_${slot}`), f)}
                 onTake={() => setPhotoSlot({ slot, label: mt(lang, `slot_${slot}`) })} />
             ))}
             {OPTIONAL_PHOTO_SLOTS.map((slot) => (
               <SlotRow key={slot} slot={slot} label={mt(lang, `slot_${slot}`)} required={false}
-                data={data} lang={lang}
+                data={data} lang={lang} busy={slotBusy === slot}
+                onFile={(f) => directSlotPhoto(slot, mt(lang, `slot_${slot}`), f)}
                 onTake={() => setPhotoSlot({ slot, label: mt(lang, `slot_${slot}`) })} />
             ))}
           </div>
         </Card>
+
+        {/* Change history — from the immutable audit trail. Anyone may edit
+            any sheet; this makes every hand that touched it visible. */}
+        {history.length > 0 && (
+          <Card title={`🕘 ${mt(lang, "historyTitle")}`}>
+            {sheet.created_by && (
+              <div className="text-xs text-neutral-500 mb-2">
+                {mt(lang, "histOriginalBy")}{" "}
+                <span className="text-neutral-300 font-semibold">
+                  {nameById[sheet.created_by] || "—"}
+                </span>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              {history.map((h, i) => {
+                const otherEdit =
+                  h.action === "sheet_update" &&
+                  !!sheet.created_by &&
+                  !!h.workerId &&
+                  h.workerId !== sheet.created_by;
+                return (
+                  <div
+                    key={i}
+                    className={`flex items-center gap-2 text-sm rounded-lg px-2.5 py-1.5 border ${
+                      otherEdit
+                        ? "border-amber-700/60 bg-amber-950/30"
+                        : "border-neutral-800 bg-neutral-950/40"
+                    }`}
+                  >
+                    <span className="text-neutral-500 text-xs shrink-0 tabular-nums">
+                      {new Date(h.at).toLocaleString()}
+                    </span>
+                    <span className="font-semibold truncate">
+                      {h.workerId ? nameById[h.workerId] || "—" : "—"}
+                    </span>
+                    <span className="text-neutral-400 truncate">
+                      {mt(lang, `hist_${h.action}`)}
+                    </span>
+                    {otherEdit && (
+                      <span className="ml-auto text-[11px] text-amber-300 shrink-0">
+                        ⚠ {mt(lang, "histOtherEdit")}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
 
         {/* Review & submit — checks, gaps, and the approval gate */}
         <Card title={`✅ ${mt(lang, "reviewTitle")}`}>
@@ -1740,6 +1828,8 @@ function SlotRow({
   required,
   data,
   lang,
+  busy,
+  onFile,
   onTake,
 }: {
   slot: string;
@@ -1747,6 +1837,8 @@ function SlotRow({
   required: boolean;
   data: MeasureData;
   lang: string;
+  busy: boolean;
+  onFile: (f: File) => void;
   onTake: () => void;
 }) {
   const ph = data.photos.find((p) => p.slot === slot);
@@ -1761,15 +1853,37 @@ function SlotRow({
             : mt(lang, required ? "requiredLbl" : "optionalLbl")}
         </span>
       </span>
-      <button
-        onClick={onTake}
-        className={`px-3 py-2 rounded-lg border text-xs font-bold shrink-0 ${
+      {/* Primary: the OS's own photo sheet (Take Photo / Photo Library) */}
+      <label
+        className={`px-3 py-2 rounded-lg border text-xs font-bold shrink-0 cursor-pointer ${
+          busy ? "opacity-50 pointer-events-none " : ""
+        }${
           ph
             ? "border-neutral-700 bg-neutral-800 text-neutral-300"
             : "border-amber-600 bg-amber-500/10 text-amber-300"
         }`}
       >
-        {ph ? mt(lang, "retake") : mt(lang, "choosePhoto")}
+        {busy ? mt(lang, "uploading") : ph ? mt(lang, "retake") : `📷 ${mt(lang, "choosePhoto")}`}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={busy}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {/* Secondary: annotate on a photo (opens the markup canvas) */}
+      <button
+        onClick={onTake}
+        title={mt(lang, "markUp")}
+        className="px-2.5 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs shrink-0"
+        aria-label={mt(lang, "markUp")}
+      >
+        ✏️
       </button>
     </div>
   );

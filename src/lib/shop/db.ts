@@ -381,6 +381,32 @@ export async function audit(
   }
 }
 
+// Change history of one measure sheet, from the immutable audit trail.
+// Consecutive autosaves by the same worker collapse into a single entry
+// (its timestamp = the last save), so the list reads as editing sessions.
+export interface SheetHistoryEntry {
+  at: string;
+  action: string;
+  workerId: string | null;
+}
+export async function getSheetHistory(sheetId: string): Promise<SheetHistoryEntry[]> {
+  const rows = await sbSelect<{ at: string; action: string; worker_id: string | null }[]>(
+    "kiw_shop_audit",
+    `select=at,action,worker_id&org_id=eq.${ORG_ID}&entity=eq.measure_sheet&entity_id=eq.${sheetId}&order=at.asc&limit=1000`
+  );
+  const out: SheetHistoryEntry[] = [];
+  for (const r of rows) {
+    const prev = out[out.length - 1];
+    const workerId = r.worker_id || null;
+    if (prev && r.action === "sheet_update" && prev.action === "sheet_update" && prev.workerId === workerId) {
+      prev.at = r.at;
+      continue;
+    }
+    out.push({ at: r.at, action: r.action, workerId });
+  }
+  return out;
+}
+
 // Failed logins in the recent window (PIN throttling).
 export async function recentLoginFailures(
   workerId: string,

@@ -505,6 +505,9 @@ noOffset.segments[0].steps[2].runOut = "24"; // avg 13 vs 10 — would be red, c
 await api({ type: "update", id: mixedId, jobId: JOB, data: noOffset }, cookie2);
 check("no-offset winder mismatch only warns → submit 200", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 200);
 
+// reverse geocode validates coordinates before touching the external service
+check("reverse_geocode bad coords → 400", (await api({ type: "reverse_geocode", lat: 999, lng: 0 }, cookie2)).status === 400);
+
 // fully consistent mixed assembly (winders, curve, two flights, landing) → OK
 await api({ type: "update", id: mixedId, jobId: JOB, data: mixedData(realPhotos) }, cookie2);
 const mixedSubmit = await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2);

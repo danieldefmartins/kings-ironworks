@@ -27,7 +27,15 @@ export default async function LeadsPage() {
         adminLink={!!worker.is_admin}
       />
       <div className="p-4 max-w-4xl mx-auto pb-24">
-        <NewFieldMeasure lang={lang} />
+        <NewFieldMeasure
+          lang={lang}
+          existing={jobs.map((j) => ({
+            id: j.id,
+            jobNumber: j.job_number,
+            customer: j.customer_name,
+            address: j.address || "",
+          }))}
+        />
         {leads.length === 0 && (
           <p className="text-neutral-500 text-center py-10 text-sm">
             {mt(lang, "tileLeadsHint")}
