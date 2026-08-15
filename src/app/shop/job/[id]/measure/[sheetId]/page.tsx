@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { getJob, getMeasureSheet, listWorkers } from "@/lib/shop/db";
+import { getJob, getMeasureSheet, listWorkers, getOrgSettings } from "@/lib/shop/db";
 import { normalizeMeasureData } from "@/lib/shop/measure";
 import ShopTopBar from "../../../../ShopTopBar";
 import MeasureEditor from "./MeasureEditor";
@@ -17,10 +17,11 @@ export default async function MeasureSheetPage({
   const lang = worker.lang || "en";
 
   const { id, sheetId } = await params;
-  const [job, sheet, workers] = await Promise.all([
+  const [job, sheet, workers, orgSettings] = await Promise.all([
     getJob(id),
     getMeasureSheet(sheetId),
     listWorkers(),
+    getOrgSettings(),
   ]);
   if (!job || !sheet || sheet.job_id !== id) notFound();
 
@@ -49,6 +50,7 @@ export default async function MeasureSheetPage({
         workerName={worker.name}
         isAdmin={!!worker.is_admin}
         nameById={nameById}
+        orgSettings={orgSettings}
       />
     </div>
   );

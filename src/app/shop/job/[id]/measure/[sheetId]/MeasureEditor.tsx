@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Job } from "@/lib/shop/db";
+import type { Job, OrgSettings } from "@/lib/shop/db";
 import {
   ANCHOR_OPTIONS,
   MATERIAL_PRESETS,
@@ -33,6 +33,7 @@ import {
   requiredGaps,
   formatIn,
   orderedPosts,
+  mergeTolerances,
   type CheckResult,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
@@ -74,6 +75,7 @@ export default function MeasureEditor({
   workerName,
   isAdmin = false,
   nameById = {},
+  orgSettings,
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -81,6 +83,7 @@ export default function MeasureEditor({
   workerName: string;
   isAdmin?: boolean;
   nameById?: Record<string, string>;
+  orgSettings?: OrgSettings;
 }) {
   const router = useRouter();
   const [data, setData] = useState<MeasureData>(sheet.data);
@@ -404,7 +407,24 @@ export default function MeasureEditor({
 
   const prog = sheetProgress(data);
   const posts = orderedPosts(data);
-  const checks = runChecks(data, sheet.shape);
+  const orgTol = mergeTolerances(orgSettings?.tolerances);
+  // org-configurable lists with KIW constants as fallback
+  const presets = {
+    post: orgSettings?.presets?.post?.length ? orgSettings.presets.post : [...MATERIAL_PRESETS.post],
+    topRail: orgSettings?.presets?.topRail?.length ? orgSettings.presets.topRail : [...MATERIAL_PRESETS.topRail],
+    picket: orgSettings?.presets?.picket?.length ? orgSettings.presets.picket : [...MATERIAL_PRESETS.picket],
+    bottomRail: orgSettings?.presets?.bottomRail?.length ? orgSettings.presets.bottomRail : [...MATERIAL_PRESETS.bottomRail],
+  };
+  const anchorOptions = orgSettings?.options?.anchors?.length
+    ? orgSettings.options.anchors
+    : [...ANCHOR_OPTIONS];
+  const finishOptions = orgSettings?.options?.finishes?.length
+    ? orgSettings.options.finishes
+    : [...SPEC_OPTIONS.finish_type];
+  const colorOptions = orgSettings?.options?.colors?.length
+    ? orgSettings.options.colors
+    : [...SPEC_OPTIONS.color];
+  const checks = runChecks(data, sheet.shape, orgTol);
   const gaps = requiredGaps(data, sheet.shape);
   const redChecks = checks.filter((c) => c.level === "red");
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
@@ -488,7 +508,14 @@ export default function MeasureEditor({
                   : mt(lang, "inProgress")}
             </span>
             <button
-              onClick={() => window.print()}
+              onClick={() => {
+                fetch("/shop/api/measure", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ type: "log_print", id: sheet.id, jobId: job.id, rev }),
+                }).catch(() => {});
+                window.print();
+              }}
               className="text-xs font-bold rounded-full px-3 py-2 border bg-neutral-800 border-neutral-600 text-neutral-200"
             >
               🖨 {mt(lang, "printSheet")}
@@ -905,7 +932,7 @@ export default function MeasureEditor({
                       options={[...MOUNT_OPTIONS]} lang={lang}
                       onChange={(v) => setPost(set, po.id, "mount", v)} />
                     <MSelect label={mt(lang, "anchorInto")} value={po.anchor}
-                      options={[...ANCHOR_OPTIONS]} lang={lang}
+                      options={anchorOptions} lang={lang}
                       onChange={(v) => setPost(set, po.id, "anchor", v)} />
                   </Grid>
                   <details className="mt-3">
@@ -1001,6 +1028,7 @@ export default function MeasureEditor({
                     lang={lang}
                     title={mt(lang, endKey === "start" ? "startTerm" : "endTerm")}
                     t={sp[endKey]}
+                    anchorOptions={anchorOptions}
                     postOptions={posts.map((po, pi) => [po.id, `P${pi + 1}`] as [string, string])}
                     spanOptions={data.spans
                       .map((other, oi) => [other.id, `${mt(lang, "spanLabel")} #${oi + 1}${other.label ? ` — ${other.label}` : ""}`] as [string, string])
@@ -1035,25 +1063,25 @@ export default function MeasureEditor({
         <Card title={mt(lang, "materialsTitle")}>
           <div className="space-y-3">
             <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
-              presets={[...MATERIAL_PRESETS.post]}
+              presets={presets.post}
               onChange={(v) => set((d) => void (d.materials.post = v))} />
             <PresetInput label={mt(lang, "matTopRail")} value={data.materials.topRail}
-              presets={[...MATERIAL_PRESETS.topRail]}
+              presets={presets.topRail}
               onChange={(v) => set((d) => void (d.materials.topRail = v))} />
             <PresetInput label={mt(lang, "matPicket")} value={data.materials.picket}
-              presets={[...MATERIAL_PRESETS.picket]}
+              presets={presets.picket}
               onChange={(v) => set((d) => void (d.materials.picket = v))} />
             <Grid>
               <MInput label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
                 onChange={(v) => set((d) => void (d.materials.picketSpacing = v))} />
               <MSelect label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
-                options={[...MATERIAL_PRESETS.bottomRail]} lang={lang}
+                options={presets.bottomRail} lang={lang}
                 onChange={(v) => set((d) => void (d.materials.bottomRail = v))} />
               <MSelect label={mt(lang, "finish")} value={data.materials.finish}
-                options={[...SPEC_OPTIONS.finish_type]} lang={lang} spec
+                options={finishOptions} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.finish = v))} />
               <MSelect label={mt(lang, "color")} value={data.materials.color}
-                options={[...SPEC_OPTIONS.color]} lang={lang} spec
+                options={colorOptions} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.color = v))} />
             </Grid>
             <MInput label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
@@ -1364,6 +1392,7 @@ export default function MeasureEditor({
         nameById={nameById}
         checks={checks}
         gapCount={gaps.length}
+        branding={orgSettings?.branding}
       />
     </PlaceholderCtx.Provider>
   );
@@ -1668,6 +1697,7 @@ function TermEditor({
   lang,
   title,
   t,
+  anchorOptions,
   postOptions,
   spanOptions,
   hasPhoto,
@@ -1678,6 +1708,7 @@ function TermEditor({
   lang: string;
   title: string;
   t: Termination;
+  anchorOptions: string[];
   postOptions: [string, string][];
   spanOptions: [string, string][];
   hasPhoto: boolean;
@@ -1748,7 +1779,7 @@ function TermEditor({
       {(isWall || isColumn || t.attachTo === "floor") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
           <MSelect label={mt(lang, "connMaterial")} value={t.material}
-            options={[...ANCHOR_OPTIONS]} lang={lang}
+            options={anchorOptions} lang={lang}
             onChange={(v) => onField("material", v)} />
           {(isWall || isWoodFloor) && (
             <MInput

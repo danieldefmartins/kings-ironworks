@@ -30,6 +30,7 @@ export function RevisionSheet(props: {
   nameById: Record<string, string>;
   checks: CheckResult[];
   superseded: boolean;
+  branding?: { name: string; address: string; phone: string; website: string };
   qrUrl: string;
 }) {
   return <PrintSheet {...props} visible gapCount={0} />;

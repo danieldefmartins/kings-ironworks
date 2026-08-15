@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyWorkerPin } from "@/lib/shop/db";
+import { verifyWorkerPin, audit, recentLoginFailures } from "@/lib/shop/db";
 import { makeToken, SHOP_COOKIE } from "@/lib/shop/session";
+
+const MAX_FAILURES = 5;
+const WINDOW_MIN = 15;
 
 export const runtime = "nodejs";
 
@@ -10,10 +13,27 @@ export async function POST(req: NextRequest) {
     if (!workerId || !pin) {
       return NextResponse.json({ error: "Missing worker or PIN" }, { status: 400 });
     }
+    // throttle: 5 failed PINs in 15 minutes locks the account temporarily
+    const failures = await recentLoginFailures(String(workerId), WINDOW_MIN);
+    if (failures >= MAX_FAILURES) {
+      await audit("login_locked", { workerId: String(workerId) });
+      return NextResponse.json(
+        { error: `Too many attempts — locked for ${WINDOW_MIN} minutes` },
+        { status: 429 }
+      );
+    }
     const worker = await verifyWorkerPin(String(workerId), String(pin));
     if (!worker) {
+      await audit("login_fail", {
+        workerId: String(workerId),
+        detail: { ua: req.headers.get("user-agent")?.slice(0, 200) || null },
+      });
       return NextResponse.json({ error: "Wrong PIN" }, { status: 401 });
     }
+    await audit("login_ok", {
+      workerId: worker.id,
+      detail: { ua: req.headers.get("user-agent")?.slice(0, 200) || null },
+    });
     const res = NextResponse.json({ ok: true, worker });
     res.cookies.set(SHOP_COOKIE, makeToken(worker.id), {
       httpOnly: true,

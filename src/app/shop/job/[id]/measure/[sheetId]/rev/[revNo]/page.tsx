@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { getJob, getMeasureSheet, getMeasureRevision, listWorkers } from "@/lib/shop/db";
+import { getJob, getMeasureSheet, getMeasureRevision, listWorkers, getOrgSettings, audit } from "@/lib/shop/db";
 import { normalizeMeasureData, type MeasureShape, type MeasureSheet } from "@/lib/shop/measure";
 import { runChecks, orderedPosts } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
@@ -25,13 +25,22 @@ export default async function RevisionPage({
   const revN = parseInt(revNo, 10);
   if (!Number.isFinite(revN) || revN < 1) notFound();
 
-  const [job, sheet, revision, workers] = await Promise.all([
+  const [job, sheet, revision, workers, orgSettings] = await Promise.all([
     getJob(id),
     getMeasureSheet(sheetId),
     getMeasureRevision(sheetId, revN),
     listWorkers(),
+    getOrgSettings(),
   ]);
   if (!job || !sheet || sheet.job_id !== id || !revision) notFound();
+
+  // fabrication record access is part of the audit trail
+  await audit("rev_view", {
+    workerId: worker.id,
+    entity: "measure_revision",
+    entityId: revision.id,
+    detail: { sheetId, rev: revision.rev_no },
+  });
 
   const nameById: Record<string, string> = {};
   for (const w of workers) nameById[w.id] = w.name;
@@ -92,6 +101,7 @@ export default async function RevisionPage({
           nameById={nameById}
           checks={checks}
           superseded={revision.superseded}
+          branding={orgSettings.branding}
           qrUrl={`https://kingsironworks.com/shop/job/${id}/measure/${sheetId}/rev/${revision.rev_no}`}
         />
       </div>

@@ -65,13 +65,37 @@ export function formatIn(n: number): string {
 
 // ---- Tolerances (shop policy — inches / degrees) ---------------------------
 
-export const TOLERANCES = {
+// Default tolerances — each organization can override these in its settings
+// (they are shop policy, not universal engineering rules).
+export interface Tol {
+  green: number;
+  yellow: number;
+}
+export interface Tolerances {
+  riseSum: Tol;
+  runSum: Tol;
+  rake: Tol;
+  angle: Tol; // degrees
+  widthVar: Tol;
+}
+export const TOLERANCES: Tolerances = {
   riseSum: { green: 0.25, yellow: 0.75 },
   runSum: { green: 0.375, yellow: 1.0 },
   rake: { green: 0.5, yellow: 1.5 },
-  angle: { green: 1.0, yellow: 2.5 }, // degrees
+  angle: { green: 1.0, yellow: 2.5 },
   widthVar: { green: 0.375, yellow: 1.0 },
-} as const;
+};
+export function mergeTolerances(t?: Partial<Record<keyof Tolerances, Partial<Tol>>> | null): Tolerances {
+  if (!t) return TOLERANCES;
+  const out = { ...TOLERANCES } as Tolerances;
+  (Object.keys(TOLERANCES) as (keyof Tolerances)[]).forEach((k) => {
+    const o = t[k];
+    if (o && typeof o.green === "number" && typeof o.yellow === "number") {
+      out[k] = { green: o.green, yellow: o.yellow };
+    }
+  });
+  return out;
+}
 
 export type CheckLevel = "green" | "yellow" | "red" | "na";
 
@@ -121,10 +145,15 @@ function stairTurns(data: MeasureData): boolean {
   );
 }
 
-export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
-  if (shape === "custom") return [...customChecks(data), ...spanChecks(data)];
+export function runChecks(
+  data: MeasureData,
+  shape: MeasureShape,
+  tolIn?: Tolerances
+): CheckResult[] {
+  const tol = tolIn || TOLERANCES;
+  if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol)];
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
-    return spiralOrLevelChecks(data, shape);
+    return spiralOrLevelChecks(data, shape, tol);
   }
 
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
@@ -152,7 +181,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
   // 1) sum of ALL risers vs floor-to-floor — vertical heights add regardless
   // of turns, so this stays global.
   const floorToFloor = parseMeas(data.overall.floorToFloor) ?? parseMeas(data.overall.totalRise);
-  out.push(compare("rise_sum", riseSum, floorToFloor, TOLERANCES.riseSum, "in"));
+  out.push(compare("rise_sum", riseSum, floorToFloor, tol.riseSum, "in"));
 
   if (!turns && !multi) {
     // single straight rail line: global run + rake are meaningful
@@ -168,21 +197,21 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     const runSum = sums[0]?.u ?? null;
     const totalRun = parseMeas(data.overall.totalRun);
     const runExpected = runSum === null || !platKnown ? null : runSum + platRun;
-    out.push(compare("run_sum", runExpected, totalRun, TOLERANCES.runSum, "in"));
+    out.push(compare("run_sum", runExpected, totalRun, tol.runSum, "in"));
 
     const rake = parseMeas(data.overall.rakeLength);
     const riseF = sums[0]?.r ?? null;
     const diag = riseF !== null && runSum !== null ? Math.hypot(riseF, runSum) : null;
-    out.push(compare("rake", diag, rake, TOLERANCES.rake, "in"));
+    out.push(compare("rake", diag, rake, tol.rake, "in"));
   } else {
     // flights turn: verify each flight against ITS OWN controls
     flights.forEach((fl, i) => {
       const tag = `#${i + 1}`;
       const { r, u } = sums[i];
-      out.push(compare("flight_rise", r, parseMeas(fl.ctrlRise), TOLERANCES.riseSum, "in", tag));
-      out.push(compare("flight_run", u, parseMeas(fl.ctrlRun), TOLERANCES.runSum, "in", tag));
+      out.push(compare("flight_rise", r, parseMeas(fl.ctrlRise), tol.riseSum, "in", tag));
+      out.push(compare("flight_run", u, parseMeas(fl.ctrlRun), tol.runSum, "in", tag));
       const diag = r !== null && u !== null ? Math.hypot(r, u) : null;
-      out.push(compare("flight_rake", diag, parseMeas(fl.rake), TOLERANCES.rake, "in", tag));
+      out.push(compare("flight_rake", diag, parseMeas(fl.rake), tol.rake, "in", tag));
     });
   }
 
@@ -195,7 +224,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     const dg = parseMeas(pl.diag);
     const calc = L !== null && D !== null ? Math.hypot(L, D) : null;
     out.push(
-      compare("landing_diag", calc, dg, TOLERANCES.rake, "in", data.segments.length > 2 ? `#${si}` : undefined)
+      compare("landing_diag", calc, dg, tol.rake, "in", data.segments.length > 2 ? `#${si}` : undefined)
     );
   });
 
@@ -205,7 +234,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     const calc = r !== null && u !== null && u > 0 ? (Math.atan2(r, u) * 180) / Math.PI : null;
     const meas = parseMeas(fl.angleDeg);
     out.push(
-      compare("angle", calc, meas, TOLERANCES.angle, "deg", multi ? `#${i + 1}` : undefined)
+      compare("angle", calc, meas, tol.angle, "deg", multi ? `#${i + 1}` : undefined)
     );
   });
 
@@ -221,7 +250,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     const varAmt = Math.max(...widths) - Math.min(...widths);
     out.push({
       key: "width_var",
-      level: grade(varAmt, TOLERANCES.widthVar),
+      level: grade(varAmt, tol.widthVar),
       expected: 0,
       actual: varAmt,
       delta: varAmt,
@@ -237,7 +266,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
 // Span molding math: the top clear span minus the lower clear span must equal
 // the SUM of both end molding projections (blank molding counts as 0). This
 // verifies the whole piece, including rails fitted between TWO molded columns.
-function spanChecks(data: MeasureData): CheckResult[] {
+function spanChecks(data: MeasureData, tol: Tolerances = TOLERANCES): CheckResult[] {
   const out: CheckResult[] = [];
   data.spans.forEach((sp, i) => {
     const top = parseMeas(sp.topSpan);
@@ -255,7 +284,11 @@ function spanChecks(data: MeasureData): CheckResult[] {
   return out;
 }
 
-function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
+function spiralOrLevelChecks(
+  data: MeasureData,
+  shape: MeasureShape,
+  tol: Tolerances = TOLERANCES
+): CheckResult[] {
   const out: CheckResult[] = [];
   if (shape === "spiral" && data.spiral) {
     // rise per tread should divide floor-to-floor evenly across treads
@@ -275,7 +308,7 @@ function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResul
       out.push({ key: "spiral_riser", level: "na", expected: null, actual: null, delta: null, unit: "in" });
     }
   }
-  out.push(...spanChecks(data));
+  out.push(...spanChecks(data, tol));
   if (shape === "ramp") {
     const seg = data.segments[0];
     if (seg && seg.kind === "ramp") {
@@ -288,10 +321,10 @@ function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResul
         runH !== null && rise !== null && runH > 0
           ? (Math.atan2(rise, runH) * 180) / Math.PI
           : null;
-      out.push(compare("angle", calcAng, ang, TOLERANCES.angle, "deg"));
+      out.push(compare("angle", calcAng, ang, tol.angle, "deg"));
       // sloped length vs √(run² + rise²)
       const calcSlope = runH !== null && rise !== null ? Math.hypot(runH, rise) : null;
-      out.push(compare("ramp_slope", calcSlope, slope, TOLERANCES.rake, "in"));
+      out.push(compare("ramp_slope", calcSlope, slope, tol.rake, "in"));
     }
   }
   return out;
@@ -507,11 +540,12 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 // A sheet may be submitted when nothing is missing and no check is red.
 export function submitBlockers(
   data: MeasureData,
-  shape: MeasureShape
+  shape: MeasureShape,
+  tol?: Tolerances
 ): { gaps: Gap[]; redChecks: CheckResult[] } {
   return {
     gaps: requiredGaps(data, shape),
-    redChecks: runChecks(data, shape).filter((c) => c.level === "red"),
+    redChecks: runChecks(data, shape, tol).filter((c) => c.level === "red"),
   };
 }
 

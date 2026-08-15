@@ -55,6 +55,7 @@ export default function PrintSheet({
   visible = false,
   qrUrl,
   superseded = false,
+  branding,
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -68,7 +69,14 @@ export default function PrintSheet({
   visible?: boolean; // revision viewer renders it on screen, not print-only
   qrUrl?: string; // approved sheets QR to the LOCKED revision, not the live record
   superseded?: boolean; // an old revision replaced by a newer approval
+  branding?: { name: string; address: string; phone: string; website: string };
 }) {
+  const brand = branding || {
+    name: "KING IRON WORKS",
+    address: "69 Norman St, Unit 20, Everett, MA 02149",
+    phone: "(617) 404-2589",
+    website: "kingsironworks.com",
+  };
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
@@ -157,9 +165,9 @@ export default function PrintSheet({
         style={{ borderBottom: `3px solid ${GOLD}` }}
       >
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1 }}>KING IRON WORKS</div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1 }}>{brand.name}</div>
           <div style={{ color: "#555" }}>
-            69 Norman St, Unit 20, Everett, MA 02149 · (617) 404-2589 · kingsironworks.com
+            {brand.address} · {brand.phone} · {brand.website}
           </div>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -656,7 +664,7 @@ export default function PrintSheet({
         className="mt-4 pt-2"
         style={{ borderTop: `2px solid ${GOLD}`, color: "#777", fontSize: 10 }}
       >
-        KING IRON WORKS · {mt(lang, "fieldMeasure")} · {job.job_number} ·{" "}
+        {brand.name} · {mt(lang, "fieldMeasure")} · {job.job_number} ·{" "}
         {mt(lang, "revLabel")} {sheet.current_rev || 0} ·{" "}
         {approved ? mt(lang, "approvedBadge") : mt(lang, "notApprovedMark")} ·{" "}
         {data.photos.length} 📷

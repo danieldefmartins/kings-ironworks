@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker } from "@/lib/shop/session";
-import { sbSelect, sbInsert, sbUpdate, sbDelete, sbRpc } from "@/lib/shop/db";
+import {
+  sbSelect,
+  sbInsert,
+  sbUpdate,
+  sbDelete,
+  sbRpc,
+  getJob,
+  getOrgSettings,
+  audit,
+  ORG_ID,
+} from "@/lib/shop/db";
 import {
   MEASURE_SHAPES,
   newMeasureData,
@@ -9,7 +19,7 @@ import {
   type MeasureShape,
   type MeasureSheet,
 } from "@/lib/shop/measure";
-import { runChecks, submitBlockers } from "@/lib/shop/measure-checks";
+import { runChecks, submitBlockers, mergeTolerances } from "@/lib/shop/measure-checks";
 
 export const runtime = "nodejs";
 
@@ -215,7 +225,7 @@ const TABLE = "kiw_shop_measure_sheets";
 // Sheet filter: always by id; also by job when the client sends it, so a
 // request can never touch a sheet on a different job than the page it came from.
 function sheetFilter(id: string, jobId?: string): string {
-  return `id=eq.${id}${jobId ? `&job_id=eq.${jobId}` : ""}`;
+  return `org_id=eq.${ORG_ID}&id=eq.${id}${jobId ? `&job_id=eq.${jobId}` : ""}`;
 }
 
 function bad(msg: string, status = 400) {
@@ -246,9 +256,11 @@ export async function POST(req: NextRequest) {
         const shape = body.shape as MeasureShape;
         if (!MEASURE_SHAPES.includes(shape)) return bad("Bad shape");
         if (!jobOk) return bad("Bad job id");
+        if (!(await getJob(jobOk))) return bad("Job not found", 404);
         const steps1 = Math.min(40, Math.max(1, Number(body.steps1) || 1));
         const steps2 = Math.min(40, Math.max(0, Number(body.steps2) || 0));
         const rows = await sbInsert<MeasureSheet[]>(TABLE, {
+          org_id: ORG_ID,
           job_id: jobOk,
           name: String(body.name || "").trim().slice(0, 200) || null,
           shape,
@@ -256,6 +268,12 @@ export async function POST(req: NextRequest) {
           data: newMeasureData(shape, steps1, steps2),
           created_by: worker.id,
           updated_by: worker.id,
+        });
+        await audit("sheet_create", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: rows[0]?.id,
+          detail: { shape, jobId: jobOk },
         });
         return NextResponse.json({ ok: true, id: rows[0]?.id });
       }
@@ -268,6 +286,7 @@ export async function POST(req: NextRequest) {
         if (!customer) return bad("Customer name required");
         const stamp = new Date().toISOString().slice(2, 16).replace(/[-T:]/g, "");
         const rows = await sbInsert<{ id: string }[]>("kiw_shop_jobs", {
+          org_id: ORG_ID,
           job_number: `FM-${stamp}`,
           customer_name: customer,
           address: String(body.address || "").trim().slice(0, 300) || null,
@@ -277,6 +296,12 @@ export async function POST(req: NextRequest) {
           current_stage: "Lead",
         });
         if (!rows[0]?.id) return bad("Could not create lead", 500);
+        await audit("lead_create", {
+          workerId: worker.id,
+          entity: "job",
+          entityId: rows[0].id,
+          detail: { customer },
+        });
         return NextResponse.json({ ok: true, jobId: rows[0].id });
       }
 
@@ -314,6 +339,11 @@ export async function POST(req: NextRequest) {
             ? bad("Sheet was changed elsewhere", 409)
             : bad("Sheet not found", 404);
         }
+        await audit("sheet_update", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: body.id,
+        });
         return NextResponse.json({
           ok: true,
           updated_at: rows[0].updated_at,
@@ -338,7 +368,12 @@ export async function POST(req: NextRequest) {
         const sheet = await loadSheet(body.id, jobOk);
         if (!sheet) return bad("Sheet not found", 404);
         const data = normalizeMeasureData(sheet.data);
-        const blockers = submitBlockers(data, sheet.shape);
+        const orgSettings = await getOrgSettings();
+        const blockers = submitBlockers(
+          data,
+          sheet.shape,
+          mergeTolerances(orgSettings.tolerances)
+        );
         if (blockers.gaps.length > 0 || blockers.redChecks.length > 0) {
           return NextResponse.json(
             {
@@ -355,7 +390,7 @@ export async function POST(req: NextRequest) {
         if (paths.length > 0) {
           const found = await sbSelect<{ url: string }[]>(
             "kiw_shop_photos",
-            `select=url&job_id=eq.${sheet.job_id}&url=in.(${paths
+            `select=url&org_id=eq.${ORG_ID}&job_id=eq.${sheet.job_id}&url=in.(${paths
               .map((x) => `"${x.replace(/"/g, "")}"`)
               .join(",")})`
           );
@@ -376,6 +411,11 @@ export async function POST(req: NextRequest) {
           updated_by: worker.id,
           updated_at: now,
         });
+        await audit("sheet_submit", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: body.id,
+        });
         return NextResponse.json({ ok: true, updated_at: rows[0]?.updated_at });
       }
 
@@ -391,8 +431,13 @@ export async function POST(req: NextRequest) {
           return bad("Sheet must be submitted before approval", 409);
         }
         const data = normalizeMeasureData(sheet.data);
+        const orgSettings = await getOrgSettings();
         // yellow warnings need an explicit reviewer acknowledgment
-        const yellows = runChecks(data, sheet.shape).filter((c) => c.level === "yellow");
+        const yellows = runChecks(
+          data,
+          sheet.shape,
+          mergeTolerances(orgSettings.tolerances)
+        ).filter((c) => c.level === "yellow");
         if (yellows.length > 0 && body.ackWarnings !== true) {
           return NextResponse.json(
             { error: "Warnings need acknowledgment", needsAck: true, warnings: yellows.map((c) => c.key) },
@@ -410,6 +455,19 @@ export async function POST(req: NextRequest) {
           const revNo = await sbRpc<number>("kiw_shop_approve_measure_sheet", {
             p_sheet_id: sheet.id,
             p_worker_id: worker.id,
+            p_org_id: ORG_ID,
+            p_allow_self: orgSettings.rules.allowSelfApproval === true,
+          });
+          await audit("sheet_approve", {
+            workerId: worker.id,
+            entity: "measure_sheet",
+            entityId: sheet.id,
+            detail: {
+              rev: revNo,
+              ackWarnings: body.ackWarnings === true,
+              confirmReference: body.confirmReference === true,
+              warnings: yellows.map((c) => c.key),
+            },
           });
           const after = await loadSheet(sheet.id, jobOk);
           return NextResponse.json({
@@ -443,13 +501,36 @@ export async function POST(req: NextRequest) {
           updated_at: now,
         });
         if (rows.length === 0) return bad("Sheet not found", 404);
+        await audit("sheet_sendback", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: body.id,
+          detail: { comment: String(body.comment || "").slice(0, 500) },
+        });
         return NextResponse.json({ ok: true, updated_at: rows[0].updated_at });
+      }
+
+      // client notifies when a fabrication sheet is printed
+      case "log_print": {
+        if (!uuid.safeParse(body.id).success) return bad("Bad sheet id");
+        await audit("sheet_print", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: body.id,
+          detail: { rev: typeof body.rev === "number" ? body.rev : null },
+        });
+        return NextResponse.json({ ok: true });
       }
 
       case "delete": {
         if (!uuid.safeParse(body.id).success) return bad("Bad sheet id");
         const rows = await sbDelete<MeasureSheet[]>(TABLE, sheetFilter(body.id, jobOk));
         if (!Array.isArray(rows) || rows.length === 0) return bad("Sheet not found", 404);
+        await audit("sheet_delete", {
+          workerId: worker.id,
+          entity: "measure_sheet",
+          entityId: body.id,
+        });
         return NextResponse.json({ ok: true });
       }
 

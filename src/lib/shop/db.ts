@@ -9,6 +9,13 @@ const SUPABASE_URL =
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
+// Multi-tenant: this deployment serves exactly ONE organization. Every query
+// in this file is scoped to it, and composite DB foreign keys guarantee that
+// child rows can never reference another organization's data even if a
+// filter were ever missed. KIW is tenant #1.
+export const ORG_ID =
+  process.env.SHOP_ORG_ID || "a0000000-0000-4000-8000-000000000001";
+
 export const STAGES = [
   "Awarded",
   "Shop Drawings",
@@ -210,7 +217,7 @@ export function sbDelete<T = unknown>(table: string, query: string): Promise<T> 
 export async function listJobs(): Promise<Job[]> {
   return sbSelect<Job[]>(
     "kiw_shop_jobs",
-    "select=*&archived=eq.false&order=due_date.asc.nullslast"
+    `select=*&org_id=eq.${ORG_ID}&archived=eq.false&order=due_date.asc.nullslast`
   );
 }
 
@@ -218,7 +225,7 @@ export async function listJobs(): Promise<Job[]> {
 export async function listJobsWithDeposits(): Promise<Job[]> {
   return sbSelect<Job[]>(
     "kiw_shop_jobs",
-    "select=*&deposit_amount=not.is.null&order=deposit_amount.desc"
+    `select=*&org_id=eq.${ORG_ID}&deposit_amount=not.is.null&order=deposit_amount.desc`
   );
 }
 
@@ -238,7 +245,7 @@ export function contractValue(j: Pick<Job, "contract_amount">): number {
 export async function getJob(id: string): Promise<Job | null> {
   const rows = await sbSelect<Job[]>(
     "kiw_shop_jobs",
-    `select=*&id=eq.${id}&limit=1`
+    `select=*&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
 }
@@ -246,26 +253,26 @@ export async function getJob(id: string): Promise<Job | null> {
 export async function getCutItems(jobId: string): Promise<CutItem[]> {
   return sbSelect<CutItem[]>(
     "kiw_shop_cut_items",
-    `select=*&job_id=eq.${jobId}&order=item_no.asc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=item_no.asc`
   );
 }
 export async function getMaterials(jobId: string): Promise<Material[]> {
   return sbSelect<Material[]>(
     "kiw_shop_materials",
-    `select=*&job_id=eq.${jobId}&order=description.asc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=description.asc`
   );
 }
 export async function getQc(jobId: string): Promise<QcCheck[]> {
   return sbSelect<QcCheck[]>(
     "kiw_shop_qc_checks",
-    `select=*&job_id=eq.${jobId}&order=label.asc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=label.asc`
   );
 }
 
 export async function listWorkers(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
-    "select=id,name,role,active,can_see_prices,lang,is_admin&active=eq.true&order=name.asc"
+    `select=id,name,role,active,can_see_prices,lang,is_admin&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
   );
 }
 
@@ -275,7 +282,7 @@ export async function verifyWorkerPin(
 ): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,can_see_prices,lang,is_admin,pin&id=eq.${workerId}&active=eq.true&limit=1`
+    `select=id,name,role,active,can_see_prices,lang,is_admin,pin&org_id=eq.${ORG_ID}&id=eq.${workerId}&active=eq.true&limit=1`
   );
   const w = rows[0];
   if (!w || w.pin !== pin) return null;
@@ -293,7 +300,7 @@ export async function verifyWorkerPin(
 export async function getWorkerById(id: string): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,can_see_prices,lang,is_admin&id=eq.${id}&limit=1`
+    `select=id,name,role,active,can_see_prices,lang,is_admin&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
 }
@@ -304,7 +311,7 @@ export async function getWorkerById(id: string): Promise<Worker | null> {
 export async function getRunningEntry(workerId: string): Promise<TimeEntry | null> {
   const rows = await sbSelect<TimeEntry[]>(
     "kiw_shop_time_entries",
-    `select=*&worker_id=eq.${workerId}&ended_at=is.null&order=started_at.desc&limit=1`
+    `select=*&org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null&order=started_at.desc&limit=1`
   );
   return rows[0] || null;
 }
@@ -318,10 +325,11 @@ export async function startTimeEntry(
 ): Promise<void> {
   await sbUpdate(
     "kiw_shop_time_entries",
-    `worker_id=eq.${workerId}&ended_at=is.null`,
+    `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null`,
     { ended_at: new Date().toISOString() }
   );
   await sbInsert("kiw_shop_time_entries", {
+    org_id: ORG_ID,
     worker_id: workerId,
     job_id: jobId,
     started_at: new Date().toISOString(),
@@ -337,7 +345,7 @@ export async function stopTimeEntry(
 ): Promise<void> {
   await sbUpdate(
     "kiw_shop_time_entries",
-    `worker_id=eq.${workerId}&job_id=eq.${jobId}&ended_at=is.null`,
+    `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&job_id=eq.${jobId}&ended_at=is.null`,
     {
       ended_at: new Date().toISOString(),
       end_lat: loc?.lat ?? null,
@@ -349,14 +357,14 @@ export async function stopTimeEntry(
 export async function getJobTimeEntries(jobId: string): Promise<TimeEntry[]> {
   return sbSelect<TimeEntry[]>(
     "kiw_shop_time_entries",
-    `select=*&job_id=eq.${jobId}&order=started_at.desc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=started_at.desc`
   );
 }
 
 export async function getAllTimeEntries(): Promise<TimeEntry[]> {
   return sbSelect<TimeEntry[]>(
     "kiw_shop_time_entries",
-    "select=*&order=started_at.desc&limit=500"
+    `select=*&org_id=eq.${ORG_ID}&order=started_at.desc&limit=500`
   );
 }
 
@@ -364,7 +372,7 @@ export async function getAllTimeEntries(): Promise<TimeEntry[]> {
 export async function getRunningEntries(): Promise<TimeEntry[]> {
   return sbSelect<TimeEntry[]>(
     "kiw_shop_time_entries",
-    "select=*&ended_at=is.null&order=started_at.asc"
+    `select=*&org_id=eq.${ORG_ID}&ended_at=is.null&order=started_at.asc`
   );
 }
 
@@ -372,7 +380,7 @@ export async function getRunningEntries(): Promise<TimeEntry[]> {
 export async function listWorkersWithRates(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
-    "select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate&active=eq.true&order=name.asc"
+    `select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
   );
 }
 
@@ -389,14 +397,14 @@ import type { MeasureSheet } from "./measure";
 export async function getMeasureSheets(jobId: string): Promise<MeasureSheet[]> {
   return sbSelect<MeasureSheet[]>(
     "kiw_shop_measure_sheets",
-    `select=*&job_id=eq.${jobId}&order=created_at.asc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=created_at.asc`
   );
 }
 
 export async function getMeasureSheet(id: string): Promise<MeasureSheet | null> {
   const rows = await sbSelect<MeasureSheet[]>(
     "kiw_shop_measure_sheets",
-    `select=*&id=eq.${id}&limit=1`
+    `select=*&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
 }
@@ -409,9 +417,114 @@ export async function getMeasureRevision(
 ): Promise<MeasureRevision | null> {
   const rows = await sbSelect<MeasureRevision[]>(
     "kiw_shop_measure_revisions",
-    `select=*&sheet_id=eq.${sheetId}&rev_no=eq.${revNo}&limit=1`
+    `select=*&org_id=eq.${ORG_ID}&sheet_id=eq.${sheetId}&rev_no=eq.${revNo}&limit=1`
   );
   return rows[0] || null;
+}
+
+// ---- Organization settings + audit ----------------------------------------
+
+export interface OrgSettings {
+  branding: { name: string; address: string; phone: string; website: string };
+  tolerances: Record<string, { green: number; yellow: number }>;
+  presets: Record<string, string[]>;
+  options: Record<string, string[]>;
+  rules: { allowSelfApproval: boolean };
+  defaults: Record<string, string>;
+}
+
+const FALLBACK_SETTINGS: OrgSettings = {
+  branding: {
+    name: "KING IRON WORKS",
+    address: "69 Norman St, Unit 20, Everett, MA 02149",
+    phone: "(617) 404-2589",
+    website: "kingsironworks.com",
+  },
+  tolerances: {
+    riseSum: { green: 0.25, yellow: 0.75 },
+    runSum: { green: 0.375, yellow: 1.0 },
+    rake: { green: 0.5, yellow: 1.5 },
+    angle: { green: 1.0, yellow: 2.5 },
+    widthVar: { green: 0.375, yellow: 1.0 },
+  },
+  presets: {},
+  options: {},
+  rules: { allowSelfApproval: false },
+  defaults: { units: "in" },
+};
+
+export async function getOrgSettings(): Promise<OrgSettings> {
+  try {
+    const rows = await sbSelect<{ settings: Partial<OrgSettings> }[]>(
+      "kiw_shop_org_settings",
+      `select=settings&org_id=eq.${ORG_ID}&limit=1`
+    );
+    const sdb = rows[0]?.settings || {};
+    return {
+      branding: { ...FALLBACK_SETTINGS.branding, ...(sdb.branding || {}) },
+      tolerances: { ...FALLBACK_SETTINGS.tolerances, ...(sdb.tolerances || {}) },
+      presets: sdb.presets || {},
+      options: sdb.options || {},
+      rules: { ...FALLBACK_SETTINGS.rules, ...(sdb.rules || {}) },
+      defaults: { ...FALLBACK_SETTINGS.defaults, ...(sdb.defaults || {}) },
+    };
+  } catch {
+    return FALLBACK_SETTINGS;
+  }
+}
+
+export async function saveOrgSettings(
+  settings: Partial<OrgSettings>,
+  workerId: string
+): Promise<void> {
+  await rest("kiw_shop_org_settings", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({
+      org_id: ORG_ID,
+      settings,
+      updated_at: new Date().toISOString(),
+      updated_by: workerId,
+    }),
+  });
+}
+
+// Immutable audit trail — a DB trigger blocks UPDATE/DELETE on this table
+// for every role, including administrators and the service key.
+export async function audit(
+  action: string,
+  opts: {
+    workerId?: string | null;
+    entity?: string;
+    entityId?: string;
+    detail?: unknown;
+  } = {}
+): Promise<void> {
+  try {
+    await sbInsert("kiw_shop_audit", {
+      org_id: ORG_ID,
+      worker_id: opts.workerId ?? null,
+      action,
+      entity: opts.entity ?? null,
+      entity_id: opts.entityId ?? null,
+      detail: opts.detail ?? null,
+    });
+  } catch {
+    // auditing must never break the operation being audited
+  }
+}
+
+// Failed logins in the recent window (PIN throttling).
+export async function recentLoginFailures(
+  workerId: string,
+  windowMinutes = 15
+): Promise<number> {
+  const since = new Date(Date.now() - windowMinutes * 60000).toISOString();
+  const rows = await sbSelect<{ id: string }[]>(
+    "kiw_shop_audit",
+    `select=id&org_id=eq.${ORG_ID}&action=eq.login_fail&worker_id=eq.${workerId}&at=gte.${encodeURIComponent(since)}`
+  );
+  return rows.length;
 }
 
 // ---- Photos & Storage -----------------------------------------------------
@@ -421,7 +534,7 @@ const PHOTO_BUCKET = "kiw-shop-photos";
 export async function getPhotos(jobId: string): Promise<Photo[]> {
   return sbSelect<Photo[]>(
     "kiw_shop_photos",
-    `select=*&job_id=eq.${jobId}&order=uploaded_at.desc`
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=uploaded_at.desc`
   );
 }
 
@@ -436,6 +549,7 @@ export async function insertPhoto(row: {
 }): Promise<Photo | null> {
   const rows = await sbInsert<Photo[]>("kiw_shop_photos", {
     kind: "image",
+    org_id: ORG_ID,
     ...row,
     uploaded_at: new Date().toISOString(),
   });

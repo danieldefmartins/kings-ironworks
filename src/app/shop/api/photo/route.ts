@@ -3,6 +3,8 @@ import { getSessionWorker } from "@/lib/shop/session";
 import {
   uploadPhotoObject,
   insertPhoto,
+  getJob,
+  audit,
   PRICE_CATEGORY,
 } from "@/lib/shop/db";
 
@@ -28,6 +30,10 @@ export async function POST(req: NextRequest) {
 
     if (!file || !jobId) {
       return NextResponse.json({ error: "Missing file or job" }, { status: 400 });
+    }
+    // the job must exist in THIS organization
+    if (!(await getJob(jobId))) {
+      return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     // Price-sensitive category is restricted.
@@ -69,6 +75,12 @@ export async function POST(req: NextRequest) {
       uploaded_by: worker.id,
     });
 
+    await audit("photo_upload", {
+      workerId: worker.id,
+      entity: "photo",
+      entityId: row?.id || undefined,
+      detail: { jobId, category, label },
+    });
     // Path + id let callers (measure sheets) link the photo to a checklist slot.
     return NextResponse.json({ ok: true, path, id: row?.id || null });
   } catch (e) {

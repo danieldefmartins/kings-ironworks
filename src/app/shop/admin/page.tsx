@@ -8,6 +8,7 @@ import {
   contractValue,
   entryHours,
   sbSelect,
+  ORG_ID,
   type Job,
 } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
@@ -25,7 +26,7 @@ export default async function ShopAdminPage() {
     getAllTimeEntries(),
     sbSelect<Job[]>(
       "kiw_shop_jobs",
-      "select=id,job_number,customer_name,project_type,archived&order=job_number.asc"
+      `select=id,job_number,customer_name,project_type,archived&org_id=eq.${ORG_ID}&order=job_number.asc`
     ),
     listJobsWithDeposits(),
   ]);
@@ -116,6 +117,14 @@ export default async function ShopAdminPage() {
   return (
     <div>
       <ShopTopBar workerName={worker.name} title="Admin — Labor & Costs" back="/shop" />
+      <div className="px-4 pt-4 max-w-5xl mx-auto">
+        <a
+          href="/shop/admin/settings"
+          className="inline-block rounded-lg border border-amber-600/50 text-amber-400 px-3 py-2 text-sm hover:bg-neutral-800"
+        >
+          ⚙ Organization Settings
+        </a>
+      </div>
       <AdminClient
         workers={workers.map((w) => ({
           id: w.id,
