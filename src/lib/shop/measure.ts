@@ -245,7 +245,15 @@ export const RAIL_SIDE_OPTIONS = ["Left", "Right", "Both"] as const;
 
 // Common KIW profiles offered as quick chips (free text still allowed).
 export const MATERIAL_PRESETS = {
-  post: ['1-1/2" sq tube', '2" sq tube', '1-1/2" Sch40 pipe', '1-1/4" Sch40 pipe'],
+  post: [
+    '1-1/2" sq tube',
+    '2" sq tube',
+    '1-1/2" Sch40 pipe',
+    '1-1/4" Sch40 pipe',
+    '1-1/2" flat bar',
+    '2" flat bar',
+    '2-1/2" flat bar',
+  ],
   topRail: ["Molded cap rail", '1-1/2" sq tube', '1-1/2" Sch40 pipe', "Flat bar 2x3/8"],
   picket: ['1/2" sq solid', '5/8" sq solid', '3/4" sq tube', '1" sq tube'],
   bottomRail: ['1" x 1/2" channel', "Flat bar 1-1/2x3/8", "Shoe rail", "None (into treads)"],
