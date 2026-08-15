@@ -247,21 +247,44 @@ export default function PrintSheet({
         </div>
       )}
 
-      {/* Sketches (light palette): side + front views */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
-        <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
-          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
-            {mt(lang, sketchViews(sheet.shape)[1])}
-          </div>
-          <Sketch shape={sheet.shape} data={data} lang={lang} light view="side" />
-        </div>
-        <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
-          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
-            {mt(lang, sketchViews(sheet.shape)[2])}
-          </div>
-          <Sketch shape={sheet.shape} data={data} lang={lang} light view="front" />
-        </div>
+      {/* Sketches (light palette): first two views of this shape */}
+      <div className={`grid ${sketchViews(sheet.shape).length > 1 ? "grid-cols-2" : "grid-cols-1"} gap-3 mb-3`}>
+        {sketchViews(sheet.shape)
+          .slice(0, 2)
+          .map(([vw, key]) => (
+            <div key={vw} style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
+              <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
+                {mt(lang, key)}
+              </div>
+              <Sketch shape={sheet.shape} data={data} lang={lang} light view={vw} />
+            </div>
+          ))}
       </div>
+
+      {/* Custom shape: dimension table for every drawn line */}
+      {sheet.shape === "custom" && data.plan && data.plan.segs.length > 0 && (
+        <div className="mb-3">
+          <SectionTitle>{mt(lang, "planSegs")}</SectionTitle>
+          <table className="w-full" style={{ borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <Th>#</Th>
+                <Th>{mt(lang, "length")}</Th>
+                <Th>{mt(lang, "segNoteLbl")}</Th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.plan.segs.map((sg, i) => (
+                <tr key={i}>
+                  <Td>{i + 1}</Td>
+                  <Td><Val v={sg.len} /></Td>
+                  <Td>{sg.note ? <b>{sg.note}</b> : <Val v="" />}</Td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         {/* Steps */}

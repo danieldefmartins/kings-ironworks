@@ -107,6 +107,7 @@ function compare(
 // ---- Cross-checks ----------------------------------------------------------
 
 export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
+  if (shape === "custom") return []; // drawn plans have no redundant geometry yet
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape);
   }
@@ -246,6 +247,14 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   if (shape === "spiral") {
     if (!data.spiral || !has(data.spiral.floorToFloor)) gaps.push({ key: "floor_to_floor" });
     if (!data.spiral || !has(data.spiral.diameter)) gaps.push({ key: "diameter" });
+  } else if (shape === "custom") {
+    const plan = data.plan;
+    if (!plan || plan.points.length < 2) {
+      gaps.push({ key: "plan_drawing" });
+    } else {
+      const missingLens = plan.segs.filter((sg) => !has(sg.len)).length;
+      if (missingLens > 0) gaps.push({ key: "plan_lengths", detail: `${missingLens}` });
+    }
   } else if (shape === "level_run") {
     const seg = data.segments[0] as PlatformSegment | undefined;
     if (!seg || !has(seg.length)) gaps.push({ key: "run_length" });

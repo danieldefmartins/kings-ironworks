@@ -28,7 +28,8 @@ import {
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS, specValue } from "@/lib/shop/i18n";
-import Sketch, { sketchViews, sortPlatPosts } from "./Sketch";
+import Sketch, { sketchViews, sortPlatPosts, type SketchView } from "./Sketch";
+import PlanDraw from "./PlanDraw";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 
@@ -105,7 +106,8 @@ export default function MeasureEditor({
   >("idle");
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
-  const [view, setView] = useState<"side" | "front">("side");
+  const viewList = sketchViews(sheet.shape);
+  const [view, setView] = useState<SketchView>(viewList[0][0]);
   const firstRender = useRef(true);
 
   // Serialized mutation pipeline: autosave/rename/status/delete run one at a
@@ -186,7 +188,6 @@ export default function MeasureEditor({
   const units = data.units || "in";
   const unitPh = units === "ftin" ? `0' 0"` : `0"`;
   const fracTokens = units === "ftin" ? ["'", '"', ...FRACTIONS] : FRACTIONS;
-  const [, sideKey, frontKey] = sketchViews(sheet.shape);
 
   // Autosave (debounced) whenever measurements change.
   useEffect(() => {
@@ -358,6 +359,7 @@ export default function MeasureEditor({
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
+  const isCustom = sheet.shape === "custom";
   const flights = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "flight") as { seg: FlightSegment; i: number }[];
@@ -537,7 +539,8 @@ export default function MeasureEditor({
           </div>
         </Card>
 
-        {/* Sketch */}
+        {/* Sketch (custom shapes draw their own plan below instead) */}
+        {!isCustom && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
           {!isSpiral && !isWallRail && (
@@ -550,56 +553,56 @@ export default function MeasureEditor({
               )}
             </div>
           )}
-          {/* View toggle — phones see one view at a time; md+ shows both */}
-          <div className="flex gap-2 mb-3 md:hidden">
-            {(
-              [
-                ["side", sideKey],
-                ["front", frontKey],
-              ] as const
-            ).map(([vw, key]) => (
-              <button
-                key={vw}
-                onClick={() => setView(vw)}
-                className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
-                  view === vw
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                }`}
-              >
-                {mt(lang, key)}
-              </button>
-            ))}
-          </div>
+          {/* View chips — phones show one view; md+ adds a second beside it */}
+          {viewList.length > 1 && (
+            <div className="flex gap-2 mb-3">
+              {viewList.map(([vw, key]) => (
+                <button
+                  key={vw}
+                  onClick={() => setView(vw)}
+                  className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
+                    view === vw
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  {mt(lang, key)}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
-            <div className={view === "side" ? "" : "hidden md:block"}>
+            <div>
               <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
-                {mt(lang, sideKey)}
+                {mt(lang, viewList.find(([vw]) => vw === view)?.[1] || viewList[0][1])}
               </div>
               <Sketch
                 shape={sheet.shape}
                 data={data}
                 lang={lang}
-                view="side"
+                view={view}
                 onTapStep={addStepPost}
                 onTapPlatform={addPlatformPost}
               />
             </div>
-            <div className={view === "front" ? "" : "hidden md:block"}>
-              <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
-                {mt(lang, frontKey)}
+            {viewList.length > 1 && (
+              <div className="hidden md:block">
+                <div className="text-[11px] text-neutral-500 mb-1">
+                  {mt(lang, viewList.find(([vw]) => vw !== view)![1])}
+                </div>
+                <Sketch
+                  shape={sheet.shape}
+                  data={data}
+                  lang={lang}
+                  view={viewList.find(([vw]) => vw !== view)![0]}
+                  onTapStep={addStepPost}
+                  onTapPlatform={addPlatformPost}
+                />
               </div>
-              <Sketch
-                shape={sheet.shape}
-                data={data}
-                lang={lang}
-                view="front"
-                onTapStep={addStepPost}
-                onTapPlatform={addPlatformPost}
-              />
-            </div>
+            )}
           </div>
         </div>
+        )}
 
         {/* Spiral geometry */}
         {isSpiral && data.spiral && (
@@ -692,6 +695,21 @@ export default function MeasureEditor({
                   <MInput label={mt(lang, "nosing")} labelClass="sm:hidden" value={st.nosing}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].nosing = v))} />
                 </div>
+                {si === 0 && (
+                  <div className="mt-2 sm:mt-0 sm:col-span-4">
+                    <SmallBtn
+                      onClick={() =>
+                        set((d) => {
+                          const fl = d.segments[i] as FlightSegment;
+                          const s1 = fl.steps[0];
+                          fl.steps = fl.steps.map(() => ({ ...s1 }));
+                        })
+                      }
+                    >
+                      ⇊ {mt(lang, "copyToAll")}
+                    </SmallBtn>
+                  </div>
+                )}
               </div>
             ))}
             <div className="flex flex-wrap gap-2 mt-2 mb-3">
@@ -712,17 +730,6 @@ export default function MeasureEditor({
                 }
               >
                 {mt(lang, "removeStep")}
-              </SmallBtn>
-              <SmallBtn
-                onClick={() =>
-                  set((d) => {
-                    const fl = d.segments[i] as FlightSegment;
-                    const s1 = fl.steps[0];
-                    fl.steps = fl.steps.map(() => ({ ...s1 }));
-                  })
-                }
-              >
-                {mt(lang, "copyToAll")}
               </SmallBtn>
             </div>
             <Grid>
@@ -790,7 +797,7 @@ export default function MeasureEditor({
         )}
 
         {/* Posts */}
-        {!isSpiral && !isWallRail && (
+        {!isSpiral && !isWallRail && !isCustom && (
           <Card title={`${mt(lang, "posts")} (${posts.length})`}>
             {posts.length === 0 && (
               <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
@@ -981,6 +988,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Control dimensions — independent measurements the software cross-checks */}
+        {!isCustom && (
         <Card title={`🎯 ${mt(lang, "controlsTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
           <Grid>
@@ -1017,6 +1025,41 @@ export default function MeasureEditor({
             />
           </div>
         </Card>
+        )}
+
+        {/* Custom shape: draw the plan, then dimension every line */}
+        {isCustom && data.plan && (
+          <Card title={`✏️ ${mt(lang, "drawTitle")}`}>
+            <PlanDraw
+              plan={data.plan}
+              lang={lang}
+              onChange={(next) => set((d) => void (d.plan = next))}
+            />
+            {data.plan.segs.length > 0 && (
+              <div className="mt-4">
+                <div className="font-bold text-sm mb-2">{mt(lang, "planSegs")}</div>
+                <div className="space-y-2">
+                  {data.plan.segs.map((sg, i) => (
+                    <div key={i} className="grid grid-cols-[2.2rem_1fr_1.4fr] gap-2 items-center">
+                      <span className="text-sm font-bold text-amber-400 text-center border border-neutral-800 rounded-full w-7 h-7 leading-[26px]">
+                        {i + 1}
+                      </span>
+                      <MInput value={sg.len}
+                        onChange={(v) => set((d) => void (d.plan!.segs[i].len = v))} />
+                      <MInput placeholder="—" value={sg.note}
+                        onChange={(v) => set((d) => void (d.plan!.segs[i].note = v))} />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-[2.2rem_1fr_1.4fr] gap-2 text-[11px] text-neutral-500">
+                    <span />
+                    <span>{mt(lang, "length")}</span>
+                    <span>{mt(lang, "segNoteLbl")}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Photo checklist — required evidence, slot by slot */}
         <Card title={`📷 ${mt(lang, "photoChecklist")}`}>

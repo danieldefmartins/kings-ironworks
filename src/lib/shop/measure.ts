@@ -11,7 +11,8 @@ export type MeasureShape =
   | "level_run"
   | "ramp"
   | "wall_rail"
-  | "spiral";
+  | "spiral"
+  | "custom";
 
 export const MEASURE_SHAPES: MeasureShape[] = [
   "straight",
@@ -22,6 +23,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "ramp",
   "wall_rail",
   "spiral",
+  "custom",
 ];
 
 // Shapes made of two flights (a landing sits between them).
@@ -169,6 +171,16 @@ export interface AnnotationStroke {
   text?: string;
 }
 
+// Custom shape: the crew draws the railing's plan (top view) as connected
+// line segments, then dimensions each drawn segment. The drawing stays
+// structured — every line is a numbered segment with its own measurement —
+// so completeness checks and the shop printout still work.
+export interface PlanDrawing {
+  points: { x: number; y: number }[]; // canvas coords, snapped
+  closed: boolean; // last point connects back to the first
+  segs: { len: string; note: string }[]; // one per drawn line, in draw order
+}
+
 export type Units = "in" | "ftin";
 export type SheetStatus = "in_progress" | "submitted" | "approved";
 
@@ -184,6 +196,7 @@ export interface MeasureData {
   fab: FabDetails;
   photos: MeasurePhoto[];
   annotations: Record<string, AnnotationStroke[]>; // storage path -> strokes
+  plan?: PlanDrawing | null; // custom shape: the drawn top view
   units?: Units; // measurement entry unit — inches (default) or feet+inches
 }
 
@@ -286,6 +299,9 @@ export function newMeasureData(
     case "wall_rail":
       segments = [blankFlight(steps1)];
       break;
+    case "custom":
+      segments = [];
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -305,6 +321,7 @@ export function newMeasureData(
     segments,
     posts: [],
     spiral,
+    plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
       post: "",
@@ -425,6 +442,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     fab: { ...blankFab(), ...(d.fab || {}) },
     photos: d.photos || [],
     annotations: d.annotations || {},
+    plan: d.plan ?? null,
   };
 }
 
@@ -437,6 +455,7 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
       return ["overall_bottom", "overall_top"];
     case "level_run":
     case "wall_rail":
+    case "custom":
       return ["overall_bottom", "overall_top", "bottom_term", "top_term"];
     default:
       return [
@@ -478,6 +497,7 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       data.spiral.columnSize
     );
   }
+  if (data.plan) for (const seg of data.plan.segs) vals.push(seg.len);
   vals.push(data.rail.height, data.materials.post, data.materials.topRail);
   const total = vals.length;
   const filled = vals.filter((v) => v && v.trim() !== "").length;

@@ -50,11 +50,33 @@ function v(s: string | undefined, p: Palette) {
   return { text: has ? s!.trim() : "—", fill: has ? p.val : p.miss };
 }
 
-// Which two views a shape offers (labels for the editor toggle).
-export function sketchViews(shape: MeasureShape): ["side" | "front", string, string] {
-  if (shape === "spiral") return ["side", "sideView", "planView"];
-  if (shape === "level_run") return ["side", "sectionView", "frontView"];
-  return ["side", "sideView", "frontView"];
+export type SketchView = "plan" | "front" | "side";
+
+// Ordered views a shape offers (first = default), with their i18n label keys.
+// Crews read plan (top) views best — the full path of the rail — so stairs
+// lead with the top view.
+export function sketchViews(shape: MeasureShape): [SketchView, string][] {
+  if (shape === "spiral")
+    return [
+      ["front", "planView"],
+      ["side", "sideView"],
+    ];
+  if (shape === "level_run")
+    return [
+      ["front", "frontView"],
+      ["side", "sectionView"],
+    ];
+  if (shape === "custom") return [["plan", "planView"]];
+  if (shape === "ramp")
+    return [
+      ["side", "sideView"],
+      ["front", "frontView"],
+    ];
+  return [
+    ["plan", "planView"],
+    ["front", "frontView"],
+    ["side", "sideView"],
+  ];
 }
 
 export default function Sketch({
@@ -70,12 +92,13 @@ export default function Sketch({
   data: MeasureData;
   lang: string;
   light?: boolean;
-  view?: "side" | "front"; // front = front elevation (plan for spiral)
+  view?: SketchView;
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
 }) {
   const p = light ? LIGHT : DARK;
 
+  if (shape === "custom") return <CustomPlanSketch data={data} p={p} lang={lang} />;
   if (shape === "spiral")
     return view === "front" ? (
       <SpiralSketch spiral={data.spiral} p={p} lang={lang} />
@@ -87,6 +110,17 @@ export default function Sketch({
       <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />
     ) : (
       <LevelSectionSketch data={data} p={p} lang={lang} />
+    );
+  if (view === "plan")
+    return (
+      <PlanSketch
+        shape={shape}
+        data={data}
+        p={p}
+        lang={lang}
+        onTapStep={onTapStep}
+        onTapPlatform={onTapPlatform}
+      />
     );
   if (view === "front") return <FrontSketch data={data} p={p} lang={lang} />;
   if (shape === "ramp")
@@ -138,6 +172,264 @@ function OrientBanner({
       {mt(lang, "orientBanner")}
       {o ? ` · ${mt(lang, `orient_${o}`)}` : " · ?"}
     </text>
+  );
+}
+
+// ---- Plan (top) view — the full path of the rail from above ----------------
+
+const PLAN_TREAD = 17; // px per tread along the run
+const PLAN_W = 54; // stair strip width in px
+const PLAN_LAND = 66; // landing square
+
+function PlanSketch({
+  shape,
+  data,
+  p,
+  lang,
+  onTapStep,
+  onTapPlatform,
+}: {
+  shape: MeasureShape;
+  data: MeasureData;
+  p: Palette;
+  lang: string;
+  onTapStep?: (segIdx: number, stepIdx: number) => void;
+  onTapPlatform?: (segIdx: number) => void;
+}) {
+  const wallRail = shape === "wall_rail";
+  const o = data.datums?.orientation;
+  // which edge(s) carry rail/posts, in local coords (travel = +x, left = -y)
+  const openLeft = o === "right_wall" || o === "both_open" || o === "";
+  const openRight = o === "left_wall" || o === "both_open" || o === "" || o === undefined;
+
+  interface Placed {
+    node: React.ReactNode;
+    corners: { x: number; y: number }[];
+  }
+  const groups: Placed[] = [];
+  let cx = 0;
+  let cy = 0;
+  let ang = 0; // degrees; 0 = travelling right
+  let postNo = 0;
+
+  const rot = (x: number, y: number, deg: number) => {
+    const r = (deg * Math.PI) / 180;
+    return { x: x * Math.cos(r) - y * Math.sin(r), y: x * Math.sin(r) + y * Math.cos(r) };
+  };
+  const world = (lx: number, ly: number) => {
+    const r = rot(lx, ly, ang);
+    return { x: cx + r.x, y: cy + r.y };
+  };
+
+  data.segments.forEach((seg, segIdx) => {
+    if (seg.kind === "flight") {
+      const fl = seg as FlightSegment;
+      const len = fl.steps.length * PLAN_TREAD;
+      const wv = v(fl.width, p);
+      const els: React.ReactNode[] = [];
+      // strip edges
+      els.push(
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />
+      );
+      // tread lines + taps + posts
+      fl.steps.forEach((_, i) => {
+        els.push(
+          <line key={`t${i}`} x1={i * PLAN_TREAD} y1={-PLAN_W / 2} x2={i * PLAN_TREAD} y2={PLAN_W / 2} stroke={p.ghost} strokeWidth={1.2} />
+        );
+        const stepPosts = data.posts.filter((po) => po.segIdx === segIdx && po.stepIdx === i);
+        if (!wallRail) {
+          stepPosts.forEach((po, pi) => {
+            postNo += 1;
+            const py = openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
+            els.push(
+              <g key={`p${po.id}`}>
+                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={4} fill={p.post} />
+                <text x={i * PLAN_TREAD + PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
+                  P{postNo}
+                </text>
+              </g>
+            );
+          });
+          if (onTapStep) {
+            els.push(
+              <rect key={`tap${i}`} x={i * PLAN_TREAD} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
+                fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapStep(segIdx, i)} />
+            );
+          }
+        }
+      });
+      // width label across the strip start
+      els.push(
+        <text key="w" x={-8} y={4} fontSize={8.5} textAnchor="end" fill={wv.fill}>
+          {wv.text}
+        </text>
+      );
+      // step count label
+      els.push(
+        <text key="n" x={len / 2} y={PLAN_W / 2 + 14} fontSize={8} textAnchor="middle" fill={p.dim}>
+          {fl.steps.length} × {mt(lang, "step").toLowerCase()}
+        </text>
+      );
+      groups.push({
+        node: (
+          <g key={`fl${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+            {els}
+          </g>
+        ),
+        corners: [world(0, -PLAN_W / 2 - 20), world(len, -PLAN_W / 2 - 20), world(0, PLAN_W / 2 + 20), world(len, PLAN_W / 2 + 20)],
+      });
+      const end = world(len, 0);
+      cx = end.x;
+      cy = end.y;
+    } else if (seg.kind === "platform") {
+      const pl = seg as PlatformSegment;
+      const L = PLAN_LAND;
+      const lv = v(pl.length, p);
+      const dv = v(pl.depth, p);
+      const els: React.ReactNode[] = [
+        <rect key="r" x={0} y={-L / 2} width={L} height={L} fill="none" stroke={p.line} strokeWidth={2} />,
+        <text key="l" x={L / 2} y={-L / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
+          {lv.text}
+        </text>,
+        <text key="d" x={L + 6} y={3} fontSize={8.5} fill={dv.fill}>
+          {dv.text}
+        </text>,
+      ];
+      const platPosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      platPosts.forEach((po, idx) => {
+        postNo += 1;
+        const frac = (idx + 1) / (platPosts.length + 1);
+        els.push(
+          <g key={`pp${po.id}`}>
+            <circle cx={frac * L} cy={openRight ? L / 2 : -L / 2} r={4} fill={p.post} />
+            <text x={frac * L + 5} y={(openRight ? L / 2 : -L / 2) + (openRight ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
+              P{postNo}
+            </text>
+          </g>
+        );
+      });
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <rect key="tap" x={0} y={-L / 2} width={L} height={L} fill="transparent"
+            style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+        );
+      }
+      groups.push({
+        node: (
+          <g key={`pl${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+            {els}
+          </g>
+        ),
+        corners: [world(0, -L / 2 - 20), world(L, -L / 2 - 20), world(0, L / 2 + 20), world(L, L / 2 + 20)],
+      });
+      // advance through the landing, then turn
+      const end = world(L, 0);
+      cx = end.x;
+      cy = end.y;
+      if (pl.turn === "left") ang -= 90;
+      else if (pl.turn === "right") ang += 90;
+      else if (pl.turn === "u") {
+        // switchback: reverse and shift one strip over
+        const shift = rot(0, PLAN_W + 16, ang);
+        cx += shift.x;
+        cy += shift.y;
+        ang += 180;
+      }
+    }
+  });
+
+  // bounding box over all corners
+  const xs = groups.flatMap((g) => g.corners.map((c) => c.x));
+  const ys = groups.flatMap((g) => g.corners.map((c) => c.y));
+  const minX = Math.min(0, ...xs) - 34;
+  const minY = Math.min(0, ...ys) - 34;
+  const maxX = Math.max(60, ...xs) + 34;
+  const maxY = Math.max(40, ...ys) + 34;
+  const w = maxX - minX;
+  const h = maxY - minY;
+
+  return (
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 420 }}>
+      <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
+      {/* UP arrow at the start of travel */}
+      <g>
+        <line x1={-24} y1={0} x2={-8} y2={0} stroke={p.dim} strokeWidth={1.6} />
+        <path d={`M -8 0 l -5 -3.5 v 7 z`} fill={p.dim} />
+        <text x={-24} y={-6} fontSize={8} fill={p.dim}>
+          UP ↑
+        </text>
+      </g>
+      {groups.map((g) => g.node)}
+    </svg>
+  );
+}
+
+// ---- Custom drawn plan — every drawn line is a dimensioned segment ---------
+
+export function CustomPlanSketch({
+  data,
+  p,
+  lang,
+}: {
+  data: MeasureData;
+  p: Palette;
+  lang: string;
+}) {
+  const plan = data.plan;
+  if (!plan || plan.points.length === 0) {
+    return (
+      <svg viewBox="0 0 340 120" className="w-full" style={{ maxHeight: 200 }}>
+        <text x={170} y={60} fontSize={11} textAnchor="middle" fill={p.miss}>
+          {mt(lang, "gap_plan_drawing")}
+        </text>
+      </svg>
+    );
+  }
+  const pts = plan.points;
+  const segCount = plan.closed && pts.length > 2 ? pts.length : pts.length - 1;
+  const xs = pts.map((q) => q.x);
+  const ys = pts.map((q) => q.y);
+  const minX = Math.min(...xs) - 44;
+  const minY = Math.min(...ys) - 34;
+  const w = Math.max(...xs) - Math.min(...xs) + 88;
+  const h = Math.max(...ys) - Math.min(...ys) + 68;
+
+  const els: React.ReactNode[] = [];
+  for (let i = 0; i < segCount; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const lv = v(plan.segs[i]?.len, p);
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const L = Math.hypot(dx, dy) || 1;
+    // label offset perpendicular to the line
+    const ox = (-dy / L) * 11;
+    const oy = (dx / L) * 11;
+    els.push(
+      <g key={i}>
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={p.line} strokeWidth={2.4} strokeLinecap="round" />
+        <circle cx={mx + ox * 1.9} cy={my + oy * 1.9} r={7} fill="none" stroke={p.ghost} />
+        <text x={mx + ox * 1.9} y={my + oy * 1.9 + 3} fontSize={8} textAnchor="middle" fill={p.dim}>
+          {i + 1}
+        </text>
+        <text x={mx + ox * 0.4} y={my + oy * 0.4 + 3} fontSize={9} fontWeight={700} textAnchor="middle" fill={lv.fill}>
+          {lv.text}
+        </text>
+      </g>
+    );
+  }
+  pts.forEach((q, i) => {
+    els.push(<circle key={`v${i}`} cx={q.x} cy={q.y} r={3} fill={p.post} />);
+  });
+
+  return (
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 420 }}>
+      <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
+      {els}
+    </svg>
   );
 }
 

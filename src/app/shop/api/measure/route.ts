@@ -110,6 +110,15 @@ const StrokeSchema = z.object({
   points: z.array(z.object({ x: z.number(), y: z.number() })).max(2000),
   text: z.string().max(200).optional(),
 });
+const PlanSchema = z
+  .object({
+    points: z.array(z.object({ x: z.number(), y: z.number() })).max(80),
+    closed: z.boolean(),
+    segs: z.array(z.object({ len: meas, note: z.string().max(200) })).max(80),
+  })
+  .nullable()
+  .optional();
+
 const MeasureDataSchema = z.object({
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema]))
@@ -149,6 +158,7 @@ const MeasureDataSchema = z.object({
   fab: FabSchema,
   photos: z.array(PhotoSchema).max(80),
   annotations: z.record(z.string().max(300), z.array(StrokeSchema).max(300)),
+  plan: PlanSchema,
   units: z.enum(["in", "ftin"]).optional(),
 });
 

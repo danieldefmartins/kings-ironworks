@@ -82,5 +82,16 @@ export default function ShapeIcon({
           <path d="M24 24V7M24 24l12 12M24 24L7 24M24 24l12-12M24 24l-12 12" strokeWidth={1.6} />
         </svg>
       );
+    case "custom":
+      return (
+        <svg {...common}>
+          <path d="M6 38L6 16L20 16L20 28L42 28L42 38" strokeDasharray="none" />
+          <circle cx="6" cy="16" r="2.4" fill="currentColor" stroke="none" />
+          <circle cx="20" cy="16" r="2.4" fill="currentColor" stroke="none" />
+          <circle cx="20" cy="28" r="2.4" fill="currentColor" stroke="none" />
+          <circle cx="42" cy="28" r="2.4" fill="currentColor" stroke="none" />
+          <path d="M34 6l6 6-10 10-6-6z" strokeWidth={1.8} />
+        </svg>
+      );
   }
 }
