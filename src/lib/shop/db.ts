@@ -411,12 +411,13 @@ export async function insertPhoto(row: {
   label?: string | null;
   caption?: string | null;
   uploaded_by: string;
-}): Promise<void> {
-  await sbInsert("kiw_shop_photos", {
+}): Promise<Photo | null> {
+  const rows = await sbInsert<Photo[]>("kiw_shop_photos", {
     kind: "image",
     ...row,
     uploaded_at: new Date().toISOString(),
   });
+  return rows[0] || null;
 }
 
 // Upload raw bytes to the private bucket.

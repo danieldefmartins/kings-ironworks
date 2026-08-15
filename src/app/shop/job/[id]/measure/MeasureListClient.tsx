@@ -188,12 +188,17 @@ export default function MeasureListClient({
                   />
                 </span>
               </span>
-              {s.status === "ready" ? (
+              {s.status === "approved" ? (
                 <span className="text-[10px] font-bold bg-green-600/20 border border-green-500 text-green-300 rounded-full px-2 py-1 shrink-0">
-                  {mt(lang, "ready")}
+                  ✓ {mt(lang, "approvedBadge")} · {mt(lang, "revLabel")} {s.current_rev || 0}
+                </span>
+              ) : s.status === "submitted" ? (
+                <span className="text-[10px] font-bold bg-amber-500/10 border border-amber-500 text-amber-300 rounded-full px-2 py-1 shrink-0">
+                  {mt(lang, "submittedBadge")}
                 </span>
               ) : (
                 <span className="text-[10px] font-bold bg-neutral-800 border border-neutral-700 text-neutral-400 rounded-full px-2 py-1 shrink-0">
+                  {s.review_comment ? "📝 " : ""}
                   {mt(lang, "inProgress")}
                 </span>
               )}

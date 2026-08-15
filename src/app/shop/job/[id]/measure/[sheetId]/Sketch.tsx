@@ -13,6 +13,7 @@ import type {
   SpiralData,
 } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
+import { parseMeas } from "@/lib/shop/measure-checks";
 
 const RUN = 46;
 const RISE = 26;
@@ -102,6 +103,44 @@ export default function Sketch({
   );
 }
 
+// Platform/landing posts sort by their measured position along the run, not
+// by the order they were tapped in.
+export function sortPlatPosts<T extends { pos: string }>(posts: T[]): T[] {
+  return [...posts].sort((a, b) => {
+    const pa = parseMeas(a.pos);
+    const pb = parseMeas(b.pos);
+    if (pa === null && pb === null) return 0;
+    if (pa === null) return 1;
+    if (pb === null) return -1;
+    return pa - pb;
+  });
+}
+
+function OrientBanner({
+  data,
+  lang,
+  p,
+  x = 20,
+  y = 14,
+  w = 340,
+}: {
+  data: MeasureData;
+  lang: string;
+  p: Palette;
+  x?: number;
+  y?: number;
+  w?: number; // canvas width — font shrinks so the banner never clips
+}) {
+  const o = data.datums?.orientation;
+  const fs = Math.max(4.5, Math.min(8.5, w / 42));
+  return (
+    <text x={x} y={y} fontSize={fs} fontWeight={700} fill={o ? p.val : p.miss} letterSpacing="0.5">
+      {mt(lang, "orientBanner")}
+      {o ? ` · ${mt(lang, `orient_${o}`)}` : " · ?"}
+    </text>
+  );
+}
+
 // ---- Stairs (straight / platform / L / U / wall rail) ----------------------
 
 function StairSketch({
@@ -179,12 +218,16 @@ function StairSketch({
           </g>
         );
 
-        // posts on this step
-        const post = data.posts.find((po) => po.segIdx === segIdx && po.stepIdx === i);
-        if (post && !wallRail) {
-          postNo += 1;
-          const px = x + RUN * 0.32;
-          els.push(<PostGlyph key={`p${segIdx}-${i}`} x={px} y={yTop} n={postNo} p={p} />);
+        // posts on this step (a tread can carry more than one)
+        const stepPosts = data.posts.filter(
+          (po) => po.segIdx === segIdx && po.stepIdx === i
+        );
+        if (!wallRail) {
+          stepPosts.forEach((po, pi) => {
+            postNo += 1;
+            const px = x + RUN * 0.26 + pi * 12;
+            els.push(<PostGlyph key={`p${po.id}`} x={px} y={yTop} n={postNo} p={p} />);
+          });
         }
 
         // tap target
@@ -230,13 +273,19 @@ function StairSketch({
         </g>
       );
 
-      // platform posts, spread by order
-      const platPosts = data.posts.filter((po) => po.segIdx === segIdx);
-      platPosts.forEach((po) => {
+      // platform posts, ordered by measured position along the platform
+      const platPosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      const platLen = parseMeas(pl.length);
+      platPosts.forEach((po, idx) => {
         postNo += 1;
-        const idx = platPosts.indexOf(po);
-        const px = x0 + ((idx + 1) * PLAT) / (platPosts.length + 1);
-        els.push(<PostGlyph key={`pp${segIdx}-${po.id}`} x={px} y={y} n={postNo} p={p} />);
+        const posIn = parseMeas(po.pos);
+        const frac =
+          posIn !== null && platLen && platLen > 0
+            ? Math.min(0.95, Math.max(0.05, posIn / platLen))
+            : (idx + 1) / (platPosts.length + 1);
+        els.push(
+          <PostGlyph key={`pp${segIdx}-${po.id}`} x={x0 + frac * PLAT} y={y} n={postNo} p={p} />
+        );
       });
 
       if (onTapPlatform && !wallRail) {
@@ -329,6 +378,7 @@ function StairSketch({
     <svg viewBox={`0 0 ${w} ${H}`} className="w-full" style={{ maxHeight: 440 }}>
       {/* ground */}
       <line x1={12} y1={baseY} x2={w - 12} y2={baseY} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
+      <OrientBanner data={data} lang={lang} p={p} w={w} />
       <path d={outline} fill="none" stroke={p.line} strokeWidth={2.2} strokeLinejoin="round" />
       {els}
       {taps}
@@ -370,15 +420,22 @@ function LevelSketch({
   const W = 340;
   const railY = 60;
   const baseY = 150;
-  const posts = data.posts.filter((po) => po.segIdx === 0);
+  const posts = sortPlatPosts(data.posts.filter((po) => po.segIdx === 0));
+  const runLen = parseMeas(seg?.length || "");
   const lv = v(seg?.length || "", p);
 
   return (
     <svg viewBox={`0 0 ${W} 190`} className="w-full" style={{ maxHeight: 300 }}>
+      <OrientBanner data={data} lang={lang} p={p} />
       <line x1={20} y1={baseY} x2={W - 20} y2={baseY} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
       <line x1={30} y1={railY} x2={W - 30} y2={railY} stroke={p.line} strokeWidth={2.5} />
       {posts.map((po, i) => {
-        const px = 30 + ((i + 1) * (W - 60)) / (posts.length + 1);
+        const posIn = parseMeas(po.pos);
+        const frac =
+          posIn !== null && runLen && runLen > 0
+            ? Math.min(0.97, Math.max(0.03, posIn / runLen))
+            : (i + 1) / (posts.length + 1);
+        const px = 30 + frac * (W - 60);
         return (
           <g key={po.id}>
             <line x1={px} y1={railY} x2={px} y2={baseY} stroke={p.post} strokeWidth={3} />
@@ -544,13 +601,24 @@ function FrontSketch({
         {mt(lang, "railHeight")}
       </text>
 
-      {/* edge-of-stair markers, looking up */}
+      {/* edge-of-stair markers, looking up (wall/open from datums) */}
       <text x={x0} y={220} fontSize={8.5} textAnchor="middle" fill={p.dim}>
         {optLabel(lang, "Left")}
+        {data.datums?.orientation === "left_wall" || data.datums?.orientation === "both_wall"
+          ? " ▦"
+          : data.datums?.orientation
+            ? " ○"
+            : ""}
       </text>
       <text x={x1} y={220} fontSize={8.5} textAnchor="middle" fill={p.dim}>
         {optLabel(lang, "Right")}
+        {data.datums?.orientation === "right_wall" || data.datums?.orientation === "both_wall"
+          ? " ▦"
+          : data.datums?.orientation
+            ? " ○"
+            : ""}
       </text>
+      <OrientBanner data={data} lang={lang} p={p} />
       <text x={(x0 + x1) / 2} y={64} fontSize={8.5} textAnchor="middle" fill={p.dim}>
         {mt(lang, "frontView")} — {mt(lang, "fromEdge")}
       </text>

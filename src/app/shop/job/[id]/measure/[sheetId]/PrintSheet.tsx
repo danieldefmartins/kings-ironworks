@@ -2,8 +2,13 @@
 
 // Print-only branded field-measure sheet (KIW letterhead style: white with
 // gold rules). Filled values print solid; missing ones print as blank lines
-// so the sheet can also be completed by hand.
+// so the sheet can also be completed by hand. Sheets that are not APPROVED
+// print with a DO NOT FABRICATE watermark; approved sheets carry their
+// revision number, who measured and who approved, and a QR code back to the
+// live digital sheet.
 
+import { useEffect, useState } from "react";
+import QRCode from "qrcode";
 import type { Job } from "@/lib/shop/db";
 import type {
   FlightSegment,
@@ -13,6 +18,7 @@ import type {
   PostMeasure,
   RampSegment,
 } from "@/lib/shop/measure";
+import type { CheckResult } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
 import Sketch, { sketchViews } from "./Sketch";
@@ -43,6 +49,9 @@ export default function PrintSheet({
   lang,
   workerName,
   posts,
+  nameById = {},
+  checks = [],
+  gapCount = 0,
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -50,6 +59,9 @@ export default function PrintSheet({
   lang: string;
   workerName: string;
   posts: PostMeasure[];
+  nameById?: Record<string, string>;
+  checks?: CheckResult[];
+  gapCount?: number;
 }) {
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
@@ -61,33 +73,113 @@ export default function PrintSheet({
     acc += flights[i].steps.length;
   }
 
+  const approved = sheet.status === "approved";
+  const warnings = checks.filter((c) => c.level === "yellow" || c.level === "red");
+
+  // QR code back to the live digital sheet
+  const [qr, setQr] = useState<string | null>(null);
+  useEffect(() => {
+    QRCode.toString(
+      `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}`,
+      { type: "svg", margin: 0, width: 84 }
+    )
+      .then(setQr)
+      .catch(() => setQr(null));
+  }, [job.id, sheet.id]);
+
+  const orientation = data.datums?.orientation;
+
   return (
-    <div className="hidden print:block bg-white text-black p-6" style={{ fontSize: 12 }}>
-      {/* Letterhead */}
-      <div className="flex items-start justify-between pb-2 mb-3" style={{ borderBottom: `3px solid ${GOLD}` }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1 }}>
-            KING IRON WORKS
+    <div
+      className="hidden print:block bg-white text-black p-6"
+      style={{ fontSize: 12, position: "relative" }}
+    >
+      {/* Not-approved watermark */}
+      {!approved && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        >
+          <div
+            style={{
+              transform: "rotate(-28deg)",
+              fontSize: 34,
+              fontWeight: 900,
+              color: "rgba(185, 28, 28, 0.28)",
+              border: "4px solid rgba(185, 28, 28, 0.28)",
+              padding: "10px 26px",
+              letterSpacing: 2,
+              textAlign: "center",
+            }}
+          >
+            {mt(lang, "notApprovedMark")}
           </div>
+        </div>
+      )}
+
+      {/* Letterhead */}
+      <div
+        className="flex items-start justify-between pb-2 mb-3"
+        style={{ borderBottom: `3px solid ${GOLD}` }}
+      >
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1 }}>KING IRON WORKS</div>
           <div style={{ color: "#555" }}>
             69 Norman St, Unit 20, Everett, MA 02149 · (617) 404-2589 · kingsironworks.com
           </div>
         </div>
-        <div style={{ textAlign: "right", color: "#555" }}>
-          <div style={{ fontWeight: 700, color: "#000" }}>{mt(lang, "fieldMeasure")}</div>
-          <div>{mt(lang, "pageOf")}</div>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <div style={{ textAlign: "right", color: "#555" }}>
+            <div style={{ fontWeight: 700, color: "#000" }}>{mt(lang, "fieldMeasure")}</div>
+            <div>
+              {mt(lang, "revLabel")} {sheet.current_rev || 0}
+              {" · "}
+              <span
+                style={{
+                  fontWeight: 800,
+                  color: approved ? "#166534" : "#b91c1c",
+                }}
+              >
+                {approved ? mt(lang, "approvedBadge") : mt(lang, "inProgress").toUpperCase()}
+              </span>
+            </div>
+            <div>{mt(lang, "pageOf")}</div>
+          </div>
+          {qr && (
+            <div
+              style={{ width: 84, height: 84 }}
+              dangerouslySetInnerHTML={{ __html: qr }}
+            />
+          )}
         </div>
       </div>
 
       {/* Job header */}
-      <table className="w-full mb-3" style={{ borderCollapse: "collapse" }}>
+      <table className="w-full mb-2" style={{ borderCollapse: "collapse" }}>
         <tbody>
           <tr>
             <Th>{mt(lang, "measuredBy")}</Th>
-            <Td>{workerName}</Td>
-            <Th>{mt(lang, "dateLabel")}</Th>
             <Td>
-              <span suppressHydrationWarning>{new Date().toLocaleDateString()}</span>
+              {(sheet.submitted_by && nameById[sheet.submitted_by]) || workerName}
+              {sheet.submitted_at ? ` · ${new Date(sheet.submitted_at).toLocaleString()}` : ""}
+            </Td>
+            <Th>{mt(lang, "reviewedByLbl")}</Th>
+            <Td>
+              {approved && sheet.approved_by ? (
+                <>
+                  <b>{nameById[sheet.approved_by] || "—"}</b>
+                  {sheet.approved_at ? ` · ${new Date(sheet.approved_at).toLocaleString()}` : ""}
+                </>
+              ) : (
+                <Val v="" />
+              )}
             </Td>
           </tr>
           <tr>
@@ -99,17 +191,63 @@ export default function PrintSheet({
             <Td>{sheet.name || "—"}</Td>
           </tr>
           <tr>
-            <Th>{job.address ? "📍" : ""}</Th>
-            <Td colSpan={3}>{job.address || ""}</Td>
+            <Th>📍</Th>
+            <Td>{job.address || ""}</Td>
+            <Th>{mt(lang, "dateLabel")}</Th>
+            <Td>
+              <span suppressHydrationWarning>{new Date().toLocaleDateString()}</span>
+            </Td>
           </tr>
         </tbody>
       </table>
 
-      {/* Sketches (light palette): side + front views */}
-      <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
-        {mt(lang, "unitsLabel")}:{" "}
-        <b>{mt(lang, data.units === "ftin" ? "unitsFtIn" : "unitsIn")}</b>
+      {/* Orientation + units strip */}
+      <div
+        style={{
+          border: `2px solid ${GOLD}`,
+          borderRadius: 6,
+          padding: "4px 10px",
+          fontWeight: 800,
+          fontSize: 11,
+          letterSpacing: 0.5,
+          marginBottom: 8,
+          display: "flex",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 6,
+        }}
+      >
+        <span>
+          {mt(lang, "orientBanner")}
+          {orientation ? ` · ${mt(lang, `orient_${orientation}`)}` : " · ______________"}
+        </span>
+        <span>
+          {mt(lang, "unitsLabel")}:{" "}
+          {mt(lang, data.units === "ftin" ? "unitsFtIn" : "unitsIn")}
+        </span>
       </div>
+
+      {/* Warnings */}
+      {(warnings.length > 0 || gapCount > 0) && (
+        <div
+          style={{
+            border: "2px solid #b91c1c",
+            borderRadius: 6,
+            padding: "4px 10px",
+            marginBottom: 8,
+            fontSize: 11,
+            color: "#7f1d1d",
+          }}
+        >
+          ⚠ {mt(lang, "warningsLbl")}:{" "}
+          {warnings.map((w) => `${mt(lang, `check_${w.key}`)} (${mt(lang, w.level === "red" ? "levelRed" : "levelYellow")})`).join(" · ")}
+          {gapCount > 0
+            ? `${warnings.length > 0 ? " · " : ""}${mt(lang, "gapsTitle")}: ${gapCount}`
+            : ""}
+        </div>
+      )}
+
+      {/* Sketches (light palette): side + front views */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
           <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
@@ -167,6 +305,23 @@ export default function PrintSheet({
                 )}
               </div>
             ))}
+            {/* control dimensions */}
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "controlsTitle")}</SectionTitle>
+              <div>
+                {mt(lang, "floorToFloor")}: <Val v={data.overall.floorToFloor} /> ·{" "}
+                {mt(lang, "totalRise")}: <Val v={data.overall.totalRise} />
+              </div>
+              <div>
+                {mt(lang, "totalRun")}: <Val v={data.overall.totalRun} /> ·{" "}
+                {mt(lang, "rakeLength")}: <Val v={data.overall.rakeLength} />
+              </div>
+              <div>
+                {mt(lang, "widthBottom")}: <Val v={data.overall.widthBottom} /> ·{" "}
+                {mt(lang, "widthMid")}: <Val v={data.overall.widthMid} /> ·{" "}
+                {mt(lang, "widthTop")}: <Val v={data.overall.widthTop} />
+              </div>
+            </div>
           </div>
         )}
 
@@ -174,6 +329,9 @@ export default function PrintSheet({
         <div>
           <SectionTitle>
             {mt(lang, "posts")} ({posts.length})
+            {data.datums?.postRef
+              ? ` — ${mt(lang, `postRef_${data.datums.postRef}`)}`
+              : ""}
           </SectionTitle>
           {posts.length === 0 ? (
             <div style={{ color: "#777" }}>—</div>
@@ -202,6 +360,22 @@ export default function PrintSheet({
                 ))}
               </tbody>
             </table>
+          )}
+          {posts.some((po) => po.plate || po.anchors || po.substrate || po.edgeDist || po.obstruction) && (
+            <div className="mt-1" style={{ fontSize: 11 }}>
+              {posts.map((po, i) =>
+                po.plate || po.anchors || po.substrate || po.edgeDist || po.obstruction ? (
+                  <div key={po.id}>
+                    <b>P{i + 1}:</b>
+                    {po.plate ? ` ${mt(lang, "postPlate")}: ${po.plate}.` : ""}
+                    {po.anchors ? ` ${mt(lang, "postAnchors")}: ${po.anchors}.` : ""}
+                    {po.substrate ? ` ${mt(lang, "postSubstrate")}: ${po.substrate}.` : ""}
+                    {po.edgeDist ? ` ${mt(lang, "postEdgeDist")}: ${po.edgeDist}.` : ""}
+                    {po.obstruction ? ` ${mt(lang, "postObstruction")}: ${po.obstruction}.` : ""}
+                  </div>
+                ) : null
+              )}
+            </div>
           )}
 
           {/* Platforms */}
@@ -234,6 +408,28 @@ export default function PrintSheet({
               {mt(lang, data.spiral.direction === "cw" ? "cw" : "ccw")}
             </div>
           )}
+
+          {/* Datums */}
+          <div className="mt-2">
+            <SectionTitle>{mt(lang, "datumsTitle")}</SectionTitle>
+            <div>
+              {mt(lang, "bottomDatum")}: <Val v={data.datums.bottomDatum} />
+            </div>
+            <div>
+              {mt(lang, "topDatum")}: <Val v={data.datums.topDatum} /> ·{" "}
+              {mt(lang, "surfaceState")}:{" "}
+              {data.datums.surfaceState ? (
+                <b>{mt(lang, `surf_${data.datums.surfaceState}`)}</b>
+              ) : (
+                <Val v="" />
+              )}
+            </div>
+            {data.datums.nosingRef && (
+              <div>
+                {mt(lang, "nosingRefLbl")}: <b>{data.datums.nosingRef}</b>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -255,11 +451,30 @@ export default function PrintSheet({
               {mt(lang, "brackets")}: <b>{data.rail.brackets}</b>
             </div>
           )}
-          <div className="mt-1">
-            {mt(lang, "totalRise")}: <Val v={data.overall.totalRise} /> ·{" "}
-            {mt(lang, "totalRun")}: <Val v={data.overall.totalRun} /> ·{" "}
-            {mt(lang, "rakeLength")}: <Val v={data.overall.rakeLength} />
-          </div>
+          {/* finish conditions */}
+          {(data.finish.futureTopping || data.finish.demoPending || data.finish.verifyAfterFinishes ||
+            data.finish.bottomSurface || data.finish.topSurface) && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "finishTitle")}</SectionTitle>
+              {data.finish.bottomSurface && (
+                <div>{mt(lang, "bottomSurface")}: <b>{data.finish.bottomSurface}</b></div>
+              )}
+              {data.finish.topSurface && (
+                <div>{mt(lang, "topSurface")}: <b>{data.finish.topSurface}</b></div>
+              )}
+              {data.finish.futureTopping && (
+                <div>{mt(lang, "futureTopping")}: <b>{data.finish.futureTopping}</b></div>
+              )}
+              {data.finish.demoPending && (
+                <div>{mt(lang, "demoPending")}: <b>{data.finish.demoPending}</b></div>
+              )}
+              {data.finish.verifyAfterFinishes && (
+                <div style={{ fontWeight: 800, color: "#b91c1c" }}>
+                  ⚠ {mt(lang, "verifyAfterFinishes")}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div>
           <SectionTitle>{mt(lang, "materialsTitle")}</SectionTitle>
@@ -279,6 +494,31 @@ export default function PrintSheet({
           {data.materials.notes && data.materials.notes.trim() !== "" && (
             <div>{mt(lang, "matNotes")}: <b>{data.materials.notes}</b></div>
           )}
+          {/* fabrication details */}
+          {Object.values(data.fab).some((v) => v && v.trim() !== "") && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "fabTitle")}</SectionTitle>
+              {(
+                [
+                  ["corners", "fabCorners"],
+                  ["flightConnection", "fabFlightConnection"],
+                  ["bottomClearance", "fabBottomClearance"],
+                  ["infill", "fabInfill"],
+                  ["splices", "fabSplices"],
+                  ["maxPiece", "fabMaxPiece"],
+                  ["access", "fabAccess"],
+                  ["gate", "fabGate"],
+                  ["touchup", "fabTouchup"],
+                ] as [keyof typeof data.fab, string][]
+              ).map(([k, lbl]) =>
+                data.fab[k] && data.fab[k].trim() !== "" ? (
+                  <div key={k}>
+                    {mt(lang, lbl)}: <b>{data.fab[k]}</b>
+                  </div>
+                ) : null
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -291,7 +531,6 @@ export default function PrintSheet({
           <div>
             <div style={{ borderBottom: "1px solid #bbb", height: 22 }} />
             <div style={{ borderBottom: "1px solid #bbb", height: 22 }} />
-            <div style={{ borderBottom: "1px solid #bbb", height: 22 }} />
           </div>
         )}
       </div>
@@ -300,7 +539,10 @@ export default function PrintSheet({
         className="mt-4 pt-2"
         style={{ borderTop: `2px solid ${GOLD}`, color: "#777", fontSize: 10 }}
       >
-        KING IRON WORKS · {mt(lang, "fieldMeasure")} · {job.job_number}
+        KING IRON WORKS · {mt(lang, "fieldMeasure")} · {job.job_number} ·{" "}
+        {mt(lang, "revLabel")} {sheet.current_rev || 0} ·{" "}
+        {approved ? mt(lang, "approvedBadge") : mt(lang, "notApprovedMark")} ·{" "}
+        {data.photos.length} 📷
       </div>
     </div>
   );

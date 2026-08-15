@@ -42,6 +42,12 @@ export interface PostMeasure {
   fromEdge: string; // setback from the open side edge
   mount: string; // Core-drill | Base plate | Side mount
   anchor: string; // what it anchors into (granite, concrete, brick…)
+  // Detail (optional in the field, wanted by the shop):
+  plate: string; // baseplate size + orientation
+  anchors: string; // anchor pattern (qty, size)
+  substrate: string; // substrate thickness / condition
+  edgeDist: string; // distance to nearest concrete/masonry edge
+  obstruction: string; // anything below/behind the mount
 }
 
 export interface FlightSegment {
@@ -106,10 +112,65 @@ export interface OverallSpec {
   totalRise: string;
   totalRun: string;
   rakeLength: string; // nose-to-nose along the pitch — the rail line
+  // Control dimensions — measured independently, cross-checked by software:
+  floorToFloor: string; // finished floor to finished floor
+  widthBottom: string;
+  widthMid: string;
+  widthTop: string;
   notes: string;
 }
 
+// Where measurements originate from. Without these, "3 in from edge" is ambiguous.
+export interface DatumsSpec {
+  orientation: "" | "left_wall" | "right_wall" | "both_open" | "both_wall"; // looking UP the stairs
+  bottomDatum: string; // what the bottom finished-floor datum is
+  topDatum: string;
+  nosingRef: string; // nosing reference line note
+  postRef: "" | "centerline" | "face"; // post dims to centerline or face of post
+  surfaceState: "" | "finished" | "unfinished" | "mixed";
+}
+
+// What surface existed when measured — the classic "right number, wrong day" trap.
+export interface FinishSpec {
+  bottomSurface: string;
+  topSurface: string;
+  futureTopping: string; // future tile/stone/wood + thickness
+  treadCovering: string;
+  wallFinish: string;
+  demoPending: string;
+  verifyAfterFinishes: boolean;
+  notes: string;
+}
+
+// Fabrication-critical details, conditionally shown per shape.
+export interface FabDetails {
+  corners: string; // inside/outside corner treatment (multi-segment shapes)
+  flightConnection: string; // connection between flights and landings
+  bottomClearance: string;
+  infill: string; // picket/infill orientation notes
+  splices: string; // welded vs field-bolted splits
+  maxPiece: string; // max piece size for transport
+  access: string; // access path / elevator / installation clearances
+  gate: string; // gate swing + latch (level runs)
+  touchup: string; // finish + touch-up requirements
+}
+
+// A structured photo captured for this sheet (original file, unannotated).
+export interface MeasurePhoto {
+  slot: string; // which checklist slot (or post id) it documents
+  path: string; // storage object path in the photos bucket
+  takenAt: string;
+}
+
+export interface AnnotationStroke {
+  tool: string; // draw | line | arrow | text
+  color: string;
+  points: { x: number; y: number }[];
+  text?: string;
+}
+
 export type Units = "in" | "ftin";
+export type SheetStatus = "in_progress" | "submitted" | "approved";
 
 export interface MeasureData {
   segments: Segment[];
@@ -118,6 +179,11 @@ export interface MeasureData {
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
+  datums: DatumsSpec;
+  finish: FinishSpec;
+  fab: FabDetails;
+  photos: MeasurePhoto[];
+  annotations: Record<string, AnnotationStroke[]>; // storage path -> strokes
   units?: Units; // measurement entry unit — inches (default) or feet+inches
 }
 
@@ -126,12 +192,30 @@ export interface MeasureSheet {
   job_id: string;
   name: string | null;
   shape: MeasureShape;
-  status: string; // in_progress | ready
+  status: string; // in_progress | submitted | approved
   data: MeasureData;
+  review_comment: string | null;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  current_rev: number;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface MeasureRevision {
+  id: string;
+  sheet_id: string;
+  rev_no: number;
+  name: string | null;
+  shape: string;
+  data: MeasureData;
+  approved_by: string | null;
+  approved_at: string;
+  superseded: boolean;
 }
 
 export const MOUNT_OPTIONS = ["Core-drill", "Base plate", "Side mount"] as const;
@@ -232,9 +316,140 @@ export function newMeasureData(
       color: "Black",
       notes: "",
     },
-    overall: { totalRise: "", totalRun: "", rakeLength: "", notes: "" },
+    overall: blankOverall(),
+    datums: blankDatums(),
+    finish: blankFinish(),
+    fab: blankFab(),
+    photos: [],
+    annotations: {},
   };
 }
+
+export function blankOverall(): OverallSpec {
+  return {
+    totalRise: "",
+    totalRun: "",
+    rakeLength: "",
+    floorToFloor: "",
+    widthBottom: "",
+    widthMid: "",
+    widthTop: "",
+    notes: "",
+  };
+}
+export function blankDatums(): DatumsSpec {
+  return {
+    orientation: "",
+    bottomDatum: "",
+    topDatum: "",
+    nosingRef: "",
+    postRef: "",
+    surfaceState: "",
+  };
+}
+export function blankFinish(): FinishSpec {
+  return {
+    bottomSurface: "",
+    topSurface: "",
+    futureTopping: "",
+    treadCovering: "",
+    wallFinish: "",
+    demoPending: "",
+    verifyAfterFinishes: false,
+    notes: "",
+  };
+}
+export function blankFab(): FabDetails {
+  return {
+    corners: "",
+    flightConnection: "",
+    bottomClearance: "",
+    infill: "",
+    splices: "",
+    maxPiece: "",
+    access: "",
+    gate: "",
+    touchup: "",
+  };
+}
+
+export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
+  return {
+    id: newPostId(),
+    segIdx,
+    stepIdx,
+    pos: "",
+    fromNosing: "",
+    fromEdge: "",
+    mount: "",
+    anchor: "",
+    plate: "",
+    anchors: "",
+    substrate: "",
+    edgeDist: "",
+    obstruction: "",
+  };
+}
+
+// Sheets saved before a field existed get the blank version filled in, so the
+// editor and checks never see undefined. Never drops or rewrites entered data.
+export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefined): MeasureData {
+  const d = (raw || {}) as Partial<MeasureData>;
+  return {
+    units: d.units === "ftin" ? "ftin" : "in",
+    segments: d.segments || [],
+    posts: (d.posts || []).map((p) => ({
+      ...p,
+      plate: p.plate ?? "",
+      anchors: p.anchors ?? "",
+      substrate: p.substrate ?? "",
+      edgeDist: p.edgeDist ?? "",
+      obstruction: p.obstruction ?? "",
+    })),
+    spiral: d.spiral ?? null,
+    rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
+    materials: {
+      post: "",
+      topRail: "",
+      picket: "",
+      picketSpacing: "",
+      bottomRail: "",
+      finish: "",
+      color: "",
+      notes: "",
+      ...(d.materials || {}),
+    },
+    overall: { ...blankOverall(), ...(d.overall || {}) },
+    datums: { ...blankDatums(), ...(d.datums || {}) },
+    finish: { ...blankFinish(), ...(d.finish || {}) },
+    fab: { ...blankFab(), ...(d.fab || {}) },
+    photos: d.photos || [],
+    annotations: d.annotations || {},
+  };
+}
+
+// ---- Structured photo checklist -------------------------------------------
+
+// Required checklist slots per shape; labels come from measure-i18n (slot_<key>).
+export function requiredPhotoSlots(shape: MeasureShape): string[] {
+  switch (shape) {
+    case "spiral":
+      return ["overall_bottom", "overall_top"];
+    case "level_run":
+    case "wall_rail":
+      return ["overall_bottom", "overall_top", "bottom_term", "top_term"];
+    default:
+      return [
+        "overall_bottom",
+        "overall_top",
+        "bottom_term",
+        "top_term",
+        "left_side",
+        "right_side",
+      ];
+  }
+}
+export const OPTIONAL_PHOTO_SLOTS = ["landing", "obstruction", "tape_critical"] as const;
 
 export function newPostId(): string {
   return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

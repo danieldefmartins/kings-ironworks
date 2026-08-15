@@ -1,19 +1,15 @@
 "use client";
 
-// Mark up a site photo with dimension lines, arrows and text — like a paper
-// field sheet — then flatten and save it to the job's photos (Measurements).
+// Capture a checklist photo and mark dimensions on it. The ORIGINAL photo is
+// uploaded untouched (evidence never degrades); the annotation strokes are
+// returned to the sheet (stored in its JSON), and a flattened copy is also
+// uploaded so the job's Photos tab shows the marked-up version.
 
 import { useEffect, useRef, useState } from "react";
 import { mt } from "@/lib/shop/measure-i18n";
+import type { AnnotationStroke } from "@/lib/shop/measure";
 
 type Tool = "draw" | "line" | "arrow" | "text";
-
-interface Stroke {
-  tool: Tool;
-  color: string;
-  points: { x: number; y: number }[]; // draw: path; line/arrow: [from, to]; text: [pos]
-  text?: string;
-}
 
 const COLORS = ["#ff2d2d", "#ffd400", "#2d7dff", "#ffffff"];
 const MAX_DIM = 2000;
@@ -22,21 +18,30 @@ export default function PhotoMarkup({
   jobId,
   sheetName,
   lang,
+  slot,
+  slotLabel,
+  onSaved,
+  onClose,
 }: {
   jobId: string;
   sheetName: string;
   lang: string;
+  slot: string;
+  slotLabel: string;
+  onSaved: (path: string, strokes: AnnotationStroke[]) => void;
+  onClose: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const fileRef = useRef<File | null>(null);
   const [hasImage, setHasImage] = useState(false);
   const [tool, setTool] = useState<Tool>("draw");
   const [color, setColor] = useState(COLORS[0]);
-  const [strokes, setStrokes] = useState<Stroke[]>([]);
-  const [draft, setDraft] = useState<Stroke | null>(null);
+  const [strokes, setStrokes] = useState<AnnotationStroke[]>([]);
+  const [draft, setDraft] = useState<AnnotationStroke | null>(null);
   const [pendingText, setPendingText] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   function loadFile(file: File) {
     const url = URL.createObjectURL(file);
@@ -47,16 +52,16 @@ export default function PhotoMarkup({
       canvas.width = Math.round(img.naturalWidth * scale);
       canvas.height = Math.round(img.naturalHeight * scale);
       imgRef.current = img;
+      fileRef.current = file;
       setStrokes([]);
       setDraft(null);
-      setMsg(null);
+      setErr(null);
       setHasImage(true);
       URL.revokeObjectURL(url);
     };
     img.src = url;
   }
 
-  // Redraw whenever anything changes.
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
@@ -117,142 +122,169 @@ export default function PhotoMarkup({
     if (txt && txt.trim()) setPendingText(txt.trim());
   }
 
+  async function upload(file: File, label: string): Promise<string> {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("jobId", jobId);
+    form.append("category", "Measurements");
+    form.append("label", label);
+    const res = await fetch("/shop/api/photo", { method: "POST", body: form });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.path) throw new Error(d.error || "Upload failed");
+    return d.path as string;
+  }
+
   async function save() {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const original = fileRef.current;
+    if (!canvas || !original) return;
     setUploading(true);
-    setMsg(null);
+    setErr(null);
     try {
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", 0.9)
-      );
-      if (!blob) throw new Error("Canvas export failed");
-      const form = new FormData();
-      form.append("file", new File([blob], "measure-markup.jpg", { type: "image/jpeg" }));
-      form.append("jobId", jobId);
-      form.append("category", "Measurements");
-      form.append("label", sheetName);
-      const res = await fetch("/shop/api/photo", { method: "POST", body: form });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || "Upload failed");
+      const label = `${sheetName} — ${slotLabel}`;
+      const path = await upload(original, label);
+      if (strokes.length > 0) {
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/jpeg", 0.9)
+        );
+        if (blob) {
+          await upload(
+            new File([blob], "marked.jpg", { type: "image/jpeg" }),
+            `${label} (marked)`
+          );
+        }
       }
-      setMsg(mt(lang, "uploadDone"));
+      onSaved(path, strokes);
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Upload failed");
+      setErr(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setUploading(false);
     }
   }
 
   return (
-    <div>
-      <label className="block w-full text-center bg-neutral-800 border border-dashed border-neutral-600 rounded-xl py-4 text-sm font-semibold text-neutral-200 cursor-pointer mb-3">
-        📷 {mt(lang, "choosePhoto")}
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) loadFile(f);
-            e.target.value = "";
-          }}
-        />
-      </label>
+    <div className="fixed inset-0 z-50 bg-black/85 overflow-y-auto p-4 print:hidden">
+      <div className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-700 rounded-2xl p-4">
+        <div className="flex items-center mb-3">
+          <div className="font-bold">
+            📷 {slotLabel}
+            <span className="block text-xs font-normal text-neutral-500">{slot}</span>
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-auto px-3 py-2 rounded-lg border border-neutral-700 text-neutral-300 text-sm"
+          >
+            ✕ {mt(lang, "cancel")}
+          </button>
+        </div>
 
-      {hasImage && (
-        <>
-          <div className="flex flex-wrap items-center gap-1.5 mb-2">
-            {(
-              [
-                ["draw", mt(lang, "draw"), "✏️"],
-                ["line", mt(lang, "lineTool"), "／"],
-                ["arrow", mt(lang, "arrowTool"), "↗"],
-              ] as [Tool, string, string][]
-            ).map(([tl, label, icon]) => (
+        <label className="block w-full text-center bg-neutral-800 border border-dashed border-neutral-600 rounded-xl py-4 text-sm font-semibold text-neutral-200 cursor-pointer mb-3">
+          📷 {mt(lang, "choosePhoto")}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) loadFile(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
+
+        {hasImage && (
+          <>
+            <div className="flex flex-wrap items-center gap-1.5 mb-2">
+              {(
+                [
+                  ["draw", mt(lang, "draw"), "✏️"],
+                  ["line", mt(lang, "lineTool"), "／"],
+                  ["arrow", mt(lang, "arrowTool"), "↗"],
+                ] as [Tool, string, string][]
+              ).map(([tl, label, icon]) => (
+                <button
+                  key={tl}
+                  onClick={() => setTool(tl)}
+                  className={`px-3 py-2 rounded-lg border text-xs font-bold ${
+                    tool === tl
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                  }`}
+                >
+                  {icon} {label}
+                </button>
+              ))}
               <button
-                key={tl}
-                onClick={() => setTool(tl)}
+                onClick={startText}
                 className={`px-3 py-2 rounded-lg border text-xs font-bold ${
-                  tool === tl
+                  tool === "text"
                     ? "border-amber-500 bg-amber-500/10 text-amber-300"
                     : "border-neutral-700 bg-neutral-800 text-neutral-300"
                 }`}
               >
-                {icon} {label}
+                T {mt(lang, "textTool")}
               </button>
-            ))}
-            <button
-              onClick={startText}
-              className={`px-3 py-2 rounded-lg border text-xs font-bold ${
-                tool === "text"
-                  ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                  : "border-neutral-700 bg-neutral-800 text-neutral-300"
-              }`}
-            >
-              T {mt(lang, "textTool")}
-            </button>
-            <span className="mx-1 flex gap-1.5">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className={`w-8 h-8 rounded-full border-2 ${
-                    color === c ? "border-white" : "border-neutral-700"
-                  }`}
-                  style={{ background: c }}
-                />
-              ))}
-            </span>
-            <button
-              onClick={() => setStrokes((s) => s.slice(0, -1))}
-              className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
-            >
-              ↩ {mt(lang, "undo")}
-            </button>
-            <button
-              onClick={() => setStrokes([])}
-              className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
-            >
-              🗑 {mt(lang, "clearAll")}
-            </button>
-          </div>
-
-          {pendingText && (
-            <div className="text-xs text-amber-300 mb-2">
-              “{pendingText}” — {mt(lang, "tapToPlace")}
+              <span className="mx-1 flex gap-1.5">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    className={`w-8 h-8 rounded-full border-2 ${
+                      color === c ? "border-white" : "border-neutral-700"
+                    }`}
+                    style={{ background: c }}
+                  />
+                ))}
+              </span>
+              <button
+                onClick={() => setStrokes((s) => s.slice(0, -1))}
+                className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
+              >
+                ↩ {mt(lang, "undo")}
+              </button>
+              <button
+                onClick={() => setStrokes([])}
+                className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
+              >
+                🗑 {mt(lang, "clearAll")}
+              </button>
             </div>
-          )}
 
-          <canvas
-            ref={canvasRef}
-            onPointerDown={onDown}
-            onPointerMove={onMove}
-            onPointerUp={onUp}
-            onPointerCancel={onUp}
-            className="w-full rounded-lg border border-neutral-700"
-            style={{ touchAction: "none" }}
-          />
+            {pendingText && (
+              <div className="text-xs text-amber-300 mb-2">
+                “{pendingText}” — {mt(lang, "tapToPlace")}
+              </div>
+            )}
 
-          <button
-            onClick={save}
-            disabled={uploading}
-            className="w-full mt-3 bg-amber-500 text-black font-bold rounded-xl py-3 disabled:opacity-50"
-          >
-            {uploading ? mt(lang, "uploading") : `💾 ${mt(lang, "savePhoto")}`}
-          </button>
-        </>
-      )}
+            <canvas
+              ref={canvasRef}
+              onPointerDown={onDown}
+              onPointerMove={onMove}
+              onPointerUp={onUp}
+              onPointerCancel={onUp}
+              className="w-full rounded-lg border border-neutral-700"
+              style={{ touchAction: "none" }}
+            />
 
-      {msg && <div className="text-sm text-green-400 mt-2">{msg}</div>}
+            <button
+              onClick={save}
+              disabled={uploading}
+              className="w-full mt-3 bg-amber-500 text-black font-bold rounded-xl py-3 disabled:opacity-50"
+            >
+              {uploading ? mt(lang, "uploading") : `💾 ${mt(lang, "savePhoto")}`}
+            </button>
+          </>
+        )}
+
+        {err && <div className="text-sm text-red-400 mt-2">{err}</div>}
+      </div>
     </div>
   );
 }
 
 function drawStroke(
   ctx: CanvasRenderingContext2D,
-  s: Stroke,
+  s: AnnotationStroke,
   lw: number,
   font: number
 ) {

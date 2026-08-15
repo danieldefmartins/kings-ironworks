@@ -9,7 +9,9 @@ import {
   MOUNT_OPTIONS,
   RAIL_KIND_OPTIONS,
   RAIL_SIDE_OPTIONS,
-  newPostId,
+  newPost,
+  requiredPhotoSlots,
+  OPTIONAL_PHOTO_SLOTS,
   sheetProgress,
   type FlightSegment,
   type MeasureData,
@@ -18,9 +20,15 @@ import {
   type PostMeasure,
   type RampSegment,
 } from "@/lib/shop/measure";
+import {
+  runChecks,
+  requiredGaps,
+  formatIn,
+  type CheckResult,
+} from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS, specValue } from "@/lib/shop/i18n";
-import Sketch, { sketchViews } from "./Sketch";
+import Sketch, { sketchViews, sortPlatPosts } from "./Sketch";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 
@@ -49,17 +57,17 @@ function insertToken(tok: string) {
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
-// Posts in the same order the sketch numbers them (walk segments bottom-up).
+// Posts in the same order the sketch numbers them (walk segments bottom-up;
+// several posts may share a tread, landing posts sort by measured position).
 export function orderedPosts(data: MeasureData): PostMeasure[] {
   const out: PostMeasure[] = [];
   data.segments.forEach((seg, si) => {
     if (seg.kind === "flight") {
       seg.steps.forEach((_, i) => {
-        const p = data.posts.find((po) => po.segIdx === si && po.stepIdx === i);
-        if (p) out.push(p);
+        out.push(...data.posts.filter((po) => po.segIdx === si && po.stepIdx === i));
       });
     } else {
-      out.push(...data.posts.filter((po) => po.segIdx === si));
+      out.push(...sortPlatPosts(data.posts.filter((po) => po.segIdx === si)));
     }
   });
   return out;
@@ -70,16 +78,28 @@ export default function MeasureEditor({
   sheet,
   lang,
   workerName,
+  isAdmin = false,
+  nameById = {},
 }: {
   job: Job;
   sheet: MeasureSheet;
   lang: string;
   workerName: string;
+  isAdmin?: boolean;
+  nameById?: Record<string, string>;
 }) {
   const router = useRouter();
   const [data, setData] = useState<MeasureData>(sheet.data);
   const [name, setName] = useState(sheet.name || "");
   const [status, setStatus] = useState(sheet.status);
+  const [rev, setRev] = useState(sheet.current_rev || 0);
+  const [reviewComment, setReviewComment] = useState(sheet.review_comment);
+  const [info, setInfo] = useState<string | null>(null);
+  const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
+  const statusRef = useRef(sheet.status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
   const [saveState, setSaveState] = useState<
     "idle" | "dirty" | "saving" | "saved" | "error" | "conflict"
   >("idle");
@@ -135,6 +155,14 @@ export default function MeasureEditor({
       const d = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(d.error || "Save failed");
       if (d.updated_at) baseUpdatedAt.current = d.updated_at;
+      // Any edit takes an approved/submitted sheet back to measuring.
+      if (d.status && d.status !== statusRef.current) {
+        const was = statusRef.current;
+        setStatus(d.status);
+        if (was === "approved" || was === "submitted") {
+          setInfo(mt(lang, "editWarning"));
+        }
+      }
       if (dataRef.current === payload) {
         dirtyRef.current = false;
         setSaveState("saved");
@@ -239,36 +267,15 @@ export default function MeasureEditor({
     });
   }
 
-  function toggleStepPost(segIdx: number, stepIdx: number) {
+  function addStepPost(segIdx: number, stepIdx: number) {
     set((d) => {
-      const i = d.posts.findIndex((p) => p.segIdx === segIdx && p.stepIdx === stepIdx);
-      if (i >= 0) d.posts.splice(i, 1);
-      else
-        d.posts.push({
-          id: newPostId(),
-          segIdx,
-          stepIdx,
-          pos: "",
-          fromNosing: "",
-          fromEdge: "",
-          mount: "",
-          anchor: "",
-        });
+      d.posts.push(newPost(segIdx, stepIdx));
     });
   }
 
   function addPlatformPost(segIdx: number) {
     set((d) => {
-      d.posts.push({
-        id: newPostId(),
-        segIdx,
-        stepIdx: null,
-        pos: "",
-        fromNosing: "",
-        fromEdge: "",
-        mount: "",
-        anchor: "",
-      });
+      d.posts.push(newPost(segIdx, null));
     });
   }
 
@@ -279,11 +286,11 @@ export default function MeasureEditor({
   }
 
   // Small mutations share the queue and surface failures instead of
-  // pretending they worked.
+  // pretending they worked. Returns the response body, or null on failure.
   async function mutate(
     body: Record<string, unknown>,
     failMsg: string
-  ): Promise<boolean> {
+  ): Promise<Record<string, unknown> | null> {
     return enqueue(async () => {
       try {
         const res = await fetch("/shop/api/measure", {
@@ -295,10 +302,10 @@ export default function MeasureEditor({
         if (!res.ok) throw new Error(d.error || failMsg);
         if (d.updated_at) baseUpdatedAt.current = d.updated_at;
         setOpErr(null);
-        return true;
+        return d as Record<string, unknown>;
       } catch (e) {
         setOpErr(e instanceof Error ? e.message : failMsg);
-        return false;
+        return null;
       }
     });
   }
@@ -307,12 +314,31 @@ export default function MeasureEditor({
     await mutate({ type: "rename", name: n }, "Rename failed");
   }
 
-  async function toggleStatus() {
-    const prev = status;
-    const next = status === "ready" ? "in_progress" : "ready";
-    setStatus(next);
-    const ok = await mutate({ type: "status", status: next }, "Status change failed");
-    if (!ok) setStatus(prev);
+  async function submitSheet() {
+    const d = await mutate({ type: "submit" }, "Submit failed");
+    if (d) {
+      setStatus("submitted");
+      setInfo(null);
+      setReviewComment(null);
+    }
+  }
+
+  async function approveSheet() {
+    const d = await mutate({ type: "approve" }, "Approve failed");
+    if (d) {
+      setStatus("approved");
+      if (typeof d.rev === "number") setRev(d.rev);
+      setInfo(null);
+    }
+  }
+
+  async function sendBackSheet() {
+    const comment = window.prompt(mt(lang, "sendBackPrompt")) ?? "";
+    const d = await mutate({ type: "sendback", comment }, "Send back failed");
+    if (d) {
+      setStatus("in_progress");
+      setReviewComment(comment || null);
+    }
   }
 
   async function deleteSheet() {
@@ -326,6 +352,10 @@ export default function MeasureEditor({
 
   const prog = sheetProgress(data);
   const posts = orderedPosts(data);
+  const checks = runChecks(data, sheet.shape);
+  const gaps = requiredGaps(data, sheet.shape);
+  const redChecks = checks.filter((c) => c.level === "red");
+  const canSubmit = gaps.length === 0 && redChecks.length === 0;
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
   const flights = data.segments
@@ -357,6 +387,17 @@ export default function MeasureEditor({
             ⚠ {opErr}
           </div>
         )}
+        {info && (
+          <div className="bg-amber-950/40 border border-amber-700 rounded-xl p-3 mb-4 text-sm text-amber-200 flex items-center gap-3">
+            <span className="flex-1">⚠ {info}</span>
+            <button onClick={() => setInfo(null)} className="text-xs border border-amber-700 rounded-full px-2 py-1">✕</button>
+          </div>
+        )}
+        {status === "in_progress" && reviewComment && (
+          <div className="bg-amber-950/40 border border-amber-700 rounded-xl p-3 mb-4 text-sm text-amber-200">
+            📝 {mt(lang, "reviewComment")}: {reviewComment}
+          </div>
+        )}
         {/* Header */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="flex items-center gap-2 mb-2">
@@ -374,16 +415,21 @@ export default function MeasureEditor({
             {mt(lang, "filled")}
           </div>
           <div className="flex flex-wrap gap-2 items-center">
-            <button
-              onClick={toggleStatus}
+            <span
               className={`text-xs font-bold rounded-full px-3 py-2 border ${
-                status === "ready"
+                status === "approved"
                   ? "bg-green-600/20 border-green-500 text-green-300"
-                  : "bg-neutral-800 border-neutral-600 text-neutral-200"
+                  : status === "submitted"
+                    ? "bg-amber-500/10 border-amber-500 text-amber-300"
+                    : "bg-neutral-800 border-neutral-600 text-neutral-300"
               }`}
             >
-              {status === "ready" ? `✓ ${mt(lang, "ready")}` : mt(lang, "readyToggle")}
-            </button>
+              {status === "approved"
+                ? `✓ ${mt(lang, "approvedBadge")} · ${mt(lang, "revLabel")} ${rev}`
+                : status === "submitted"
+                  ? mt(lang, "submittedBadge")
+                  : mt(lang, "inProgress")}
+            </span>
             <button
               onClick={() => window.print()}
               className="text-xs font-bold rounded-full px-3 py-2 border bg-neutral-800 border-neutral-600 text-neutral-200"
@@ -440,6 +486,57 @@ export default function MeasureEditor({
           </div>
         </div>
 
+        {/* Datums & orientation — where every measurement originates */}
+        <Card title={`🧭 ${mt(lang, "datumsTitle")}`}>
+          <div className="text-[11px] text-neutral-400 mb-1">{mt(lang, "orientationLbl")}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+            {(["left_wall", "right_wall", "both_open", "both_wall"] as const).map((o) => (
+              <button
+                key={o}
+                onClick={() => set((d) => void (d.datums.orientation = o))}
+                className={`px-3 py-2.5 rounded-lg border text-sm font-semibold text-left ${
+                  data.datums.orientation === o
+                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                    : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                }`}
+              >
+                {mt(lang, `orient_${o}`)}
+              </button>
+            ))}
+          </div>
+          <Grid>
+            <MInput label={mt(lang, "bottomDatum")} placeholder="—" value={data.datums.bottomDatum}
+              onChange={(v) => set((d) => void (d.datums.bottomDatum = v))} />
+            <MInput label={mt(lang, "topDatum")} placeholder="—" value={data.datums.topDatum}
+              onChange={(v) => set((d) => void (d.datums.topDatum = v))} />
+            <MInput label={mt(lang, "nosingRefLbl")} placeholder="—" value={data.datums.nosingRef}
+              onChange={(v) => set((d) => void (d.datums.nosingRef = v))} />
+          </Grid>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+            <ChipRow
+              label={mt(lang, "postRefLbl")}
+              value={data.datums.postRef}
+              options={[
+                ["centerline", mt(lang, "postRef_centerline")],
+                ["face", mt(lang, "postRef_face")],
+              ]}
+              onChange={(v) => set((d) => void (d.datums.postRef = v as "" | "centerline" | "face"))}
+            />
+            <ChipRow
+              label={mt(lang, "surfaceState")}
+              value={data.datums.surfaceState}
+              options={[
+                ["finished", mt(lang, "surf_finished")],
+                ["unfinished", mt(lang, "surf_unfinished")],
+                ["mixed", mt(lang, "surf_mixed")],
+              ]}
+              onChange={(v) =>
+                set((d) => void (d.datums.surfaceState = v as "" | "finished" | "unfinished" | "mixed"))
+              }
+            />
+          </div>
+        </Card>
+
         {/* Sketch */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
@@ -484,7 +581,7 @@ export default function MeasureEditor({
                 data={data}
                 lang={lang}
                 view="side"
-                onTapStep={toggleStepPost}
+                onTapStep={addStepPost}
                 onTapPlatform={addPlatformPost}
               />
             </div>
@@ -497,7 +594,7 @@ export default function MeasureEditor({
                 data={data}
                 lang={lang}
                 view="front"
-                onTapStep={toggleStepPost}
+                onTapStep={addStepPost}
                 onTapPlatform={addPlatformPost}
               />
             </div>
@@ -554,6 +651,21 @@ export default function MeasureEditor({
                 : mt(lang, "steps")
             }
           >
+            {/* typical step: enter once, correct exceptions */}
+            <NominalFill
+              lang={lang}
+              onFill={(nr, nu) =>
+                set((d) => {
+                  const fl = d.segments[i] as FlightSegment;
+                  fl.steps = fl.steps.map((st) => ({
+                    rise: nr || st.rise,
+                    run: nu || st.run,
+                    nosing: st.nosing,
+                  }));
+                })
+              }
+            />
+
             {/* header row only where the compact grid shows (sm+) */}
             <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr] gap-2 items-end mb-1 text-[11px] text-neutral-400">
               <span>#</span>
@@ -717,6 +829,35 @@ export default function MeasureEditor({
                       options={[...ANCHOR_OPTIONS]} lang={lang}
                       onChange={(v) => setPost(set, po.id, "anchor", v)} />
                   </Grid>
+                  <details className="mt-3">
+                    <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
+                      + {mt(lang, "postMore")}
+                    </summary>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                      <MInput label={mt(lang, "postPlate")} placeholder="—" value={po.plate}
+                        onChange={(v) => setPost(set, po.id, "plate", v)} />
+                      <MInput label={mt(lang, "postAnchors")} placeholder="—" value={po.anchors}
+                        onChange={(v) => setPost(set, po.id, "anchors", v)} />
+                      <MInput label={mt(lang, "postSubstrate")} placeholder="—" value={po.substrate}
+                        onChange={(v) => setPost(set, po.id, "substrate", v)} />
+                      <MInput label={mt(lang, "postEdgeDist")} value={po.edgeDist}
+                        onChange={(v) => setPost(set, po.id, "edgeDist", v)} />
+                      <MInput label={mt(lang, "postObstruction")} placeholder="—" value={po.obstruction}
+                        onChange={(v) => setPost(set, po.id, "obstruction", v)} />
+                      <button
+                        onClick={() =>
+                          setPhotoSlot({
+                            slot: `post_${po.id}`,
+                            label: `${mt(lang, "postPhoto")} P${n + 1}`,
+                          })
+                        }
+                        className="self-end px-3 py-2.5 rounded-lg border border-neutral-700 bg-neutral-800 text-sm text-neutral-200"
+                      >
+                        📷 {mt(lang, "postPhoto")}
+                        {data.photos.some((ph) => ph.slot === `post_${po.id}`) ? " ✓" : ""}
+                      </button>
+                    </div>
+                  </details>
                 </div>
               ))}
             </div>
@@ -777,9 +918,76 @@ export default function MeasureEditor({
           </div>
         </Card>
 
-        {/* Overall */}
-        <Card title={mt(lang, "overallTitle")}>
+        {/* Site & finish conditions — what surface existed when measured */}
+        <Card title={`🧱 ${mt(lang, "finishTitle")}`}>
           <Grid>
+            <MInput label={mt(lang, "bottomSurface")} placeholder="—" value={data.finish.bottomSurface}
+              onChange={(v) => set((d) => void (d.finish.bottomSurface = v))} />
+            <MInput label={mt(lang, "topSurface")} placeholder="—" value={data.finish.topSurface}
+              onChange={(v) => set((d) => void (d.finish.topSurface = v))} />
+            <MInput label={mt(lang, "futureTopping")} placeholder="—" value={data.finish.futureTopping}
+              onChange={(v) => set((d) => void (d.finish.futureTopping = v))} />
+            <MInput label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
+              onChange={(v) => set((d) => void (d.finish.treadCovering = v))} />
+            <MInput label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
+              onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
+            <MInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
+              onChange={(v) => set((d) => void (d.finish.demoPending = v))} />
+          </Grid>
+          <button
+            onClick={() => set((d) => void (d.finish.verifyAfterFinishes = !d.finish.verifyAfterFinishes))}
+            className={`mt-3 px-3 py-2.5 rounded-lg border text-sm font-semibold ${
+              data.finish.verifyAfterFinishes
+                ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                : "border-neutral-700 bg-neutral-800 text-neutral-300"
+            }`}
+          >
+            {data.finish.verifyAfterFinishes ? "☑" : "☐"} {mt(lang, "verifyAfterFinishes")}
+          </button>
+        </Card>
+
+        {/* Fabrication details (conditional per shape) */}
+        <Card title={`🔩 ${mt(lang, "fabTitle")}`}>
+          <Grid>
+            {data.segments.length > 1 && (
+              <>
+                <MInput label={mt(lang, "fabCorners")} placeholder="—" value={data.fab.corners}
+                  onChange={(v) => set((d) => void (d.fab.corners = v))} />
+                <MInput label={mt(lang, "fabFlightConnection")} placeholder="—" value={data.fab.flightConnection}
+                  onChange={(v) => set((d) => void (d.fab.flightConnection = v))} />
+              </>
+            )}
+            {!isWallRail && (
+              <>
+                <MInput label={mt(lang, "fabBottomClearance")} value={data.fab.bottomClearance}
+                  onChange={(v) => set((d) => void (d.fab.bottomClearance = v))} />
+                <MInput label={mt(lang, "fabInfill")} placeholder="—" value={data.fab.infill}
+                  onChange={(v) => set((d) => void (d.fab.infill = v))} />
+              </>
+            )}
+            <MInput label={mt(lang, "fabSplices")} placeholder="—" value={data.fab.splices}
+              onChange={(v) => set((d) => void (d.fab.splices = v))} />
+            <MInput label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
+              onChange={(v) => set((d) => void (d.fab.maxPiece = v))} />
+            <MInput label={mt(lang, "fabAccess")} placeholder="—" value={data.fab.access}
+              onChange={(v) => set((d) => void (d.fab.access = v))} />
+            {sheet.shape === "level_run" && (
+              <MInput label={mt(lang, "fabGate")} placeholder="—" value={data.fab.gate}
+                onChange={(v) => set((d) => void (d.fab.gate = v))} />
+            )}
+            <MInput label={mt(lang, "fabTouchup")} placeholder="—" value={data.fab.touchup}
+              onChange={(v) => set((d) => void (d.fab.touchup = v))} />
+          </Grid>
+        </Card>
+
+        {/* Control dimensions — independent measurements the software cross-checks */}
+        <Card title={`🎯 ${mt(lang, "controlsTitle")}`}>
+          <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
+          <Grid>
+            {!isSpiral && sheet.shape !== "level_run" && sheet.shape !== "ramp" && (
+              <MInput label={mt(lang, "floorToFloor")} value={data.overall.floorToFloor}
+                onChange={(v) => set((d) => void (d.overall.floorToFloor = v))} />
+            )}
             <MInput label={mt(lang, "totalRise")} value={data.overall.totalRise}
               onChange={(v) => set((d) => void (d.overall.totalRise = v))} />
             <MInput label={mt(lang, "totalRun")} value={data.overall.totalRun}
@@ -787,6 +995,16 @@ export default function MeasureEditor({
             {!isSpiral && (
               <MInput label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
                 onChange={(v) => set((d) => void (d.overall.rakeLength = v))} />
+            )}
+            {!isSpiral && sheet.shape !== "level_run" && (
+              <>
+                <MInput label={mt(lang, "widthBottom")} value={data.overall.widthBottom}
+                  onChange={(v) => set((d) => void (d.overall.widthBottom = v))} />
+                <MInput label={mt(lang, "widthMid")} value={data.overall.widthMid}
+                  onChange={(v) => set((d) => void (d.overall.widthMid = v))} />
+                <MInput label={mt(lang, "widthTop")} value={data.overall.widthTop}
+                  onChange={(v) => set((d) => void (d.overall.widthTop = v))} />
+              </>
             )}
           </Grid>
           <div className="mt-3">
@@ -800,12 +1018,135 @@ export default function MeasureEditor({
           </div>
         </Card>
 
-        {/* Photos + markup */}
-        <Card title={mt(lang, "photosTitle")}>
+        {/* Photo checklist — required evidence, slot by slot */}
+        <Card title={`📷 ${mt(lang, "photoChecklist")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "photosHint")}</div>
-          <PhotoMarkup jobId={job.id} sheetName={name || shapeLabel(lang, sheet.shape)} lang={lang} />
+          <div className="space-y-2">
+            {requiredPhotoSlots(sheet.shape).map((slot) => (
+              <SlotRow key={slot} slot={slot} label={mt(lang, `slot_${slot}`)} required
+                data={data} lang={lang}
+                onTake={() => setPhotoSlot({ slot, label: mt(lang, `slot_${slot}`) })} />
+            ))}
+            {OPTIONAL_PHOTO_SLOTS.map((slot) => (
+              <SlotRow key={slot} slot={slot} label={mt(lang, `slot_${slot}`)} required={false}
+                data={data} lang={lang}
+                onTake={() => setPhotoSlot({ slot, label: mt(lang, `slot_${slot}`) })} />
+            ))}
+          </div>
+        </Card>
+
+        {/* Review & submit — checks, gaps, and the approval gate */}
+        <Card title={`✅ ${mt(lang, "reviewTitle")}`}>
+          <div className="text-xs text-neutral-500 mb-2">{mt(lang, "neverCorrects")}</div>
+          <div className="space-y-1.5 mb-4">
+            {checks.map((c, i) => (
+              <CheckRow key={`${c.key}${i}`} c={c} lang={lang} />
+            ))}
+          </div>
+
+          {gaps.length > 0 && (
+            <div className="border border-neutral-700 rounded-lg p-3 mb-4 bg-neutral-950/60">
+              <div className="text-xs font-bold text-neutral-300 mb-1.5">
+                {mt(lang, "gapsTitle")} ({gaps.length})
+              </div>
+              <ul className="text-sm text-neutral-400 space-y-1">
+                {gaps.map((g, i) => (
+                  <li key={i}>
+                    •{" "}
+                    {g.key === "photo"
+                      ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
+                      : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {status === "in_progress" && (
+            <>
+              {redChecks.length > 0 && (
+                <div className="text-sm text-red-300 mb-2">⛔ {mt(lang, "redBlock")}</div>
+              )}
+              {canSubmit && (
+                <div className="text-sm text-green-300 mb-2">✓ {mt(lang, "allClear")}</div>
+              )}
+              <button
+                onClick={submitSheet}
+                disabled={!canSubmit || saveState === "dirty" || saveState === "saving"}
+                className="w-full bg-amber-500 text-black font-bold rounded-xl py-4 text-lg disabled:opacity-40"
+              >
+                {mt(lang, "submitReview")}
+              </button>
+            </>
+          )}
+
+          {status === "submitted" && (
+            <div>
+              <div className="text-sm font-bold text-amber-300 mb-1">
+                {mt(lang, "submittedBadge")}
+              </div>
+              {sheet.submitted_by && nameById[sheet.submitted_by] && (
+                <div className="text-xs text-neutral-400 mb-3">
+                  {mt(lang, "submittedByLbl")}: {nameById[sheet.submitted_by]}
+                </div>
+              )}
+              {isAdmin && (
+                <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                  <button
+                    onClick={approveSheet}
+                    className="flex-1 bg-green-600 text-white font-bold rounded-xl py-4"
+                  >
+                    ✓ {mt(lang, "approve")}
+                  </button>
+                  <button
+                    onClick={sendBackSheet}
+                    className="flex-1 border border-neutral-600 bg-neutral-800 text-neutral-200 font-bold rounded-xl py-4"
+                  >
+                    ↩ {mt(lang, "sendBack")}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {status === "approved" && (
+            <div>
+              <div className="text-sm font-bold text-green-300 mb-1">
+                ✓ {mt(lang, "approvedBadge")} · {mt(lang, "revLabel")} {rev}
+              </div>
+              {sheet.approved_by && nameById[sheet.approved_by] && (
+                <div className="text-xs text-neutral-400 mb-2">
+                  {mt(lang, "approvedByLbl")}: {nameById[sheet.approved_by]}
+                  {sheet.approved_at ? ` · ${new Date(sheet.approved_at).toLocaleString()}` : ""}
+                </div>
+              )}
+              <div className="text-xs text-amber-300/80">⚠ {mt(lang, "editWarning")}</div>
+            </div>
+          )}
         </Card>
       </div>
+
+      {/* Photo capture + markup modal */}
+      {photoSlot && (
+        <PhotoMarkup
+          jobId={job.id}
+          sheetName={name || shapeLabel(lang, sheet.shape)}
+          lang={lang}
+          slot={photoSlot.slot}
+          slotLabel={photoSlot.label}
+          onSaved={(path, strokes) => {
+            set((d) => {
+              d.photos = [
+                ...d.photos.filter((p) => p.slot !== photoSlot.slot),
+                { slot: photoSlot.slot, path, takenAt: new Date().toISOString() },
+              ];
+              if (strokes.length > 0) d.annotations[path] = strokes;
+            });
+            setPhotoSlot(null);
+          }}
+          onClose={() => setPhotoSlot(null)}
+        />
+      )}
 
       {/* Fraction quick-keys */}
       {fracBar && (
@@ -828,11 +1169,14 @@ export default function MeasureEditor({
       {/* Print-only branded sheet */}
       <PrintSheet
         job={job}
-        sheet={{ ...sheet, name: name || null, status }}
+        sheet={{ ...sheet, name: name || null, status, current_rev: rev }}
         data={data}
         lang={lang}
         workerName={workerName}
         posts={posts}
+        nameById={nameById}
+        checks={checks}
+        gapCount={gaps.length}
       />
     </PlaceholderCtx.Provider>
   );
@@ -990,6 +1334,143 @@ function PresetInput({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ChipRow({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: [string, string][];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <div className="text-[11px] text-neutral-400 mb-1">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {options.map(([val, lbl]) => (
+          <button
+            key={val}
+            onClick={() => onChange(value === val ? "" : val)}
+            className={`px-3 py-2 rounded-lg border text-sm font-semibold ${
+              value === val
+                ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                : "border-neutral-700 bg-neutral-800 text-neutral-300"
+            }`}
+          >
+            {lbl}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NominalFill({
+  lang,
+  onFill,
+}: {
+  lang: string;
+  onFill: (rise: string, run: string) => void;
+}) {
+  const [nr, setNr] = useState("");
+  const [nu, setNu] = useState("");
+  return (
+    <div className="border border-neutral-800 rounded-lg p-3 mb-3 bg-neutral-950/40">
+      <div className="text-xs font-bold text-neutral-300 mb-2">
+        {mt(lang, "nominalTitle")}
+        <span className="font-normal text-neutral-500"> — {mt(lang, "fillHint")}</span>
+      </div>
+      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+        <MInput label={mt(lang, "nominalRise")} value={nr} onChange={setNr} />
+        <MInput label={mt(lang, "nominalRun")} value={nu} onChange={setNu} />
+        <button
+          onClick={() => (nr || nu) && onFill(nr, nu)}
+          className="px-3 py-2.5 rounded-lg bg-amber-500/90 text-black text-sm font-bold"
+        >
+          {mt(lang, "fillSteps")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SlotRow({
+  slot,
+  label,
+  required,
+  data,
+  lang,
+  onTake,
+}: {
+  slot: string;
+  label: string;
+  required: boolean;
+  data: MeasureData;
+  lang: string;
+  onTake: () => void;
+}) {
+  const ph = data.photos.find((p) => p.slot === slot);
+  return (
+    <div className="flex items-center gap-3 border border-neutral-800 rounded-lg p-2.5 bg-neutral-950/40">
+      <span className={`text-lg ${ph ? "" : "opacity-40"}`}>{ph ? "✅" : "📷"}</span>
+      <span className="flex-1 min-w-0">
+        <span className="block text-sm font-semibold truncate">{label}</span>
+        <span className={`block text-[11px] ${required && !ph ? "text-red-400" : "text-neutral-500"}`}>
+          {ph
+            ? new Date(ph.takenAt).toLocaleString()
+            : mt(lang, required ? "requiredLbl" : "optionalLbl")}
+        </span>
+      </span>
+      <button
+        onClick={onTake}
+        className={`px-3 py-2 rounded-lg border text-xs font-bold shrink-0 ${
+          ph
+            ? "border-neutral-700 bg-neutral-800 text-neutral-300"
+            : "border-amber-600 bg-amber-500/10 text-amber-300"
+        }`}
+      >
+        {ph ? mt(lang, "retake") : mt(lang, "choosePhoto")}
+      </button>
+    </div>
+  );
+}
+
+const LEVEL_STYLE: Record<string, string> = {
+  green: "bg-green-600/20 border-green-500 text-green-300",
+  yellow: "bg-amber-500/15 border-amber-500 text-amber-300",
+  red: "bg-red-600/20 border-red-500 text-red-300",
+  na: "bg-neutral-800 border-neutral-700 text-neutral-500",
+};
+
+function CheckRow({ c, lang }: { c: CheckResult; lang: string }) {
+  const fmt = (n: number | null) =>
+    n === null ? "—" : c.unit === "deg" ? `${n.toFixed(1)}°` : formatIn(n);
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className={`text-[10px] font-bold rounded-full border px-2 py-0.5 shrink-0 w-24 text-center ${LEVEL_STYLE[c.level]}`}
+      >
+        {c.level === "na" ? "…" : mt(lang, c.level === "green" ? "levelGreen" : c.level === "yellow" ? "levelYellow" : "levelRed")}
+      </span>
+      <span className="flex-1 text-neutral-300 min-w-0">
+        {mt(lang, `check_${c.key}`)}
+        {c.detail ? ` ${c.detail}` : ""}
+      </span>
+      <span className="text-xs text-neutral-500 shrink-0 text-right">
+        {c.level === "na"
+          ? mt(lang, "checkNa")
+          : `${mt(lang, "calcLbl")} ${fmt(c.expected)} · ${mt(lang, "measLbl")} ${fmt(c.actual)}${
+              c.delta !== null && c.key !== "width_var"
+                ? ` · ${mt(lang, "offByLbl")} ${c.unit === "deg" ? `${Math.abs(c.delta).toFixed(1)}°` : formatIn(Math.abs(c.delta))}`
+                : ""
+            }`}
+      </span>
     </div>
   );
 }

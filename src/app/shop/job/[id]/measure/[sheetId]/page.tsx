@@ -1,6 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { getJob, getMeasureSheet } from "@/lib/shop/db";
+import { getJob, getMeasureSheet, listWorkers } from "@/lib/shop/db";
+import { normalizeMeasureData } from "@/lib/shop/measure";
 import ShopTopBar from "../../../../ShopTopBar";
 import MeasureEditor from "./MeasureEditor";
 
@@ -16,8 +17,19 @@ export default async function MeasureSheetPage({
   const lang = worker.lang || "en";
 
   const { id, sheetId } = await params;
-  const [job, sheet] = await Promise.all([getJob(id), getMeasureSheet(sheetId)]);
+  const [job, sheet, workers] = await Promise.all([
+    getJob(id),
+    getMeasureSheet(sheetId),
+    listWorkers(),
+  ]);
   if (!job || !sheet || sheet.job_id !== id) notFound();
+
+  // Older sheets predate some fields — fill blanks so the editor and the
+  // geometry checks always see the full shape.
+  sheet.data = normalizeMeasureData(sheet.data);
+
+  const nameById: Record<string, string> = {};
+  for (const w of workers) nameById[w.id] = w.name;
 
   return (
     <div>
@@ -30,7 +42,14 @@ export default async function MeasureSheetPage({
           adminLink={!!worker.is_admin}
         />
       </div>
-      <MeasureEditor job={job} sheet={sheet} lang={lang} workerName={worker.name} />
+      <MeasureEditor
+        job={job}
+        sheet={sheet}
+        lang={lang}
+        workerName={worker.name}
+        isAdmin={!!worker.is_admin}
+        nameById={nameById}
+      />
     </div>
   );
 }

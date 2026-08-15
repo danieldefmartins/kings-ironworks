@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       bytes,
       file.type || (isVideo ? "video/mp4" : "image/jpeg")
     );
-    await insertPhoto({
+    const row = await insertPhoto({
       job_id: jobId,
       url: path,
       kind: isVideo ? "video" : "image",
@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
       uploaded_by: worker.id,
     });
 
-    return NextResponse.json({ ok: true });
+    // Path + id let callers (measure sheets) link the photo to a checklist slot.
+    return NextResponse.json({ ok: true, path, id: row?.id || null });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Upload failed" },
