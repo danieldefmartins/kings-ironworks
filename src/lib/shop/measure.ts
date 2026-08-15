@@ -178,6 +178,42 @@ export interface AnnotationStroke {
   text?: string;
 }
 
+// Where a rail END meets the world: a wall, an existing post/column, or the
+// floor. Existing columns often carry a bottom molding (commonly 3/4") that
+// stands proud of the face — so the rail length measured at the molding is
+// shorter than at the top. Both lengths are recorded and cross-checked
+// against the molding thickness.
+export interface ConnectionSpec {
+  id: string;
+  where: string; // which end: "top right", "bottom, wall side"…
+  attachTo: "" | "wall" | "existing_post" | "floor";
+  method: "" | "clip" | "wall_plate" | "concrete_base" | "weld";
+  material: string; // wall/column material (wood, concrete, brick…)
+  columnSize: string; // existing post/column size at the top
+  molding: string; // bottom molding thickness; "" = no molding
+  lenAtTop: string; // rail length measured at the top (clear of molding)
+  lenAtMolding: string; // rail length measured at molding height
+  note: string;
+}
+
+export const CONN_ATTACH = ["wall", "existing_post", "floor"] as const;
+export const CONN_METHODS = ["clip", "wall_plate", "concrete_base", "weld"] as const;
+
+export function newConnection(): ConnectionSpec {
+  return {
+    id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    where: "",
+    attachTo: "",
+    method: "",
+    material: "",
+    columnSize: "",
+    molding: "",
+    lenAtTop: "",
+    lenAtMolding: "",
+    note: "",
+  };
+}
+
 // Custom shape: the crew draws the railing's plan (top view) as connected
 // line segments, then dimensions each drawn segment. The drawing stays
 // structured — every line is a numbered segment with its own measurement —
@@ -204,6 +240,7 @@ export interface MeasureData {
   photos: MeasurePhoto[];
   annotations: Record<string, AnnotationStroke[]>; // storage path -> strokes
   plan?: PlanDrawing | null; // custom shape: the drawn top view
+  connections: ConnectionSpec[]; // wall/column terminations + clips
   units?: Units; // measurement entry unit — inches (default) or feet+inches
 }
 
@@ -340,6 +377,7 @@ export function newMeasureData(
     posts: [],
     spiral,
     plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
+    connections: [],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
       post: "",
@@ -473,6 +511,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     photos: d.photos || [],
     annotations: d.annotations || {},
     plan: d.plan ?? null,
+    connections: d.connections || [],
   };
 }
 

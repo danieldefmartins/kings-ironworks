@@ -10,6 +10,9 @@ import {
   RAIL_KIND_OPTIONS,
   RAIL_SIDE_OPTIONS,
   newPost,
+  newConnection,
+  CONN_ATTACH,
+  CONN_METHODS,
   requiredPhotoSlots,
   OPTIONAL_PHOTO_SLOTS,
   sheetProgress,
@@ -262,6 +265,13 @@ export default function MeasureEditor({
   function addPlatformPost(segIdx: number) {
     set((d) => {
       d.posts.push(newPost(segIdx, null));
+    });
+  }
+
+  function setConn(idx: number, key: keyof MeasureData["connections"][number], value: string) {
+    set((d) => {
+      const c = d.connections[idx];
+      if (c) (c[key] as string) = value;
     });
   }
 
@@ -936,6 +946,82 @@ export default function MeasureEditor({
                 onChange={(v) => set((d) => void (d.rail.brackets = v))} />
             )}
           </Grid>
+        </Card>
+
+        {/* Connections & existing columns */}
+        <Card title={`🔗 ${mt(lang, "connectionsTitle")}`}>
+          <div className="text-xs text-neutral-500 mb-3">{mt(lang, "connectionsHint")}</div>
+          <div className="space-y-3">
+            {data.connections.map((c, ci) => (
+              <div key={c.id} className="border border-neutral-800 rounded-lg p-3 bg-neutral-950/60">
+                <div className="flex items-center mb-2">
+                  <span className="font-bold text-amber-400">
+                    {mt(lang, "connLabel")} #{ci + 1}
+                  </span>
+                  <button
+                    onClick={() => set((d) => void (d.connections = d.connections.filter((x) => x.id !== c.id)))}
+                    className="ml-auto text-xs text-red-400 border border-red-900 rounded-full px-2.5 py-1"
+                  >
+                    ✕ {mt(lang, "removeConn")}
+                  </button>
+                </div>
+                <MInput label={mt(lang, "connWhere")} placeholder="—" value={c.where}
+                  onChange={(v) => setConn(ci, "where", v)} />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  <ChipRow
+                    label={mt(lang, "connAttachTo")}
+                    value={c.attachTo}
+                    options={CONN_ATTACH.map((o) => [o, mt(lang, `attach_${o}`)] as [string, string])}
+                    onChange={(v) => setConn(ci, "attachTo", v)}
+                  />
+                  <ChipRow
+                    label={mt(lang, "connMethod")}
+                    value={c.method}
+                    options={CONN_METHODS.map((o) => [o, mt(lang, `method_${o}`)] as [string, string])}
+                    onChange={(v) => setConn(ci, "method", v)}
+                  />
+                </div>
+                {(c.attachTo === "wall" || c.attachTo === "existing_post") && (
+                  <Grid>
+                    <MSelect label={mt(lang, "connMaterial")} value={c.material}
+                      options={[...ANCHOR_OPTIONS]} lang={lang}
+                      onChange={(v) => setConn(ci, "material", v)} />
+                    {c.attachTo === "existing_post" && (
+                      <MInput label={mt(lang, "connColumnSize")} value={c.columnSize}
+                        onChange={(v) => setConn(ci, "columnSize", v)} />
+                    )}
+                  </Grid>
+                )}
+                {c.attachTo === "existing_post" && (
+                  <div className="mt-3 border border-neutral-800 rounded-lg p-3">
+                    <div className="text-xs text-neutral-500 mb-2">{mt(lang, "moldingHint")}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <MInput label={mt(lang, "moldingLbl")} placeholder="—" value={c.molding}
+                        onChange={(v) => setConn(ci, "molding", v)} />
+                      {c.molding.trim() !== "" && (
+                        <>
+                          <MInput label={mt(lang, "lenAtTop")} value={c.lenAtTop}
+                            onChange={(v) => setConn(ci, "lenAtTop", v)} />
+                          <MInput label={mt(lang, "lenAtMolding")} value={c.lenAtMolding}
+                            onChange={(v) => setConn(ci, "lenAtMolding", v)} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <div className="mt-3">
+                  <MInput label={mt(lang, "notes")} placeholder="—" value={c.note}
+                    onChange={(v) => setConn(ci, "note", v)} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={() => set((d) => void d.connections.push(newConnection()))}
+            className="mt-3 px-4 py-2.5 rounded-lg border border-amber-600 bg-amber-500/10 text-amber-300 text-sm font-bold"
+          >
+            {mt(lang, "addConnection")}
+          </button>
         </Card>
 
         {/* Materials */}

@@ -501,6 +501,32 @@ export default function PrintSheet({
               {mt(lang, "brackets")}: <b>{data.rail.brackets}</b>
             </div>
           )}
+          {/* connections & existing columns */}
+          {data.connections.length > 0 && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "connectionsTitle")}</SectionTitle>
+              {data.connections.map((c, i) => (
+                <div key={c.id} style={{ marginBottom: 3 }}>
+                  <b>#{i + 1}</b>
+                  {c.where ? ` ${c.where} —` : " —"}{" "}
+                  {c.attachTo ? mt(lang, `attach_${c.attachTo}`) : "—"} ·{" "}
+                  {c.method ? <b>{mt(lang, `method_${c.method}`)}</b> : <Val v="" />}
+                  {c.material ? ` · ${optLabel(lang, c.material)}` : ""}
+                  {c.columnSize ? ` · ${mt(lang, "connColumnSize")}: ` : ""}
+                  {c.columnSize ? <b>{c.columnSize}</b> : null}
+                  {c.molding && c.molding.trim() !== "" && (
+                    <>
+                      {" · "}
+                      {mt(lang, "moldingLbl")}: <b>{c.molding}</b> ·{" "}
+                      {mt(lang, "lenAtTop")}: <Val v={c.lenAtTop} /> ·{" "}
+                      {mt(lang, "lenAtMolding")}: <Val v={c.lenAtMolding} />
+                    </>
+                  )}
+                  {c.note ? ` · ${c.note}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
           {/* finish conditions */}
           {(data.finish.futureTopping || data.finish.demoPending || data.finish.verifyAfterFinishes ||
             data.finish.bottomSurface || data.finish.topSurface) && (

@@ -124,6 +124,19 @@ const PlanSchema = z
   .nullable()
   .optional();
 
+const ConnectionSchema = z.object({
+  id: z.string().max(40),
+  where: z.string().max(120),
+  attachTo: z.enum(["", "wall", "existing_post", "floor"]),
+  method: z.enum(["", "clip", "wall_plate", "concrete_base", "weld"]),
+  material: z.string().max(80),
+  columnSize: meas,
+  molding: meas,
+  lenAtTop: meas,
+  lenAtMolding: meas,
+  note: z.string().max(300),
+});
+
 const MeasureDataSchema = z.object({
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema]))
@@ -164,6 +177,7 @@ const MeasureDataSchema = z.object({
   photos: z.array(PhotoSchema).max(80),
   annotations: z.record(z.string().max(300), z.array(StrokeSchema).max(300)),
   plan: PlanSchema,
+  connections: z.array(ConnectionSchema).max(40),
   units: z.enum(["in", "ftin"]).optional(),
 });
 

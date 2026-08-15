@@ -149,6 +149,7 @@ function completeData(photos) {
     },
     photos,
     annotations: {},
+    connections: [],
   };
 }
 
@@ -289,6 +290,31 @@ check(
   "custom bad closure → submit 422",
   (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422
 );
+
+// ---- connections & molding cross-check -------------------------------------
+const cn = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API CONN" }, cookie2);
+const connId = (await cn.json()).id;
+const connData = completeData(realPhotos);
+connData.connections = [
+  {
+    id: "c1", where: "top right", attachTo: "existing_post", method: "clip",
+    material: "Wood", columnSize: "5 1/2", molding: "3/4",
+    lenAtTop: "60", lenAtMolding: "59 1/4", note: "",
+  },
+];
+await api({ type: "update", id: connId, jobId: JOB, data: connData }, cookie2);
+check("conn w/ consistent molding → submit 200", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 200);
+
+const badConn = structuredClone(connData);
+badConn.connections[0].lenAtMolding = "58"; // diff 2" vs molding 3/4" → red
+await api({ type: "update", id: connId, jobId: JOB, data: badConn }, cookie2);
+check("molding mismatch → submit 422", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 422);
+
+const noMethod = structuredClone(connData);
+noMethod.connections[0].method = "";
+await api({ type: "update", id: connId, jobId: JOB, data: noMethod }, cookie2);
+check("connection missing method → submit 422", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 422);
+check("delete conn sheet → 200", (await api({ type: "delete", id: connId, jobId: JOB })).status === 200);
 
 // ---- cleanup ---------------------------------------------------------------
 check("delete → 200", (await api({ type: "delete", id, jobId: JOB })).status === 200);

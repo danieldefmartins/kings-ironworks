@@ -117,7 +117,7 @@ function stairTurns(data: MeasureData): boolean {
 }
 
 export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
-  if (shape === "custom") return customChecks(data);
+  if (shape === "custom") return [...customChecks(data), ...connectionChecks(data)];
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape);
   }
@@ -204,6 +204,8 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     );
   });
 
+  out.push(...connectionChecks(data));
+
   // 5) width variation bottom / mid / top
   const widths = [
     parseMeas(data.overall.widthBottom),
@@ -227,6 +229,25 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
   return out;
 }
 
+// Molding cross-check: (length at top) − (length at molding) should equal
+// the molding thickness on each side the rail lands against — 2× when both
+// ends have moldings is captured per-connection, so here it is per end: the
+// difference equals ONE molding depth.
+function connectionChecks(data: MeasureData): CheckResult[] {
+  const out: CheckResult[] = [];
+  data.connections.forEach((c, i) => {
+    if (!c.molding || c.molding.trim() === "") return;
+    const m = parseMeas(c.molding);
+    const top = parseMeas(c.lenAtTop);
+    const bot = parseMeas(c.lenAtMolding);
+    const diff = top !== null && bot !== null ? top - bot : null;
+    out.push(
+      compare("molding_diff", m, diff, { green: 0.125, yellow: 0.375 }, "in", `#${i + 1}`)
+    );
+  });
+  return out;
+}
+
 function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
   const out: CheckResult[] = [];
   if (shape === "spiral" && data.spiral) {
@@ -247,6 +268,7 @@ function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResul
       out.push({ key: "spiral_riser", level: "na", expected: null, actual: null, delta: null, unit: "in" });
     }
   }
+  out.push(...connectionChecks(data));
   if (shape === "ramp") {
     const seg = data.segments[0];
     if (seg && seg.kind === "ramp") {
@@ -415,6 +437,24 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   ) {
     gaps.push({ key: "mat_picket" });
   }
+
+  // connections the crew added must be fully specified
+  data.connections.forEach((c, i) => {
+    const tag = `#${i + 1}`;
+    if (!has(c.attachTo) || !has(c.method)) {
+      gaps.push({ key: "conn_method", detail: tag });
+      return;
+    }
+    if ((c.attachTo === "wall" || c.attachTo === "existing_post") && !has(c.material)) {
+      gaps.push({ key: "conn_material", detail: tag });
+    }
+    if (c.attachTo === "existing_post" && !has(c.columnSize)) {
+      gaps.push({ key: "conn_column", detail: tag });
+    }
+    if (has(c.molding) && (!has(c.lenAtTop) || !has(c.lenAtMolding))) {
+      gaps.push({ key: "conn_lengths", detail: tag });
+    }
+  });
 
   // fabrication constraints ("one piece" / "N/A" are valid answers)
   if (!has(data.fab.splices)) gaps.push({ key: "splices" });
