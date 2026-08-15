@@ -178,38 +178,143 @@ export interface AnnotationStroke {
   text?: string;
 }
 
-// Where a rail END meets the world: a wall, an existing post/column, or the
-// floor. Existing columns often carry a bottom molding (commonly 3/4") that
-// stands proud of the face — so the rail length measured at the molding is
-// shorter than at the top. Both lengths are recorded and cross-checked
-// against the molding thickness.
-export interface ConnectionSpec {
-  id: string;
-  where: string; // which end: "top right", "bottom, wall side"…
-  attachTo: "" | "wall" | "existing_post" | "floor";
-  method: "" | "clip" | "wall_plate" | "concrete_base" | "weld";
-  material: string; // wall/column material (wood, concrete, brick…)
-  columnSize: string; // existing post/column size at the top
-  molding: string; // bottom molding thickness; "" = no molding
-  lenAtTop: string; // rail length measured at the top (clear of molding)
-  lenAtMolding: string; // rail length measured at molding height
+// ---- Rail spans: the fabrication question is "how long is this piece and
+// exactly how does each end attach?" Every span has TWO terminations (start
+// and end — never optional), a clear span at the top, and a clear span at
+// molding/infill level. When existing columns carry bottom moldings, the two
+// spans differ by the SUM of both molding projections — verified by software.
+
+export type AttachTarget =
+  | ""
+  | "free_post" // free-standing new post (its mount lives in the Posts section)
+  | "wall"
+  | "existing_post"
+  | "floor"
+  | "continue" // continues into another rail/span
+  | "splice" // field splice between pieces
+  | "open"; // open / free end
+
+export type AttachMethod =
+  | ""
+  | "clip"
+  | "wall_plate"
+  | "anchor" // embedded / engineered wall anchor
+  | "plate" // plate bolted to existing column
+  | "bolt_through"
+  | "weld" // only into steel
+  | "base_plate" // surface-mounted base plate
+  | "core_drill"
+  | "embedded"
+  | "field_bolt";
+
+export const ATTACH_TARGETS: AttachTarget[] = [
+  "free_post",
+  "wall",
+  "existing_post",
+  "floor",
+  "continue",
+  "splice",
+  "open",
+];
+
+// Physically valid methods per attachment target — the UI only offers these
+// and the submission gate rejects anything else.
+export const METHODS_BY_ATTACH: Record<string, AttachMethod[]> = {
+  wall: ["clip", "wall_plate", "anchor"],
+  existing_post: ["clip", "plate", "bolt_through", "weld"],
+  floor: ["base_plate", "core_drill", "embedded"],
+  splice: ["field_bolt", "weld"],
+  free_post: [],
+  continue: [],
+  open: [],
+};
+
+// Methods that need hardware detail + a close-up photo before fabrication.
+export const HARDWARE_METHODS: AttachMethod[] = [
+  "clip",
+  "wall_plate",
+  "anchor",
+  "plate",
+  "bolt_through",
+  "base_plate",
+  "core_drill",
+  "embedded",
+];
+
+export interface TermHardware {
+  fastener: string; // fastener/anchor spec (required)
+  qty: string; // quantity (required)
+  elevation: string; // connection centerline height from finished floor (required)
+  shopField: "" | "shop_weld" | "field_bolt"; // how it joins the railing (required)
+  profile: string; // clip/plate profile + dimensions
+  thickness: string;
+  holeDia: string;
+  holeSpacing: string;
+  edgeDist: string;
+  orientation: string;
+  weldSize: string;
+}
+
+export interface Termination {
+  attachTo: AttachTarget;
+  method: AttachMethod;
+  material: string; // wall/column/floor material
+  backing: string; // wall: structural backing behind finish; wood floor: blocking/through-bolt detail
+  columnW: string; // existing column width facing the rail (at attachment elevation)
+  columnD: string; // existing column depth
+  molding: string; // molding projection at this end; "" = none
+  moldingHeight: string; // how high the molding runs
+  plumb: string; // square/plumb condition
+  hardware: TermHardware;
   note: string;
 }
 
-export const CONN_ATTACH = ["wall", "existing_post", "floor"] as const;
-export const CONN_METHODS = ["clip", "wall_plate", "concrete_base", "weld"] as const;
+export interface RailSpan {
+  id: string;
+  label: string; // "main rail, right side", "return at top"…
+  topSpan: string; // clear span measured at the top (fabrication length)
+  lowerSpan: string; // clear span at molding/infill level
+  start: Termination;
+  end: Termination;
+  note: string;
+}
 
-export function newConnection(): ConnectionSpec {
+export function newTermination(): Termination {
   return {
-    id: `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-    where: "",
     attachTo: "",
     method: "",
     material: "",
-    columnSize: "",
+    backing: "",
+    columnW: "",
+    columnD: "",
     molding: "",
-    lenAtTop: "",
-    lenAtMolding: "",
+    moldingHeight: "",
+    plumb: "",
+    hardware: {
+      fastener: "",
+      qty: "",
+      elevation: "",
+      shopField: "",
+      profile: "",
+      thickness: "",
+      holeDia: "",
+      holeSpacing: "",
+      edgeDist: "",
+      orientation: "",
+      weldSize: "",
+    },
+    note: "",
+  };
+}
+
+export function newSpan(): RailSpan {
+  return {
+    id: `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+    label: "",
+    topSpan: "",
+    lowerSpan: "",
+    start: newTermination(),
+    end: newTermination(),
     note: "",
   };
 }
@@ -240,7 +345,7 @@ export interface MeasureData {
   photos: MeasurePhoto[];
   annotations: Record<string, AnnotationStroke[]>; // storage path -> strokes
   plan?: PlanDrawing | null; // custom shape: the drawn top view
-  connections: ConnectionSpec[]; // wall/column terminations + clips
+  spans: RailSpan[]; // every rail piece with BOTH end terminations
   units?: Units; // measurement entry unit — inches (default) or feet+inches
 }
 
@@ -377,7 +482,7 @@ export function newMeasureData(
     posts: [],
     spiral,
     plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
-    connections: [],
+    spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
       post: "",
@@ -511,7 +616,12 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     photos: d.photos || [],
     annotations: d.annotations || {},
     plan: d.plan ?? null,
-    connections: d.connections || [],
+    spans: (d.spans || []).map((sp) => ({
+      ...newSpan(),
+      ...sp,
+      start: { ...newTermination(), ...(sp.start || {}), hardware: { ...newTermination().hardware, ...(sp.start?.hardware || {}) } },
+      end: { ...newTermination(), ...(sp.end || {}), hardware: { ...newTermination().hardware, ...(sp.end?.hardware || {}) } },
+    })),
   };
 }
 

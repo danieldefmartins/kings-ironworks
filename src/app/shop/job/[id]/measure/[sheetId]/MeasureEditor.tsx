@@ -10,9 +10,10 @@ import {
   RAIL_KIND_OPTIONS,
   RAIL_SIDE_OPTIONS,
   newPost,
-  newConnection,
-  CONN_ATTACH,
-  CONN_METHODS,
+  newSpan,
+  ATTACH_TARGETS,
+  METHODS_BY_ATTACH,
+  HARDWARE_METHODS,
   requiredPhotoSlots,
   OPTIONAL_PHOTO_SLOTS,
   sheetProgress,
@@ -22,6 +23,7 @@ import {
   type PlatformSegment,
   type PostMeasure,
   type RampSegment,
+  type Termination,
 } from "@/lib/shop/measure";
 import {
   runChecks,
@@ -268,10 +270,24 @@ export default function MeasureEditor({
     });
   }
 
-  function setConn(idx: number, key: keyof MeasureData["connections"][number], value: string) {
+  function setSpan(idx: number, key: "label" | "topSpan" | "lowerSpan" | "note", value: string) {
     set((d) => {
-      const c = d.connections[idx];
-      if (c) (c[key] as string) = value;
+      const sp = d.spans[idx];
+      if (sp) sp[key] = value;
+    });
+  }
+
+  function setTerm(idx: number, end: "start" | "end", key: string, value: string) {
+    set((d) => {
+      const t = d.spans[idx]?.[end] as unknown as Record<string, string> | undefined;
+      if (t) t[key] = value;
+    });
+  }
+
+  function setHw(idx: number, end: "start" | "end", key: string, value: string) {
+    set((d) => {
+      const t = d.spans[idx]?.[end];
+      if (t) (t.hardware as unknown as Record<string, string>)[key] = value;
     });
   }
 
@@ -948,79 +964,63 @@ export default function MeasureEditor({
           </Grid>
         </Card>
 
-        {/* Connections & existing columns */}
-        <Card title={`🔗 ${mt(lang, "connectionsTitle")}`}>
-          <div className="text-xs text-neutral-500 mb-3">{mt(lang, "connectionsHint")}</div>
-          <div className="space-y-3">
-            {data.connections.map((c, ci) => (
-              <div key={c.id} className="border border-neutral-800 rounded-lg p-3 bg-neutral-950/60">
+        {/* Rail spans — every piece: length + BOTH end terminations */}
+        <Card title={`🔗 ${mt(lang, "spansTitle")}`}>
+          <div className="text-xs text-neutral-500 mb-3">{mt(lang, "spansHint")}</div>
+          <div className="space-y-4">
+            {data.spans.map((sp, si) => (
+              <div key={sp.id} className="border border-neutral-700 rounded-xl p-3 bg-neutral-950/60">
                 <div className="flex items-center mb-2">
                   <span className="font-bold text-amber-400">
-                    {mt(lang, "connLabel")} #{ci + 1}
+                    {mt(lang, "spanLabel")} #{si + 1}
                   </span>
-                  <button
-                    onClick={() => set((d) => void (d.connections = d.connections.filter((x) => x.id !== c.id)))}
-                    className="ml-auto text-xs text-red-400 border border-red-900 rounded-full px-2.5 py-1"
-                  >
-                    ✕ {mt(lang, "removeConn")}
-                  </button>
+                  {data.spans.length > 1 && (
+                    <button
+                      onClick={() => set((d) => void (d.spans = d.spans.filter((x) => x.id !== sp.id)))}
+                      className="ml-auto text-xs text-red-400 border border-red-900 rounded-full px-2.5 py-1"
+                    >
+                      ✕ {mt(lang, "removeConn")}
+                    </button>
+                  )}
                 </div>
-                <MInput label={mt(lang, "connWhere")} placeholder="—" value={c.where}
-                  onChange={(v) => setConn(ci, "where", v)} />
+                <MInput label={mt(lang, "spanName")} placeholder="—" value={sp.label}
+                  onChange={(v) => setSpan(si, "label", v)} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                  <ChipRow
-                    label={mt(lang, "connAttachTo")}
-                    value={c.attachTo}
-                    options={CONN_ATTACH.map((o) => [o, mt(lang, `attach_${o}`)] as [string, string])}
-                    onChange={(v) => setConn(ci, "attachTo", v)}
-                  />
-                  <ChipRow
-                    label={mt(lang, "connMethod")}
-                    value={c.method}
-                    options={CONN_METHODS.map((o) => [o, mt(lang, `method_${o}`)] as [string, string])}
-                    onChange={(v) => setConn(ci, "method", v)}
-                  />
+                  <MInput label={mt(lang, "topSpanLbl")} value={sp.topSpan}
+                    onChange={(v) => setSpan(si, "topSpan", v)} />
+                  <MInput label={`${mt(lang, "lowerSpanLbl")} — ${mt(lang, "lowerSpanHint")}`}
+                    value={sp.lowerSpan}
+                    onChange={(v) => setSpan(si, "lowerSpan", v)} />
                 </div>
-                {(c.attachTo === "wall" || c.attachTo === "existing_post") && (
-                  <Grid>
-                    <MSelect label={mt(lang, "connMaterial")} value={c.material}
-                      options={[...ANCHOR_OPTIONS]} lang={lang}
-                      onChange={(v) => setConn(ci, "material", v)} />
-                    {c.attachTo === "existing_post" && (
-                      <MInput label={mt(lang, "connColumnSize")} value={c.columnSize}
-                        onChange={(v) => setConn(ci, "columnSize", v)} />
-                    )}
-                  </Grid>
-                )}
-                {c.attachTo === "existing_post" && (
-                  <div className="mt-3 border border-neutral-800 rounded-lg p-3">
-                    <div className="text-xs text-neutral-500 mb-2">{mt(lang, "moldingHint")}</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <MInput label={mt(lang, "moldingLbl")} placeholder="—" value={c.molding}
-                        onChange={(v) => setConn(ci, "molding", v)} />
-                      {c.molding.trim() !== "" && (
-                        <>
-                          <MInput label={mt(lang, "lenAtTop")} value={c.lenAtTop}
-                            onChange={(v) => setConn(ci, "lenAtTop", v)} />
-                          <MInput label={mt(lang, "lenAtMolding")} value={c.lenAtMolding}
-                            onChange={(v) => setConn(ci, "lenAtMolding", v)} />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {(["start", "end"] as const).map((endKey) => (
+                  <TermEditor
+                    key={endKey}
+                    lang={lang}
+                    title={mt(lang, endKey === "start" ? "startTerm" : "endTerm")}
+                    t={sp[endKey]}
+                    hasPhoto={data.photos.some((ph) => ph.slot === `term_${sp.id}_${endKey}`)}
+                    onField={(k, v) => setTerm(si, endKey, k, v)}
+                    onHw={(k, v) => setHw(si, endKey, k, v)}
+                    onPhoto={() =>
+                      setPhotoSlot({
+                        slot: `term_${sp.id}_${endKey}`,
+                        label: `${mt(lang, "termPhoto")} — ${mt(lang, "spanLabel")} ${si + 1} ${mt(lang, endKey === "start" ? "startTerm" : "endTerm")}`,
+                      })
+                    }
+                  />
+                ))}
                 <div className="mt-3">
-                  <MInput label={mt(lang, "notes")} placeholder="—" value={c.note}
-                    onChange={(v) => setConn(ci, "note", v)} />
+                  <MInput label={mt(lang, "notes")} placeholder="—" value={sp.note}
+                    onChange={(v) => setSpan(si, "note", v)} />
                 </div>
               </div>
             ))}
           </div>
           <button
-            onClick={() => set((d) => void d.connections.push(newConnection()))}
+            onClick={() => set((d) => void d.spans.push(newSpan()))}
             className="mt-3 px-4 py-2.5 rounded-lg border border-amber-600 bg-amber-500/10 text-amber-300 text-sm font-bold"
           >
-            {mt(lang, "addConnection")}
+            {mt(lang, "addSpan")}
           </button>
         </Card>
 
@@ -1651,6 +1651,141 @@ function CheckRow({ c, lang }: { c: CheckResult; lang: string }) {
                 : ""
             }`}
       </span>
+    </div>
+  );
+}
+
+function TermEditor({
+  lang,
+  title,
+  t,
+  hasPhoto,
+  onField,
+  onHw,
+  onPhoto,
+}: {
+  lang: string;
+  title: string;
+  t: Termination;
+  hasPhoto: boolean;
+  onField: (key: string, value: string) => void;
+  onHw: (key: string, value: string) => void;
+  onPhoto: () => void;
+}) {
+  const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
+  const needsHw = !!t.method && (HARDWARE_METHODS as string[]).includes(t.method);
+  const isWall = t.attachTo === "wall";
+  const isColumn = t.attachTo === "existing_post";
+  const isWoodFloor = t.attachTo === "floor" && t.material === "Wood";
+
+  return (
+    <div className="mt-3 border border-neutral-800 rounded-lg p-3">
+      <div className="text-xs font-bold text-neutral-300 mb-2">⚓ {title}</div>
+      <ChipRow
+        label={mt(lang, "connAttachTo")}
+        value={t.attachTo}
+        options={ATTACH_TARGETS.map((o) => [o, mt(lang, `attach_${o}`)] as [string, string])}
+        onChange={(v) => {
+          onField("attachTo", v);
+          onField("method", ""); // methods depend on the target
+        }}
+      />
+      {allowed.length > 0 && (
+        <div className="mt-3">
+          <ChipRow
+            label={mt(lang, "connMethod")}
+            value={t.method}
+            options={allowed.map((o) => [o, mt(lang, `method_${o}`)] as [string, string])}
+            onChange={(v) => onField("method", v)}
+          />
+        </div>
+      )}
+      {(isWall || isColumn || t.attachTo === "floor") && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <MSelect label={mt(lang, "connMaterial")} value={t.material}
+            options={[...ANCHOR_OPTIONS]} lang={lang}
+            onChange={(v) => onField("material", v)} />
+          {(isWall || isWoodFloor) && (
+            <MInput
+              label={mt(lang, isWall ? "backingLbl" : "backingWoodLbl")}
+              placeholder="—" value={t.backing}
+              onChange={(v) => onField("backing", v)} />
+          )}
+          {isColumn && (
+            <>
+              <MInput label={mt(lang, "columnWLbl")} value={t.columnW}
+                onChange={(v) => onField("columnW", v)} />
+              <MInput label={mt(lang, "columnDLbl")} value={t.columnD}
+                onChange={(v) => onField("columnD", v)} />
+            </>
+          )}
+        </div>
+      )}
+      {isColumn && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <MInput label={mt(lang, "moldingLbl")} placeholder="—" value={t.molding}
+            onChange={(v) => onField("molding", v)} />
+          {t.molding.trim() !== "" && (
+            <MInput label={mt(lang, "moldingHeightLbl")} value={t.moldingHeight}
+              onChange={(v) => onField("moldingHeight", v)} />
+          )}
+          <MInput label={mt(lang, "plumbLbl")} placeholder="—" value={t.plumb}
+            onChange={(v) => onField("plumb", v)} />
+        </div>
+      )}
+      {needsHw && (
+        <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-900/60">
+          <div className="text-xs font-bold text-neutral-400 mb-2">🔩 {mt(lang, "hardwareTitle")}</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <MInput label={`${mt(lang, "hwFastener")} *`} placeholder="—" value={t.hardware.fastener}
+              onChange={(v) => onHw("fastener", v)} />
+            <MInput label={`${mt(lang, "hwQty")} *`} placeholder="—" value={t.hardware.qty}
+              onChange={(v) => onHw("qty", v)} />
+            <MInput label={`${mt(lang, "hwElevation")} *`} value={t.hardware.elevation}
+              onChange={(v) => onHw("elevation", v)} />
+            <ChipRow
+              label={`${mt(lang, "hwShopField")} *`}
+              value={t.hardware.shopField}
+              options={[
+                ["shop_weld", mt(lang, "shop_weld")],
+                ["field_bolt", mt(lang, "field_bolt")],
+              ]}
+              onChange={(v) => onHw("shopField", v)}
+            />
+          </div>
+          <details className="mt-2">
+            <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
+              + {mt(lang, "postMore")}
+            </summary>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+              <MInput label={mt(lang, "hwProfile")} placeholder="—" value={t.hardware.profile}
+                onChange={(v) => onHw("profile", v)} />
+              <MInput label={mt(lang, "hwThickness")} value={t.hardware.thickness}
+                onChange={(v) => onHw("thickness", v)} />
+              <MInput label={mt(lang, "hwHoleDia")} value={t.hardware.holeDia}
+                onChange={(v) => onHw("holeDia", v)} />
+              <MInput label={mt(lang, "hwHoleSpacing")} value={t.hardware.holeSpacing}
+                onChange={(v) => onHw("holeSpacing", v)} />
+              <MInput label={mt(lang, "hwEdgeDist")} value={t.hardware.edgeDist}
+                onChange={(v) => onHw("edgeDist", v)} />
+              <MInput label={mt(lang, "hwOrientation")} placeholder="—" value={t.hardware.orientation}
+                onChange={(v) => onHw("orientation", v)} />
+              <MInput label={mt(lang, "hwWeldSize")} value={t.hardware.weldSize}
+                onChange={(v) => onHw("weldSize", v)} />
+            </div>
+          </details>
+          <button
+            onClick={onPhoto}
+            className={`mt-3 px-3 py-2.5 rounded-lg border text-sm font-bold ${
+              hasPhoto
+                ? "border-neutral-700 bg-neutral-800 text-neutral-300"
+                : "border-amber-600 bg-amber-500/10 text-amber-300"
+            }`}
+          >
+            📷 {mt(lang, "termPhoto")} {hasPhoto ? "✓" : "*"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

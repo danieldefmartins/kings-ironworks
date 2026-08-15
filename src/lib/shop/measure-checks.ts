@@ -5,11 +5,14 @@
 
 import {
   requiredPhotoSlots,
+  METHODS_BY_ATTACH,
+  HARDWARE_METHODS,
   type FlightSegment,
   type MeasureData,
   type MeasureShape,
   type PlatformSegment,
   type PostMeasure,
+  type Termination,
 } from "./measure";
 
 // ---- Parsing ---------------------------------------------------------------
@@ -117,7 +120,7 @@ function stairTurns(data: MeasureData): boolean {
 }
 
 export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
-  if (shape === "custom") return [...customChecks(data), ...connectionChecks(data)];
+  if (shape === "custom") return [...customChecks(data), ...spanChecks(data)];
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape);
   }
@@ -204,7 +207,7 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
     );
   });
 
-  out.push(...connectionChecks(data));
+  out.push(...spanChecks(data));
 
   // 5) width variation bottom / mid / top
   const widths = [
@@ -229,20 +232,22 @@ export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[]
   return out;
 }
 
-// Molding cross-check: (length at top) − (length at molding) should equal
-// the molding thickness on each side the rail lands against — 2× when both
-// ends have moldings is captured per-connection, so here it is per end: the
-// difference equals ONE molding depth.
-function connectionChecks(data: MeasureData): CheckResult[] {
+// Span molding math: the top clear span minus the lower clear span must equal
+// the SUM of both end molding projections (blank molding counts as 0). This
+// verifies the whole piece, including rails fitted between TWO molded columns.
+function spanChecks(data: MeasureData): CheckResult[] {
   const out: CheckResult[] = [];
-  data.connections.forEach((c, i) => {
-    if (!c.molding || c.molding.trim() === "") return;
-    const m = parseMeas(c.molding);
-    const top = parseMeas(c.lenAtTop);
-    const bot = parseMeas(c.lenAtMolding);
-    const diff = top !== null && bot !== null ? top - bot : null;
+  data.spans.forEach((sp, i) => {
+    const top = parseMeas(sp.topSpan);
+    const lower = parseMeas(sp.lowerSpan);
+    const mStart = sp.start.molding.trim() === "" ? 0 : parseMeas(sp.start.molding);
+    const mEnd = sp.end.molding.trim() === "" ? 0 : parseMeas(sp.end.molding);
+    const anyMolding = sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "";
+    if (!anyMolding && (lower === null || top === null)) return; // nothing to verify
+    const expected = mStart !== null && mEnd !== null ? mStart + mEnd : null;
+    const diff = top !== null && lower !== null ? top - lower : null;
     out.push(
-      compare("molding_diff", m, diff, { green: 0.125, yellow: 0.375 }, "in", `#${i + 1}`)
+      compare("molding_span", expected, diff, { green: 0.125, yellow: 0.375 }, "in", `#${i + 1}`)
     );
   });
   return out;
@@ -268,7 +273,7 @@ function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResul
       out.push({ key: "spiral_riser", level: "na", expected: null, actual: null, delta: null, unit: "in" });
     }
   }
-  out.push(...connectionChecks(data));
+  out.push(...spanChecks(data));
   if (shape === "ramp") {
     const seg = data.segments[0];
     if (seg && seg.kind === "ramp") {
@@ -361,13 +366,24 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     } else {
       const missingLens = plan.segs.filter((sg) => !has(sg.len)).length;
       if (missingLens > 0) gaps.push({ key: "plan_lengths", detail: `${missingLens}` });
+      // closure verification only works on closed shapes — close along the
+      // wall side if the rail itself is open
+      if (!plan.closed) gaps.push({ key: "plan_open" });
     }
   } else if (shape === "level_run") {
     const seg = data.segments[0] as PlatformSegment | undefined;
     if (!seg || !has(seg.length)) gaps.push({ key: "run_length" });
   } else if (shape === "ramp") {
     const seg = data.segments[0];
-    if (!seg || seg.kind !== "ramp" || !has(seg.rise) || (!has(seg.runH) && !has(seg.length))) {
+    if (
+      !seg ||
+      seg.kind !== "ramp" ||
+      !has(seg.rise) ||
+      !has(seg.runH) ||
+      !has(seg.length) ||
+      !has(seg.angleDeg) ||
+      !has(seg.width)
+    ) {
       gaps.push({ key: "ramp_geometry" });
     }
   } else {
@@ -378,9 +394,12 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       });
       if (!has(fl.width)) gaps.push({ key: "flight_width", detail: `#${fi + 1}` });
       if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: `#${fi + 1}` });
-      // flights that turn need their own rake — one global rake can't verify them
-      if ((turns || flights.length > 1) && !has(fl.rake)) {
-        gaps.push({ key: "flight_rake", detail: `#${fi + 1}` });
+      // flights that turn need their own controls — one global rake/run
+      // cannot verify them
+      if (turns || flights.length > 1) {
+        if (!has(fl.rake)) gaps.push({ key: "flight_rake", detail: `#${fi + 1}` });
+        if (!has(fl.ctrlRise)) gaps.push({ key: "flight_ctrl_rise", detail: `#${fi + 1}` });
+        if (!has(fl.ctrlRun)) gaps.push({ key: "flight_ctrl_run", detail: `#${fi + 1}` });
       }
     });
     if (missingSteps > 0) gaps.push({ key: "steps", detail: `${missingSteps}` });
@@ -392,6 +411,16 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       if (!has(data.overall.rakeLength)) gaps.push({ key: "rake" });
     }
   }
+
+  // landings need their own dimensions + squareness diagonal
+  data.segments.forEach((seg, si) => {
+    if (seg.kind !== "platform") return;
+    const pl = seg as PlatformSegment;
+    const tag = data.segments.length > 2 ? `#${si}` : undefined;
+    if (!has(pl.length) && shape !== "level_run") gaps.push({ key: "landing_length", detail: tag });
+    if (!has(pl.depth)) gaps.push({ key: "landing_depth", detail: tag });
+    if (!has(pl.diag)) gaps.push({ key: "landing_diag", detail: tag });
+  });
 
   if (!has(data.rail.height)) gaps.push({ key: "rail_height" });
 
@@ -438,22 +467,20 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     gaps.push({ key: "mat_picket" });
   }
 
-  // connections the crew added must be fully specified
-  data.connections.forEach((c, i) => {
+  // Every rail piece: how long is it and how does EACH end attach? At least
+  // one span, both terminations defined, methods valid for their substrate.
+  if (data.spans.length === 0) {
+    gaps.push({ key: "span_missing" });
+  }
+  const termPhotos = new Set(data.photos.map((p) => p.slot));
+  data.spans.forEach((sp, i) => {
     const tag = `#${i + 1}`;
-    if (!has(c.attachTo) || !has(c.method)) {
-      gaps.push({ key: "conn_method", detail: tag });
-      return;
-    }
-    if ((c.attachTo === "wall" || c.attachTo === "existing_post") && !has(c.material)) {
-      gaps.push({ key: "conn_material", detail: tag });
-    }
-    if (c.attachTo === "existing_post" && !has(c.columnSize)) {
-      gaps.push({ key: "conn_column", detail: tag });
-    }
-    if (has(c.molding) && (!has(c.lenAtTop) || !has(c.lenAtMolding))) {
-      gaps.push({ key: "conn_lengths", detail: tag });
-    }
+    if (!has(sp.topSpan)) gaps.push({ key: "span_top", detail: tag });
+    const anyMolding = sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "";
+    if (anyMolding && !has(sp.lowerSpan)) gaps.push({ key: "span_lower", detail: tag });
+    (["start", "end"] as const).forEach((endKey) => {
+      gaps.push(...terminationGaps(sp[endKey], `${tag} ${endKey}`, termPhotos, `term_${sp.id}_${endKey}`));
+    });
   });
 
   // fabrication constraints ("one piece" / "N/A" are valid answers)
@@ -511,4 +538,55 @@ export function orderedPosts(data: MeasureData): PostMeasure[] {
     }
   });
   return out;
+}
+
+function terminationGaps(
+  t: Termination,
+  tag: string,
+  photoSlots: Set<string>,
+  photoSlot: string
+): Gap[] {
+  const gaps: Gap[] = [];
+  const has = (v: string | undefined | null) => !!v && v.trim() !== "";
+
+  if (!has(t.attachTo)) {
+    gaps.push({ key: "term_target", detail: tag });
+    return gaps; // nothing else can be validated yet
+  }
+  const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
+  if (allowed.length > 0) {
+    if (!has(t.method)) {
+      gaps.push({ key: "term_method", detail: tag });
+    } else if (!allowed.includes(t.method)) {
+      gaps.push({ key: "term_method_invalid", detail: tag });
+    }
+    // weld only into steel; wood floors only take a plate with blocking
+    if (t.method === "weld" && t.attachTo === "existing_post" && t.material !== "Steel") {
+      gaps.push({ key: "term_weld_steel", detail: tag });
+    }
+    if (t.attachTo === "floor" && t.material === "Wood" && t.method !== "base_plate") {
+      gaps.push({ key: "term_wood_floor", detail: tag });
+    }
+  }
+  if ((t.attachTo === "wall" || t.attachTo === "existing_post" || t.attachTo === "floor") && !has(t.material)) {
+    gaps.push({ key: "term_material", detail: tag });
+  }
+  if (t.attachTo === "wall" && !has(t.backing)) gaps.push({ key: "term_backing", detail: tag });
+  if (t.attachTo === "floor" && t.material === "Wood" && !has(t.backing)) {
+    gaps.push({ key: "term_backing", detail: tag });
+  }
+  if (t.attachTo === "existing_post") {
+    if (!has(t.columnW)) gaps.push({ key: "term_column_w", detail: tag });
+    if (!has(t.columnD)) gaps.push({ key: "term_column_d", detail: tag });
+  }
+  if (has(t.molding) && !has(t.moldingHeight)) gaps.push({ key: "term_molding_h", detail: tag });
+  if (has(t.method) && (HARDWARE_METHODS as string[]).includes(t.method)) {
+    const hw = t.hardware;
+    if (!has(hw.fastener)) gaps.push({ key: "term_fastener", detail: tag });
+    if (!has(hw.qty)) gaps.push({ key: "term_qty", detail: tag });
+    if (!has(hw.elevation)) gaps.push({ key: "term_elevation", detail: tag });
+    if (!has(hw.shopField)) gaps.push({ key: "term_shopfield", detail: tag });
+    if (!photoSlots.has(photoSlot)) gaps.push({ key: "term_photo", detail: tag });
+  }
+  return gaps;
 }

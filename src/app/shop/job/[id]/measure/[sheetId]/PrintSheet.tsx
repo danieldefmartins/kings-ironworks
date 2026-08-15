@@ -501,28 +501,45 @@ export default function PrintSheet({
               {mt(lang, "brackets")}: <b>{data.rail.brackets}</b>
             </div>
           )}
-          {/* connections & existing columns */}
-          {data.connections.length > 0 && (
+          {/* rail spans & terminations */}
+          {data.spans.length > 0 && (
             <div className="mt-2">
-              <SectionTitle>{mt(lang, "connectionsTitle")}</SectionTitle>
-              {data.connections.map((c, i) => (
-                <div key={c.id} style={{ marginBottom: 3 }}>
-                  <b>#{i + 1}</b>
-                  {c.where ? ` ${c.where} —` : " —"}{" "}
-                  {c.attachTo ? mt(lang, `attach_${c.attachTo}`) : "—"} ·{" "}
-                  {c.method ? <b>{mt(lang, `method_${c.method}`)}</b> : <Val v="" />}
-                  {c.material ? ` · ${optLabel(lang, c.material)}` : ""}
-                  {c.columnSize ? ` · ${mt(lang, "connColumnSize")}: ` : ""}
-                  {c.columnSize ? <b>{c.columnSize}</b> : null}
-                  {c.molding && c.molding.trim() !== "" && (
-                    <>
-                      {" · "}
-                      {mt(lang, "moldingLbl")}: <b>{c.molding}</b> ·{" "}
-                      {mt(lang, "lenAtTop")}: <Val v={c.lenAtTop} /> ·{" "}
-                      {mt(lang, "lenAtMolding")}: <Val v={c.lenAtMolding} />
-                    </>
-                  )}
-                  {c.note ? ` · ${c.note}` : ""}
+              <SectionTitle>{mt(lang, "spansTitle")}</SectionTitle>
+              {data.spans.map((sp, i) => (
+                <div key={sp.id} style={{ marginBottom: 4 }}>
+                  <div>
+                    <b>#{i + 1}</b>
+                    {sp.label ? ` ${sp.label}` : ""} · {mt(lang, "topSpanLbl")}: <Val v={sp.topSpan} />
+                    {(sp.start.molding || sp.end.molding) && (
+                      <>
+                        {" · "}
+                        {mt(lang, "lowerSpanLbl")}: <Val v={sp.lowerSpan} />
+                      </>
+                    )}
+                  </div>
+                  {(["start", "end"] as const).map((ek) => {
+                    const t = sp[ek];
+                    if (!t.attachTo) return (
+                      <div key={ek} style={{ paddingLeft: 10 }}>
+                        {mt(lang, ek === "start" ? "startTerm" : "endTerm")}: <Val v="" />
+                      </div>
+                    );
+                    return (
+                      <div key={ek} style={{ paddingLeft: 10 }}>
+                        {mt(lang, ek === "start" ? "startTerm" : "endTerm")}:{" "}
+                        <b>{mt(lang, `attach_${t.attachTo}`)}</b>
+                        {t.method ? <> · <b>{mt(lang, `method_${t.method}`)}</b></> : null}
+                        {t.material ? ` · ${optLabel(lang, t.material)}` : ""}
+                        {t.columnW ? ` · ${t.columnW}×${t.columnD || "?"}` : ""}
+                        {t.molding ? ` · ${mt(lang, "moldingLbl").split(" (")[0]}: ${t.molding} @ ${t.moldingHeight || "?"}` : ""}
+                        {t.hardware.fastener
+                          ? ` · ${t.hardware.qty || "?"}× ${t.hardware.fastener} @ ${t.hardware.elevation || "?"} (${t.hardware.shopField ? mt(lang, t.hardware.shopField) : "?"})`
+                          : ""}
+                        {t.backing ? ` · ${t.backing}` : ""}
+                        {t.note ? ` · ${t.note}` : ""}
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
             </div>

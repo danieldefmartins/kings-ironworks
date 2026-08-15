@@ -149,7 +149,44 @@ function completeData(photos) {
     },
     photos,
     annotations: {},
-    connections: [],
+    spans: [
+      {
+        id: "sp1",
+        label: "main rail",
+        topSpan: "60",
+        lowerSpan: "",
+        start: freeEnd(),
+        end: freeEnd(),
+        note: "",
+      },
+    ],
+  };
+}
+
+function freeEnd() {
+  return {
+    attachTo: "free_post", method: "", material: "", backing: "",
+    columnW: "", columnD: "", molding: "", moldingHeight: "", plumb: "",
+    hardware: blankHw(), note: "",
+  };
+}
+function blankHw() {
+  return {
+    fastener: "", qty: "", elevation: "", shopField: "",
+    profile: "", thickness: "", holeDia: "", holeSpacing: "",
+    edgeDist: "", orientation: "", weldSize: "",
+  };
+}
+function columnEnd(extra = {}) {
+  return {
+    ...freeEnd(),
+    attachTo: "existing_post", method: "clip", material: "Wood",
+    columnW: "5 1/2", columnD: "5 1/2", molding: "3/4", moldingHeight: "6",
+    hardware: {
+      ...blankHw(),
+      fastener: '2x 3/8" lag', qty: "2", elevation: "34", shopField: "field_bolt",
+    },
+    ...extra,
   };
 }
 
@@ -282,6 +319,13 @@ check(
   (await api({ type: "approve", id: customId, jobId: JOB, confirmReference: true })).status === 200
 );
 
+// open drawing must block (closure can only be verified on closed shapes)
+const openPlan = structuredClone(customData);
+openPlan.plan.closed = false;
+openPlan.plan.segs = openPlan.plan.segs.slice(0, 3);
+await api({ type: "update", id: customId, jobId: JOB, data: openPlan }, cookie2);
+check("open custom drawing → submit 422", (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422);
+
 // custom closure check: one wrong length ⇒ red ⇒ submit blocked
 const badClose = structuredClone(customData);
 badClose.plan.segs[0].len = "160";
@@ -291,30 +335,63 @@ check(
   (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422
 );
 
-// ---- connections & molding cross-check -------------------------------------
-const cn = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API CONN" }, cookie2);
-const connId = (await cn.json()).id;
-const connData = completeData(realPhotos);
-connData.connections = [
-  {
-    id: "c1", where: "top right", attachTo: "existing_post", method: "clip",
-    material: "Wood", columnSize: "5 1/2", molding: "3/4",
-    lenAtTop: "60", lenAtMolding: "59 1/4", note: "",
-  },
+// ---- rail spans: mandatory endpoints, valid methods, dual-molding math -----
+const cn = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API SPAN" }, cookie2);
+const spanId = (await cn.json()).id;
+const termPhotoPathStart = await uploadPhoto("e2e term start");
+const termPhotoPathEnd = await uploadPhoto("e2e term end");
+
+// no spans at all → blocked
+const noSpan = completeData(realPhotos);
+noSpan.spans = [];
+await api({ type: "update", id: spanId, jobId: JOB, data: noSpan }, cookie2);
+check("no span defined → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// endpoint left undefined → blocked
+const noEnd = completeData(realPhotos);
+noEnd.spans[0].end = { ...freeEnd(), attachTo: "" };
+await api({ type: "update", id: spanId, jobId: JOB, data: noEnd }, cookie2);
+check("endpoint undefined → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// physically invalid combination (floor + clip fails schema-level? no — gate) → blocked
+const badCombo = completeData(realPhotos);
+badCombo.spans[0].end = { ...freeEnd(), attachTo: "floor", method: "clip", material: "Concrete" };
+await api({ type: "update", id: spanId, jobId: JOB, data: badCombo }, cookie2);
+check("floor+clip invalid combo → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// weld into a wood column → blocked
+const weldWood = completeData(realPhotos);
+weldWood.spans[0].end = columnEnd({ method: "weld" });
+await api({ type: "update", id: spanId, jobId: JOB, data: weldWood }, cookie2);
+check("weld into wood column → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// clip without hardware/photo → blocked
+const noHw = completeData(realPhotos);
+noHw.spans[0].end = columnEnd({ hardware: blankHw() });
+noHw.spans[0].lowerSpan = "59 1/4";
+await api({ type: "update", id: spanId, jobId: JOB, data: noHw }, cookie2);
+check("clip without hardware → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+
+// dual-molding span: 60 top, 58 1/2 lower, 3/4 + 3/4 moldings → consistent
+const dual = completeData(realPhotos);
+dual.spans[0].start = columnEnd();
+dual.spans[0].end = columnEnd();
+dual.spans[0].topSpan = "60";
+dual.spans[0].lowerSpan = "58 1/2";
+dual.photos = [
+  ...realPhotos,
+  { slot: "term_sp1_start", path: termPhotoPathStart, takenAt: "2026-01-01T00:00:00Z" },
+  { slot: "term_sp1_end", path: termPhotoPathEnd, takenAt: "2026-01-01T00:00:00Z" },
 ];
-await api({ type: "update", id: connId, jobId: JOB, data: connData }, cookie2);
-check("conn w/ consistent molding → submit 200", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 200);
+await api({ type: "update", id: spanId, jobId: JOB, data: dual }, cookie2);
+check("dual-molding consistent span → submit 200", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 200);
 
-const badConn = structuredClone(connData);
-badConn.connections[0].lenAtMolding = "58"; // diff 2" vs molding 3/4" → red
-await api({ type: "update", id: connId, jobId: JOB, data: badConn }, cookie2);
-check("molding mismatch → submit 422", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 422);
-
-const noMethod = structuredClone(connData);
-noMethod.connections[0].method = "";
-await api({ type: "update", id: connId, jobId: JOB, data: noMethod }, cookie2);
-check("connection missing method → submit 422", (await api({ type: "submit", id: connId, jobId: JOB }, cookie2)).status === 422);
-check("delete conn sheet → 200", (await api({ type: "delete", id: connId, jobId: JOB })).status === 200);
+// same span with a wrong lower measurement → red → blocked
+const dualBad = structuredClone(dual);
+dualBad.spans[0].lowerSpan = "57"; // diff 3" vs 1 1/2" of moldings
+await api({ type: "update", id: spanId, jobId: JOB, data: dualBad }, cookie2);
+check("dual-molding mismatch → submit 422", (await api({ type: "submit", id: spanId, jobId: JOB }, cookie2)).status === 422);
+check("delete span sheet → 200", (await api({ type: "delete", id: spanId, jobId: JOB })).status === 200);
 
 // ---- cleanup ---------------------------------------------------------------
 check("delete → 200", (await api({ type: "delete", id, jobId: JOB })).status === 200);

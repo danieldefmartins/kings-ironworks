@@ -124,16 +124,42 @@ const PlanSchema = z
   .nullable()
   .optional();
 
-const ConnectionSchema = z.object({
-  id: z.string().max(40),
-  where: z.string().max(120),
-  attachTo: z.enum(["", "wall", "existing_post", "floor"]),
-  method: z.enum(["", "clip", "wall_plate", "concrete_base", "weld"]),
+const HardwareSchema = z.object({
+  fastener: z.string().max(200),
+  qty: meas,
+  elevation: meas,
+  shopField: z.enum(["", "shop_weld", "field_bolt"]),
+  profile: z.string().max(200),
+  thickness: meas,
+  holeDia: meas,
+  holeSpacing: meas,
+  edgeDist: meas,
+  orientation: z.string().max(120),
+  weldSize: meas,
+});
+const TerminationSchema = z.object({
+  attachTo: z.enum(["", "free_post", "wall", "existing_post", "floor", "continue", "splice", "open"]),
+  method: z.enum([
+    "", "clip", "wall_plate", "anchor", "plate", "bolt_through", "weld",
+    "base_plate", "core_drill", "embedded", "field_bolt",
+  ]),
   material: z.string().max(80),
-  columnSize: meas,
+  backing: z.string().max(300),
+  columnW: meas,
+  columnD: meas,
   molding: meas,
-  lenAtTop: meas,
-  lenAtMolding: meas,
+  moldingHeight: meas,
+  plumb: z.string().max(120),
+  hardware: HardwareSchema,
+  note: z.string().max(300),
+});
+const SpanSchema = z.object({
+  id: z.string().max(40),
+  label: z.string().max(120),
+  topSpan: meas,
+  lowerSpan: meas,
+  start: TerminationSchema,
+  end: TerminationSchema,
   note: z.string().max(300),
 });
 
@@ -177,7 +203,7 @@ const MeasureDataSchema = z.object({
   photos: z.array(PhotoSchema).max(80),
   annotations: z.record(z.string().max(300), z.array(StrokeSchema).max(300)),
   plan: PlanSchema,
-  connections: z.array(ConnectionSchema).max(40),
+  spans: z.array(SpanSchema).max(40),
   units: z.enum(["in", "ftin"]).optional(),
 });
 
