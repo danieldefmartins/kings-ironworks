@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker } from "@/lib/shop/session";
-import { sbSelect, sbInsert, sbUpdate, sbDelete } from "@/lib/shop/db";
+import { sbSelect, sbInsert, sbUpdate, sbDelete, sbRpc } from "@/lib/shop/db";
 import {
   MEASURE_SHAPES,
   newMeasureData,
@@ -9,7 +9,7 @@ import {
   type MeasureShape,
   type MeasureSheet,
 } from "@/lib/shop/measure";
-import { submitBlockers } from "@/lib/shop/measure-checks";
+import { runChecks, submitBlockers } from "@/lib/shop/measure-checks";
 
 export const runtime = "nodejs";
 
@@ -27,11 +27,15 @@ const FlightSchema = z.object({
   width: meas,
   angleDeg: meas,
   angleBreak: short,
+  rake: meas,
+  ctrlRise: meas,
+  ctrlRun: meas,
 });
 const PlatformSchema = z.object({
   kind: z.literal("platform"),
   length: meas,
   depth: meas,
+  diag: meas,
   slope: meas,
   slopeDir: z.string().max(120),
   turn: z.enum(["none", "left", "right", "u"]),
@@ -39,6 +43,7 @@ const PlatformSchema = z.object({
 const RampSchema = z.object({
   kind: z.literal("ramp"),
   length: meas,
+  runH: meas,
   rise: meas,
   angleDeg: meas,
   width: meas,
@@ -302,6 +307,25 @@ export async function POST(req: NextRequest) {
             { status: 422 }
           );
         }
+        // Photo entries must reference real uploads that belong to THIS job —
+        // a JSON path alone is not evidence.
+        const paths = [...new Set(data.photos.map((ph) => ph.path))];
+        if (paths.length > 0) {
+          const found = await sbSelect<{ url: string }[]>(
+            "kiw_shop_photos",
+            `select=url&job_id=eq.${sheet.job_id}&url=in.(${paths
+              .map((x) => `"${x.replace(/"/g, "")}"`)
+              .join(",")})`
+          );
+          const have = new Set(found.map((f) => f.url));
+          const missingPaths = paths.filter((x) => !have.has(x));
+          if (missingPaths.length > 0) {
+            return NextResponse.json(
+              { error: "Photos missing from job records", missingPhotos: missingPaths.length },
+              { status: 422 }
+            );
+          }
+        }
         const rows = await sbUpdate<MeasureSheet[]>(TABLE, sheetFilter(body.id, jobOk), {
           status: "submitted",
           submitted_by: worker.id,
@@ -313,7 +337,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ ok: true, updated_at: rows[0]?.updated_at });
       }
 
-      // Admin approves: snapshot an immutable revision the shop fabricates from.
+      // Admin approves. The database function does the whole thing in one
+      // transaction (row lock, supersede, snapshot, mark approved) and
+      // enforces that the measurer cannot approve their own submission.
       case "approve": {
         if (!worker.is_admin) return bad("Admin only", 403);
         if (!uuid.safeParse(body.id).success) return bad("Bad sheet id");
@@ -322,28 +348,42 @@ export async function POST(req: NextRequest) {
         if (sheet.status !== "submitted") {
           return bad("Sheet must be submitted before approval", 409);
         }
-        const revNo = (sheet.current_rev || 0) + 1;
-        await sbUpdate(REV_TABLE, `sheet_id=eq.${sheet.id}&superseded=eq.false`, {
-          superseded: true,
-        });
-        await sbInsert(REV_TABLE, {
-          sheet_id: sheet.id,
-          rev_no: revNo,
-          name: sheet.name,
-          shape: sheet.shape,
-          data: normalizeMeasureData(sheet.data),
-          approved_by: worker.id,
-          approved_at: now,
-        });
-        const rows = await sbUpdate<MeasureSheet[]>(TABLE, sheetFilter(body.id, jobOk), {
-          status: "approved",
-          approved_by: worker.id,
-          approved_at: now,
-          current_rev: revNo,
-          updated_by: worker.id,
-          updated_at: now,
-        });
-        return NextResponse.json({ ok: true, rev: revNo, updated_at: rows[0]?.updated_at });
+        const data = normalizeMeasureData(sheet.data);
+        // yellow warnings need an explicit reviewer acknowledgment
+        const yellows = runChecks(data, sheet.shape).filter((c) => c.level === "yellow");
+        if (yellows.length > 0 && body.ackWarnings !== true) {
+          return NextResponse.json(
+            { error: "Warnings need acknowledgment", needsAck: true, warnings: yellows.map((c) => c.key) },
+            { status: 409 }
+          );
+        }
+        // drawn custom shapes are reference geometry — reviewer must confirm
+        if (sheet.shape === "custom" && body.confirmReference !== true) {
+          return NextResponse.json(
+            { error: "Custom drawing is reference geometry — confirm before approving", needsReference: true },
+            { status: 409 }
+          );
+        }
+        try {
+          const revNo = await sbRpc<number>("kiw_shop_approve_measure_sheet", {
+            p_sheet_id: sheet.id,
+            p_worker_id: worker.id,
+          });
+          const after = await loadSheet(sheet.id, jobOk);
+          return NextResponse.json({
+            ok: true,
+            rev: revNo,
+            updated_at: after?.updated_at,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : "";
+          if (msg.includes("SELF_APPROVAL")) {
+            return bad("The person who submitted a sheet cannot approve it — a second reviewer must approve", 409);
+          }
+          if (msg.includes("NOT_SUBMITTED")) return bad("Sheet must be submitted before approval", 409);
+          if (msg.includes("SHEET_NOT_FOUND")) return bad("Sheet not found", 404);
+          throw e;
+        }
       }
 
       // Admin sends a submitted sheet back to the measurer with a comment.

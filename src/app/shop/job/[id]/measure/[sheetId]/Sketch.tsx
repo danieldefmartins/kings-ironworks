@@ -13,7 +13,8 @@ import type {
   SpiralData,
 } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
-import { parseMeas } from "@/lib/shop/measure-checks";
+import { parseMeas, sortPlatPosts } from "@/lib/shop/measure-checks";
+export { sortPlatPosts };
 
 const RUN = 46;
 const RISE = 26;
@@ -135,19 +136,6 @@ export default function Sketch({
       onTapPlatform={onTapPlatform}
     />
   );
-}
-
-// Platform/landing posts sort by their measured position along the run, not
-// by the order they were tapped in.
-export function sortPlatPosts<T extends { pos: string }>(posts: T[]): T[] {
-  return [...posts].sort((a, b) => {
-    const pa = parseMeas(a.pos);
-    const pb = parseMeas(b.pos);
-    if (pa === null && pb === null) return 0;
-    if (pa === null) return 1;
-    if (pb === null) return -1;
-    return pa - pb;
-  });
 }
 
 function OrientBanner({

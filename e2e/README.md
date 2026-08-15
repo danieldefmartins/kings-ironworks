@@ -19,8 +19,10 @@ npm run build && npm run start -- -p 3457
 
 # terminal 2
 export SHOP_BASE_URL=http://localhost:3457
-export SHOP_WORKER_ID=<uuid from kiw_shop_workers>
+export SHOP_WORKER_ID=<uuid of an ADMIN worker>       # approves
 export SHOP_PIN=<that worker's PIN>
+export SHOP_WORKER2_ID=<uuid of a NON-admin worker>   # measures + submits
+export SHOP_PIN2=<that worker's PIN>
 export SHOP_JOB_ID=<uuid of any active kiw_shop_jobs row>
 
 node e2e/measure.api.test.mjs

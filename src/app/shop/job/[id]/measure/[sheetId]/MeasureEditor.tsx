@@ -24,11 +24,12 @@ import {
   runChecks,
   requiredGaps,
   formatIn,
+  orderedPosts,
   type CheckResult,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS, specValue } from "@/lib/shop/i18n";
-import Sketch, { sketchViews, sortPlatPosts, type SketchView } from "./Sketch";
+import Sketch, { sketchViews, type SketchView } from "./Sketch";
 import PlanDraw from "./PlanDraw";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
@@ -56,22 +57,6 @@ function insertToken(tok: string) {
   const sep = el.value && !el.value.endsWith(" ") && !NOSPACE.has(tok) ? " " : "";
   setter.call(el, el.value + sep + tok);
   el.dispatchEvent(new Event("input", { bubbles: true }));
-}
-
-// Posts in the same order the sketch numbers them (walk segments bottom-up;
-// several posts may share a tread, landing posts sort by measured position).
-export function orderedPosts(data: MeasureData): PostMeasure[] {
-  const out: PostMeasure[] = [];
-  data.segments.forEach((seg, si) => {
-    if (seg.kind === "flight") {
-      seg.steps.forEach((_, i) => {
-        out.push(...data.posts.filter((po) => po.segIdx === si && po.stepIdx === i));
-      });
-    } else {
-      out.push(...sortPlatPosts(data.posts.filter((po) => po.segIdx === si)));
-    }
-  });
-  return out;
 }
 
 export default function MeasureEditor({
@@ -324,13 +309,50 @@ export default function MeasureEditor({
     }
   }
 
-  async function approveSheet() {
-    const d = await mutate({ type: "approve" }, "Approve failed");
-    if (d) {
-      setStatus("approved");
-      if (typeof d.rev === "number") setRev(d.rev);
-      setInfo(null);
+  async function approveSheet(extra: Record<string, unknown> = {}) {
+    const d = await enqueue(async () => {
+      try {
+        const res = await fetch("/shop/api/measure", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "approve", id: sheet.id, jobId: job.id, ...extra }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (res.ok) {
+          if (j.updated_at) baseUpdatedAt.current = j.updated_at;
+          setOpErr(null);
+          return j as Record<string, unknown>;
+        }
+        return { __fail: true, ...j } as Record<string, unknown>;
+      } catch {
+        return { __fail: true, error: "Network error" } as Record<string, unknown>;
+      }
+    });
+    if (!d) return;
+    if (d.__fail) {
+      // VERIFY warnings need explicit reviewer acknowledgment
+      if (d.needsAck) {
+        const list = ((d.warnings as string[]) || [])
+          .map((k) => `• ${mt(lang, `check_${k}`)}`)
+          .join("\n");
+        if (confirm(`${mt(lang, "ackWarningsPrompt")}\n\n${list}`)) {
+          return approveSheet({ ...extra, ackWarnings: true });
+        }
+        return;
+      }
+      // drawn shapes are reference geometry — confirm before approving
+      if (d.needsReference) {
+        if (confirm(mt(lang, "refConfirmPrompt"))) {
+          return approveSheet({ ...extra, confirmReference: true });
+        }
+        return;
+      }
+      setOpErr(String(d.error || "Approve failed"));
+      return;
     }
+    setStatus("approved");
+    if (typeof d.rev === "number") setRev(d.rev);
+    setInfo(null);
   }
 
   async function sendBackSheet() {
@@ -367,6 +389,10 @@ export default function MeasureEditor({
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "platform") as { seg: PlatformSegment; i: number }[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
+  const turns = data.segments.some(
+    (sg) => sg.kind === "platform" && (sg as PlatformSegment).turn !== "none"
+  );
+  const multiFlight = flights.length > 1 || turns;
 
   return (
     <PlaceholderCtx.Provider value={unitPh}>
@@ -743,6 +769,19 @@ export default function MeasureEditor({
                 placeholder="—" value={seg.angleBreak}
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
             </div>
+            {multiFlight && (
+              <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
+                <div className="text-xs text-neutral-500 mb-2">{mt(lang, "flightCtrlHint")}</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <MInput label={mt(lang, "flightRake")} value={seg.rake}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).rake = v))} />
+                  <MInput label={mt(lang, "flightCtrlRise")} value={seg.ctrlRise}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRise = v))} />
+                  <MInput label={mt(lang, "flightCtrlRun")} value={seg.ctrlRun}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRun = v))} />
+                </div>
+              </div>
+            )}
           </Card>
         ))}
 
@@ -754,6 +793,8 @@ export default function MeasureEditor({
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
               <MInput label={mt(lang, "depth")} value={seg.depth}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
+              <MInput label={mt(lang, "landingDiag")} value={seg.diag}
+                onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
               <MInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slope = v))} />
               <MInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
@@ -784,8 +825,10 @@ export default function MeasureEditor({
         {ramp && (
           <Card title={mt(lang, "shape_ramp")}>
             <Grid>
-              <MInput label={mt(lang, "length")} value={ramp.length}
+              <MInput label={mt(lang, "rampSlopeLen")} value={ramp.length}
                 onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).length = v))} />
+              <MInput label={mt(lang, "rampRunH")} value={ramp.runH}
+                onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).runH = v))} />
               <MInput label={mt(lang, "totalRise")} value={ramp.rise}
                 onChange={(v) => set((d) => void ((d.segments[0] as RampSegment).rise = v))} />
               <MInput label={mt(lang, "stairAngle")} value={ramp.angleDeg} placeholder="°"
@@ -998,9 +1041,11 @@ export default function MeasureEditor({
             )}
             <MInput label={mt(lang, "totalRise")} value={data.overall.totalRise}
               onChange={(v) => set((d) => void (d.overall.totalRise = v))} />
-            <MInput label={mt(lang, "totalRun")} value={data.overall.totalRun}
-              onChange={(v) => set((d) => void (d.overall.totalRun = v))} />
-            {!isSpiral && (
+            {!multiFlight && (
+              <MInput label={mt(lang, "totalRun")} value={data.overall.totalRun}
+                onChange={(v) => set((d) => void (d.overall.totalRun = v))} />
+            )}
+            {!isSpiral && !multiFlight && (
               <MInput label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
                 onChange={(v) => set((d) => void (d.overall.rakeLength = v))} />
             )}
@@ -1136,7 +1181,7 @@ export default function MeasureEditor({
               {isAdmin && (
                 <div className="flex flex-col sm:flex-row gap-2 mt-2">
                   <button
-                    onClick={approveSheet}
+                    onClick={() => approveSheet()}
                     className="flex-1 bg-green-600 text-white font-bold rounded-xl py-4"
                   >
                     ✓ {mt(lang, "approve")}
@@ -1163,6 +1208,12 @@ export default function MeasureEditor({
                   {sheet.approved_at ? ` · ${new Date(sheet.approved_at).toLocaleString()}` : ""}
                 </div>
               )}
+              <a
+                href={`/shop/job/${job.id}/measure/${sheet.id}/rev/${rev}`}
+                className="inline-block text-xs font-bold border border-green-700 bg-green-950/40 text-green-300 rounded-full px-3 py-2 mb-2"
+              >
+                🔒 {mt(lang, "viewLockedRev")} — {mt(lang, "revLabel")} {rev} ›
+              </a>
               <div className="text-xs text-amber-300/80">⚠ {mt(lang, "editWarning")}</div>
             </div>
           )}

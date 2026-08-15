@@ -9,6 +9,7 @@ import {
   type MeasureData,
   type MeasureShape,
   type PlatformSegment,
+  type PostMeasure,
 } from "./measure";
 
 // ---- Parsing ---------------------------------------------------------------
@@ -106,71 +107,100 @@ function compare(
 
 // ---- Cross-checks ----------------------------------------------------------
 
+// A stair "turns" when any landing changes direction — then flight geometry
+// must be verified per flight; one global run/rake spans different directions
+// and proves nothing.
+function stairTurns(data: MeasureData): boolean {
+  return data.segments.some(
+    (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
+  );
+}
+
 export function runChecks(data: MeasureData, shape: MeasureShape): CheckResult[] {
-  if (shape === "custom") return []; // drawn plans have no redundant geometry yet
+  if (shape === "custom") return customChecks(data);
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape);
   }
 
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const out: CheckResult[] = [];
+  const turns = stairTurns(data);
+  const multi = flights.length > 1;
 
-  let riseSum: number | null = 0;
-  let runSum: number | null = 0;
-  for (const fl of flights) {
-    for (const st of fl.steps) {
-      const r = parseMeas(st.rise);
-      const u = parseMeas(st.run);
-      riseSum = riseSum === null || r === null ? null : riseSum + r;
-      runSum = runSum === null || u === null ? null : runSum + u;
-    }
-  }
-  // platforms add to horizontal run between flights
-  let platRun = 0;
-  let platKnown = true;
-  for (const seg of data.segments) {
-    if (seg.kind === "platform") {
-      const l = parseMeas((seg as PlatformSegment).length);
-      if (l === null) platKnown = false;
-      else platRun += l;
-    }
-  }
-
-  // 1) sum of risers vs floor-to-floor (falls back to measured total rise)
-  const floorToFloor = parseMeas(data.overall.floorToFloor) ?? parseMeas(data.overall.totalRise);
-  out.push(compare("rise_sum", riseSum, floorToFloor, TOLERANCES.riseSum, "in"));
-
-  // 2) sum of runs (+ landings) vs measured total run
-  const totalRun = parseMeas(data.overall.totalRun);
-  const runExpected = runSum === null || !platKnown ? runSum === null ? null : runSum + platRun : runSum + platRun;
-  out.push(compare("run_sum", runExpected, totalRun, TOLERANCES.runSum, "in"));
-
-  // 3) computed diagonal vs measured rake (per rail line, flights only)
-  const rake = parseMeas(data.overall.rakeLength);
-  const diag =
-    riseSum !== null && runSum !== null
-      ? Math.hypot(riseSum, runSum)
-      : null;
-  out.push(compare("rake", diag, rake, TOLERANCES.rake, "in"));
-
-  // 4) computed vs measured stair angle, per flight
-  flights.forEach((fl, i) => {
-    let r = 0;
-    let u = 0;
-    let known = true;
+  // per-flight step sums
+  const sums = flights.map((fl) => {
+    let r: number | null = 0;
+    let u: number | null = 0;
     for (const st of fl.steps) {
       const rv = parseMeas(st.rise);
       const uv = parseMeas(st.run);
-      if (rv === null || uv === null) known = false;
-      else {
-        r += rv;
-        u += uv;
+      r = r === null || rv === null ? null : r + rv;
+      u = u === null || uv === null ? null : u + uv;
+    }
+    return { r, u };
+  });
+  const riseSum = sums.reduce<number | null>(
+    (acc, x) => (acc === null || x.r === null ? null : acc + x.r),
+    0
+  );
+
+  // 1) sum of ALL risers vs floor-to-floor — vertical heights add regardless
+  // of turns, so this stays global.
+  const floorToFloor = parseMeas(data.overall.floorToFloor) ?? parseMeas(data.overall.totalRise);
+  out.push(compare("rise_sum", riseSum, floorToFloor, TOLERANCES.riseSum, "in"));
+
+  if (!turns && !multi) {
+    // single straight rail line: global run + rake are meaningful
+    let platRun = 0;
+    let platKnown = true;
+    for (const seg of data.segments) {
+      if (seg.kind === "platform") {
+        const l = parseMeas((seg as PlatformSegment).length);
+        if (l === null) platKnown = false;
+        else platRun += l;
       }
     }
-    const calc = known && u > 0 ? (Math.atan2(r, u) * 180) / Math.PI : null;
+    const runSum = sums[0]?.u ?? null;
+    const totalRun = parseMeas(data.overall.totalRun);
+    const runExpected = runSum === null || !platKnown ? null : runSum + platRun;
+    out.push(compare("run_sum", runExpected, totalRun, TOLERANCES.runSum, "in"));
+
+    const rake = parseMeas(data.overall.rakeLength);
+    const riseF = sums[0]?.r ?? null;
+    const diag = riseF !== null && runSum !== null ? Math.hypot(riseF, runSum) : null;
+    out.push(compare("rake", diag, rake, TOLERANCES.rake, "in"));
+  } else {
+    // flights turn: verify each flight against ITS OWN controls
+    flights.forEach((fl, i) => {
+      const tag = `#${i + 1}`;
+      const { r, u } = sums[i];
+      out.push(compare("flight_rise", r, parseMeas(fl.ctrlRise), TOLERANCES.riseSum, "in", tag));
+      out.push(compare("flight_run", u, parseMeas(fl.ctrlRun), TOLERANCES.runSum, "in", tag));
+      const diag = r !== null && u !== null ? Math.hypot(r, u) : null;
+      out.push(compare("flight_rake", diag, parseMeas(fl.rake), TOLERANCES.rake, "in", tag));
+    });
+  }
+
+  // landing squareness: measured diagonal vs √(length² + depth²)
+  data.segments.forEach((seg, si) => {
+    if (seg.kind !== "platform") return;
+    const pl = seg as PlatformSegment;
+    const L = parseMeas(pl.length);
+    const D = parseMeas(pl.depth);
+    const dg = parseMeas(pl.diag);
+    const calc = L !== null && D !== null ? Math.hypot(L, D) : null;
+    out.push(
+      compare("landing_diag", calc, dg, TOLERANCES.rake, "in", data.segments.length > 2 ? `#${si}` : undefined)
+    );
+  });
+
+  // computed vs measured stair angle, per flight
+  flights.forEach((fl, i) => {
+    const { r, u } = sums[i];
+    const calc = r !== null && u !== null && u > 0 ? (Math.atan2(r, u) * 180) / Math.PI : null;
     const meas = parseMeas(fl.angleDeg);
     out.push(
-      compare("angle", calc, meas, TOLERANCES.angle, "deg", flights.length > 1 ? `#${i + 1}` : undefined)
+      compare("angle", calc, meas, TOLERANCES.angle, "deg", multi ? `#${i + 1}` : undefined)
     );
   });
 
@@ -220,14 +250,61 @@ function spiralOrLevelChecks(data: MeasureData, shape: MeasureShape): CheckResul
   if (shape === "ramp") {
     const seg = data.segments[0];
     if (seg && seg.kind === "ramp") {
-      const len = parseMeas(seg.length);
+      const slope = parseMeas(seg.length); // sloped length
+      const runH = parseMeas(seg.runH); // horizontal run
       const rise = parseMeas(seg.rise);
       const ang = parseMeas(seg.angleDeg);
-      const calc = len && rise !== null && len > 0 ? (Math.asin(Math.min(1, rise / len)) * 180) / Math.PI : null;
-      out.push(compare("angle", calc, ang, TOLERANCES.angle, "deg"));
+      // angle from the unambiguous horizontal-run triangle
+      const calcAng =
+        runH !== null && rise !== null && runH > 0
+          ? (Math.atan2(rise, runH) * 180) / Math.PI
+          : null;
+      out.push(compare("angle", calcAng, ang, TOLERANCES.angle, "deg"));
+      // sloped length vs √(run² + rise²)
+      const calcSlope = runH !== null && rise !== null ? Math.hypot(runH, rise) : null;
+      out.push(compare("ramp_slope", calcSlope, slope, TOLERANCES.rake, "in"));
     }
   }
   return out;
+}
+
+// Custom drawn plans: scale-independent closure check. For a CLOSED shape
+// whose drawn directions are known and every segment length is entered, the
+// length-weighted direction vectors must sum to ~zero. Catches a wrong
+// segment length without knowing the drawing's scale.
+function customChecks(data: MeasureData): CheckResult[] {
+  const plan = data.plan;
+  if (!plan || !plan.closed || plan.points.length < 3) {
+    return [{ key: "plan_closure", level: "na", expected: null, actual: null, delta: null, unit: "in" }];
+  }
+  const n = plan.points.length;
+  let ex = 0;
+  let ey = 0;
+  let perimeter = 0;
+  for (let i = 0; i < n; i++) {
+    const a = plan.points[i];
+    const b = plan.points[(i + 1) % n];
+    const len = parseMeas(plan.segs[i]?.len);
+    if (len === null) {
+      return [{ key: "plan_closure", level: "na", expected: null, actual: null, delta: null, unit: "in" }];
+    }
+    const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    ex += (len * (b.x - a.x)) / d;
+    ey += (len * (b.y - a.y)) / d;
+    perimeter += len;
+  }
+  const err = Math.hypot(ex, ey);
+  const pct = perimeter > 0 ? err / perimeter : 0;
+  return [
+    {
+      key: "plan_closure",
+      level: pct <= 0.01 ? "green" : pct <= 0.03 ? "yellow" : "red",
+      expected: 0,
+      actual: err,
+      delta: err,
+      unit: "in",
+    },
+  ];
 }
 
 // ---- Completeness gate -----------------------------------------------------
@@ -237,12 +314,20 @@ export interface Gap {
   detail?: string;
 }
 
-// What must exist before a sheet can be submitted for review.
+// What must exist before a sheet can be submitted for review. Requirements
+// are conditional: what a base-plate post needs differs from a core-drilled
+// one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const gaps: Gap[] = [];
   const has = (s: string | undefined | null) => !!s && s.trim() !== "";
 
   if (!has(data.datums.orientation)) gaps.push({ key: "orientation" });
+
+  const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
+  const hasPlatform = data.segments.some((s) => s.kind === "platform");
+  const turns = data.segments.some(
+    (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
+  );
 
   if (shape === "spiral") {
     if (!data.spiral || !has(data.spiral.floorToFloor)) gaps.push({ key: "floor_to_floor" });
@@ -260,40 +345,86 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if (!seg || !has(seg.length)) gaps.push({ key: "run_length" });
   } else if (shape === "ramp") {
     const seg = data.segments[0];
-    if (!seg || seg.kind !== "ramp" || !has(seg.length) || !has(seg.rise)) {
+    if (!seg || seg.kind !== "ramp" || !has(seg.rise) || (!has(seg.runH) && !has(seg.length))) {
       gaps.push({ key: "ramp_geometry" });
     }
   } else {
     let missingSteps = 0;
-    const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
     flights.forEach((fl, fi) => {
       fl.steps.forEach((st) => {
         if (!has(st.rise) || !has(st.run)) missingSteps += 1;
       });
       if (!has(fl.width)) gaps.push({ key: "flight_width", detail: `#${fi + 1}` });
       if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: `#${fi + 1}` });
+      // flights that turn need their own rake — one global rake can't verify them
+      if ((turns || flights.length > 1) && !has(fl.rake)) {
+        gaps.push({ key: "flight_rake", detail: `#${fi + 1}` });
+      }
     });
     if (missingSteps > 0) gaps.push({ key: "steps", detail: `${missingSteps}` });
     if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise)) {
       gaps.push({ key: "floor_to_floor" });
     }
-    if (!has(data.overall.totalRun)) gaps.push({ key: "total_run" });
-    if (!has(data.overall.rakeLength)) gaps.push({ key: "rake" });
+    if (!turns && flights.length === 1) {
+      if (!has(data.overall.totalRun)) gaps.push({ key: "total_run" });
+      if (!has(data.overall.rakeLength)) gaps.push({ key: "rake" });
+    }
   }
 
   if (!has(data.rail.height)) gaps.push({ key: "rail_height" });
 
-  // posts: every placed post needs its position + mount
+  // rail terminations
+  if (!has(data.rail.returns)) gaps.push({ key: "returns" });
+  if ((data.rail.kind === "Handrail" || data.rail.kind === "Both") && !has(data.rail.extensions)) {
+    gaps.push({ key: "extensions" });
+  }
+  if (shape === "wall_rail" && !has(data.rail.brackets)) gaps.push({ key: "brackets" });
+
+  // posts: position + mount always; the rest depends on how it mounts
+  const postPhotos = new Set(data.photos.map((p) => p.slot));
   data.posts.forEach((p, i) => {
+    const tag = `P${i + 1}`;
     const posOk = p.stepIdx !== null ? has(p.fromNosing) : has(p.pos);
     if (!posOk || !has(p.fromEdge) || !has(p.mount)) {
-      gaps.push({ key: "post", detail: `P${i + 1}` });
+      gaps.push({ key: "post", detail: tag });
+      return; // mount unknown — conditional rules can't apply yet
+    }
+    if (!has(p.substrate)) gaps.push({ key: "post_substrate", detail: tag });
+    if (p.mount === "Base plate") {
+      if (!has(p.plate)) gaps.push({ key: "post_plate", detail: tag });
+      if (!has(p.anchors)) gaps.push({ key: "post_anchors", detail: tag });
+      if (!has(p.edgeDist)) gaps.push({ key: "post_edge", detail: tag });
+      if (!postPhotos.has(`post_${p.id}`)) gaps.push({ key: "post_photo", detail: tag });
+    } else if (p.mount === "Core-drill") {
+      if (!has(p.anchors)) gaps.push({ key: "post_hole", detail: tag });
+      if (!has(p.obstruction)) gaps.push({ key: "post_obstruction", detail: tag });
+    } else if (p.mount === "Side mount") {
+      if (!has(p.plate)) gaps.push({ key: "post_plate", detail: tag });
+      if (!has(p.anchors)) gaps.push({ key: "post_anchors", detail: tag });
     }
   });
 
-  // required photo slots
+  // materials the shop cannot order without
+  if (shape !== "wall_rail" && !has(data.materials.post)) gaps.push({ key: "mat_post" });
+  if (!has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
+  if (!has(data.materials.finish)) gaps.push({ key: "mat_finish" });
+  if (
+    (data.rail.kind === "Guardrail" || data.rail.kind === "Both") &&
+    shape !== "wall_rail" &&
+    !has(data.materials.picket)
+  ) {
+    gaps.push({ key: "mat_picket" });
+  }
+
+  // fabrication constraints ("one piece" / "N/A" are valid answers)
+  if (!has(data.fab.splices)) gaps.push({ key: "splices" });
+  if (!has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
+
+  // required photo slots (+ the landing when there is one)
   const filled = new Set(data.photos.map((p) => p.slot));
-  for (const slot of requiredPhotoSlots(shape)) {
+  const slots = [...requiredPhotoSlots(shape)];
+  if (hasPlatform) slots.push("landing");
+  for (const slot of slots) {
     if (!filled.has(slot)) gaps.push({ key: "photo", detail: slot });
   }
 
@@ -309,4 +440,35 @@ export function submitBlockers(
     gaps: requiredGaps(data, shape),
     redChecks: runChecks(data, shape).filter((c) => c.level === "red"),
   };
+}
+
+// ---- Post ordering (shared by sketches, editor, and revision viewer) -------
+
+// Platform/landing posts sort by their measured position along the run, not
+// by the order they were tapped in.
+export function sortPlatPosts<T extends { pos: string }>(posts: T[]): T[] {
+  return [...posts].sort((a, b) => {
+    const pa = parseMeas(a.pos);
+    const pb = parseMeas(b.pos);
+    if (pa === null && pb === null) return 0;
+    if (pa === null) return 1;
+    if (pb === null) return -1;
+    return pa - pb;
+  });
+}
+
+// Posts in the same order the sketch numbers them (walk segments bottom-up;
+// several posts may share a tread, landing posts sort by measured position).
+export function orderedPosts(data: MeasureData): PostMeasure[] {
+  const out: PostMeasure[] = [];
+  data.segments.forEach((seg, si) => {
+    if (seg.kind === "flight") {
+      seg.steps.forEach((_, i) => {
+        out.push(...data.posts.filter((po) => po.segIdx === si && po.stepIdx === i));
+      });
+    } else {
+      out.push(...sortPlatPosts(data.posts.filter((po) => po.segIdx === si)));
+    }
+  });
+  return out;
 }

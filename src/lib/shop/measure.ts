@@ -58,12 +58,18 @@ export interface FlightSegment {
   width: string; // stair width
   angleDeg: string; // measured stair pitch
   angleBreak: string; // "" = consistent pitch; otherwise where/how much it changes
+  // Per-flight control measurements — required on multi-flight (L/U) stairs,
+  // where a single overall rake cannot verify flights that turn:
+  rake: string; // this flight's nose-to-nose diagonal
+  ctrlRise: string; // this flight's measured total rise
+  ctrlRun: string; // this flight's measured total run
 }
 
 export interface PlatformSegment {
   kind: "platform";
   length: string; // along the rail run
   depth: string;
+  diag: string; // corner-to-corner diagonal — verifies squareness
   slope: string; // e.g. 1.2° or 3/8"/ft — rail gets pitched to match
   slopeDir: string; // which way it falls
   turn: "none" | "left" | "right" | "u"; // direction change after this landing
@@ -71,9 +77,10 @@ export interface PlatformSegment {
 
 export interface RampSegment {
   kind: "ramp";
-  length: string;
-  rise: string;
-  angleDeg: string;
+  length: string; // sloped length, along the ramp surface
+  runH: string; // horizontal run
+  rise: string; // vertical rise
+  angleDeg: string; // measured angle
   width: string;
 }
 
@@ -270,11 +277,14 @@ function blankFlight(steps: number): FlightSegment {
     width: "",
     angleDeg: "",
     angleBreak: "",
+    rake: "",
+    ctrlRise: "",
+    ctrlRun: "",
   };
 }
 
 function blankPlatform(turn: PlatformSegment["turn"] = "none"): PlatformSegment {
-  return { kind: "platform", length: "", depth: "", slope: "", slopeDir: "", turn };
+  return { kind: "platform", length: "", depth: "", diag: "", slope: "", slopeDir: "", turn };
 }
 
 export function newMeasureData(
@@ -302,7 +312,7 @@ export function newMeasureData(
       segments = [blankPlatform()];
       break;
     case "ramp":
-      segments = [{ kind: "ramp", length: "", rise: "", angleDeg: "", width: "" }];
+      segments = [{ kind: "ramp", length: "", runH: "", rise: "", angleDeg: "", width: "" }];
       break;
     case "wall_rail":
       segments = [blankFlight(steps1)];
@@ -422,7 +432,19 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
   const d = (raw || {}) as Partial<MeasureData>;
   return {
     units: d.units === "ftin" ? "ftin" : "in",
-    segments: d.segments || [],
+    segments: (d.segments || []).map((seg) => {
+      if (seg.kind === "flight") {
+        return {
+          ...seg,
+          rake: seg.rake ?? "",
+          ctrlRise: seg.ctrlRise ?? "",
+          ctrlRun: seg.ctrlRun ?? "",
+        };
+      }
+      if (seg.kind === "platform") return { ...seg, diag: seg.diag ?? "" };
+      if (seg.kind === "ramp") return { ...seg, runH: seg.runH ?? "" };
+      return seg;
+    }),
     posts: (d.posts || []).map((p) => ({
       ...p,
       plate: p.plate ?? "",

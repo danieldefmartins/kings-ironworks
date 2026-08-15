@@ -64,3 +64,27 @@ values ('KIW-1044','Customer Name','Address','DTM Paint','EST-…','Scope…','A
 - QC photo capture (upload to a Supabase Storage bucket, save to `photos`).
 - Print a cut-tag sheet (one tag per `cut_item`).
 - Worker management screen (add/rename/PIN) instead of SQL.
+
+## Field Measure — shop tolerance policy
+
+The geometry cross-checks grade disagreement between redundant measurements
+against these tolerances (`src/lib/shop/measure-checks.ts`, `TOLERANCES`).
+They are **shop policy owned by Daniel** — change them there, in one place:
+
+| Check | Green (OK) | Yellow (VERIFY) |
+|---|---|---|
+| Sum of risers vs floor-to-floor (and per-flight rise) | ±1/4" | ±3/4" |
+| Sum of runs vs total run (and per-flight run) | ±3/8" | ±1" |
+| Diagonal vs measured rake (and landing diagonal, ramp slope) | ±1/2" | ±1 1/2" |
+| Calculated vs measured angle | ±1° | ±2.5° |
+| Width variation bottom→top | ±3/8" | ±1" |
+| Custom drawn-plan closure | ≤1% of perimeter | ≤3% |
+
+Beyond yellow = red = INCONSISTENT: the sheet cannot be submitted. Yellow
+requires explicit reviewer acknowledgment at approval. The app never edits a
+field value — it only flags disagreement.
+
+Approval is atomic (`kiw_shop_approve_measure_sheet` Postgres function,
+`supabase/migrations/`), admin-only, and the person who submitted a sheet can
+never approve it. Approval snapshots an immutable revision viewable at
+`/shop/job/<job>/measure/<sheet>/rev/<n>` — the printout's QR points there.

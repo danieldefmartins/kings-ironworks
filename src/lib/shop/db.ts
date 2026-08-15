@@ -188,6 +188,15 @@ export function sbUpdate<T>(
   });
 }
 
+// Call a Postgres function (PostgREST RPC). Errors surface as thrown
+// Error("Supabase <status>: <body>") from rest() — callers match on message.
+export function sbRpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
+  return rest<T>(`rpc/${fn}`, {
+    method: "POST",
+    body: JSON.stringify(args),
+  });
+}
+
 export function sbDelete<T = unknown>(table: string, query: string): Promise<T> {
   // return=representation so callers can verify a row was actually deleted
   return rest<T>(`${table}?${query}`, {
@@ -388,6 +397,19 @@ export async function getMeasureSheet(id: string): Promise<MeasureSheet | null> 
   const rows = await sbSelect<MeasureSheet[]>(
     "kiw_shop_measure_sheets",
     `select=*&id=eq.${id}&limit=1`
+  );
+  return rows[0] || null;
+}
+
+import type { MeasureRevision } from "./measure";
+
+export async function getMeasureRevision(
+  sheetId: string,
+  revNo: number
+): Promise<MeasureRevision | null> {
+  const rows = await sbSelect<MeasureRevision[]>(
+    "kiw_shop_measure_revisions",
+    `select=*&sheet_id=eq.${sheetId}&rev_no=eq.${revNo}&limit=1`
   );
   return rows[0] || null;
 }

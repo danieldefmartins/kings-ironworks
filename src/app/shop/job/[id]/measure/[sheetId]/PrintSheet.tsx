@@ -52,6 +52,9 @@ export default function PrintSheet({
   nameById = {},
   checks = [],
   gapCount = 0,
+  visible = false,
+  qrUrl,
+  superseded = false,
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -62,6 +65,9 @@ export default function PrintSheet({
   nameById?: Record<string, string>;
   checks?: CheckResult[];
   gapCount?: number;
+  visible?: boolean; // revision viewer renders it on screen, not print-only
+  qrUrl?: string; // approved sheets QR to the LOCKED revision, not the live record
+  superseded?: boolean; // an old revision replaced by a newer approval
 }) {
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
@@ -76,26 +82,47 @@ export default function PrintSheet({
   const approved = sheet.status === "approved";
   const warnings = checks.filter((c) => c.level === "yellow" || c.level === "red");
 
-  // QR code back to the live digital sheet
+  // QR: approved work points at the immutable revision; otherwise the live sheet
+  const target =
+    qrUrl ||
+    (approved && sheet.current_rev
+      ? `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}/rev/${sheet.current_rev}`
+      : `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}`);
   const [qr, setQr] = useState<string | null>(null);
   useEffect(() => {
-    QRCode.toString(
-      `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}`,
-      { type: "svg", margin: 0, width: 84 }
-    )
+    QRCode.toString(target, { type: "svg", margin: 0, width: 84 })
       .then(setQr)
       .catch(() => setQr(null));
-  }, [job.id, sheet.id]);
+  }, [target]);
 
   const orientation = data.datums?.orientation;
 
   return (
     <div
-      className="hidden print:block bg-white text-black p-6"
+      className={`${visible ? "block" : "hidden print:block"} bg-white text-black p-6`}
       style={{ fontSize: 12, position: "relative" }}
     >
+      {/* Superseded watermark: an older revision replaced by a newer approval */}
+      {superseded && (
+        <div
+          style={{
+            position: "absolute", inset: 0, display: "flex", alignItems: "center",
+            justifyContent: "center", pointerEvents: "none", zIndex: 5,
+          }}
+        >
+          <div
+            style={{
+              transform: "rotate(-28deg)", fontSize: 44, fontWeight: 900,
+              color: "rgba(120, 113, 108, 0.3)", border: "4px solid rgba(120, 113, 108, 0.3)",
+              padding: "10px 30px", letterSpacing: 4,
+            }}
+          >
+            {mt(lang, "supersededMark")}
+          </div>
+        </div>
+      )}
       {/* Not-approved watermark */}
-      {!approved && (
+      {!approved && !superseded && (
         <div
           style={{
             position: "absolute",

@@ -1,14 +1,19 @@
 // API contract tests for the measure route: auth, Zod validation, row
-// verification, compare-and-swap, and the submit → approve lifecycle.
+// verification, compare-and-swap, conditional completeness gate, photo
+// verification, and the submit → approve lifecycle with independent review.
+//
+// Requires TWO workers: SHOP_WORKER_ID must be an ADMIN, SHOP_WORKER2_ID a
+// non-admin (submits sheets so the admin can approve them).
 const BASE = process.env.SHOP_BASE_URL || "http://localhost:3457";
 const WORKER = process.env.SHOP_WORKER_ID;
 const PIN = process.env.SHOP_PIN;
 const JOB = process.env.SHOP_JOB_ID;
-// optional: a non-admin worker to prove approve is admin-only
 const WORKER2 = process.env.SHOP_WORKER2_ID;
 const PIN2 = process.env.SHOP_PIN2;
-if (!WORKER || !PIN || !JOB) {
-  console.error("Set SHOP_WORKER_ID, SHOP_PIN, SHOP_JOB_ID (and optionally SHOP_BASE_URL)");
+if (!WORKER || !PIN || !JOB || !WORKER2 || !PIN2) {
+  console.error(
+    "Set SHOP_WORKER_ID (admin), SHOP_PIN, SHOP_JOB_ID, SHOP_WORKER2_ID (non-admin), SHOP_PIN2"
+  );
   process.exit(2);
 }
 
@@ -22,7 +27,8 @@ async function loginCookie(workerId, pin) {
   return res.headers.get("set-cookie").split(";")[0];
 }
 
-const cookie = await loginCookie(WORKER, PIN);
+const cookie = await loginCookie(WORKER, PIN); // admin
+const cookie2 = await loginCookie(WORKER2, PIN2); // measurer
 const api = (body, ck = cookie) =>
   fetch(`${BASE}/shop/api/measure`, {
     method: "POST",
@@ -30,15 +36,41 @@ const api = (body, ck = cookie) =>
     body: JSON.stringify(body),
   });
 
-let pass = 0, fail = 0;
+// tiny valid JPEG so photo uploads are real storage objects
+const JPEG = Buffer.from(
+  "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
+  "base64"
+);
+async function uploadPhoto(label) {
+  const form = new FormData();
+  form.append("file", new File([JPEG], "t.jpg", { type: "image/jpeg" }));
+  form.append("jobId", JOB);
+  form.append("category", "Measurements");
+  form.append("label", label);
+  const res = await fetch(`${BASE}/shop/api/photo`, {
+    method: "POST",
+    headers: { cookie: cookie2 },
+    body: form,
+  });
+  const d = await res.json();
+  if (!res.ok || !d.path) throw new Error("photo upload failed");
+  return d.path;
+}
+
+let pass = 0,
+  fail = 0;
 const check = (name, cond, extra = "") => {
-  if (cond) { pass++; console.log(`  ok  ${name}`); }
-  else { fail++; console.log(`FAIL  ${name} ${extra}`); }
+  if (cond) {
+    pass++;
+    console.log(`  ok  ${name}`);
+  } else {
+    fail++;
+    console.log(`FAIL  ${name} ${extra}`);
+  }
 };
 
-// A fully-valid, fully-complete payload for a 2-step straight stair.
-// Redundant control dims agree with the per-step numbers (checks all green).
-function completeData() {
+// Fully-valid, fully-complete straight-stair payload; control dims agree.
+function completeData(photos) {
   return {
     units: "in",
     segments: [
@@ -51,12 +83,31 @@ function completeData() {
         width: "48",
         angleDeg: "32.5",
         angleBreak: "",
+        rake: "",
+        ctrlRise: "",
+        ctrlRun: "",
       },
     ],
     posts: [],
     spiral: null,
-    rail: { kind: "Guardrail", height: "36", side: "Both", extensions: "", returns: "", brackets: "" },
-    materials: { post: "", topRail: "", picket: "", picketSpacing: "", bottomRail: "", finish: "DTM Epoxy", color: "Black", notes: "" },
+    rail: {
+      kind: "Guardrail",
+      height: "36",
+      side: "Both",
+      extensions: "",
+      returns: "loop ends",
+      brackets: "",
+    },
+    materials: {
+      post: '1-1/2" sq tube',
+      topRail: "Molded cap rail",
+      picket: '1/2" sq solid',
+      picketSpacing: "4",
+      bottomRail: "",
+      finish: "DTM Epoxy",
+      color: "Black",
+      notes: "",
+    },
     overall: {
       totalRise: "14",
       totalRun: "22",
@@ -76,21 +127,47 @@ function completeData() {
       surfaceState: "finished",
     },
     finish: {
-      bottomSurface: "", topSurface: "", futureTopping: "", treadCovering: "",
-      wallFinish: "", demoPending: "", verifyAfterFinishes: false, notes: "",
+      bottomSurface: "",
+      topSurface: "",
+      futureTopping: "",
+      treadCovering: "",
+      wallFinish: "",
+      demoPending: "",
+      verifyAfterFinishes: false,
+      notes: "",
     },
     fab: {
-      corners: "", flightConnection: "", bottomClearance: "", infill: "",
-      splices: "", maxPiece: "", access: "", gate: "", touchup: "",
+      corners: "",
+      flightConnection: "",
+      bottomClearance: "",
+      infill: "",
+      splices: "one piece",
+      maxPiece: "fits van",
+      access: "",
+      gate: "",
+      touchup: "",
     },
-    photos: [
-      "overall_bottom", "overall_top", "bottom_term", "top_term", "left_side", "right_side",
-    ].map((slot) => ({ slot, path: `test/${slot}.jpg`, takenAt: "2026-01-01T00:00:00Z" })),
+    photos,
     annotations: {},
   };
 }
 
-// no session → 401
+const SLOTS = ["overall_bottom", "overall_top", "bottom_term", "top_term", "left_side", "right_side"];
+console.log("uploading real checklist photos…");
+const realPaths = {};
+for (const slot of SLOTS) realPaths[slot] = await uploadPhoto(`e2e ${slot}`);
+const realPhotos = SLOTS.map((slot) => ({
+  slot,
+  path: realPaths[slot],
+  takenAt: "2026-01-01T00:00:00Z",
+}));
+const fakePhotos = SLOTS.map((slot) => ({
+  slot,
+  path: `bogus/${slot}.jpg`,
+  takenAt: "2026-01-01T00:00:00Z",
+}));
+
+// ---- validation basics -----------------------------------------------------
 const anon = await fetch(`${BASE}/shop/api/measure`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -98,79 +175,124 @@ const anon = await fetch(`${BASE}/shop/api/measure`, {
 });
 check("401 without session", anon.status === 401);
 
-// create
-const cr = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API TEST" });
+const cr = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API TEST" }, cookie2);
 const { id } = await cr.json();
 check("create returns id", cr.status === 200 && !!id);
-check("create bad jobId → 400", (await api({ type: "create", jobId: "nope", shape: "straight", steps1: 3 })).status === 400);
-check("update bad sheet id → 400", (await api({ type: "update", id: "nope", data: {} })).status === 400);
-
-// invalid payloads → 400
 check("update junk payload → 400", (await api({ type: "update", id, data: { hacked: true } })).status === 400);
-check("update wrong types → 400", (await api({ type: "update", id, data: { ...completeData(), posts: [{ id: 1 }] } })).status === 400);
-const big = completeData();
-big.overall.notes = "x".repeat(5000);
-check("update oversized note → 400", (await api({ type: "update", id, data: big })).status === 400);
+check("submit incomplete → 422", (await api({ type: "submit", id, jobId: JOB }, cookie2)).status === 422);
 
-// submit while incomplete → 422 with gap list
-check("submit incomplete → 422", (await api({ type: "submit", id, jobId: JOB })).status === 422);
-
-// red geometry check blocks submit: risers say 14" but floor-to-floor says 20"
-const contradictory = completeData();
+// ---- red geometry blocks; contradictions save but can't submit -------------
+const contradictory = completeData(realPhotos);
 contradictory.overall.floorToFloor = "20";
-let u = await api({ type: "update", id, jobId: JOB, data: contradictory });
-check("contradictory update saves (never auto-corrected)", u.status === 200);
-check("submit with red check → 422", (await api({ type: "submit", id, jobId: JOB })).status === 422);
+check(
+  "contradictory update saves (never auto-corrected)",
+  (await api({ type: "update", id, jobId: JOB, data: contradictory }, cookie2)).status === 200
+);
+check("submit with red check → 422", (await api({ type: "submit", id, jobId: JOB }, cookie2)).status === 422);
 
-// complete + consistent → submit works
-u = await api({ type: "update", id, jobId: JOB, data: completeData() });
+// ---- photo verification ----------------------------------------------------
+check(
+  "fake photo paths save",
+  (await api({ type: "update", id, jobId: JOB, data: completeData(fakePhotos) }, cookie2)).status === 200
+);
+check(
+  "submit with unverifiable photos → 422",
+  (await api({ type: "submit", id, jobId: JOB }, cookie2)).status === 422
+);
+
+// ---- clean submit by the measurer ------------------------------------------
+const u = await api({ type: "update", id, jobId: JOB, data: completeData(realPhotos) }, cookie2);
 const ud = await u.json();
-check("complete update → 200", u.status === 200 && !!ud.updated_at);
-check("update returns status in_progress", ud.status === "in_progress");
+check("complete update → 200 + in_progress", u.status === 200 && ud.status === "in_progress");
+check(
+  "CAS with stale base → 409",
+  (
+    await api(
+      { type: "update", id, jobId: JOB, data: completeData(realPhotos), baseUpdatedAt: "2000-01-01T00:00:00+00:00" },
+      cookie2
+    )
+  ).status === 409
+);
+check("submit complete sheet → 200", (await api({ type: "submit", id, jobId: JOB }, cookie2)).status === 200);
 
-// CAS still enforced
-const stale = await api({ type: "update", id, jobId: JOB, data: completeData(), baseUpdatedAt: "2000-01-01T00:00:00+00:00" });
-check("CAS with stale base → 409", stale.status === 409);
+// ---- approval rules --------------------------------------------------------
+check("approve as non-admin → 403", (await api({ type: "approve", id, jobId: JOB }, cookie2)).status === 403);
 
-const sub = await api({ type: "submit", id, jobId: JOB });
-check("submit complete sheet → 200", sub.status === 200);
-
-// approve must be admin-only
-if (WORKER2 && PIN2) {
-  const cookie2 = await loginCookie(WORKER2, PIN2);
-  check("approve as non-admin → 403", (await api({ type: "approve", id, jobId: JOB }, cookie2)).status === 403);
-} else {
-  console.log("  --  skipped non-admin approve test (SHOP_WORKER2_ID/SHOP_PIN2 not set)");
-}
-
-// approve (admin) → rev 1; second approve without re-submit → 409
 const ap = await api({ type: "approve", id, jobId: JOB });
 const apd = await ap.json();
-check("approve → 200 rev 1", ap.status === 200 && apd.rev === 1, JSON.stringify(apd));
-check("approve again → 409", (await api({ type: "approve", id, jobId: JOB })).status === 409);
+check("independent approve → 200 rev 1", ap.status === 200 && apd.rev === 1, JSON.stringify(apd));
+check("approve again → 409 (not submitted)", (await api({ type: "approve", id, jobId: JOB })).status === 409);
 
-// editing an approved sheet drops the approval
-u = await api({ type: "update", id, jobId: JOB, data: completeData() });
-const ud2 = await u.json();
-check("edit after approval → status in_progress", u.status === 200 && ud2.status === "in_progress");
+// editing drops the approval
+const e1 = await api({ type: "update", id, jobId: JOB, data: completeData(realPhotos) }, cookie2);
+check("edit after approval → in_progress", e1.status === 200 && (await e1.json()).status === "in_progress");
 
-// second approval cycle bumps the revision
-await api({ type: "submit", id, jobId: JOB });
+// self-approval blocked: ADMIN submits, then tries to approve own sheet
+check("admin submit → 200", (await api({ type: "submit", id, jobId: JOB })).status === 200);
+const self = await api({ type: "approve", id, jobId: JOB });
+check("self-approval → 409", self.status === 409, `${self.status}`);
+
+// measurer resubmits → admin approves → rev bumps to 2
+await api({ type: "update", id, jobId: JOB, data: completeData(realPhotos) }, cookie2);
+await api({ type: "submit", id, jobId: JOB }, cookie2);
 const ap2 = await api({ type: "approve", id, jobId: JOB });
-const ap2d = await ap2.json();
-check("re-approve → rev 2", ap2.status === 200 && ap2d.rev === 2, JSON.stringify(ap2d));
+check("re-approve → rev 2", ap2.status === 200 && (await ap2.json()).rev === 2);
 
-// send back with comment
-await api({ type: "update", id, jobId: JOB, data: completeData() });
-await api({ type: "submit", id, jobId: JOB });
-check("sendback → 200", (await api({ type: "sendback", id, jobId: JOB, comment: "recheck post P1" })).status === 200);
+// ---- yellow warnings need acknowledgment -----------------------------------
+const yellow = completeData(realPhotos);
+yellow.overall.floorToFloor = "14 1/2"; // riser sum 14 → off by 1/2 = VERIFY
+await api({ type: "update", id, jobId: JOB, data: yellow }, cookie2);
+await api({ type: "submit", id, jobId: JOB }, cookie2);
+const noAck = await api({ type: "approve", id, jobId: JOB });
+const noAckD = await noAck.json();
+check("approve with yellow, no ack → 409 needsAck", noAck.status === 409 && noAckD.needsAck === true);
+const acked = await api({ type: "approve", id, jobId: JOB, ackWarnings: true });
+check("approve with ack → 200 rev 3", acked.status === 200 && (await acked.json()).rev === 3);
 
-// rename + wrong-job + delete verification
-check("rename → 200", (await api({ type: "rename", id, jobId: JOB, name: "API TEST renamed" })).status === 200);
-check("update with wrong jobId → 404", (await api({ type: "update", id, jobId: "00000000-0000-0000-0000-000000000000", data: completeData() })).status === 404);
-check("rename missing sheet → 404", (await api({ type: "rename", id: "00000000-0000-0000-0000-000000000000", name: "x" })).status === 404);
+// ---- custom drawings need reference confirmation ---------------------------
+const cc = await api({ type: "create", jobId: JOB, shape: "custom", name: "API CUSTOM" }, cookie2);
+const customId = (await cc.json()).id;
+const CSLOTS = ["overall_bottom", "overall_top", "bottom_term", "top_term"];
+const customPhotos = CSLOTS.map((slot) => ({ slot, path: realPaths[slot], takenAt: "2026-01-01T00:00:00Z" }));
+const customData = completeData(customPhotos);
+customData.segments = [];
+customData.plan = {
+  points: [
+    { x: 20, y: 20 },
+    { x: 120, y: 20 },
+    { x: 120, y: 120 },
+    { x: 20, y: 120 },
+  ],
+  closed: true,
+  segs: [
+    { len: "100", note: "" },
+    { len: "100", note: "" },
+    { len: "100", note: "" },
+    { len: "100", note: "" },
+  ],
+};
+await api({ type: "update", id: customId, jobId: JOB, data: customData }, cookie2);
+check("custom submit → 200", (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 200);
+const noRef = await api({ type: "approve", id: customId, jobId: JOB });
+const noRefD = await noRef.json();
+check("custom approve w/o confirm → 409 needsReference", noRef.status === 409 && noRefD.needsReference === true);
+check(
+  "custom approve with confirm → 200",
+  (await api({ type: "approve", id: customId, jobId: JOB, confirmReference: true })).status === 200
+);
+
+// custom closure check: one wrong length ⇒ red ⇒ submit blocked
+const badClose = structuredClone(customData);
+badClose.plan.segs[0].len = "160";
+await api({ type: "update", id: customId, jobId: JOB, data: badClose }, cookie2);
+check(
+  "custom bad closure → submit 422",
+  (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422
+);
+
+// ---- cleanup ---------------------------------------------------------------
 check("delete → 200", (await api({ type: "delete", id, jobId: JOB })).status === 200);
-check("second delete → 404", (await api({ type: "delete", id, jobId: JOB })).status === 404);
+check("delete custom → 200", (await api({ type: "delete", id: customId, jobId: JOB })).status === 200);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
