@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Job } from "@/lib/shop/db";
 import {
@@ -20,7 +20,7 @@ import {
 } from "@/lib/shop/measure";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS, specValue } from "@/lib/shop/i18n";
-import Sketch from "./Sketch";
+import Sketch, { sketchViews } from "./Sketch";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 
@@ -28,6 +28,11 @@ const FRACTIONS = [
   '1/16"', '1/8"', '3/16"', '1/4"', '5/16"', '3/8"', '7/16"', '1/2"',
   '9/16"', '5/8"', '11/16"', '3/4"', '13/16"', '7/8"', '15/16"', "°",
 ];
+// Tokens that glue directly onto the number (5 + ' = 5', not 5 ')
+const NOSPACE = new Set(["'", '"', "°"]);
+
+// Placeholder for measurement inputs, driven by the sheet's unit choice.
+const PlaceholderCtx = createContext<string>("—");
 
 // Insert a token into the focused measurement input via the native value
 // setter so React's controlled state picks it up.
@@ -39,7 +44,7 @@ function insertToken(tok: string) {
     "value"
   )?.set;
   if (!setter) return;
-  const sep = el.value && !el.value.endsWith(" ") && tok !== "°" ? " " : "";
+  const sep = el.value && !el.value.endsWith(" ") && !NOSPACE.has(tok) ? " " : "";
   setter.call(el, el.value + sep + tok);
   el.dispatchEvent(new Event("input", { bubbles: true }));
 }
@@ -77,7 +82,13 @@ export default function MeasureEditor({
   const [status, setStatus] = useState(sheet.status);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [fracBar, setFracBar] = useState(false);
+  const [view, setView] = useState<"side" | "front">("side");
   const firstRender = useRef(true);
+
+  const units = data.units || "in";
+  const unitPh = units === "ftin" ? `0' 0"` : `0"`;
+  const fracTokens = units === "ftin" ? ["'", '"', ...FRACTIONS] : FRACTIONS;
+  const [, sideKey, frontKey] = sketchViews(sheet.shape);
 
   // Autosave (debounced) whenever measurements change.
   useEffect(() => {
@@ -209,7 +220,7 @@ export default function MeasureEditor({
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
 
   return (
-    <>
+    <PlaceholderCtx.Provider value={unitPh}>
       <div className="p-4 max-w-4xl mx-auto pb-32 print:hidden">
         {/* Header */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
@@ -258,6 +269,28 @@ export default function MeasureEditor({
                   : ""}
             </span>
           </div>
+          {/* Units */}
+          <div className="flex items-center gap-2 mt-3">
+            <span className="text-[11px] text-neutral-400">{mt(lang, "unitsLabel")}:</span>
+            {(
+              [
+                ["in", `${mt(lang, "unitsIn")} (")`],
+                ["ftin", `${mt(lang, "unitsFtIn")} (' ")`],
+              ] as const
+            ).map(([u, label]) => (
+              <button
+                key={u}
+                onClick={() => set((d) => void (d.units = u))}
+                className={`text-xs font-bold rounded-full px-3 py-1.5 border ${
+                  units === u
+                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Sketch */}
@@ -273,13 +306,55 @@ export default function MeasureEditor({
               )}
             </div>
           )}
-          <Sketch
-            shape={sheet.shape}
-            data={data}
-            lang={lang}
-            onTapStep={toggleStepPost}
-            onTapPlatform={addPlatformPost}
-          />
+          {/* View toggle — phones see one view at a time; md+ shows both */}
+          <div className="flex gap-2 mb-3 md:hidden">
+            {(
+              [
+                ["side", sideKey],
+                ["front", frontKey],
+              ] as const
+            ).map(([vw, key]) => (
+              <button
+                key={vw}
+                onClick={() => setView(vw)}
+                className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
+                  view === vw
+                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                }`}
+              >
+                {mt(lang, key)}
+              </button>
+            ))}
+          </div>
+          <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
+            <div className={view === "side" ? "" : "hidden md:block"}>
+              <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
+                {mt(lang, sideKey)}
+              </div>
+              <Sketch
+                shape={sheet.shape}
+                data={data}
+                lang={lang}
+                view="side"
+                onTapStep={toggleStepPost}
+                onTapPlatform={addPlatformPost}
+              />
+            </div>
+            <div className={view === "front" ? "" : "hidden md:block"}>
+              <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
+                {mt(lang, frontKey)}
+              </div>
+              <Sketch
+                shape={sheet.shape}
+                data={data}
+                lang={lang}
+                view="front"
+                onTapStep={toggleStepPost}
+                onTapPlatform={addPlatformPost}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Spiral geometry */}
@@ -288,9 +363,9 @@ export default function MeasureEditor({
             <Grid>
               <MInput label={mt(lang, "floorToFloor")} value={data.spiral.floorToFloor}
                 onChange={(v) => set((d) => void (d.spiral!.floorToFloor = v))} />
-              <MInput label={mt(lang, "treadsCount")} value={data.spiral.treads}
+              <MInput label={mt(lang, "treadsCount")} placeholder="—" value={data.spiral.treads}
                 onChange={(v) => set((d) => void (d.spiral!.treads = v))} />
-              <MInput label={mt(lang, "rotation")} value={data.spiral.rotationDeg}
+              <MInput label={mt(lang, "rotation")} placeholder="°" value={data.spiral.rotationDeg}
                 onChange={(v) => set((d) => void (d.spiral!.rotationDeg = v))} />
               <MInput label={mt(lang, "diameter")} value={data.spiral.diameter}
                 onChange={(v) => set((d) => void (d.spiral!.diameter = v))} />
@@ -316,7 +391,7 @@ export default function MeasureEditor({
               </div>
             </div>
             <div className="mt-3">
-              <MInput label={mt(lang, "landingNote")} value={data.spiral.landingNote}
+              <MInput label={mt(lang, "landingNote")} placeholder="—" value={data.spiral.landingNote}
                 onChange={(v) => set((d) => void (d.spiral!.landingNote = v))} />
             </div>
           </Card>
@@ -332,23 +407,32 @@ export default function MeasureEditor({
                 : mt(lang, "steps")
             }
           >
-            <div className="grid grid-cols-[2.2rem_1fr_1fr_1fr] gap-2 items-end mb-1 text-[11px] text-neutral-400">
+            {/* header row only where the compact grid shows (sm+) */}
+            <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr] gap-2 items-end mb-1 text-[11px] text-neutral-400">
               <span>#</span>
               <span>{mt(lang, "rise")}</span>
               <span>{mt(lang, "run")}</span>
               <span>{mt(lang, "nosing")}</span>
             </div>
             {seg.steps.map((st, si) => (
-              <div key={si} className="grid grid-cols-[2.2rem_1fr_1fr_1fr] gap-2 items-center mb-2">
-                <span className="text-sm font-bold text-neutral-400 text-center border border-neutral-800 rounded-full w-7 h-7 leading-[26px]">
+              <div
+                key={si}
+                className="mb-3 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3 sm:mb-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:grid sm:grid-cols-[2.2rem_1fr_1fr_1fr] sm:gap-2 sm:items-center"
+              >
+                <div className="sm:hidden text-xs font-bold text-amber-400 mb-2">
+                  {mt(lang, "step")} {stepNumber(flights, fi, si)}
+                </div>
+                <span className="hidden sm:block text-sm font-bold text-neutral-400 text-center border border-neutral-800 rounded-full w-7 h-7 leading-[26px]">
                   {stepNumber(flights, fi, si)}
                 </span>
-                <MInput value={st.rise}
-                  onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].rise = v))} />
-                <MInput value={st.run}
-                  onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].run = v))} />
-                <MInput value={st.nosing}
-                  onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].nosing = v))} />
+                <div className="grid grid-cols-1 gap-2 sm:contents">
+                  <MInput label={mt(lang, "rise")} labelClass="sm:hidden" value={st.rise}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].rise = v))} />
+                  <MInput label={mt(lang, "run")} labelClass="sm:hidden" value={st.run}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].run = v))} />
+                  <MInput label={mt(lang, "nosing")} labelClass="sm:hidden" value={st.nosing}
+                    onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].nosing = v))} />
+                </div>
               </div>
             ))}
             <div className="flex flex-wrap gap-2 mt-2 mb-3">
@@ -390,7 +474,7 @@ export default function MeasureEditor({
             </Grid>
             <div className="mt-3">
               <MInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
-                value={seg.angleBreak}
+                placeholder="—" value={seg.angleBreak}
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
             </div>
           </Card>
@@ -406,7 +490,7 @@ export default function MeasureEditor({
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
               <MInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slope = v))} />
-              <MInput label={mt(lang, "slopeDir")} value={seg.slopeDir}
+              <MInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
             </Grid>
             {(seg.turn === "left" || seg.turn === "right") && (
@@ -507,10 +591,10 @@ export default function MeasureEditor({
             )}
             <MInput label={mt(lang, "extensions")} value={data.rail.extensions}
               onChange={(v) => set((d) => void (d.rail.extensions = v))} />
-            <MInput label={mt(lang, "returnsLabel")} value={data.rail.returns}
+            <MInput label={mt(lang, "returnsLabel")} placeholder="—" value={data.rail.returns}
               onChange={(v) => set((d) => void (d.rail.returns = v))} />
             {isWallRail && (
-              <MInput label={mt(lang, "brackets")} value={data.rail.brackets}
+              <MInput label={mt(lang, "brackets")} placeholder="—" value={data.rail.brackets}
                 onChange={(v) => set((d) => void (d.rail.brackets = v))} />
             )}
           </Grid>
@@ -541,7 +625,7 @@ export default function MeasureEditor({
                 options={[...SPEC_OPTIONS.color]} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.color = v))} />
             </Grid>
-            <MInput label={mt(lang, "matNotes")} value={data.materials.notes}
+            <MInput label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
               onChange={(v) => set((d) => void (d.materials.notes = v))} />
           </div>
         </Card>
@@ -579,7 +663,7 @@ export default function MeasureEditor({
       {/* Fraction quick-keys */}
       {fracBar && (
         <div className="fixed bottom-0 inset-x-0 bg-neutral-900/95 border-t border-neutral-700 p-2 flex gap-1.5 overflow-x-auto print:hidden z-40">
-          {FRACTIONS.map((f) => (
+          {fracTokens.map((f) => (
             <button
               key={f}
               onPointerDown={(e) => {
@@ -603,7 +687,7 @@ export default function MeasureEditor({
         workerName={workerName}
         posts={posts}
       />
-    </>
+    </PlaceholderCtx.Provider>
   );
 }
 
@@ -653,7 +737,8 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 gap-3">{children}</div>;
+  // phones: one full-width field per row; larger screens: two columns
+  return <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">{children}</div>;
 }
 
 function SmallBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
@@ -667,23 +752,30 @@ function SmallBtn({ onClick, children }: { onClick: () => void; children: React.
 
 function MInput({
   label,
+  labelClass = "",
   value,
   onChange,
   placeholder,
 }: {
   label?: string;
+  labelClass?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
+  const unitPh = useContext(PlaceholderCtx);
   return (
     <label className="block min-w-0">
-      {label && <span className="text-[11px] text-neutral-400 block mb-1">{label}</span>}
+      {label && (
+        <span className={`text-[11px] text-neutral-400 block mb-1 ${labelClass}`}>
+          {label}
+        </span>
+      )}
       <input
         data-m="1"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder || "—"}
+        placeholder={placeholder || unitPh}
         autoComplete="off"
         className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base"
       />
@@ -738,7 +830,7 @@ function PresetInput({
 }) {
   return (
     <div>
-      <MInput label={label} value={value} onChange={onChange} />
+      <MInput label={label} value={value} onChange={onChange} placeholder="—" />
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {presets.map((pr) => (
           <button key={pr} onClick={() => onChange(pr)}

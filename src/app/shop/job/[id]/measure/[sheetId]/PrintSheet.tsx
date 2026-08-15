@@ -15,7 +15,7 @@ import type {
 } from "@/lib/shop/measure";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
-import Sketch from "./Sketch";
+import Sketch, { sketchViews } from "./Sketch";
 
 const GOLD = "#b8860b";
 
@@ -100,9 +100,24 @@ export default function PrintSheet({
         </tbody>
       </table>
 
-      {/* Sketch (light palette) */}
-      <div className="mb-3" style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
-        <Sketch shape={sheet.shape} data={data} lang={lang} light />
+      {/* Sketches (light palette): side + front views */}
+      <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
+        {mt(lang, "unitsLabel")}:{" "}
+        <b>{mt(lang, data.units === "ftin" ? "unitsFtIn" : "unitsIn")}</b>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
+          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
+            {mt(lang, sketchViews(sheet.shape)[1])}
+          </div>
+          <Sketch shape={sheet.shape} data={data} lang={lang} light view="side" />
+        </div>
+        <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 8 }}>
+          <div style={{ fontSize: 10, color: "#555", marginBottom: 2 }}>
+            {mt(lang, sketchViews(sheet.shape)[2])}
+          </div>
+          <Sketch shape={sheet.shape} data={data} lang={lang} light view="front" />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

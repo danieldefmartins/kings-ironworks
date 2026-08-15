@@ -109,6 +109,8 @@ export interface OverallSpec {
   notes: string;
 }
 
+export type Units = "in" | "ftin";
+
 export interface MeasureData {
   segments: Segment[];
   posts: PostMeasure[];
@@ -116,6 +118,7 @@ export interface MeasureData {
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
+  units?: Units; // measurement entry unit — inches (default) or feet+inches
 }
 
 export interface MeasureSheet {
@@ -214,6 +217,7 @@ export function newMeasureData(
   }
 
   return {
+    units: "in",
     segments,
     posts: [],
     spiral,

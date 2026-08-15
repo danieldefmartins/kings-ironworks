@@ -13,7 +13,7 @@ import type {
   RampSegment,
   SpiralData,
 } from "@/lib/shop/measure";
-import { mt } from "@/lib/shop/measure-i18n";
+import { mt, optLabel } from "@/lib/shop/measure-i18n";
 
 const RUN = 46;
 const RISE = 26;
@@ -50,11 +50,19 @@ function v(s: string | undefined, p: Palette) {
   return { text: has ? s!.trim() : "—", fill: has ? p.val : p.miss };
 }
 
+// Which two views a shape offers (labels for the editor toggle).
+export function sketchViews(shape: MeasureShape): ["side" | "front", string, string] {
+  if (shape === "spiral") return ["side", "sideView", "planView"];
+  if (shape === "level_run") return ["side", "sectionView", "frontView"];
+  return ["side", "sideView", "frontView"];
+}
+
 export default function Sketch({
   shape,
   data,
   lang,
   light = false,
+  view = "side",
   onTapStep,
   onTapPlatform,
 }: {
@@ -62,14 +70,25 @@ export default function Sketch({
   data: MeasureData;
   lang: string;
   light?: boolean;
+  view?: "side" | "front"; // front = front elevation (plan for spiral)
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
 }) {
   const p = light ? LIGHT : DARK;
 
-  if (shape === "spiral") return <SpiralSketch spiral={data.spiral} p={p} lang={lang} />;
+  if (shape === "spiral")
+    return view === "front" ? (
+      <SpiralSketch spiral={data.spiral} p={p} lang={lang} />
+    ) : (
+      <SpiralSideSketch spiral={data.spiral} p={p} lang={lang} />
+    );
   if (shape === "level_run")
-    return <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />;
+    return view === "front" ? (
+      <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />
+    ) : (
+      <LevelSectionSketch data={data} p={p} lang={lang} />
+    );
+  if (view === "front") return <FrontSketch data={data} p={p} lang={lang} />;
   if (shape === "ramp")
     return <RampSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />;
   return (
@@ -449,6 +468,193 @@ function RampSketch({
         <rect x={x1} y={40} width={x2 - x1} height={y1 - 40} fill="transparent"
           style={{ cursor: "pointer" }} onClick={() => onTapPlatform(0)} />
       )}
+    </svg>
+  );
+}
+
+// ---- Front elevation (stairs / ramp): width, post insets, rail height ------
+
+function FrontSketch({
+  data,
+  p,
+  lang,
+}: {
+  data: MeasureData;
+  p: Palette;
+  lang: string;
+}) {
+  const flight = data.segments.find((s) => s.kind === "flight") as FlightSegment | undefined;
+  const rampSeg = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
+  const widthVal = v(flight?.width || rampSeg?.width || "", p);
+  const hv = v(data.rail.height, p);
+  const firstPost = data.posts[0];
+  const ev = v(firstPost?.fromEdge || "", p);
+
+  const side = data.rail.side; // Left | Right | Both | ""
+  const showLeft = side === "Left" || side === "Both" || side === "";
+  const showRight = side === "Right" || side === "Both" || side === "";
+  const dimmed = side === ""; // no side chosen yet — show both faded
+
+  const x0 = 52, x1 = 288, treadY = 150, railTop = 70;
+  const inset = 26;
+  const railColor = dimmed ? p.ghost : p.post;
+
+  return (
+    <svg viewBox="0 0 340 235" className="w-full" style={{ maxHeight: 320 }}>
+      {/* ground + tread surface seen from the front */}
+      <line x1={16} y1={205} x2={324} y2={205} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
+      <line x1={x0} y1={treadY} x2={x1} y2={treadY} stroke={p.line} strokeWidth={2.5} />
+      <line x1={x0} y1={treadY} x2={x0} y2={treadY + 16} stroke={p.line} strokeWidth={2} />
+      <line x1={x1} y1={treadY} x2={x1} y2={treadY + 16} stroke={p.line} strokeWidth={2} />
+
+      {/* stair width dimension */}
+      <line x1={x0} y1={treadY + 28} x2={x1} y2={treadY + 28} stroke={p.dim} strokeWidth={1} />
+      <text x={(x0 + x1) / 2} y={treadY + 42} fontSize={10} fontWeight={700} textAnchor="middle" fill={widthVal.fill}>
+        ⟵ {mt(lang, "width")}: {widthVal.text} ⟶
+      </text>
+
+      {/* posts + rail per side */}
+      {showLeft && (
+        <g>
+          <line x1={x0 + inset} y1={treadY} x2={x0 + inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
+          <circle cx={x0 + inset} cy={railTop - 4} r={4.5} fill="none" stroke={railColor} strokeWidth={2.5} />
+          <line x1={x0} y1={treadY - 8} x2={x0 + inset} y2={treadY - 8} stroke={p.dim} strokeWidth={1} />
+          <text x={x0 + inset / 2} y={treadY - 13} fontSize={8.5} textAnchor="middle" fill={ev.fill}>
+            {ev.text}
+          </text>
+        </g>
+      )}
+      {showRight && (
+        <g>
+          <line x1={x1 - inset} y1={treadY} x2={x1 - inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
+          <circle cx={x1 - inset} cy={railTop - 4} r={4.5} fill="none" stroke={railColor} strokeWidth={2.5} />
+          <line x1={x1 - inset} y1={treadY - 8} x2={x1} y2={treadY - 8} stroke={p.dim} strokeWidth={1} />
+          <text x={x1 - inset / 2} y={treadY - 13} fontSize={8.5} textAnchor="middle" fill={ev.fill}>
+            {ev.text}
+          </text>
+        </g>
+      )}
+
+      {/* rail height dimension */}
+      <line x1={x1 + 18} y1={treadY} x2={x1 + 18} y2={railTop - 8} stroke={p.dim} strokeWidth={1} />
+      <text x={x1 + 24} y={(treadY + railTop) / 2} fontSize={9} fontWeight={700} fill={hv.fill}
+        transform={`rotate(90 ${x1 + 24} ${(treadY + railTop) / 2})`} textAnchor="middle">
+        {hv.text}
+      </text>
+      <text x={x1 + 4} y={railTop - 16} fontSize={8} fill={p.dim} textAnchor="end">
+        {mt(lang, "railHeight")}
+      </text>
+
+      {/* edge-of-stair markers, looking up */}
+      <text x={x0} y={220} fontSize={8.5} textAnchor="middle" fill={p.dim}>
+        {optLabel(lang, "Left")}
+      </text>
+      <text x={x1} y={220} fontSize={8.5} textAnchor="middle" fill={p.dim}>
+        {optLabel(lang, "Right")}
+      </text>
+      <text x={(x0 + x1) / 2} y={64} fontSize={8.5} textAnchor="middle" fill={p.dim}>
+        {mt(lang, "frontView")} — {mt(lang, "fromEdge")}
+      </text>
+    </svg>
+  );
+}
+
+// ---- Level run section: post + rail height ---------------------------------
+
+function LevelSectionSketch({
+  data,
+  p,
+  lang,
+}: {
+  data: MeasureData;
+  p: Palette;
+  lang: string;
+}) {
+  const hv = v(data.rail.height, p);
+  const firstPost = data.posts[0];
+  const mount = firstPost?.mount || "";
+  const cx = 170, groundY = 195, railTop = 66;
+
+  return (
+    <svg viewBox="0 0 340 235" className="w-full" style={{ maxHeight: 320 }}>
+      <line x1={30} y1={groundY} x2={310} y2={groundY} stroke={p.line} strokeWidth={2.2} />
+      <line x1={cx} y1={groundY} x2={cx} y2={railTop} stroke={p.post} strokeWidth={4} />
+      <circle cx={cx} cy={railTop - 6} r={6} fill="none" stroke={p.post} strokeWidth={2.5} />
+      {/* base */}
+      <rect x={cx - 14} y={groundY - 4} width={28} height={4} fill={p.post} />
+      {/* height dim */}
+      <line x1={cx + 44} y1={groundY} x2={cx + 44} y2={railTop - 12} stroke={p.dim} strokeWidth={1} />
+      <text x={cx + 52} y={(groundY + railTop) / 2} fontSize={10} fontWeight={700} fill={hv.fill}
+        transform={`rotate(90 ${cx + 52} ${(groundY + railTop) / 2})`} textAnchor="middle">
+        {hv.text}
+      </text>
+      <text x={cx + 44} y={railTop - 20} fontSize={8} fill={p.dim} textAnchor="middle">
+        {mt(lang, "railHeight")}
+      </text>
+      <text x={cx} y={groundY + 18} fontSize={8.5} textAnchor="middle" fill={mount ? p.val : p.miss}>
+        {mt(lang, "mountType")}: {mount ? optLabel(lang, mount) : "—"}
+      </text>
+      <text x={cx} y={40} fontSize={8.5} textAnchor="middle" fill={p.dim}>
+        {mt(lang, "sectionView")}
+      </text>
+    </svg>
+  );
+}
+
+// ---- Spiral side elevation: floor-to-floor + column ------------------------
+
+function SpiralSideSketch({
+  spiral,
+  p,
+  lang,
+}: {
+  spiral: SpiralData | null;
+  p: Palette;
+  lang: string;
+}) {
+  const fv = v(spiral?.floorToFloor || "", p);
+  const cv = v(spiral?.columnSize || "", p);
+  const topY = 58, botY = 200, cx = 150;
+  const treads = Math.min(12, Math.max(4, parseInt(spiral?.treads || "8", 10) || 8));
+  const lines = Array.from({ length: treads }, (_, i) => {
+    const y = botY - ((i + 1) * (botY - topY - 14)) / (treads + 1);
+    const leftSide = i % 2 === 0;
+    return (
+      <line
+        key={i}
+        x1={leftSide ? cx - 58 : cx + 6}
+        y1={y}
+        x2={leftSide ? cx - 6 : cx + 58}
+        y2={y}
+        stroke={p.ghost}
+        strokeWidth={2}
+      />
+    );
+  });
+
+  return (
+    <svg viewBox="0 0 340 235" className="w-full" style={{ maxHeight: 320 }}>
+      {/* floors */}
+      <line x1={30} y1={botY} x2={310} y2={botY} stroke={p.line} strokeWidth={2.2} />
+      <line x1={170} y1={topY} x2={318} y2={topY} stroke={p.line} strokeWidth={2.2} />
+      {/* center column */}
+      <rect x={cx - 5} y={topY} width={10} height={botY - topY} fill="none" stroke={p.post} strokeWidth={2.2} />
+      {lines}
+      {/* floor-to-floor dim */}
+      <line x1={300} y1={botY} x2={300} y2={topY} stroke={p.dim} strokeWidth={1} />
+      <text x={310} y={(botY + topY) / 2} fontSize={10} fontWeight={700} fill={fv.fill}
+        transform={`rotate(90 ${310} ${(botY + topY) / 2})`} textAnchor="middle">
+        {fv.text}
+      </text>
+      <text x={296} y={topY - 8} fontSize={8} fill={p.dim} textAnchor="end">
+        {mt(lang, "floorToFloor")}
+      </text>
+      <text x={cx} y={botY + 18} fontSize={8.5} textAnchor="middle" fill={cv.fill}>
+        {mt(lang, "columnSize")}: {cv.text}
+      </text>
+      <text x={cx} y={40} fontSize={8.5} textAnchor="middle" fill={p.dim}>
+        {mt(lang, "sideView")}
+      </text>
     </svg>
   );
 }
