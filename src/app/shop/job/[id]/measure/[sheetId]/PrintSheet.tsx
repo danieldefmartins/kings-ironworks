@@ -9,7 +9,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
-import type { Job } from "@/lib/shop/db";
+import type { Job } from "@/lib/shop/shared";
 import type {
   CurveSegment,
   FlightSegment,

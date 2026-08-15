@@ -3,7 +3,7 @@
 // Client pieces of the locked-revision viewer: the print button and the
 // on-screen render of the immutable snapshot (PrintSheet in visible mode).
 
-import type { Job } from "@/lib/shop/db";
+import type { Job } from "@/lib/shop/shared";
 import type { MeasureData, MeasureSheet, PostMeasure } from "@/lib/shop/measure";
 import type { CheckResult } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";

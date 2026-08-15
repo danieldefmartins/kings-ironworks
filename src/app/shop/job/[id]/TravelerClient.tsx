@@ -11,7 +11,7 @@ import {
   type Material,
   type QcCheck,
   type Photo,
-} from "@/lib/shop/db";
+} from "@/lib/shop/shared";
 import {
   t,
   stageLabel,

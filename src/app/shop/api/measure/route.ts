@@ -108,6 +108,7 @@ const DatumsSchema = z.object({
   bottomDatum: short,
   topDatum: short,
   nosingRef: short,
+  walkline: meas,
   postRef: z.enum(["", "centerline", "face"]),
   surfaceState: z.enum(["", "finished", "unfinished", "mixed"]),
 });

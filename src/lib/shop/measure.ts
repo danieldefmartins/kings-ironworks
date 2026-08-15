@@ -156,6 +156,7 @@ export interface DatumsSpec {
   bottomDatum: string; // what the bottom finished-floor datum is
   topDatum: string;
   nosingRef: string; // nosing reference line note
+  walkline: string; // winder walkline offset from the NARROW edge ("" = mid-width)
   postRef: "" | "centerline" | "face"; // post dims to centerline or face of post
   surfaceState: "" | "finished" | "unfinished" | "mixed";
 }
@@ -606,6 +607,7 @@ export function blankDatums(): DatumsSpec {
     bottomDatum: "",
     topDatum: "",
     nosingRef: "",
+    walkline: "",
     postRef: "",
     surfaceState: "",
   };

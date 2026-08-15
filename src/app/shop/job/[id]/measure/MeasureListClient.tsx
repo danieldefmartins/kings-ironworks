@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Job } from "@/lib/shop/db";
+import type { Job } from "@/lib/shop/shared";
 import {
   MEASURE_SHAPES,
   TWO_FLIGHT_SHAPES,

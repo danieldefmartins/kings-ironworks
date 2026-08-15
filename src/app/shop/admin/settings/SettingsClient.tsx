@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { OrgSettings } from "@/lib/shop/db";
+import type { OrgSettings } from "@/lib/shop/shared";
 
 const TOL_LABELS: [keyof OrgSettings["tolerances"] & string, string, string][] = [
   ["riseSum", "Riser sum vs floor-to-floor", "in"],

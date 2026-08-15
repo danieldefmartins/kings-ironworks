@@ -277,27 +277,42 @@ export function runChecks(
     );
   });
 
-  // winder treads: the walkline run should sit between the inside and
-  // outside runs — for a linearly tapered tread measured at mid-width it is
-  // their average. (The turn angle itself has no closed check without the
-  // wedge vertex position, so it is captured but not cross-verified.)
+  // winder treads: for a linearly tapered tread the run at the walkline is
+  // runIn + (runOut − runIn) · (offset / width), where offset is the
+  // organization's walkline distance from the NARROW edge (datums.walkline —
+  // code walklines are commonly 12", not mid-tread). With a recorded offset
+  // the check enforces normally; without one we fall back to the mid-width
+  // average but cap it at VERIFY — an assumption must never block a
+  // correctly measured stair. (The turn angle has no closed check without
+  // the wedge vertex position, so it is captured but not cross-verified.)
+  const walkOff = parseMeas(data.datums.walkline || "");
   flights.forEach((fl, fi) => {
+    const W = parseMeas(fl.width);
     fl.steps.forEach((st, si) => {
       if (!st.winder) return;
       const rIn = parseMeas(st.runIn || "");
       const rOut = parseMeas(st.runOut || "");
       const rWalk = parseMeas(st.run);
-      const avg = rIn !== null && rOut !== null ? (rIn + rOut) / 2 : null;
-      out.push(
-        compare(
-          "winder_run",
-          avg,
-          rWalk,
-          tol.runSum,
-          "in",
-          `${multi ? `#${fi + 1} ` : ""}${mtStep(fl, si)}`
-        )
+      let expected: number | null = null;
+      let assumed = false;
+      if (rIn !== null && rOut !== null) {
+        if (walkOff !== null && W !== null && W > 0 && walkOff <= W) {
+          expected = rIn + (rOut - rIn) * (walkOff / W);
+        } else {
+          expected = (rIn + rOut) / 2;
+          assumed = true;
+        }
+      }
+      const res = compare(
+        "winder_run",
+        expected,
+        rWalk,
+        tol.runSum,
+        "in",
+        `${multi ? `#${fi + 1} ` : ""}${mtStep(fl, si)}`
       );
+      if (assumed && res.level === "red") res.level = "yellow";
+      out.push(res);
     });
   });
 

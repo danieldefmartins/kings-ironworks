@@ -136,6 +136,7 @@ function completeData(photos) {
       bottomDatum: "top of granite, finished",
       topDatum: "porch deck",
       nosingRef: "",
+      walkline: "",
       postRef: "centerline",
       surfaceState: "finished",
     },
@@ -453,6 +454,7 @@ function mixedData(photos) {
   ];
   base.overall.floorToFloor = "49"; // 7 risers × 7"
   base.overall.totalRise = "49";
+  base.datums.walkline = "21"; // mid-width of 42 — winder math uses the offset
   base.posts = base.posts.map((po) => po); // core-drill posts stay on flight 0
   base.photos = [
     ...photos,
@@ -483,6 +485,25 @@ const badCurve = mixedData(realPhotos);
 badCurve.segments[2].arc = "82"; // vs calc 75.4 → off 6.6" → red
 await api({ type: "update", id: mixedId, jobId: JOB, data: badCurve }, cookie2);
 check("inconsistent curve arc → submit 422", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 422);
+
+// walkline offset math: 12" offset on a 42" tread, runIn 6 → runOut 14 gives
+// an expected walkline run of 8.29" — "8 1/4" passes, and the same numbers
+// WITHOUT an offset only warn (assumption must never block a real stair)
+const offsetData = mixedData(realPhotos);
+offsetData.datums.walkline = "12";
+offsetData.segments[0].steps[2].run = "8 1/4";
+offsetData.segments[0].steps[3].run = "8 1/4";
+offsetData.segments[0].ctrlRun = "36 1/2"; // 10+10+8.25+8.25
+offsetData.segments[0].rake = "45 7/8"; // hypot(28, 36.5)
+await api({ type: "update", id: mixedId, jobId: JOB, data: offsetData }, cookie2);
+check("walkline-offset winder → submit 200", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 200);
+
+const noOffset = mixedData(realPhotos);
+noOffset.datums.walkline = "";
+noOffset.segments[0].steps[2].runIn = "2";
+noOffset.segments[0].steps[2].runOut = "24"; // avg 13 vs 10 — would be red, capped to VERIFY
+await api({ type: "update", id: mixedId, jobId: JOB, data: noOffset }, cookie2);
+check("no-offset winder mismatch only warns → submit 200", (await api({ type: "submit", id: mixedId, jobId: JOB }, cookie2)).status === 200);
 
 // fully consistent mixed assembly (winders, curve, two flights, landing) → OK
 await api({ type: "update", id: mixedId, jobId: JOB, data: mixedData(realPhotos) }, cookie2);

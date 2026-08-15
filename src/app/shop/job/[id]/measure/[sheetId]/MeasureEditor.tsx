@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Job, OrgSettings } from "@/lib/shop/db";
+import type { Job, OrgSettings } from "@/lib/shop/shared";
 import {
   ANCHOR_OPTIONS,
   MATERIAL_PRESETS,
@@ -606,6 +606,8 @@ export default function MeasureEditor({
               onChange={(v) => set((d) => void (d.datums.topDatum = v))} />
             <MInput label={mt(lang, "nosingRefLbl")} placeholder="—" value={data.datums.nosingRef}
               onChange={(v) => set((d) => void (d.datums.nosingRef = v))} />
+            <MInput label={mt(lang, "walklineLbl")} value={data.datums.walkline}
+              onChange={(v) => set((d) => void (d.datums.walkline = v))} />
           </Grid>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
             <ChipRow
