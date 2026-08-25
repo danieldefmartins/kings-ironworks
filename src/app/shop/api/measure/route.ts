@@ -295,8 +295,9 @@ export async function POST(req: NextRequest) {
         if (!(await getJob(jobOk))) return bad("Job not found", 404);
         const steps1 = Math.min(40, Math.max(1, Number(body.steps1) || 1));
         const steps2 = Math.min(40, Math.max(0, Number(body.steps2) || 0));
+        const steps3 = Math.min(40, Math.max(0, Number(body.steps3) || 0));
         const seeded = preset
-          ? newPresetMeasureData(preset, steps1, steps2)
+          ? newPresetMeasureData(preset, steps1, steps2, steps3)
           : { shape, data: newMeasureData(shape, steps1, steps2) };
         const rows = await sbInsert<MeasureSheet[]>(TABLE, {
           org_id: ORG_ID,

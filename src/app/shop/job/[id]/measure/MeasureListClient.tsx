@@ -33,6 +33,7 @@ export default function MeasureListClient({
   const [preset, setPreset] = useState<MeasurePreset | null>(null);
   const [steps1, setSteps1] = useState(5);
   const [steps2, setSteps2] = useState(5);
+  const [steps3, setSteps3] = useState(5);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -54,7 +55,8 @@ export default function MeasureListClient({
           shape,
           preset,
           steps1,
-          steps2: twoFlights ? steps2 : 0,
+          steps2: twoFlights || preset === "three_flight" ? steps2 : 0,
+          steps3: preset === "three_flight" ? steps3 : 0,
           name,
         }),
       });
@@ -128,7 +130,7 @@ export default function MeasureListClient({
                       : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
                   }`}
                 >
-                  <ShapeIcon shape={presetShape} />
+                  <ShapeIcon shape={presetShape} preset={p} />
                   {mt(lang, `preset_${p}`)}
                 </button>
               );
@@ -139,7 +141,9 @@ export default function MeasureListClient({
             <div className="flex flex-wrap gap-4 mb-4">
               <Stepper
                 label={
-                  shape === "spiral"
+                  preset === "three_flight"
+                    ? mt(lang, "stepsFlight1")
+                    : shape === "spiral"
                     ? mt(lang, "treadsCount")
                     : twoFlights
                       ? mt(lang, "stepsFlight1")
@@ -150,6 +154,12 @@ export default function MeasureListClient({
               />
               {twoFlights && (
                 <Stepper label={mt(lang, "stepsFlight2")} value={steps2} onChange={setSteps2} />
+              )}
+              {preset === "three_flight" && (
+                <>
+                  <Stepper label={mt(lang, "stepsFlight2")} value={steps2} onChange={setSteps2} />
+                  <Stepper label={mt(lang, "stepsFlight3")} value={steps3} onChange={setSteps3} />
+                </>
               )}
             </div>
           )}

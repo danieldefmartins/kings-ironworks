@@ -1,11 +1,13 @@
-import type { MeasureShape } from "@/lib/shop/measure";
+import type { MeasurePreset, MeasureShape } from "@/lib/shop/measure";
 
 // Small line icons for the shape picker (stroke = currentColor).
 export default function ShapeIcon({
   shape,
+  preset,
   size = 44,
 }: {
   shape: MeasureShape;
+  preset?: MeasurePreset;
   size?: number;
 }) {
   const common = {
@@ -18,6 +20,17 @@ export default function ShapeIcon({
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
   };
+
+  if (preset === "three_flight") {
+    return (
+      <svg {...common}>
+        <path d="M8 43V33h12V15h20v28" />
+        <path d="M5 39h6M5 35h6M17 29h6M17 24h6M17 19h6M37 19h6M37 27h6M37 35h6M37 39h6" strokeWidth={1.8} />
+        <rect x="5" y="28" width="12" height="5" />
+        <rect x="23" y="10" width="20" height="5" />
+      </svg>
+    );
+  }
 
   switch (shape) {
     case "straight":

@@ -847,6 +847,23 @@ export default function MeasureEditor({
           </Card>
         )}
 
+        {platforms.filter(({ seg }) => seg.turn !== "none").length > 0 && (
+          <Card stage="setup" title={`↪ ${mt(lang, "layoutDirectionTitle")}`}>
+            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "layoutDirectionHint")}</p>
+            <div className="space-y-3">
+              {platforms.filter(({ seg }) => seg.turn !== "none").map(({ seg, i }, landingIndex) => (
+                <ChipRow key={i} label={`${mt(lang, "landing")} ${landingIndex + 1}`}
+                  value={seg.turn === "u" ? "left" : seg.turn}
+                  options={[["left", `↰ ${mt(lang, "turnLeft")}`], ["right", `↱ ${mt(lang, "turnRight")}`]]}
+                  onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).turn = (v || "left") as "left" | "right"))} />
+              ))}
+            </div>
+            {platforms.filter(({ seg }) => seg.turn !== "none").length === 2 && (
+              <p className="mt-3 rounded-lg border border-neutral-800 bg-neutral-950/50 p-2 text-xs text-neutral-400">{mt(lang, "threeFlightTurnHint")}</p>
+            )}
+          </Card>
+        )}
+
         {/* Mixed assembly: build the staircase segment by segment */}
         {isBuilder && (
           <Card stage="steps" title={`🧱 ${mt(lang, "segmentsTitle")}`}>

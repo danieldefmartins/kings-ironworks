@@ -624,7 +624,8 @@ export function newMeasureData(
 export function newPresetMeasureData(
   preset: MeasurePreset,
   steps1: number,
-  steps2 = 0
+  steps2 = 0,
+  steps3 = 0
 ): { shape: MeasureShape; data: MeasureData } {
   const upper = steps2 || steps1;
   if (preset === "winder_l" || preset === "winder_u") {
@@ -650,8 +651,8 @@ export function newPresetMeasureData(
       blankFlight(steps1),
       blankPlatform("left"),
       blankFlight(upper),
-      blankPlatform("right"),
-      blankFlight(upper),
+      blankPlatform("left"),
+      blankFlight(steps3 || upper),
     ];
     return { shape: "builder", data };
   }
