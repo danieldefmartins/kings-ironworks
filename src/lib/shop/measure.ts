@@ -659,7 +659,7 @@ export function newPresetMeasureData(
   if (preset === "bifurcated") {
     const data = newMeasureData("builder", steps1, upper);
     const left = blankFlight(upper);
-    const right = blankFlight(upper);
+    const right = blankFlight(steps3 || upper);
     left.branch = "left";
     right.branch = "right";
     data.segments = [blankFlight(steps1), blankPlatform("none"), left, right];

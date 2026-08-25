@@ -55,8 +55,8 @@ export default function MeasureListClient({
           shape,
           preset,
           steps1,
-          steps2: twoFlights || preset === "three_flight" ? steps2 : 0,
-          steps3: preset === "three_flight" ? steps3 : 0,
+          steps2: twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
+          steps3: preset === "three_flight" || preset === "bifurcated" ? steps3 : 0,
           name,
         }),
       });
@@ -141,7 +141,7 @@ export default function MeasureListClient({
             <div className="flex flex-wrap gap-4 mb-4">
               <Stepper
                 label={
-                  preset === "three_flight"
+                  preset === "three_flight" || preset === "bifurcated" || shape === "builder"
                     ? mt(lang, "stepsFlight1")
                     : shape === "spiral"
                     ? mt(lang, "treadsCount")
@@ -159,6 +159,12 @@ export default function MeasureListClient({
                 <>
                   <Stepper label={mt(lang, "stepsFlight2")} value={steps2} onChange={setSteps2} />
                   <Stepper label={mt(lang, "stepsFlight3")} value={steps3} onChange={setSteps3} />
+                </>
+              )}
+              {preset === "bifurcated" && (
+                <>
+                  <Stepper label={mt(lang, "stepsLeftBranch")} value={steps2} onChange={setSteps2} />
+                  <Stepper label={mt(lang, "stepsRightBranch")} value={steps3} onChange={setSteps3} />
                 </>
               )}
             </div>
