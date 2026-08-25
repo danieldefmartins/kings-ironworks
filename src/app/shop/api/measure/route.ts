@@ -37,6 +37,7 @@ const StepSchema = z.object({
   rise: meas,
   run: meas,
   nosing: meas,
+  levelGap: meas.optional(),
   winder: z.boolean().optional(),
   runIn: meas.optional(),
   runOut: meas.optional(),
@@ -100,6 +101,8 @@ const PostSchema = z.object({
   existingD: meas,
   skirtProjection: meas,
   skirtHeight: meas,
+  columnToWall: meas.optional(),
+  columnToPlatformEdge: meas.optional(),
   clipDetail: z.string().max(300),
 });
 const SpiralSchema = z

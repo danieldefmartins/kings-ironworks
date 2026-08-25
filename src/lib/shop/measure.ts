@@ -52,6 +52,7 @@ export interface StepMeasure {
   rise: string; // riser height
   run: string; // tread depth at the walkline, nose to riser
   nosing: string; // nosing overhang ("Back 5" on field sheets)
+  levelGap?: string; // gap under a straight level spanning the flight; 0 = touches
   // Winder treads (triangular/kite steps that turn the stair):
   winder?: boolean;
   runIn?: string; // tread depth at the inside (narrow) edge
@@ -80,6 +81,8 @@ export interface PostMeasure {
   existingD: string;
   skirtProjection: string; // molding/skirt projection beyond the structural post face
   skirtHeight: string;
+  columnToWall: string; // clear distance from existing column/post face to wall
+  columnToPlatformEdge: string; // clear distance from column/post face to platform edge
   clipDetail: string;
 }
 
@@ -736,6 +739,8 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
     existingD: "",
     skirtProjection: "",
     skirtHeight: "",
+    columnToWall: "",
+    columnToPlatformEdge: "",
     clipDetail: "",
   };
 }
@@ -750,6 +755,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       if (seg.kind === "flight") {
         return {
           ...seg,
+          steps: seg.steps.map((step) => ({ ...step, levelGap: step.levelGap ?? "" })),
           rake: seg.rake ?? "",
           ctrlRise: seg.ctrlRise ?? "",
           ctrlRun: seg.ctrlRun ?? "",
@@ -773,6 +779,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       existingD: p.existingD ?? "",
       skirtProjection: p.skirtProjection ?? "",
       skirtHeight: p.skirtHeight ?? "",
+      columnToWall: p.columnToWall ?? "",
+      columnToPlatformEdge: p.columnToPlatformEdge ?? "",
       clipDetail: p.clipDetail ?? "",
     })),
     spiral: d.spiral ?? null,

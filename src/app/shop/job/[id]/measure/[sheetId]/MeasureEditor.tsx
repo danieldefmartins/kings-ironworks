@@ -58,16 +58,18 @@ const NOSPACE = new Set(["'", '"', "°"]);
 // Placeholder for measurement inputs, driven by the sheet's unit choice.
 const PlaceholderCtx = createContext<string>("—");
 
-type EditorStage = "setup" | "geometry" | "connections" | "specs" | "photos" | "review";
+type EditorStage = "setup" | "posts" | "level" | "steps" | "locations" | "specs" | "photos" | "review";
 const StageCtx = createContext<EditorStage>("setup");
 
 const EDITOR_STAGES: { id: EditorStage; icon: string; labelKey: string }[] = [
   { id: "setup", icon: "1", labelKey: "stageSite" },
-  { id: "geometry", icon: "2", labelKey: "stageMeasure" },
-  { id: "connections", icon: "3", labelKey: "stageConnections" },
-  { id: "specs", icon: "4", labelKey: "stageShop" },
-  { id: "photos", icon: "5", labelKey: "stagePhotos" },
-  { id: "review", icon: "6", labelKey: "stageReview" },
+  { id: "posts", icon: "2", labelKey: "stagePostsBasic" },
+  { id: "level", icon: "3", labelKey: "stageLevelCheck" },
+  { id: "steps", icon: "4", labelKey: "stageSteps" },
+  { id: "locations", icon: "5", labelKey: "stageAnglesLocations" },
+  { id: "specs", icon: "6", labelKey: "stageShop" },
+  { id: "photos", icon: "7", labelKey: "stagePhotos" },
+  { id: "review", icon: "8", labelKey: "stageReview" },
 ];
 
 // Insert a token into the focused measurement input via the native value
@@ -507,15 +509,19 @@ export default function MeasureEditor({
   const gapStage = (key: string): EditorStage => {
     if (key === "orientation") return "setup";
     if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
-    if (key.startsWith("post") || key.startsWith("span") || key.startsWith("term") ||
-        ["rail_height", "returns", "extensions", "brackets"].includes(key)) return "connections";
+    if (key.startsWith("post")) return "locations";
+    if (key.startsWith("span") || key.startsWith("term") ||
+        ["rail_height", "returns", "extensions", "brackets"].includes(key)) return "posts";
     if (key.startsWith("mat_") || key === "splices" || key === "max_piece") return "specs";
-    return "geometry";
+    if (key === "steps" || key === "winder") return "steps";
+    if (key.includes("angle") || key.includes("rake")) return "locations";
+    if (key.startsWith("landing_")) return "level";
+    return "steps";
   };
   const stageMissing = EDITOR_STAGES.reduce<Record<EditorStage, number>>((acc, s) => {
     acc[s.id] = gaps.filter((g) => gapStage(g.key) === s.id).length;
     return acc;
-  }, { setup: 0, geometry: 0, connections: 0, specs: 0, photos: 0, review: redChecks.length });
+  }, { setup: 0, posts: 0, level: 0, steps: 0, locations: 0, specs: 0, photos: 0, review: redChecks.length });
   const activeStageIndex = EDITOR_STAGES.findIndex((s) => s.id === activeStage);
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
@@ -783,9 +789,48 @@ export default function MeasureEditor({
           </div>
         </Card>
 
+        {!isSpiral && !isWallRail && !isCustom && (
+          <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
+            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
+            {posts.filter((po) => po.pointType !== "railing_post").length === 0 && (
+              <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
+            )}
+            <div className="space-y-3">
+              {posts.filter((po) => po.pointType !== "railing_post").map((po, n) => (
+                <div key={po.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+                  <div className="mb-2 flex items-center">
+                    <span className="font-bold text-amber-400">E{n + 1} — {mt(lang, `point_${po.pointType}`)}</span>
+                    <button type="button" onClick={() => removePost(po.id)} className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
+                      ✕ {mt(lang, "removePost")}
+                    </button>
+                  </div>
+                  <Grid>
+                    <MSelect label={mt(lang, "existingMaterial")} value={po.anchor} options={anchorOptions} lang={lang}
+                      onChange={(v) => setPost(set, po.id, "anchor", v)} />
+                    <MInput label={mt(lang, "existingPostWidth")} value={po.existingW}
+                      onChange={(v) => setPost(set, po.id, "existingW", v)} />
+                    <MInput label={mt(lang, "existingPostDepth")} value={po.existingD}
+                      onChange={(v) => setPost(set, po.id, "existingD", v)} />
+                    <MInput label={mt(lang, "columnToWall")} value={po.columnToWall}
+                      onChange={(v) => setPost(set, po.id, "columnToWall", v)} />
+                    <MInput label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
+                      onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
+                    {po.pointType === "existing_post" && <>
+                      <MInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
+                        onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
+                      <MInput label={mt(lang, "skirtHeight")} value={po.skirtHeight}
+                        onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
+                    </>}
+                  </Grid>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Mixed assembly: build the staircase segment by segment */}
         {isBuilder && (
-          <Card stage="geometry" title={`🧱 ${mt(lang, "segmentsTitle")}`}>
+          <Card stage="steps" title={`🧱 ${mt(lang, "segmentsTitle")}`}>
             <div className="text-xs text-neutral-500 mb-3">{mt(lang, "segmentsHint")}</div>
             <div className="flex flex-wrap gap-2">
               <SmallBtn onClick={() => set((d) => void d.segments.push(newFlightSegment(3)))}>
@@ -818,7 +863,7 @@ export default function MeasureEditor({
         )}
 
         {/* Sketch (custom shapes draw their own plan below instead) */}
-        {!isCustom && activeStage === "geometry" && (
+        {!isCustom && ["setup", "posts", "locations"].includes(activeStage) && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
           {!isSpiral && !isWallRail && (
@@ -898,7 +943,7 @@ export default function MeasureEditor({
 
         {/* Spiral geometry */}
         {isSpiral && data.spiral && (
-          <Card stage="geometry" title={mt(lang, "spiralTitle")}>
+          <Card stage="steps" title={mt(lang, "spiralTitle")}>
             <Grid>
               <MInput label={mt(lang, "floorToFloor")} value={data.spiral.floorToFloor}
                 onChange={(v) => set((d) => void (d.spiral!.floorToFloor = v))} />
@@ -938,7 +983,33 @@ export default function MeasureEditor({
 
         {/* Flights — one measured row per step */}
         {flights.map(({ seg, i }, fi) => (
-          <Card stage="geometry"
+          <Card stage="level" key={`level-${i}`} title={`📏 ${mt(lang, "straightedgeCheck")} ${flights.length > 1 ? fi + 1 : ""}`}>
+            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "straightedgeHint")}</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {seg.steps.map((st, si) => (
+                <MInput key={si} label={`${mt(lang, "step")} ${stepNumber(flights, fi, si)} — ${mt(lang, "levelGap")}`}
+                  placeholder={mt(lang, "touchingZero")} value={st.levelGap || ""}
+                  onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].levelGap = v))} />
+              ))}
+            </div>
+          </Card>
+        ))}
+
+        {flights.map(({ seg, i }, fi) => (
+          <Card stage="locations" key={`angle-${i}`} title={`📐 ${mt(lang, "stairAngle")}${flights.length > 1 ? ` ${fi + 1}` : ""}`}>
+            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "angleFinderHint")}</p>
+            <Grid>
+              <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
+                onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleDeg = v))} />
+              <MInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
+                placeholder="—" value={seg.angleBreak}
+                onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
+            </Grid>
+          </Card>
+        ))}
+
+        {flights.map(({ seg, i }, fi) => (
+          <Card stage="steps"
             key={i}
             title={
               flights.length > 1
@@ -1063,14 +1134,7 @@ export default function MeasureEditor({
             <Grid>
               <MInput label={mt(lang, "width")} value={seg.width}
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).width = v))} />
-              <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
-                onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleDeg = v))} />
             </Grid>
-            <div className="mt-3">
-              <MInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
-                placeholder="—" value={seg.angleBreak}
-                onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
-            </div>
             {multiFlight && (
               <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
                 <div className="text-xs text-neutral-500 mb-2">{mt(lang, "flightCtrlHint")}</div>
@@ -1089,7 +1153,7 @@ export default function MeasureEditor({
 
         {/* Platforms / landings */}
         {platforms.map(({ seg, i }) => (
-          <Card stage="geometry" key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
+          <Card stage="level" key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
             <Grid>
               <MInput label={mt(lang, "length")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
@@ -1125,7 +1189,7 @@ export default function MeasureEditor({
 
         {/* Ramps (one card per ramp segment) */}
         {ramps.map(({ seg, i }) => (
-          <Card stage="geometry" key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
+          <Card stage="steps" key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
               <MInput label={mt(lang, "rampSlopeLen")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).length = v))} />
@@ -1143,7 +1207,7 @@ export default function MeasureEditor({
 
         {/* Curves */}
         {curves.map(({ seg, i }) => (
-          <Card stage="geometry" key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
+          <Card stage="steps" key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
               <MInput label={mt(lang, "curveRadius")} value={seg.radius}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).radius = v))} />
@@ -1176,7 +1240,7 @@ export default function MeasureEditor({
 
         {/* Posts */}
         {!isSpiral && !isWallRail && !isCustom && (
-          <Card stage="connections" title={`${mt(lang, "posts")} (${posts.length})`}>
+          <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
             {posts.length === 0 && (
               <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
             )}
@@ -1251,6 +1315,10 @@ export default function MeasureEditor({
                           onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
                         <MInput label={mt(lang, "skirtHeight")} placeholder="—" value={po.skirtHeight}
                           onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
+                        <MInput label={mt(lang, "columnToWall")} value={po.columnToWall}
+                          onChange={(v) => setPost(set, po.id, "columnToWall", v)} />
+                        <MInput label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
+                          onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
                       </>
                     )}
                     {po.pointType === "clip" && (
@@ -1294,7 +1362,7 @@ export default function MeasureEditor({
         )}
 
         {/* Railing */}
-        <Card stage="connections" title={mt(lang, "railSection")}>
+        <Card stage="posts" title={mt(lang, "railSection")}>
           <Grid>
             <MSelect label={mt(lang, "railKind")} value={data.rail.kind}
               options={[...RAIL_KIND_OPTIONS]} lang={lang}
@@ -1318,7 +1386,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Rail spans — every piece: length + BOTH end terminations */}
-        <Card stage="connections" title={`🔗 ${mt(lang, "spansTitle")}`}>
+        <Card stage="posts" title={`🔗 ${mt(lang, "spansTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "spansHint")}</div>
           <div className="space-y-4">
             {data.spans.map((sp, si) => (
@@ -1476,7 +1544,7 @@ export default function MeasureEditor({
 
         {/* Control dimensions — independent measurements the software cross-checks */}
         {!isCustom && (
-        <Card stage="geometry" title={`🎯 ${mt(lang, "controlsTitle")}`}>
+        <Card stage="locations" title={`🎯 ${mt(lang, "controlsTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
           <Grid>
             {!isSpiral && sheet.shape !== "level_run" && sheet.shape !== "ramp" && (
@@ -1518,7 +1586,7 @@ export default function MeasureEditor({
 
         {/* Custom shape: draw the plan, then dimension every line */}
         {isCustom && data.plan && (
-          <Card stage="geometry" title={`✏️ ${mt(lang, "drawTitle")}`}>
+          <Card stage="steps" title={`✏️ ${mt(lang, "drawTitle")}`}>
             <PlanDraw
               plan={data.plan}
               lang={lang}
