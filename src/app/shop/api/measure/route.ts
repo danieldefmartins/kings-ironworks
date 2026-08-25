@@ -14,9 +14,12 @@ import {
 } from "@/lib/shop/db";
 import {
   MEASURE_SHAPES,
+  MEASURE_PRESETS,
   newMeasureData,
+  newPresetMeasureData,
   normalizeMeasureData,
   type MeasureShape,
+  type MeasurePreset,
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { runChecks, submitBlockers, mergeTolerances } from "@/lib/shop/measure-checks";
@@ -41,6 +44,7 @@ const StepSchema = z.object({
 });
 const FlightSchema = z.object({
   kind: z.literal("flight"),
+  branch: z.enum(["left", "right"]).optional(),
   steps: z.array(StepSchema).min(1).max(60),
   width: meas,
   angleDeg: meas,
@@ -274,17 +278,22 @@ export async function POST(req: NextRequest) {
       case "create": {
         const shape = body.shape as MeasureShape;
         if (!MEASURE_SHAPES.includes(shape)) return bad("Bad shape");
+        const preset = body.preset as MeasurePreset | undefined;
+        if (preset && !MEASURE_PRESETS.includes(preset)) return bad("Bad preset");
         if (!jobOk) return bad("Bad job id");
         if (!(await getJob(jobOk))) return bad("Job not found", 404);
         const steps1 = Math.min(40, Math.max(1, Number(body.steps1) || 1));
         const steps2 = Math.min(40, Math.max(0, Number(body.steps2) || 0));
+        const seeded = preset
+          ? newPresetMeasureData(preset, steps1, steps2)
+          : { shape, data: newMeasureData(shape, steps1, steps2) };
         const rows = await sbInsert<MeasureSheet[]>(TABLE, {
           org_id: ORG_ID,
           job_id: jobOk,
           name: String(body.name || "").trim().slice(0, 200) || null,
-          shape,
+          shape: seeded.shape,
           status: "in_progress",
-          data: newMeasureData(shape, steps1, steps2),
+          data: seeded.data,
           created_by: worker.id,
           updated_by: worker.id,
         });
@@ -292,7 +301,7 @@ export async function POST(req: NextRequest) {
           workerId: worker.id,
           entity: "measure_sheet",
           entityId: rows[0]?.id,
-          detail: { shape, jobId: jobOk },
+          detail: { shape: seeded.shape, preset: preset || null, jobId: jobOk },
         });
         return NextResponse.json({ ok: true, id: rows[0]?.id });
       }

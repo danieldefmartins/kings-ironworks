@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import type { Job } from "@/lib/shop/shared";
 import {
   MEASURE_SHAPES,
+  MEASURE_PRESETS,
   TWO_FLIGHT_SHAPES,
   sheetProgress,
   type MeasureShape,
+  type MeasurePreset,
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
@@ -28,6 +30,7 @@ export default function MeasureListClient({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [shape, setShape] = useState<MeasureShape | null>(null);
+  const [preset, setPreset] = useState<MeasurePreset | null>(null);
   const [steps1, setSteps1] = useState(5);
   const [steps2, setSteps2] = useState(5);
   const [name, setName] = useState("");
@@ -49,6 +52,7 @@ export default function MeasureListClient({
           type: "create",
           jobId: job.id,
           shape,
+          preset,
           steps1,
           steps2: twoFlights ? steps2 : 0,
           name,
@@ -93,7 +97,7 @@ export default function MeasureListClient({
             {MEASURE_SHAPES.map((s) => (
               <button
                 key={s}
-                onClick={() => setShape(s)}
+                onClick={() => { setShape(s); setPreset(null); }}
                 className={`rounded-xl border p-3 flex flex-col items-center gap-2 text-xs font-semibold text-center ${
                   shape === s
                     ? "border-amber-500 bg-amber-500/10 text-amber-300"
@@ -104,6 +108,31 @@ export default function MeasureListClient({
                 {shapeLabel(lang, s)}
               </button>
             ))}
+          </div>
+
+          <div className="font-bold mb-2 mt-5">{mt(lang, "commonSpecialLayouts")}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+            {MEASURE_PRESETS.map((p) => {
+              const presetShape: MeasureShape = p === "winder_l" ? "l_shape" : p === "winder_u" ? "u_shape" : "builder";
+              return (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setPreset(p);
+                    setShape(presetShape);
+                    setName(mt(lang, `preset_${p}`));
+                  }}
+                  className={`rounded-xl border p-3 flex flex-col items-center gap-2 text-xs font-semibold text-center ${
+                    preset === p
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
+                  }`}
+                >
+                  <ShapeIcon shape={presetShape} />
+                  {mt(lang, `preset_${p}`)}
+                </button>
+              );
+            })}
           </div>
 
           {shape && needsSteps && (
@@ -144,6 +173,7 @@ export default function MeasureListClient({
               onClick={() => {
                 setCreating(false);
                 setShape(null);
+                setPreset(null);
               }}
               className="px-5 rounded-xl border border-neutral-700 text-neutral-300"
             >

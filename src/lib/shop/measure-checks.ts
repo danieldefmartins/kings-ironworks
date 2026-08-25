@@ -205,10 +205,18 @@ export function runChecks(
     }
     return { r, u };
   });
-  let riseSum = sums.reduce<number | null>(
-    (acc, x) => (acc === null || x.r === null ? null : acc + x.r),
-    0
-  );
+  const commonRise = sums.reduce<number | null>((acc, x, i) => {
+    if (flights[i].branch) return acc;
+    return acc === null || x.r === null ? null : acc + x.r;
+  }, 0);
+  const branchRises = sums
+    .map((x, i) => (flights[i].branch ? x.r : null))
+    .filter((x): x is number => x !== null);
+  // A bifurcated stair has alternate upper routes. Floor-to-floor follows the
+  // taller branch; adding left + right would manufacture a false discrepancy.
+  let riseSum = commonRise === null
+    ? null
+    : commonRise + (branchRises.length ? Math.max(...branchRises) : 0);
   // curves and ramps in a mixed assembly contribute to the total rise
   for (const seg of data.segments) {
     if (seg.kind === "curve" || seg.kind === "ramp") {

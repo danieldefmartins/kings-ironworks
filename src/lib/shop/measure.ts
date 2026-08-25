@@ -28,6 +28,23 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "custom",
 ];
 
+export type MeasurePreset =
+  | "winder_l"
+  | "winder_u"
+  | "curved_helical"
+  | "three_flight"
+  | "bifurcated"
+  | "irregular_stoop";
+
+export const MEASURE_PRESETS: MeasurePreset[] = [
+  "winder_l",
+  "winder_u",
+  "curved_helical",
+  "three_flight",
+  "bifurcated",
+  "irregular_stoop",
+];
+
 // Shapes made of two flights (a landing sits between them).
 export const TWO_FLIGHT_SHAPES: MeasureShape[] = ["l_shape", "u_shape"];
 
@@ -61,6 +78,10 @@ export interface PostMeasure {
 
 export interface FlightSegment {
   kind: "flight";
+  // Bifurcated stairs have one common lower flight and two alternative upper
+  // branches. Branches are measured independently and are never added to one
+  // another for the floor-to-floor check.
+  branch?: "left" | "right";
   steps: StepMeasure[];
   width: string; // stair width
   angleDeg: string; // measured stair pitch
@@ -587,6 +608,55 @@ export function newMeasureData(
     photos: [],
     annotations: {},
   };
+}
+
+export function newPresetMeasureData(
+  preset: MeasurePreset,
+  steps1: number,
+  steps2 = 0
+): { shape: MeasureShape; data: MeasureData } {
+  const upper = steps2 || steps1;
+  if (preset === "winder_l" || preset === "winder_u") {
+    const shape: MeasureShape = preset === "winder_l" ? "l_shape" : "u_shape";
+    const data = newMeasureData(shape, steps1, upper);
+    data.segments = [blankFlight(steps1), blankFlight(upper)];
+    const a = data.segments[0] as FlightSegment;
+    const b = data.segments[1] as FlightSegment;
+    const turn = preset === "winder_l" ? "45" : "90";
+    a.steps.slice(-2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: turn }));
+    b.steps.slice(0, 2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: turn }));
+    return { shape, data };
+  }
+  if (preset === "curved_helical") {
+    const data = newMeasureData("builder", steps1, upper);
+    data.segments = [blankCurve()];
+    data.overall.notes = "Curved / helical stair railing — verify each tread and elevation with site photos.";
+    return { shape: "builder", data };
+  }
+  if (preset === "three_flight") {
+    const data = newMeasureData("builder", steps1, upper);
+    data.segments = [
+      blankFlight(steps1),
+      blankPlatform("left"),
+      blankFlight(upper),
+      blankPlatform("right"),
+      blankFlight(upper),
+    ];
+    return { shape: "builder", data };
+  }
+  if (preset === "bifurcated") {
+    const data = newMeasureData("builder", steps1, upper);
+    const left = blankFlight(upper);
+    const right = blankFlight(upper);
+    left.branch = "left";
+    right.branch = "right";
+    data.segments = [blankFlight(steps1), blankPlatform("none"), left, right];
+    data.overall.notes = "Bifurcated stair: Flight 1 is common; Flights 2 and 3 are independent upper branches.";
+    return { shape: "builder", data };
+  }
+  const data = newMeasureData("builder", steps1, upper);
+  data.overall.notes = "Irregular exterior stoop — measure every rise and run; do not use typical-step assumptions unless verified.";
+  return { shape: "builder", data };
 }
 
 export function blankOverall(): OverallSpec {
