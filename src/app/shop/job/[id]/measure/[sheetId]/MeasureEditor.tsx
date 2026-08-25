@@ -354,6 +354,16 @@ export default function MeasureEditor({
     await mutate({ type: "rename", name: n }, "Rename failed");
   }
 
+  async function saveDraft() {
+    await saveName(name);
+    await enqueue(async () => {
+      if (dirtyRef.current) await doSave();
+    });
+    if (!conflictRef.current && !dirtyRef.current) {
+      setInfo(mt(lang, "draftSaved"));
+    }
+  }
+
   async function submitSheet() {
     const d = await mutate({ type: "submit" }, "Submit failed");
     if (d) {
@@ -588,6 +598,14 @@ export default function MeasureEditor({
               className="text-xs font-bold rounded-full px-3 py-2 border bg-neutral-800 border-neutral-600 text-neutral-200"
             >
               🖨 {mt(lang, "printSheet")}
+            </button>
+            <button
+              type="button"
+              onClick={saveDraft}
+              disabled={saveState === "saving" || saveState === "conflict"}
+              className="text-xs font-bold rounded-full px-3 py-2 border bg-amber-500 border-amber-400 text-black disabled:opacity-50"
+            >
+              💾 {mt(lang, "saveDraft")}
             </button>
             <button
               onClick={deleteSheet}

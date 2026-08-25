@@ -163,6 +163,8 @@ const STR: Record<Lang, Dict> = {
 
     saving: "Saving…",
     savedAll: "All changes saved",
+    saveDraft: "Save draft",
+    draftSaved: "Draft saved. Incomplete measurements are safe and can be finished later.",
     unsaved: "Unsaved changes",
     saveFailed: "Save failed",
     retry: "Retry",
@@ -674,6 +676,8 @@ const STR: Record<Lang, Dict> = {
 
     saving: "Salvando…",
     savedAll: "Tudo salvo",
+    saveDraft: "Salvar rascunho",
+    draftSaved: "Rascunho salvo. As medidas incompletas estão seguras e podem ser concluídas depois.",
     unsaved: "Alterações não salvas",
     saveFailed: "Falha ao salvar",
     retry: "Tentar de novo",
@@ -1185,6 +1189,8 @@ const STR: Record<Lang, Dict> = {
 
     saving: "Guardando…",
     savedAll: "Todo guardado",
+    saveDraft: "Guardar borrador",
+    draftSaved: "Borrador guardado. Las medidas incompletas están seguras y pueden completarse después.",
     unsaved: "Cambios sin guardar",
     saveFailed: "Error al guardar",
     retry: "Reintentar",
