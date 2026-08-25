@@ -11,6 +11,7 @@ import {
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
+import { requiredGaps } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
 
 export default function MeasureListClient({
@@ -160,7 +161,12 @@ export default function MeasureListClient({
       <div className="space-y-3">
         {sheets.map((s) => {
           const prog = sheetProgress(s.data);
-          const pct = prog.total ? Math.round((prog.filled / prog.total) * 100) : 0;
+          const missing = requiredGaps(s.data, s.shape).length;
+          const pct = missing === 0
+            ? 100
+            : prog.total
+              ? Math.round((prog.filled / (prog.total + missing)) * 100)
+              : 0;
           return (
             <button
               key={s.id}
@@ -177,6 +183,7 @@ export default function MeasureListClient({
                 <span className="text-xs text-neutral-400 block">
                   {shapeLabel(lang, s.shape)} · {prog.filled}/{prog.total}{" "}
                   {mt(lang, "filled")}
+                  {missing > 0 ? ` · ${missing} ${mt(lang, "stageMissing")}` : ` · ${mt(lang, "stageComplete")}`}
                   {s.updated_by && nameById[s.updated_by]
                     ? ` · ${mt(lang, "by")} ${nameById[s.updated_by]}`
                     : ""}

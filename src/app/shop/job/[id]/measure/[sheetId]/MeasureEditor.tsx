@@ -58,6 +58,18 @@ const NOSPACE = new Set(["'", '"', "°"]);
 // Placeholder for measurement inputs, driven by the sheet's unit choice.
 const PlaceholderCtx = createContext<string>("—");
 
+type EditorStage = "setup" | "geometry" | "connections" | "specs" | "photos" | "review";
+const StageCtx = createContext<EditorStage>("setup");
+
+const EDITOR_STAGES: { id: EditorStage; icon: string; labelKey: string }[] = [
+  { id: "setup", icon: "1", labelKey: "stageSite" },
+  { id: "geometry", icon: "2", labelKey: "stageMeasure" },
+  { id: "connections", icon: "3", labelKey: "stageConnections" },
+  { id: "specs", icon: "4", labelKey: "stageShop" },
+  { id: "photos", icon: "5", labelKey: "stagePhotos" },
+  { id: "review", icon: "6", labelKey: "stageReview" },
+];
+
 // Insert a token into the focused measurement input via the native value
 // setter so React's controlled state picks it up.
 function insertToken(tok: string) {
@@ -111,6 +123,7 @@ export default function MeasureEditor({
   >("idle");
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
+  const [activeStage, setActiveStage] = useState<EditorStage>("setup");
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
   const firstRender = useRef(true);
@@ -437,6 +450,19 @@ export default function MeasureEditor({
   const gaps = requiredGaps(data, sheet.shape);
   const redChecks = checks.filter((c) => c.level === "red");
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
+  const gapStage = (key: string): EditorStage => {
+    if (key === "orientation") return "setup";
+    if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
+    if (key.startsWith("post") || key.startsWith("span") || key.startsWith("term") ||
+        ["rail_height", "returns", "extensions", "brackets"].includes(key)) return "connections";
+    if (key.startsWith("mat_") || key === "splices" || key === "max_piece") return "specs";
+    return "geometry";
+  };
+  const stageMissing = EDITOR_STAGES.reduce<Record<EditorStage, number>>((acc, s) => {
+    acc[s.id] = gaps.filter((g) => gapStage(g.key) === s.id).length;
+    return acc;
+  }, { setup: 0, geometry: 0, connections: 0, specs: 0, photos: 0, review: redChecks.length });
+  const activeStageIndex = EDITOR_STAGES.findIndex((s) => s.id === activeStage);
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
@@ -613,8 +639,37 @@ export default function MeasureEditor({
           </div>
         </div>
 
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 mb-4 bg-neutral-950/95 backdrop-blur border-y border-neutral-800">
+          <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Measurement stages">
+            {EDITOR_STAGES.map((s) => {
+              const missing = stageMissing[s.id];
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveStage(s.id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className={`shrink-0 rounded-xl border px-3 py-2 text-left ${
+                    activeStage === s.id
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-900 text-neutral-300"
+                  }`}
+                >
+                  <span className="block text-[10px] font-bold uppercase tracking-wide">{s.icon}. {mt(lang, s.labelKey)}</span>
+                  <span className={`block text-[10px] mt-0.5 ${missing ? "text-amber-400" : "text-green-400"}`}>
+                    {missing ? `${missing} ${mt(lang, "stageMissing")}` : mt(lang, "stageComplete")}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <StageCtx.Provider value={activeStage}>
         {/* Datums & orientation — where every measurement originates */}
-        <Card title={`🧭 ${mt(lang, "datumsTitle")}`}>
+        <Card stage="setup" title={`🧭 ${mt(lang, "datumsTitle")}`}>
           <div className="text-[11px] text-neutral-400 mb-1">{mt(lang, "orientationLbl")}</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
             {(["left_wall", "right_wall", "both_open", "both_wall"] as const).map((o) => (
@@ -668,7 +723,7 @@ export default function MeasureEditor({
 
         {/* Mixed assembly: build the staircase segment by segment */}
         {isBuilder && (
-          <Card title={`🧱 ${mt(lang, "segmentsTitle")}`}>
+          <Card stage="geometry" title={`🧱 ${mt(lang, "segmentsTitle")}`}>
             <div className="text-xs text-neutral-500 mb-3">{mt(lang, "segmentsHint")}</div>
             <div className="flex flex-wrap gap-2">
               <SmallBtn onClick={() => set((d) => void d.segments.push(newFlightSegment(3)))}>
@@ -701,7 +756,7 @@ export default function MeasureEditor({
         )}
 
         {/* Sketch (custom shapes draw their own plan below instead) */}
-        {!isCustom && (
+        {!isCustom && activeStage === "geometry" && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
           {!isSpiral && !isWallRail && (
@@ -767,7 +822,7 @@ export default function MeasureEditor({
 
         {/* Spiral geometry */}
         {isSpiral && data.spiral && (
-          <Card title={mt(lang, "spiralTitle")}>
+          <Card stage="geometry" title={mt(lang, "spiralTitle")}>
             <Grid>
               <MInput label={mt(lang, "floorToFloor")} value={data.spiral.floorToFloor}
                 onChange={(v) => set((d) => void (d.spiral!.floorToFloor = v))} />
@@ -807,7 +862,7 @@ export default function MeasureEditor({
 
         {/* Flights — one measured row per step */}
         {flights.map(({ seg, i }, fi) => (
-          <Card
+          <Card stage="geometry"
             key={i}
             title={
               flights.length > 1
@@ -958,7 +1013,7 @@ export default function MeasureEditor({
 
         {/* Platforms / landings */}
         {platforms.map(({ seg, i }) => (
-          <Card key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
+          <Card stage="geometry" key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
             <Grid>
               <MInput label={mt(lang, "length")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
@@ -994,7 +1049,7 @@ export default function MeasureEditor({
 
         {/* Ramps (one card per ramp segment) */}
         {ramps.map(({ seg, i }) => (
-          <Card key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
+          <Card stage="geometry" key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
               <MInput label={mt(lang, "rampSlopeLen")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).length = v))} />
@@ -1012,7 +1067,7 @@ export default function MeasureEditor({
 
         {/* Curves */}
         {curves.map(({ seg, i }) => (
-          <Card key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
+          <Card stage="geometry" key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
               <MInput label={mt(lang, "curveRadius")} value={seg.radius}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).radius = v))} />
@@ -1045,7 +1100,7 @@ export default function MeasureEditor({
 
         {/* Posts */}
         {!isSpiral && !isWallRail && !isCustom && (
-          <Card title={`${mt(lang, "posts")} (${posts.length})`}>
+          <Card stage="connections" title={`${mt(lang, "posts")} (${posts.length})`}>
             {posts.length === 0 && (
               <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
             )}
@@ -1119,7 +1174,7 @@ export default function MeasureEditor({
         )}
 
         {/* Railing */}
-        <Card title={mt(lang, "railSection")}>
+        <Card stage="connections" title={mt(lang, "railSection")}>
           <Grid>
             <MSelect label={mt(lang, "railKind")} value={data.rail.kind}
               options={[...RAIL_KIND_OPTIONS]} lang={lang}
@@ -1143,7 +1198,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Rail spans — every piece: length + BOTH end terminations */}
-        <Card title={`🔗 ${mt(lang, "spansTitle")}`}>
+        <Card stage="connections" title={`🔗 ${mt(lang, "spansTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "spansHint")}</div>
           <div className="space-y-4">
             {data.spans.map((sp, si) => (
@@ -1208,7 +1263,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Materials */}
-        <Card title={mt(lang, "materialsTitle")}>
+        <Card stage="specs" title={mt(lang, "materialsTitle")}>
           <div className="space-y-3">
             <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
               presets={presets.post}
@@ -1238,7 +1293,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Site & finish conditions — what surface existed when measured */}
-        <Card title={`🧱 ${mt(lang, "finishTitle")}`}>
+        <Card stage="setup" title={`🧱 ${mt(lang, "finishTitle")}`}>
           <Grid>
             <MInput label={mt(lang, "bottomSurface")} placeholder="—" value={data.finish.bottomSurface}
               onChange={(v) => set((d) => void (d.finish.bottomSurface = v))} />
@@ -1266,7 +1321,7 @@ export default function MeasureEditor({
         </Card>
 
         {/* Fabrication details (conditional per shape) */}
-        <Card title={`🔩 ${mt(lang, "fabTitle")}`}>
+        <Card stage="specs" title={`🔩 ${mt(lang, "fabTitle")}`}>
           <Grid>
             {data.segments.length > 1 && (
               <>
@@ -1301,7 +1356,7 @@ export default function MeasureEditor({
 
         {/* Control dimensions — independent measurements the software cross-checks */}
         {!isCustom && (
-        <Card title={`🎯 ${mt(lang, "controlsTitle")}`}>
+        <Card stage="geometry" title={`🎯 ${mt(lang, "controlsTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
           <Grid>
             {!isSpiral && sheet.shape !== "level_run" && sheet.shape !== "ramp" && (
@@ -1343,7 +1398,7 @@ export default function MeasureEditor({
 
         {/* Custom shape: draw the plan, then dimension every line */}
         {isCustom && data.plan && (
-          <Card title={`✏️ ${mt(lang, "drawTitle")}`}>
+          <Card stage="geometry" title={`✏️ ${mt(lang, "drawTitle")}`}>
             <PlanDraw
               plan={data.plan}
               lang={lang}
@@ -1376,7 +1431,7 @@ export default function MeasureEditor({
         )}
 
         {/* Photo checklist — required evidence, slot by slot */}
-        <Card title={`📷 ${mt(lang, "photoChecklist")}`}>
+        <Card stage="photos" title={`📷 ${mt(lang, "photoChecklist")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "photosHint")}</div>
           {slotErr && (
             <div className="text-sm text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-2.5 mb-3">
@@ -1402,7 +1457,7 @@ export default function MeasureEditor({
         {/* Change history — from the immutable audit trail. Anyone may edit
             any sheet; this makes every hand that touched it visible. */}
         {history.length > 0 && (
-          <Card title={`🕘 ${mt(lang, "historyTitle")}`}>
+          <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>
             {sheet.created_by && (
               <div className="text-xs text-neutral-500 mb-2">
                 {mt(lang, "histOriginalBy")}{" "}
@@ -1449,7 +1504,7 @@ export default function MeasureEditor({
         )}
 
         {/* Review & submit — checks, gaps, and the approval gate */}
-        <Card title={`✅ ${mt(lang, "reviewTitle")}`}>
+        <Card stage="review" title={`✅ ${mt(lang, "reviewTitle")}`}>
           <div className="text-xs text-neutral-500 mb-2">{mt(lang, "neverCorrects")}</div>
           <div className="space-y-1.5 mb-4">
             {checks.map((c, i) => (
@@ -1465,10 +1520,20 @@ export default function MeasureEditor({
               <ul className="text-sm text-neutral-400 space-y-1">
                 {gaps.map((g, i) => (
                   <li key={i}>
-                    •{" "}
-                    {g.key === "photo"
-                      ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
-                      : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveStage(gapStage(g.key));
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      className="w-full text-left rounded-md px-2 py-1.5 -mx-2 hover:bg-neutral-800 active:bg-neutral-700"
+                    >
+                      •{" "}
+                      {g.key === "photo"
+                        ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
+                        : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`}
+                      <span className="float-right text-amber-400" aria-hidden>→</span>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -1543,6 +1608,33 @@ export default function MeasureEditor({
             </div>
           )}
         </Card>
+        <div className="flex gap-3 mt-2">
+          {activeStageIndex > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex-1 rounded-xl border border-neutral-700 bg-neutral-900 py-3 font-bold text-neutral-200"
+            >
+              ← {mt(lang, "previousStage")}
+            </button>
+          )}
+          {activeStageIndex < EDITOR_STAGES.length - 1 && (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveStage(EDITOR_STAGES[activeStageIndex + 1].id);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+            >
+              {mt(lang, "nextStage")} →
+            </button>
+          )}
+        </div>
+        </StageCtx.Provider>
       </div>
 
       {/* Photo capture + markup modal */}
@@ -1638,7 +1730,17 @@ function setPost(
 
 // ---- Small UI pieces -------------------------------------------------------
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function Card({
+  title,
+  children,
+  stage,
+}: {
+  title: string;
+  children: React.ReactNode;
+  stage: EditorStage;
+}) {
+  const activeStage = useContext(StageCtx);
+  if (activeStage !== stage) return null;
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
       <div className="font-bold mb-3">{title}</div>
