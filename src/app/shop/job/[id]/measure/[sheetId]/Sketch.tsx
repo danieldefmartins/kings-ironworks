@@ -539,13 +539,28 @@ function PlanSketch({
         ),
         corners: [world(0, -L / 2 - 20), world(L, -L / 2 - 20), world(0, L / 2 + 20), world(L, L / 2 + 20)],
       });
-      // advance through the landing, then turn
-      const end = world(L, 0);
-      cx = end.x;
-      cy = end.y;
-      if (pl.turn === "left") ang -= 90;
-      else if (pl.turn === "right") ang += 90;
+      // Enter at the center of the near edge. A turning flight must leave from
+      // the center of the selected side edge—not the far-edge center—so the
+      // next flight actually meets the landing in the plan view.
+      if (pl.turn === "left") {
+        const end = world(L / 2, -L / 2);
+        cx = end.x;
+        cy = end.y;
+        ang -= 90;
+      } else if (pl.turn === "right") {
+        const end = world(L / 2, L / 2);
+        cx = end.x;
+        cy = end.y;
+        ang += 90;
+      } else if (pl.turn === "none") {
+        const end = world(L, 0);
+        cx = end.x;
+        cy = end.y;
+      }
       else if (pl.turn === "u") {
+        const end = world(L, 0);
+        cx = end.x;
+        cy = end.y;
         // switchback: reverse and shift one strip over
         const shift = rot(0, PLAN_W + 16, ang);
         cx += shift.x;
