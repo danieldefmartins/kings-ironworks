@@ -32,6 +32,53 @@ export default function ShapeIcon({
     );
   }
 
+  if (preset === "winder_l" || preset === "winder_u") {
+    return (
+      <svg {...common}>
+        {preset === "winder_l" ? <path d="M9 43V22h22" /> : <path d="M11 43V17M37 17v26" />}
+        {preset === "winder_l" ? (
+          <>
+            <path d="M5 38h8M5 32h8M5 26h8M20 18v8M26 18v8M32 18v8" />
+            <path d="M9 22l9-9M9 22h13M9 22l9 9" strokeWidth={1.5} />
+          </>
+        ) : (
+          <>
+            <path d="M7 37h8M7 30h8M33 30h8M33 37h8" />
+            <path d="M11 17l9-9 8 9 9-9M11 17h26" strokeWidth={1.5} />
+          </>
+        )}
+      </svg>
+    );
+  }
+
+  if (preset === "curved_helical") {
+    return (
+      <svg {...common}>
+        <path d="M6 40C8 15 21 7 42 10" />
+        <path d="M8 34l7 2M11 26l7 3M17 18l6 4M25 12l4 6M34 9l2 7" strokeWidth={1.6} />
+      </svg>
+    );
+  }
+
+  if (preset === "bifurcated") {
+    return (
+      <svg {...common}>
+        <path d="M24 44V27M24 27L8 10M24 27l16-17" />
+        <path d="M20 39h8M20 34h8M20 29h8M6 14l6 2M11 9l6 3M36 16l6-2M31 12l6-3" strokeWidth={1.7} />
+        <rect x="19" y="22" width="10" height="7" />
+      </svg>
+    );
+  }
+
+  if (preset === "irregular_stoop") {
+    return (
+      <svg {...common}>
+        <path d="M4 42h9v-6h7v-10h12v-5h12" />
+        <path d="M8 44l3-4M17 38l3-4M27 28l3-4M39 23l3-4" strokeWidth={1.5} />
+      </svg>
+    );
+  }
+
   switch (shape) {
     case "straight":
       return (

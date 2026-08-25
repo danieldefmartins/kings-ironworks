@@ -128,7 +128,9 @@ export default function MeasureEditor({
   >("idle");
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
-  const [activeStage, setActiveStage] = useState<EditorStage>("setup");
+  // Custom sheets open directly on the drawing canvas; otherwise the user
+  // lands on the existing-site setup step.
+  const [activeStage, setActiveStage] = useState<EditorStage>(sheet.shape === "custom" ? "steps" : "setup");
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
   const firstRender = useRef(true);

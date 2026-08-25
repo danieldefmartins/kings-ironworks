@@ -349,6 +349,10 @@ const STR: Record<Lang, Dict> = {
 
     drawTitle: "Draw the railing — top view",
     drawHint: "Tap to place points. Each line you draw becomes a numbered segment you dimension below.",
+    tapCanvasStart: "Tap inside the box to place the first corner",
+    tapNextCorner: "Tap the next corner to draw a line",
+    continueOrClose: "Continue tapping corners, or press Close shape",
+    shapeClosedReady: "Shape closed — enter each numbered line measurement below",
     finishDraw: "Done drawing",
     reopenDraw: "Edit drawing",
     closeShape: "Close shape",
@@ -915,6 +919,10 @@ const STR: Record<Lang, Dict> = {
 
     drawTitle: "Desenhe o guarda-corpo — vista de cima",
     drawHint: "Toque para marcar pontos. Cada linha vira um segmento numerado para medir abaixo.",
+    tapCanvasStart: "Toque dentro da caixa para marcar o primeiro canto",
+    tapNextCorner: "Toque no próximo canto para desenhar uma linha",
+    continueOrClose: "Continue marcando cantos ou pressione Fechar forma",
+    shapeClosedReady: "Forma fechada — digite abaixo a medida de cada linha numerada",
     finishDraw: "Terminar desenho",
     reopenDraw: "Editar desenho",
     closeShape: "Fechar forma",
@@ -1481,6 +1489,10 @@ const STR: Record<Lang, Dict> = {
 
     drawTitle: "Dibuja la baranda — vista superior",
     drawHint: "Toca para marcar puntos. Cada línea se vuelve un segmento numerado que mides abajo.",
+    tapCanvasStart: "Toque dentro del cuadro para colocar la primera esquina",
+    tapNextCorner: "Toque la siguiente esquina para dibujar una línea",
+    continueOrClose: "Continúe marcando esquinas o pulse Cerrar forma",
+    shapeClosedReady: "Forma cerrada — ingrese abajo la medida de cada línea numerada",
     finishDraw: "Terminar dibujo",
     reopenDraw: "Editar dibujo",
     closeShape: "Cerrar forma",

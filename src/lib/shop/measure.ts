@@ -634,9 +634,13 @@ export function newPresetMeasureData(
     data.segments = [blankFlight(steps1), blankFlight(upper)];
     const a = data.segments[0] as FlightSegment;
     const b = data.segments[1] as FlightSegment;
-    const turn = preset === "winder_l" ? "45" : "90";
-    a.steps.slice(-2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: turn }));
-    b.steps.slice(0, 2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: turn }));
+    // Two 45° winders create an L turn. A U turn uses four 45° winders
+    // across the flight transition. Never assign 90° to every tread: that
+    // incorrectly accumulates to a full circle in the plan sketch.
+    a.steps.slice(-2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: "45" }));
+    if (preset === "winder_u") {
+      b.steps.slice(0, 2).forEach((s) => Object.assign(s, { winder: true, runIn: "", runOut: "", turnDeg: "45" }));
+    }
     return { shape, data };
   }
   if (preset === "curved_helical") {

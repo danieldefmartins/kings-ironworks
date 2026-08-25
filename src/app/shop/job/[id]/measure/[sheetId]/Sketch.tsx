@@ -248,6 +248,7 @@ function PlanSketch({
   let cy = 0;
   let ang = 0; // degrees; 0 = travelling right
   let postNo = 0;
+  let branchBase: { x: number; y: number; ang: number } | null = null;
 
   const rot = (x: number, y: number, deg: number) => {
     const r = (deg * Math.PI) / 180;
@@ -265,6 +266,11 @@ function PlanSketch({
   };
 
   data.segments.forEach((seg, segIdx) => {
+    if (seg.kind === "flight" && seg.branch && branchBase) {
+      cx = branchBase.x;
+      cy = branchBase.y;
+      ang = branchBase.ang + (seg.branch === "left" ? -35 : 35);
+    }
     if (seg.kind === "flight" && (seg as FlightSegment).steps.some((st) => stepTurn(st) !== 0)) {
       // winder flight: each tread renders in its own frame; the direction of
       // travel rotates after every turning tread — drawing the wedges
@@ -505,10 +511,13 @@ function PlanSketch({
     } else if (seg.kind === "platform") {
       const pl = seg as PlatformSegment;
       const L = PLAN_LAND;
+      const switchbackOffset = PLAN_W + 16;
+      const platTop = -L / 2;
+      const platBottom = pl.turn === "u" ? switchbackOffset + L / 2 : L / 2;
       const lv = v(pl.length, p);
       const dv = v(pl.depth, p);
       const els: React.ReactNode[] = [
-        <rect key="r" x={0} y={-L / 2} width={L} height={L} fill="none" stroke={p.line} strokeWidth={2} />,
+        <rect key="r" x={0} y={platTop} width={L} height={platBottom - platTop} fill="none" stroke={p.line} strokeWidth={2} />,
         <text key="l" x={L / 2} y={-L / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
           {lv.text}
         </text>,
@@ -521,12 +530,12 @@ function PlanSketch({
         postNo += 1;
         const frac = (idx + 1) / (platPosts.length + 1);
         els.push(
-          <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? -L / 2 : po.side === "right" ? L / 2 : openRight ? L / 2 : -L / 2} n={postNo} p={p} onHold={onHoldPost} />
+          <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? platTop : po.side === "right" ? platBottom : openRight ? platBottom : platTop} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
       if (onTapPlatform && !wallRail) {
         els.push(
-          <rect key="tap" x={0} y={-L / 2} width={L} height={L} fill="transparent"
+          <rect key="tap" x={0} y={platTop} width={L} height={platBottom - platTop} fill="transparent"
             style={{ cursor: "pointer" }}
             {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
         );
@@ -537,7 +546,7 @@ function PlanSketch({
             {els}
           </g>
         ),
-        corners: [world(0, -L / 2 - 20), world(L, -L / 2 - 20), world(0, L / 2 + 20), world(L, L / 2 + 20)],
+        corners: [world(0, platTop - 20), world(L, platTop - 20), world(0, platBottom + 20), world(L, platBottom + 20)],
       });
       // Enter at the center of the near edge. A turning flight must leave from
       // the center of the selected side edge—not the far-edge center—so the
@@ -556,15 +565,14 @@ function PlanSketch({
         const end = world(L, 0);
         cx = end.x;
         cy = end.y;
+        const next = data.segments[segIdx + 1];
+        if (next?.kind === "flight" && next.branch) branchBase = { x: cx, y: cy, ang };
       }
       else if (pl.turn === "u") {
-        const end = world(L, 0);
+        const end = world(0, switchbackOffset);
         cx = end.x;
         cy = end.y;
-        // switchback: reverse and shift one strip over
-        const shift = rot(0, PLAN_W + 16, ang);
-        cx += shift.x;
-        cy += shift.y;
+        // switchback: return from the adjacent opening of the same landing
         ang += 180;
       }
     }

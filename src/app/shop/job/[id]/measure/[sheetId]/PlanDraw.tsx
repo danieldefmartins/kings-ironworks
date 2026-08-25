@@ -83,10 +83,19 @@ export default function PlanDraw({
   return (
     <div>
       <div className="text-xs text-neutral-500 mb-2">{mt(lang, "drawHint")}</div>
+      <div className="mb-2 rounded-lg border border-amber-900/60 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200">
+        {plan.points.length === 0
+          ? `1. ${mt(lang, "tapCanvasStart")}`
+          : plan.points.length < 3
+            ? `2. ${mt(lang, "tapNextCorner")}`
+            : plan.closed
+              ? `✓ ${mt(lang, "shapeClosedReady")}`
+              : `3. ${mt(lang, "continueOrClose")}`}
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${VW} ${VH}`}
-        className="w-full rounded-lg border border-neutral-700 bg-neutral-950 touch-none"
+        className="w-full min-h-[260px] cursor-crosshair rounded-lg border-2 border-amber-700/70 bg-neutral-950 touch-none"
         onPointerDown={addPoint}
       >
         {/* grid dots */}
@@ -102,6 +111,15 @@ export default function PlanDraw({
           ))
         )}
         {/* drawn lines */}
+        {plan.points.length === 0 && (
+          <g pointerEvents="none">
+            <circle cx={VW / 2} cy={VH / 2 - 12} r={18} fill="none" stroke="#f59e0b" strokeWidth={2} strokeDasharray="4 3" />
+            <text x={VW / 2} y={VH / 2 - 7} textAnchor="middle" fontSize={20} fontWeight={700} fill="#f59e0b">＋</text>
+            <text x={VW / 2} y={VH / 2 + 24} textAnchor="middle" fontSize={11} fontWeight={700} fill="#fbbf24">
+              {mt(lang, "tapCanvasStart")}
+            </text>
+          </g>
+        )}
         {plan.points.map((q, i) => {
           if (i === 0) return null;
           const a = plan.points[i - 1];
