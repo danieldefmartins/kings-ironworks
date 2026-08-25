@@ -29,8 +29,8 @@ export default function ShapeIcon({
     case "stair_platform":
       return (
         <svg {...common}>
-          <path d="M4 42h7v-7h7v-7h7v-7h7v-7h12" />
-          <circle cx="40" cy="10" r="1.6" fill="currentColor" />
+          <path d="M3 43h6v-6h6v-6h6v-6h6v-7h18" />
+          <path d="M27 18h18v5H27" strokeWidth={3.2} />
         </svg>
       );
     case "l_shape":

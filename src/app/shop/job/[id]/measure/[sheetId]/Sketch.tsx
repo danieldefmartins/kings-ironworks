@@ -10,6 +10,7 @@ import type {
   MeasureData,
   MeasureShape,
   PlatformSegment,
+  PostMeasure,
   RampSegment,
   SpiralData,
 } from "@/lib/shop/measure";
@@ -92,6 +93,7 @@ export default function Sketch({
   onHoldStep,
   onHoldPost,
   onHoldPlatform,
+  onToggleWallSide,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -103,6 +105,7 @@ export default function Sketch({
   onHoldStep?: (segIdx: number, stepIdx: number) => void;
   onHoldPost?: (postId: string) => void;
   onHoldPlatform?: (segIdx: number) => void;
+  onToggleWallSide?: (side: "left" | "right") => void;
 }) {
   const p = light ? LIGHT : DARK;
 
@@ -131,6 +134,7 @@ export default function Sketch({
         onHoldStep={onHoldStep}
         onHoldPost={onHoldPost}
         onHoldPlatform={onHoldPlatform}
+        onToggleWallSide={onToggleWallSide}
       />
     );
   if (view === "front") return <FrontSketch data={data} p={p} lang={lang} />;
@@ -216,6 +220,7 @@ function PlanSketch({
   onHoldStep,
   onHoldPost,
   onHoldPlatform,
+  onToggleWallSide,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -226,6 +231,7 @@ function PlanSketch({
   onHoldStep?: (segIdx: number, stepIdx: number) => void;
   onHoldPost?: (postId: string) => void;
   onHoldPlatform?: (segIdx: number) => void;
+  onToggleWallSide?: (side: "left" | "right") => void;
 }) {
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
@@ -281,15 +287,9 @@ function PlanSketch({
         if (!wallRail) {
           stepPosts.forEach((po) => {
             postNo += 1;
-            const py = openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
+            const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
-              <g key={`p${po.id}`} {...pressHandlers(undefined, () => onHoldPost?.(po.id))} style={{ cursor: "grab" }}>
-                <circle cx={PLAN_TREAD / 2} cy={py} r={11} fill="transparent" />
-                <circle cx={PLAN_TREAD / 2} cy={py} r={4} fill={p.post} />
-                <text x={PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
-                  P{postNo}
-                </text>
-              </g>
+              <PlanPoint key={`p${po.id}`} po={po} x={PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
             );
           });
           if (onTapStep) {
@@ -373,14 +373,9 @@ function PlanSketch({
       curvePosts.forEach((po, idx) => {
         postNo += 1;
         const frac = (idx + 1) / (curvePosts.length + 1);
-        const pp = rotPt2(centerLocal, sgn, th * frac, 0, (sgn * -PLAN_W) / 2);
+        const pp = rotPt2(centerLocal, sgn, th * frac, 0, po.side === "right" ? PLAN_W / 2 : -PLAN_W / 2);
         els.push(
-          <g key={`cp${po.id}`}>
-            <circle cx={pp.x} cy={pp.y} r={4} fill={p.post} />
-            <text x={pp.x + 5} y={pp.y - 5} fontSize={8} fontWeight={700} fill={p.post}>
-              P{postNo}
-            </text>
-          </g>
+          <PlanPoint key={`cp${po.id}`} po={po} x={pp.x} y={pp.y} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
       if (onTapPlatform && !wallRail) {
@@ -428,7 +423,7 @@ function PlanSketch({
         postNo += 1;
         const frac = (idx + 1) / (rampPosts.length + 1);
         els.push(
-          <circle key={`rp${po.id}`} cx={frac * len} cy={openRight ? PLAN_W / 2 : -PLAN_W / 2} r={4} fill={p.post} />
+          <PlanPoint key={`rp${po.id}`} po={po} x={frac * len} y={po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight ? PLAN_W / 2 : -PLAN_W / 2} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
       if (onTapPlatform && !wallRail) {
@@ -470,16 +465,9 @@ function PlanSketch({
         if (!wallRail) {
           stepPosts.forEach((po, pi) => {
             postNo += 1;
-            const py = openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
+            const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
-              <g key={`p${po.id}`}>
-                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={11} fill="transparent"
-                  {...pressHandlers(undefined, () => onHoldPost?.(po.id))} style={{ cursor: "grab" }} />
-                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={4} fill={p.post} pointerEvents="none" />
-                <text x={i * PLAN_TREAD + PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
-                  P{postNo}
-                </text>
-              </g>
+              <PlanPoint key={`p${po.id}`} po={po} x={i * PLAN_TREAD + PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
             );
           });
           if (onTapStep) {
@@ -533,12 +521,7 @@ function PlanSketch({
         postNo += 1;
         const frac = (idx + 1) / (platPosts.length + 1);
         els.push(
-          <g key={`pp${po.id}`}>
-            <circle cx={frac * L} cy={openRight ? L / 2 : -L / 2} r={4} fill={p.post} />
-            <text x={frac * L + 5} y={(openRight ? L / 2 : -L / 2) + (openRight ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
-              P{postNo}
-            </text>
-          </g>
+          <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? -L / 2 : po.side === "right" ? L / 2 : openRight ? L / 2 : -L / 2} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
       if (onTapPlatform && !wallRail) {
@@ -585,6 +568,12 @@ function PlanSketch({
   return (
     <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 420 }}>
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
+      {onToggleWallSide && (
+        <g transform={`translate(${minX + 8} ${minY + 20})`}>
+          <WallSideToggle x={0} side="left" wall={o === "left_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
+          <WallSideToggle x={112} side="right" wall={o === "right_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
+        </g>
+      )}
       {/* UP arrow at the start of travel */}
       <g>
         <line x1={-24} y1={0} x2={-8} y2={0} stroke={p.dim} strokeWidth={1.6} />
@@ -595,6 +584,46 @@ function PlanSketch({
       </g>
       {groups.map((g) => g.node)}
     </svg>
+  );
+}
+
+function pointStyle(po: PostMeasure, p: Palette) {
+  if (po.pointType === "concrete_wall") return { color: "#9ca3af", r: 8, label: "C", square: true };
+  if (po.pointType === "existing_post") {
+    const wood = po.anchor.toLowerCase().includes("wood");
+    return { color: wood ? "#b7793f" : "#38bdf8", r: 6, label: wood ? "W" : "S", square: true };
+  }
+  if (po.pointType === "clip") return { color: "#c084fc", r: 5, label: "CL", square: false };
+  return { color: p.post, r: 4, label: "P", square: false };
+}
+
+function PlanPoint({ po, x, y, n, p, onHold }: {
+  po: PostMeasure; x: number; y: number; n: number; p: Palette; onHold?: (id: string) => void;
+}) {
+  const s = pointStyle(po, p);
+  return (
+    <g {...pressHandlers(undefined, () => onHold?.(po.id))} style={{ cursor: "pointer" }}>
+      <circle cx={x} cy={y} r={Math.max(12, s.r + 5)} fill="transparent" />
+      {s.square
+        ? <rect x={x - s.r} y={y - s.r} width={s.r * 2} height={s.r * 2} rx={po.pointType === "concrete_wall" ? 1 : 2} fill={s.color} />
+        : <circle cx={x} cy={y} r={s.r} fill={s.color} />}
+      <text x={x + s.r + 3} y={y - s.r - 2} fontSize={8} fontWeight={800} fill={s.color} pointerEvents="none">
+        {s.label}{n}
+      </text>
+    </g>
+  );
+}
+
+function WallSideToggle({ x, side, wall, lang, p, onToggle }: {
+  x: number; side: "left" | "right"; wall: boolean; lang: string; p: Palette; onToggle: (side: "left" | "right") => void;
+}) {
+  return (
+    <g transform={`translate(${x} 0)`} onClick={() => onToggle(side)} style={{ cursor: "pointer" }}>
+      <rect width={104} height={22} rx={6} fill={wall ? "#78350f" : "#262626"} stroke={wall ? p.val : p.dim} />
+      <text x={52} y={14.5} textAnchor="middle" fontSize={7.5} fontWeight={800} fill={wall ? p.val : p.line}>
+        {side === "left" ? mt(lang, "leftSideShort") : mt(lang, "rightSideShort")} · {mt(lang, wall ? "wallShort" : "openShort")}
+      </text>
+    </g>
   );
 }
 

@@ -63,6 +63,7 @@ export interface StepMeasure {
 export interface PostMeasure {
   id: string;
   pointType: "railing_post" | "existing_post" | "concrete_wall" | "clip";
+  side: "" | "left" | "right"; // always viewed from bottom step looking up
   segIdx: number; // which segment the post sits on
   stepIdx: number | null; // tread index within a flight (0 = bottom step); null = on the platform/landing
   pos: string; // platform posts: distance along the platform from its start
@@ -722,6 +723,7 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
   return {
     id: newPostId(),
     pointType: "railing_post",
+    side: "",
     segIdx,
     stepIdx,
     pos: "",
@@ -769,6 +771,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     posts: (d.posts || []).map((p) => ({
       ...p,
       pointType: p.pointType ?? "railing_post",
+      side: p.side === "left" || p.side === "right" ? p.side : "",
       distanceFromFirst: p.distanceFromFirst ?? "",
       plate: p.plate ?? "",
       anchors: p.anchors ?? "",

@@ -114,7 +114,8 @@ export default function MeasureEditor({
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
-  const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null } | null>(null);
+  const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null; side: "left" | "right" } | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [movingPostId, setMovingPostId] = useState<string | null>(null);
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
   const [slotErr, setSlotErr] = useState<string | null>(null);
@@ -299,8 +300,16 @@ export default function MeasureEditor({
       setMovingPostId(null);
       return;
     }
+    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === stepIdx);
+    if (existing) {
+      setSelectedPostId(existing.id);
+      return;
+    }
     set((d) => {
-      d.posts.push(newPost(segIdx, stepIdx));
+      const po = newPost(segIdx, stepIdx);
+      const o = d.datums.orientation;
+      po.side = o === "right_wall" ? "left" : "right";
+      d.posts.push(po);
     });
   }
 
@@ -313,8 +322,16 @@ export default function MeasureEditor({
       setMovingPostId(null);
       return;
     }
+    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === null);
+    if (existing) {
+      setSelectedPostId(existing.id);
+      return;
+    }
     set((d) => {
-      d.posts.push(newPost(segIdx, null));
+      const po = newPost(segIdx, null);
+      const o = d.datums.orientation;
+      po.side = o === "right_wall" ? "left" : "right";
+      d.posts.push(po);
     });
   }
 
@@ -323,6 +340,7 @@ export default function MeasureEditor({
     set((d) => {
       const po = newPost(placementMenu.segIdx, placementMenu.stepIdx);
       po.pointType = pointType;
+      po.side = placementMenu.side;
       if (pointType === "concrete_wall" || pointType === "clip") {
         po.anchor = "Concrete";
         po.substrate = "Concrete";
@@ -335,13 +353,13 @@ export default function MeasureEditor({
   function holdStepLocation(segIdx: number, stepIdx: number) {
     const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === stepIdx);
     if (existing) setMovingPostId(existing.id);
-    else setPlacementMenu({ segIdx, stepIdx });
+    else setPlacementMenu({ segIdx, stepIdx, side: "right" });
   }
 
   function holdPlatformLocation(segIdx: number) {
     const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === null);
     if (existing) setMovingPostId(existing.id);
-    else setPlacementMenu({ segIdx, stepIdx: null });
+    else setPlacementMenu({ segIdx, stepIdx: null, side: "right" });
   }
 
   function setSpan(idx: number, key: "label" | "topSpan" | "lowerSpan" | "note", value: string) {
@@ -368,6 +386,17 @@ export default function MeasureEditor({
   function removePost(id: string) {
     set((d) => {
       d.posts = d.posts.filter((p) => p.id !== id);
+    });
+  }
+
+  function toggleSketchWall(side: "left" | "right") {
+    set((d) => {
+      const current = d.datums.orientation;
+      let left = current === "left_wall" || current === "both_wall";
+      let right = current === "right_wall" || current === "both_wall";
+      if (side === "left") left = !left;
+      else right = !right;
+      d.datums.orientation = left && right ? "both_wall" : left ? "left_wall" : right ? "right_wall" : "both_open";
     });
   }
 
@@ -738,21 +767,8 @@ export default function MeasureEditor({
         <StageCtx.Provider value={activeStage}>
         {/* Datums & orientation — where every measurement originates */}
         <Card stage="setup" title={`🧭 ${mt(lang, "datumsTitle")}`}>
-          <div className="text-[11px] text-neutral-400 mb-1">{mt(lang, "orientationLbl")}</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-            {(["left_wall", "right_wall", "both_open", "both_wall"] as const).map((o) => (
-              <button
-                key={o}
-                onClick={() => set((d) => void (d.datums.orientation = o))}
-                className={`px-3 py-2.5 rounded-lg border text-sm font-semibold text-left ${
-                  data.datums.orientation === o
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800 text-neutral-300"
-                }`}
-              >
-                {mt(lang, `orient_${o}`)}
-              </button>
-            ))}
+          <div className="mb-3 rounded-lg border border-amber-900/50 bg-amber-500/5 p-3 text-sm text-amber-200">
+            {mt(lang, "sketchOrientationHint")}
           </div>
           <Grid>
             <MInput label={mt(lang, "bottomDatum")} placeholder="—" value={data.datums.bottomDatum}
@@ -805,6 +821,9 @@ export default function MeasureEditor({
                     </button>
                   </div>
                   <Grid>
+                    <ChipRow label={mt(lang, "stairSideLookingUp")} value={po.side}
+                      options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
+                      onChange={(v) => setPost(set, po.id, "side", v)} />
                     <MSelect label={mt(lang, "existingMaterial")} value={po.anchor} options={anchorOptions} lang={lang}
                       onChange={(v) => setPost(set, po.id, "anchor", v)} />
                     <MInput label={mt(lang, "existingPostWidth")} value={po.existingW}
@@ -917,6 +936,7 @@ export default function MeasureEditor({
                 onHoldStep={holdStepLocation}
                 onHoldPlatform={holdPlatformLocation}
                 onHoldPost={(id) => setMovingPostId(id)}
+                onToggleWallSide={toggleSketchWall}
               />
             </div>
             {viewList.length > 1 && (
@@ -934,6 +954,7 @@ export default function MeasureEditor({
                   onHoldStep={holdStepLocation}
                   onHoldPlatform={holdPlatformLocation}
                   onHoldPost={(id) => setMovingPostId(id)}
+                  onToggleWallSide={toggleSketchWall}
                 />
               </div>
             )}
@@ -1272,6 +1293,9 @@ export default function MeasureEditor({
                     ] as [string, string][])}
                     onChange={(v) => setPost(set, po.id, "pointType", v || "railing_post")}
                   />
+                  <ChipRow label={mt(lang, "stairSideLookingUp")} value={po.side}
+                    options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
+                    onChange={(v) => setPost(set, po.id, "side", v)} />
                   <Grid>
                     {po.stepIdx !== null ? (
                       <>
@@ -1830,6 +1854,14 @@ export default function MeasureEditor({
           <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
             <div className="text-lg font-bold mb-1">{mt(lang, "choosePointType")}</div>
             <div className="text-xs text-neutral-400 mb-3">{mt(lang, "choosePointHint")}</div>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {(["left", "right"] as const).map((side) => (
+                <button key={side} type="button" onClick={() => setPlacementMenu((m) => m ? { ...m, side } : m)}
+                  className={`rounded-xl border p-3 font-bold ${placementMenu.side === side ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800"}`}>
+                  {mt(lang, side === "left" ? "leftLookingUp" : "rightLookingUp")}
+                </button>
+              ))}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {(["railing_post", "existing_post", "concrete_wall", "clip"] as const).map((type) => (
                 <button key={type} type="button" onClick={() => addTypedPoint(type)}
@@ -1845,6 +1877,45 @@ export default function MeasureEditor({
           </div>
         </div>
       )}
+
+      {selectedPostId && (() => {
+        const selected = data.posts.find((po) => po.id === selectedPostId);
+        if (!selected) return null;
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center" onClick={() => setSelectedPostId(null)}>
+            <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-1 text-lg font-bold">{mt(lang, `point_${selected.pointType}`)}</div>
+              <div className="mb-4 text-xs text-neutral-400">{mt(lang, "selectedPointHint")}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => { setMovingPostId(selected.id); setSelectedPostId(null); }}
+                  className="rounded-xl border border-amber-600 bg-amber-500/10 p-4 font-bold text-amber-300">
+                  ↔ {mt(lang, "relocatePoint")}
+                </button>
+                <button type="button" onClick={() => { removePost(selected.id); setSelectedPostId(null); }}
+                  className="rounded-xl border border-red-800 bg-red-950/40 p-4 font-bold text-red-300">
+                  ✕ {mt(lang, "removePost")}
+                </button>
+                <button type="button" onClick={() => {
+                  set((d) => {
+                    const po = newPost(selected.segIdx, selected.stepIdx);
+                    po.pointType = selected.pointType;
+                    po.side = selected.side === "left" ? "right" : "left";
+                    po.anchor = selected.anchor;
+                    po.substrate = selected.substrate;
+                    d.posts.push(po);
+                  });
+                  setSelectedPostId(null);
+                }} className="col-span-2 rounded-xl border border-neutral-600 bg-neutral-800 p-3 font-bold text-neutral-200">
+                  ＋ {mt(lang, "addOtherSide")}
+                </button>
+              </div>
+              <button type="button" onClick={() => setSelectedPostId(null)} className="mt-3 w-full rounded-xl border border-neutral-700 py-3">
+                {mt(lang, "cancel")}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Photo capture + markup modal */}
       {photoSlot && (

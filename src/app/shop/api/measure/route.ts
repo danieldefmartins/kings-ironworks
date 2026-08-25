@@ -84,6 +84,7 @@ const CurveSchema = z.object({
 const PostSchema = z.object({
   id: z.string().max(40),
   pointType: z.enum(["railing_post", "existing_post", "concrete_wall", "clip"]),
+  side: z.enum(["", "left", "right"]).optional(),
   segIdx: z.number().int().min(0).max(30),
   stepIdx: z.number().int().min(0).max(120).nullable(),
   pos: meas,
