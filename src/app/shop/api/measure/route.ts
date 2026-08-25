@@ -82,9 +82,11 @@ const CurveSchema = z.object({
 });
 const PostSchema = z.object({
   id: z.string().max(40),
+  pointType: z.enum(["railing_post", "existing_post", "concrete_wall", "clip"]),
   segIdx: z.number().int().min(0).max(30),
   stepIdx: z.number().int().min(0).max(120).nullable(),
   pos: meas,
+  distanceFromFirst: meas,
   fromNosing: meas,
   fromEdge: meas,
   mount: z.string().max(40),
@@ -94,6 +96,11 @@ const PostSchema = z.object({
   substrate: z.string().max(200),
   edgeDist: z.string().max(200),
   obstruction: z.string().max(200),
+  existingW: meas,
+  existingD: meas,
+  skirtProjection: meas,
+  skirtHeight: meas,
+  clipDetail: z.string().max(300),
 });
 const SpiralSchema = z
   .object({

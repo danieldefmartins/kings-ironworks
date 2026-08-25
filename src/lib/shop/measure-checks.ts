@@ -600,10 +600,23 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   data.posts.forEach((p, i) => {
     const tag = `P${i + 1}`;
     const posOk = p.stepIdx !== null ? has(p.fromNosing) : has(p.pos);
-    if (!posOk || !has(p.fromEdge) || !has(p.mount)) {
+    if (p.stepIdx !== null && !has(p.distanceFromFirst)) {
+      gaps.push({ key: "post_first_edge", detail: tag });
+    }
+    if (!posOk || !has(p.fromEdge) || (p.pointType === "railing_post" && !has(p.mount))) {
       gaps.push({ key: "post", detail: tag });
       return; // mount unknown — conditional rules can't apply yet
     }
+    if (p.pointType === "existing_post") {
+      if (!has(p.anchor)) gaps.push({ key: "existing_material", detail: tag });
+      if (!has(p.existingW) || !has(p.existingD)) gaps.push({ key: "existing_post_size", detail: tag });
+      if (!has(p.skirtProjection)) gaps.push({ key: "post_skirt", detail: tag });
+    }
+    if ((p.pointType === "concrete_wall" || p.pointType === "clip") && !has(p.anchor)) {
+      gaps.push({ key: "existing_material", detail: tag });
+    }
+    if (p.pointType === "clip" && !has(p.clipDetail)) gaps.push({ key: "clip_detail", detail: tag });
+    if (p.pointType !== "railing_post") return;
     if (!has(p.substrate)) gaps.push({ key: "post_substrate", detail: tag });
     if (p.mount === "Base plate") {
       if (!has(p.plate)) gaps.push({ key: "post_plate", detail: tag });

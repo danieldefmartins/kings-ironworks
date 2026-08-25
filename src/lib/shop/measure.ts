@@ -61,9 +61,11 @@ export interface StepMeasure {
 
 export interface PostMeasure {
   id: string;
+  pointType: "railing_post" | "existing_post" | "concrete_wall" | "clip";
   segIdx: number; // which segment the post sits on
   stepIdx: number | null; // tread index within a flight (0 = bottom step); null = on the platform/landing
   pos: string; // platform posts: distance along the platform from its start
+  distanceFromFirst: string; // first-step edge to the edge of the destination tread
   fromNosing: string; // setback from the tread nosing (or platform edge)
   fromEdge: string; // setback from the open side edge
   mount: string; // Core-drill | Base plate | Side mount
@@ -74,6 +76,11 @@ export interface PostMeasure {
   substrate: string; // substrate thickness / condition
   edgeDist: string; // distance to nearest concrete/masonry edge
   obstruction: string; // anything below/behind the mount
+  existingW: string; // existing structural/wood/concrete post face width
+  existingD: string;
+  skirtProjection: string; // molding/skirt projection beyond the structural post face
+  skirtHeight: string;
+  clipDetail: string;
 }
 
 export interface FlightSegment {
@@ -711,9 +718,11 @@ export function blankFab(): FabDetails {
 export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
   return {
     id: newPostId(),
+    pointType: "railing_post",
     segIdx,
     stepIdx,
     pos: "",
+    distanceFromFirst: "",
     fromNosing: "",
     fromEdge: "",
     mount: "",
@@ -723,6 +732,11 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
     substrate: "",
     edgeDist: "",
     obstruction: "",
+    existingW: "",
+    existingD: "",
+    skirtProjection: "",
+    skirtHeight: "",
+    clipDetail: "",
   };
 }
 
@@ -748,11 +762,18 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     }),
     posts: (d.posts || []).map((p) => ({
       ...p,
+      pointType: p.pointType ?? "railing_post",
+      distanceFromFirst: p.distanceFromFirst ?? "",
       plate: p.plate ?? "",
       anchors: p.anchors ?? "",
       substrate: p.substrate ?? "",
       edgeDist: p.edgeDist ?? "",
       obstruction: p.obstruction ?? "",
+      existingW: p.existingW ?? "",
+      existingD: p.existingD ?? "",
+      skirtProjection: p.skirtProjection ?? "",
+      skirtHeight: p.skirtHeight ?? "",
+      clipDetail: p.clipDetail ?? "",
     })),
     spiral: d.spiral ?? null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
@@ -826,7 +847,7 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       vals.push(seg.radius, seg.chord, seg.arc, seg.width);
     }
   }
-  for (const p of data.posts) vals.push(p.fromNosing, p.fromEdge, p.mount);
+  for (const p of data.posts) vals.push(p.distanceFromFirst, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
   if (data.spiral) {
     vals.push(
       data.spiral.floorToFloor,

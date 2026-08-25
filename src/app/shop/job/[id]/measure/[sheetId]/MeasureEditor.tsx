@@ -112,6 +112,8 @@ export default function MeasureEditor({
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
+  const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null } | null>(null);
+  const [movingPostId, setMovingPostId] = useState<string | null>(null);
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
   const [slotErr, setSlotErr] = useState<string | null>(null);
   const statusRef = useRef(sheet.status);
@@ -287,15 +289,57 @@ export default function MeasureEditor({
   }
 
   function addStepPost(segIdx: number, stepIdx: number) {
+    if (movingPostId) {
+      set((d) => {
+        const po = d.posts.find((p) => p.id === movingPostId);
+        if (po) { po.segIdx = segIdx; po.stepIdx = stepIdx; po.pos = ""; }
+      });
+      setMovingPostId(null);
+      return;
+    }
     set((d) => {
       d.posts.push(newPost(segIdx, stepIdx));
     });
   }
 
   function addPlatformPost(segIdx: number) {
+    if (movingPostId) {
+      set((d) => {
+        const po = d.posts.find((p) => p.id === movingPostId);
+        if (po) { po.segIdx = segIdx; po.stepIdx = null; po.distanceFromFirst = ""; }
+      });
+      setMovingPostId(null);
+      return;
+    }
     set((d) => {
       d.posts.push(newPost(segIdx, null));
     });
+  }
+
+  function addTypedPoint(pointType: PostMeasure["pointType"]) {
+    if (!placementMenu) return;
+    set((d) => {
+      const po = newPost(placementMenu.segIdx, placementMenu.stepIdx);
+      po.pointType = pointType;
+      if (pointType === "concrete_wall" || pointType === "clip") {
+        po.anchor = "Concrete";
+        po.substrate = "Concrete";
+      }
+      d.posts.push(po);
+    });
+    setPlacementMenu(null);
+  }
+
+  function holdStepLocation(segIdx: number, stepIdx: number) {
+    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === stepIdx);
+    if (existing) setMovingPostId(existing.id);
+    else setPlacementMenu({ segIdx, stepIdx });
+  }
+
+  function holdPlatformLocation(segIdx: number) {
+    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === null);
+    if (existing) setMovingPostId(existing.id);
+    else setPlacementMenu({ segIdx, stepIdx: null });
   }
 
   function setSpan(idx: number, key: "label" | "topSpan" | "lowerSpan" | "note", value: string) {
@@ -787,6 +831,14 @@ export default function MeasureEditor({
               )}
             </div>
           )}
+          {movingPostId && (
+            <div className="mb-3 rounded-lg border border-amber-500 bg-amber-950/40 p-3 text-sm text-amber-200 flex items-center gap-2">
+              <span className="flex-1">↔ {mt(lang, "movePostHint")}</span>
+              <button type="button" onClick={() => setMovingPostId(null)} className="rounded-full border border-amber-700 px-2 py-1 text-xs">
+                {mt(lang, "cancel")}
+              </button>
+            </div>
+          )}
           {/* View chips — phones show one view; md+ adds a second beside it */}
           {viewList.length > 1 && (
             <div className="flex gap-2 mb-3">
@@ -817,6 +869,9 @@ export default function MeasureEditor({
                 view={view}
                 onTapStep={addStepPost}
                 onTapPlatform={addPlatformPost}
+                onHoldStep={holdStepLocation}
+                onHoldPlatform={holdPlatformLocation}
+                onHoldPost={(id) => setMovingPostId(id)}
               />
             </div>
             {viewList.length > 1 && (
@@ -831,6 +886,9 @@ export default function MeasureEditor({
                   view={viewList.find(([vw]) => vw !== view)![0]}
                   onTapStep={addStepPost}
                   onTapPlatform={addPlatformPost}
+                  onHoldStep={holdStepLocation}
+                  onHoldPlatform={holdPlatformLocation}
+                  onHoldPost={(id) => setMovingPostId(id)}
                 />
               </div>
             )}
@@ -1139,22 +1197,66 @@ export default function MeasureEditor({
                       ✕ {mt(lang, "removePost")}
                     </button>
                   </div>
+                  <ChipRow
+                    label={mt(lang, "pointType")}
+                    value={po.pointType}
+                    options={([
+                      ["railing_post", mt(lang, "point_railing_post")],
+                      ["existing_post", mt(lang, "point_existing_post")],
+                      ["concrete_wall", mt(lang, "point_concrete_wall")],
+                      ["clip", mt(lang, "point_clip")],
+                    ] as [string, string][])}
+                    onChange={(v) => setPost(set, po.id, "pointType", v || "railing_post")}
+                  />
                   <Grid>
                     {po.stepIdx !== null ? (
-                      <MInput label={mt(lang, "fromNosing")} value={po.fromNosing}
-                        onChange={(v) => setPost(set, po.id, "fromNosing", v)} />
+                      <>
+                        <MInput label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
+                          onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />
+                        <MInput label={mt(lang, "postSetback")} value={po.fromNosing}
+                          onChange={(v) => setPost(set, po.id, "fromNosing", v)} />
+                      </>
                     ) : (
                       <MInput label={mt(lang, "alongPlatform")} value={po.pos}
                         onChange={(v) => setPost(set, po.id, "pos", v)} />
                     )}
                     <MInput label={mt(lang, "fromEdge")} value={po.fromEdge}
                       onChange={(v) => setPost(set, po.id, "fromEdge", v)} />
-                    <MSelect label={mt(lang, "mountType")} value={po.mount}
-                      options={[...MOUNT_OPTIONS]} lang={lang}
-                      onChange={(v) => setPost(set, po.id, "mount", v)} />
-                    <MSelect label={mt(lang, "anchorInto")} value={po.anchor}
-                      options={anchorOptions} lang={lang}
-                      onChange={(v) => setPost(set, po.id, "anchor", v)} />
+                    {po.pointType === "railing_post" && (
+                      <>
+                        <MSelect label={mt(lang, "mountType")} value={po.mount}
+                          options={[...MOUNT_OPTIONS]} lang={lang}
+                          onChange={(v) => setPost(set, po.id, "mount", v)} />
+                        <MSelect label={mt(lang, "anchorInto")} value={po.anchor}
+                          options={anchorOptions} lang={lang}
+                          onChange={(v) => setPost(set, po.id, "anchor", v)} />
+                      </>
+                    )}
+                    {po.pointType !== "railing_post" && (
+                      <MSelect label={mt(lang, "existingMaterial")} value={po.anchor}
+                        options={anchorOptions} lang={lang}
+                        onChange={(v) => setPost(set, po.id, "anchor", v)} />
+                    )}
+                    {(po.pointType === "existing_post" || po.pointType === "concrete_wall") && (
+                      <>
+                        <MInput label={mt(lang, "existingPostWidth")} value={po.existingW}
+                          onChange={(v) => setPost(set, po.id, "existingW", v)} />
+                        <MInput label={mt(lang, "existingPostDepth")} value={po.existingD}
+                          onChange={(v) => setPost(set, po.id, "existingD", v)} />
+                      </>
+                    )}
+                    {po.pointType === "existing_post" && (
+                      <>
+                        <MInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
+                          onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
+                        <MInput label={mt(lang, "skirtHeight")} placeholder="—" value={po.skirtHeight}
+                          onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
+                      </>
+                    )}
+                    {po.pointType === "clip" && (
+                      <MInput label={mt(lang, "clipDetail")} placeholder="—" value={po.clipDetail}
+                        onChange={(v) => setPost(set, po.id, "clipDetail", v)} />
+                    )}
                   </Grid>
                   <details className="mt-3">
                     <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
@@ -1654,6 +1756,27 @@ export default function MeasureEditor({
         </div>
         </StageCtx.Provider>
       </div>
+
+      {placementMenu && (
+        <div className="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center p-4" onClick={() => setPlacementMenu(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-lg font-bold mb-1">{mt(lang, "choosePointType")}</div>
+            <div className="text-xs text-neutral-400 mb-3">{mt(lang, "choosePointHint")}</div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["railing_post", "existing_post", "concrete_wall", "clip"] as const).map((type) => (
+                <button key={type} type="button" onClick={() => addTypedPoint(type)}
+                  className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
+                  {type === "railing_post" ? "▣" : type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
+                  {mt(lang, `point_${type}`)}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={() => setPlacementMenu(null)} className="w-full mt-3 rounded-xl border border-neutral-700 py-3">
+              {mt(lang, "cancel")}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Photo capture + markup modal */}
       {photoSlot && (

@@ -89,6 +89,9 @@ export default function Sketch({
   view = "side",
   onTapStep,
   onTapPlatform,
+  onHoldStep,
+  onHoldPost,
+  onHoldPlatform,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -97,6 +100,9 @@ export default function Sketch({
   view?: SketchView;
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
+  onHoldStep?: (segIdx: number, stepIdx: number) => void;
+  onHoldPost?: (postId: string) => void;
+  onHoldPlatform?: (segIdx: number) => void;
 }) {
   const p = light ? LIGHT : DARK;
 
@@ -109,7 +115,7 @@ export default function Sketch({
     );
   if (shape === "level_run")
     return view === "front" ? (
-      <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />
+      <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} onHoldPlatform={onHoldPlatform} />
     ) : (
       <LevelSectionSketch data={data} p={p} lang={lang} />
     );
@@ -122,6 +128,9 @@ export default function Sketch({
         lang={lang}
         onTapStep={onTapStep}
         onTapPlatform={onTapPlatform}
+        onHoldStep={onHoldStep}
+        onHoldPost={onHoldPost}
+        onHoldPlatform={onHoldPlatform}
       />
     );
   if (view === "front") return <FrontSketch data={data} p={p} lang={lang} />;
@@ -170,6 +179,33 @@ const PLAN_TREAD = 17; // px per tread along the run
 const PLAN_W = 54; // stair strip width in px
 const PLAN_LAND = 66; // landing square
 
+function pressHandlers(tap?: () => void, hold?: () => void) {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let held = false;
+  const clear = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent<SVGElement>) => {
+      e.preventDefault();
+      held = false;
+      timer = setTimeout(() => {
+        held = true;
+        hold?.();
+      }, 550);
+    },
+    onPointerUp: (e: React.PointerEvent<SVGElement>) => {
+      e.preventDefault();
+      clear();
+      if (!held) tap?.();
+    },
+    onPointerCancel: clear,
+    onPointerLeave: clear,
+    onContextMenu: (e: React.MouseEvent<SVGElement>) => e.preventDefault(),
+  };
+}
+
 function PlanSketch({
   shape,
   data,
@@ -177,6 +213,9 @@ function PlanSketch({
   lang,
   onTapStep,
   onTapPlatform,
+  onHoldStep,
+  onHoldPost,
+  onHoldPlatform,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -184,6 +223,9 @@ function PlanSketch({
   lang: string;
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
+  onHoldStep?: (segIdx: number, stepIdx: number) => void;
+  onHoldPost?: (postId: string) => void;
+  onHoldPlatform?: (segIdx: number) => void;
 }) {
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
@@ -241,7 +283,8 @@ function PlanSketch({
             postNo += 1;
             const py = openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
-              <g key={`p${po.id}`}>
+              <g key={`p${po.id}`} {...pressHandlers(undefined, () => onHoldPost?.(po.id))} style={{ cursor: "grab" }}>
+                <circle cx={PLAN_TREAD / 2} cy={py} r={11} fill="transparent" />
                 <circle cx={PLAN_TREAD / 2} cy={py} r={4} fill={p.post} />
                 <text x={PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
                   P{postNo}
@@ -252,7 +295,8 @@ function PlanSketch({
           if (onTapStep) {
             els.push(
               <rect key="tap" x={0} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
-                fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapStep(segIdx, i)} />
+                fill="transparent" style={{ cursor: "pointer" }}
+                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
             );
           }
         }
@@ -342,7 +386,8 @@ function PlanSketch({
       if (onTapPlatform && !wallRail) {
         els.push(
           <path key="tap" d={edge(0)} fill="none" stroke="transparent" strokeWidth={PLAN_W}
-            style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+            style={{ cursor: "pointer" }}
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
         );
       }
       groups.push({
@@ -389,7 +434,8 @@ function PlanSketch({
       if (onTapPlatform && !wallRail) {
         els.push(
           <rect key="tap" x={0} y={-PLAN_W / 2} width={len} height={PLAN_W}
-            fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+            fill="transparent" style={{ cursor: "pointer" }}
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
         );
       }
       groups.push({
@@ -427,7 +473,9 @@ function PlanSketch({
             const py = openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
               <g key={`p${po.id}`}>
-                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={4} fill={p.post} />
+                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={11} fill="transparent"
+                  {...pressHandlers(undefined, () => onHoldPost?.(po.id))} style={{ cursor: "grab" }} />
+                <circle cx={i * PLAN_TREAD + PLAN_TREAD / 2} cy={py} r={4} fill={p.post} pointerEvents="none" />
                 <text x={i * PLAN_TREAD + PLAN_TREAD / 2 + 5} y={py + (py > 0 ? 12 : -6)} fontSize={8} fontWeight={700} fill={p.post}>
                   P{postNo}
                 </text>
@@ -437,7 +485,8 @@ function PlanSketch({
           if (onTapStep) {
             els.push(
               <rect key={`tap${i}`} x={i * PLAN_TREAD} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
-                fill="transparent" style={{ cursor: "pointer" }} onClick={() => onTapStep(segIdx, i)} />
+                fill="transparent" style={{ cursor: "pointer" }}
+                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
             );
           }
         }
@@ -495,7 +544,8 @@ function PlanSketch({
       if (onTapPlatform && !wallRail) {
         els.push(
           <rect key="tap" x={0} y={-L / 2} width={L} height={L} fill="transparent"
-            style={{ cursor: "pointer" }} onClick={() => onTapPlatform(segIdx)} />
+            style={{ cursor: "pointer" }}
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
         );
       }
       groups.push({
@@ -954,11 +1004,13 @@ function LevelSketch({
   p,
   lang,
   onTapPlatform,
+  onHoldPlatform,
 }: {
   data: MeasureData;
   p: Palette;
   lang: string;
   onTapPlatform?: (segIdx: number) => void;
+  onHoldPlatform?: (segIdx: number) => void;
 }) {
   const seg = data.segments[0] as PlatformSegment | undefined;
   const W = 340;
@@ -1008,7 +1060,7 @@ function LevelSketch({
           height={baseY - railY + 20}
           fill="transparent"
           style={{ cursor: "pointer" }}
-          onClick={() => onTapPlatform(0)}
+          {...pressHandlers(() => onTapPlatform(0), () => onHoldPlatform?.(0))}
         />
       )}
     </svg>
