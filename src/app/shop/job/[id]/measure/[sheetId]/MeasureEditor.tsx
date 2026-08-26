@@ -775,13 +775,13 @@ export default function MeasureEditor({
             {mt(lang, "sketchOrientationHint")}
           </div>
           <Grid>
-            <MInput label={mt(lang, "bottomDatum")} placeholder="—" value={data.datums.bottomDatum}
+            <MInput label={mt(lang, "bottomDatum")} hint={mt(lang, "bottomDatumInfo")} hintDiagram="bottom" placeholder="—" value={data.datums.bottomDatum}
               onChange={(v) => set((d) => void (d.datums.bottomDatum = v))} />
-            <MInput label={mt(lang, "topDatum")} placeholder="—" value={data.datums.topDatum}
+            <MInput label={mt(lang, "topDatum")} hint={mt(lang, "topDatumInfo")} hintDiagram="top" placeholder="—" value={data.datums.topDatum}
               onChange={(v) => set((d) => void (d.datums.topDatum = v))} />
-            <MInput label={mt(lang, "nosingRefLbl")} placeholder="—" value={data.datums.nosingRef}
+            <MInput label={mt(lang, "nosingRefLbl")} hint={mt(lang, "nosingRefInfo")} hintDiagram="nosing" placeholder="—" value={data.datums.nosingRef}
               onChange={(v) => set((d) => void (d.datums.nosingRef = v))} />
-            <MInput label={mt(lang, "walklineLbl")} value={data.datums.walkline}
+            <MInput label={mt(lang, "walklineLbl")} hint={mt(lang, "walklineInfo")} hintDiagram="walkline" value={data.datums.walkline}
               onChange={(v) => set((d) => void (d.datums.walkline = v))} />
           </Grid>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -2110,12 +2110,16 @@ function SmallBtn({ onClick, children }: { onClick: () => void; children: React.
 function MInput({
   label,
   labelClass = "",
+  hint,
+  hintDiagram,
   value,
   onChange,
   placeholder,
 }: {
   label?: string;
   labelClass?: string;
+  hint?: string;
+  hintDiagram?: "bottom" | "top" | "nosing" | "walkline";
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -2126,6 +2130,7 @@ function MInput({
       {label && (
         <span className={`text-[11px] text-neutral-400 block mb-1 ${labelClass}`}>
           {label}
+          {hint && <InfoHint text={hint} diagram={hintDiagram} />}
         </span>
       )}
       <input
@@ -2137,6 +2142,50 @@ function MInput({
         className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base"
       />
     </label>
+  );
+}
+
+function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" | "nosing" | "walkline" }) {
+  return (
+    <span className="group relative ml-1 inline-block align-middle" onClick={(e) => e.preventDefault()}>
+      <button type="button" aria-label={text} className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-700 text-[11px] font-bold text-amber-300">
+        i
+      </button>
+      <span role="tooltip" className="pointer-events-none absolute left-0 top-6 z-50 hidden w-64 rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl group-focus-within:block group-hover:block">
+        {diagram && <MeasurementHintDiagram kind={diagram} />}
+        {text}
+      </span>
+    </span>
+  );
+}
+
+function MeasurementHintDiagram({ kind }: { kind: "bottom" | "top" | "nosing" | "walkline" }) {
+  if (kind === "walkline") {
+    return (
+      <svg viewBox="0 0 220 90" className="mb-2 w-full rounded bg-neutral-950" aria-hidden>
+        <path d="M18 74 L105 12 L202 74 Z" fill="none" stroke="#a3a3a3" strokeWidth="2" />
+        <path d="M55 70 Q108 42 170 66" fill="none" stroke="#f59e0b" strokeWidth="4" strokeDasharray="5 3" />
+        <line x1="38" y1="70" x2="55" y2="70" stroke="#fbbf24" strokeWidth="2" />
+        <path d="M38 70l5-3v6zM55 70l-5-3v6z" fill="#fbbf24" />
+        <text x="106" y="42" fill="#fbbf24" fontSize="15" fontWeight="700">↟</text>
+      </svg>
+    );
+  }
+  const highlightBottom = kind === "bottom";
+  const highlightTop = kind === "top";
+  const highlightNosing = kind === "nosing";
+  return (
+    <svg viewBox="0 0 220 100" className="mb-2 w-full rounded bg-neutral-950" aria-hidden>
+      <path d="M12 84h34V68h34V52h34V36h34V20h60" fill="none" stroke="#d4d4d4" strokeWidth="3" />
+      <line x1="10" y1="84" x2="58" y2="84" stroke={highlightBottom ? "#f59e0b" : "#737373"} strokeWidth={highlightBottom ? 6 : 2} />
+      <line x1="148" y1="20" x2="210" y2="20" stroke={highlightTop ? "#f59e0b" : "#737373"} strokeWidth={highlightTop ? 6 : 2} />
+      {[46, 80, 114, 148].map((x, i) => <circle key={x} cx={x} cy={68 - i * 16} r={highlightNosing ? 5 : 2.5} fill={highlightNosing ? "#f59e0b" : "#737373"} />)}
+      <text x="18" y="97" fill={highlightBottom ? "#fbbf24" : "#a3a3a3"} fontSize="11" fontWeight="700">0 ↓</text>
+      <text x="180" y="13" fill={highlightTop ? "#fbbf24" : "#a3a3a3"} fontSize="11" fontWeight="700">0 ↑</text>
+      {highlightNosing && <text x="91" y="92" fill="#fbbf24" fontSize="15" fontWeight="700">••••</text>}
+      <path d="M18 62v-30m0 0l-5 8m5-8l5 8" stroke="#fbbf24" strokeWidth="2" />
+      <text x="27" y="40" fill="#fbbf24" fontSize="13">↑</text>
+    </svg>
   );
 }
 
