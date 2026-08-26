@@ -77,8 +77,8 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
     ];
   return [
     ["plan", "planView"],
-    ["front", "frontView"],
     ["side", "sideView"],
+    ["front", "frontView"],
   ];
 }
 
