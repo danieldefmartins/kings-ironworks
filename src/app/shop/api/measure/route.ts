@@ -136,6 +136,9 @@ const FinishSchema = z.object({
   demoPending: short,
   verifyAfterFinishes: z.boolean(),
   notes: note,
+  floorChange: z.enum(["", "none", "bottom", "top", "both"]),
+  bottomAdjustment: meas,
+  topAdjustment: meas,
 });
 const FabSchema = z.object({
   corners: short,

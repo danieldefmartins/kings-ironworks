@@ -612,7 +612,7 @@ export default function PrintSheet({
             </div>
           )}
           {/* finish conditions */}
-          {(data.finish.futureTopping || data.finish.demoPending || data.finish.verifyAfterFinishes ||
+          {(data.finish.floorChange || data.finish.futureTopping || data.finish.demoPending || data.finish.verifyAfterFinishes ||
             data.finish.bottomSurface || data.finish.topSurface) && (
             <div className="mt-2">
               <SectionTitle>{mt(lang, "finishTitle")}</SectionTitle>
@@ -624,6 +624,12 @@ export default function PrintSheet({
               )}
               {data.finish.futureTopping && (
                 <div>{mt(lang, "futureTopping")}: <b>{data.finish.futureTopping}</b></div>
+              )}
+              {(data.finish.floorChange === "bottom" || data.finish.floorChange === "both") && (
+                <div>{mt(lang, "bottomAdjustment")}: <b>{data.finish.bottomAdjustment}</b></div>
+              )}
+              {(data.finish.floorChange === "top" || data.finish.floorChange === "both") && (
+                <div>{mt(lang, "topAdjustment")}: <b>{data.finish.topAdjustment}</b></div>
               )}
               {data.finish.demoPending && (
                 <div>{mt(lang, "demoPending")}: <b>{data.finish.demoPending}</b></div>

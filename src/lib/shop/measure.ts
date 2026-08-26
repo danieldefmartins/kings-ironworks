@@ -203,6 +203,9 @@ export interface FinishSpec {
   demoPending: string;
   verifyAfterFinishes: boolean;
   notes: string;
+  floorChange: "" | "none" | "bottom" | "top" | "both";
+  bottomAdjustment: string; // signed change from today's surface: + higher, - lower
+  topAdjustment: string;
 }
 
 // Fabrication-critical details, conditionally shown per shape.
@@ -721,6 +724,9 @@ export function blankFinish(): FinishSpec {
     demoPending: "",
     verifyAfterFinishes: false,
     notes: "",
+    floorChange: "",
+    bottomAdjustment: "",
+    topAdjustment: "",
   };
 }
 export function blankFab(): FabDetails {

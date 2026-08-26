@@ -153,6 +153,9 @@ function completeData(photos) {
       demoPending: "",
       verifyAfterFinishes: false,
       notes: "",
+      floorChange: "none",
+      bottomAdjustment: "",
+      topAdjustment: "",
     },
     fab: {
       corners: "",

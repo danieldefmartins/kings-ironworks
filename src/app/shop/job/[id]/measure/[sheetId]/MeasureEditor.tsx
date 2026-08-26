@@ -26,6 +26,7 @@ import {
   sheetProgress,
   type FlightSegment,
   type MeasureData,
+  type FinishSpec,
   type MeasureSheet,
   type PlatformSegment,
   type PostMeasure,
@@ -540,7 +541,7 @@ export default function MeasureEditor({
   const redChecks = checks.filter((c) => c.level === "red");
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
   const gapStage = (key: string): EditorStage => {
-    if (key === "orientation") return "setup";
+    if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
     if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
     if (key.startsWith("post")) return "locations";
     if (key.startsWith("span") || key.startsWith("term") ||
@@ -576,6 +577,11 @@ export default function MeasureEditor({
     (sg) => sg.kind === "platform" && (sg as PlatformSegment).turn !== "none"
   );
   const multiFlight = flights.length > 1 || turns;
+  const hasFlights = flights.length > 0;
+  const hasWinders = flights.some(({ seg }) => seg.steps.some((step) => step.winder));
+  const hasHandrail = data.rail.kind === "Handrail" || data.rail.kind === "Both";
+  const hasGuardrail = data.rail.kind !== "Handrail";
+  const needsPostReference = !isWallRail && !isCustom && !isSpiral;
 
   // Direct slot photo: the native OS picker (camera / photo library) uploads
   // straight into the slot — the markup modal stays a separate, optional step.
@@ -770,26 +776,12 @@ export default function MeasureEditor({
 
         <StageCtx.Provider value={activeStage}>
         {/* Datums & orientation — where every measurement originates */}
-        <Card stage="setup" title={`🧭 ${mt(lang, "datumsTitle")}`}>
+        {(hasFlights || needsPostReference) && <Card stage="setup" title={`🧭 ${mt(lang, "datumsTitle")}`}>
           <div className="mb-3 rounded-lg border border-amber-900/50 bg-amber-500/5 p-3 text-sm text-amber-200">
             {mt(lang, "sketchOrientationHint")}
           </div>
-          <Grid>
-            <ChoiceMInput label={mt(lang, "bottomDatum")} hint={mt(lang, "bottomDatumInfo")} hintDiagram="bottom" placeholder="—" value={data.datums.bottomDatum}
-              choices={datumChoices(lang, "bottom")}
-              onChange={(v) => set((d) => void (d.datums.bottomDatum = v))} />
-            <ChoiceMInput label={mt(lang, "topDatum")} hint={mt(lang, "topDatumInfo")} hintDiagram="top" placeholder="—" value={data.datums.topDatum}
-              choices={datumChoices(lang, "top")}
-              onChange={(v) => set((d) => void (d.datums.topDatum = v))} />
-            <ChoiceMInput label={mt(lang, "nosingRefLbl")} hint={mt(lang, "nosingRefInfo")} hintDiagram="nosing" placeholder="—" value={data.datums.nosingRef}
-              choices={[["Front edge of nosing", mt(lang, "choiceNosingFront")], ["Face of riser", mt(lang, "choiceRiserFace")], ["Centerline", mt(lang, "choiceCenterline")]]}
-              onChange={(v) => set((d) => void (d.datums.nosingRef = v))} />
-            <ChoiceMInput label={mt(lang, "walklineLbl")} hint={mt(lang, "walklineInfo")} hintDiagram="walkline" value={data.datums.walkline}
-              choices={[["Mid-tread", mt(lang, "choiceMidTread")], ['12" from narrow edge', mt(lang, "choiceWalkline12")]]}
-              onChange={(v) => set((d) => void (d.datums.walkline = v))} />
-          </Grid>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            <ChipRow
+            {needsPostReference && <ChipRow
               label={mt(lang, "postRefLbl")}
               value={data.datums.postRef}
               options={[
@@ -797,21 +789,9 @@ export default function MeasureEditor({
                 ["face", mt(lang, "postRef_face")],
               ]}
               onChange={(v) => set((d) => void (d.datums.postRef = v as "" | "centerline" | "face"))}
-            />
-            <ChipRow
-              label={mt(lang, "surfaceState")}
-              value={data.datums.surfaceState}
-              options={[
-                ["finished", mt(lang, "surf_finished")],
-                ["unfinished", mt(lang, "surf_unfinished")],
-                ["mixed", mt(lang, "surf_mixed")],
-              ]}
-              onChange={(v) =>
-                set((d) => void (d.datums.surfaceState = v as "" | "finished" | "unfinished" | "mixed"))
-              }
-            />
+            />}
           </div>
-        </Card>
+        </Card>}
 
         {!isSpiral && !isWallRail && !isCustom && (
           <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
@@ -1047,12 +1027,20 @@ export default function MeasureEditor({
             <Grid>
               <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleDeg = v))} />
-              <MInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
-                placeholder="—" value={seg.angleBreak}
+              <ChoiceMInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
+                choices={[["No change", mt(lang, "choiceNoChange")]]} placeholder="—" value={seg.angleBreak}
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
             </Grid>
           </Card>
         ))}
+
+        {hasWinders && (
+          <Card stage="steps" title={`◺ ${mt(lang, "winderSetupTitle")}`}>
+            <ChoiceMInput label={mt(lang, "walklineLbl")} hint={mt(lang, "walklineInfo")} hintDiagram="walkline" value={data.datums.walkline}
+              choices={[["Mid-tread", mt(lang, "choiceMidTread")], ['12" from narrow edge', mt(lang, "choiceWalkline12")]]}
+              onChange={(v) => set((d) => void (d.datums.walkline = v))} />
+          </Card>
+        )}
 
         {flights.map(({ seg, i }, fi) => (
           <Card stage="steps"
@@ -1121,7 +1109,7 @@ export default function MeasureEditor({
                   }`}
                   title={mt(lang, "winderLbl")}
                 >
-                  ◺
+                  ◺ <span className="sm:hidden">{mt(lang, "winderLbl")}</span>
                 </button>
                 {st.winder && (
                   <div className="mt-2 sm:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-2 border border-amber-900/50 rounded-lg p-2 bg-amber-500/5">
@@ -1207,10 +1195,13 @@ export default function MeasureEditor({
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
               <MInput label={mt(lang, "landingDiag")} value={seg.diag}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
-              <MInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
+              <ChoiceMInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
+                choices={[["0", mt(lang, "choiceLevel")]]}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slope = v))} />
-              <ChoiceMInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
-                choices={slopeDirectionChoices(lang)} onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
+              {seg.slope.trim() !== "" && (
+                <ChoiceMInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
+                  choices={slopeDirectionChoices(lang)} onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
+              )}
             </Grid>
             {(seg.turn === "left" || seg.turn === "right") && (
               <div className="mt-3">
@@ -1423,8 +1414,10 @@ export default function MeasureEditor({
                 options={[...RAIL_SIDE_OPTIONS]} lang={lang}
                 onChange={(v) => set((d) => void (d.rail.side = v))} />
             )}
-            <MInput label={mt(lang, "extensions")} value={data.rail.extensions}
-              onChange={(v) => set((d) => void (d.rail.extensions = v))} />
+            {hasHandrail && (
+              <MInput label={mt(lang, "extensions")} value={data.rail.extensions}
+                onChange={(v) => set((d) => void (d.rail.extensions = v))} />
+            )}
             <MInput label={mt(lang, "returnsLabel")} placeholder="—" value={data.rail.returns}
               onChange={(v) => set((d) => void (d.rail.returns = v))} />
             {isWallRail && (
@@ -1458,9 +1451,11 @@ export default function MeasureEditor({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                   <MInput label={mt(lang, "topSpanLbl")} value={sp.topSpan}
                     onChange={(v) => setSpan(si, "topSpan", v)} />
-                  <MInput label={`${mt(lang, "lowerSpanLbl")} — ${mt(lang, "lowerSpanHint")}`}
-                    value={sp.lowerSpan}
-                    onChange={(v) => setSpan(si, "lowerSpan", v)} />
+                  {(sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "") && (
+                    <MInput label={`${mt(lang, "lowerSpanLbl")} — ${mt(lang, "lowerSpanHint")}`}
+                      value={sp.lowerSpan}
+                      onChange={(v) => setSpan(si, "lowerSpan", v)} />
+                  )}
                 </div>
                 {(["start", "end"] as const).map((endKey) => (
                   <TermEditor
@@ -1502,21 +1497,23 @@ export default function MeasureEditor({
         {/* Materials */}
         <Card stage="specs" title={mt(lang, "materialsTitle")}>
           <div className="space-y-3">
-            <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
+            {!isWallRail && <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
               presets={presets.post}
-              onChange={(v) => set((d) => void (d.materials.post = v))} />
+              onChange={(v) => set((d) => void (d.materials.post = v))} />}
             <PresetInput label={mt(lang, "matTopRail")} value={data.materials.topRail}
               presets={presets.topRail}
               onChange={(v) => set((d) => void (d.materials.topRail = v))} />
-            <PresetInput label={mt(lang, "matPicket")} value={data.materials.picket}
+            {hasGuardrail && <PresetInput label={mt(lang, "matPicket")} value={data.materials.picket}
               presets={presets.picket}
-              onChange={(v) => set((d) => void (d.materials.picket = v))} />
+              onChange={(v) => set((d) => void (d.materials.picket = v))} />}
             <Grid>
-              <MInput label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
-                onChange={(v) => set((d) => void (d.materials.picketSpacing = v))} />
-              <MSelect label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
-                options={presets.bottomRail} lang={lang}
-                onChange={(v) => set((d) => void (d.materials.bottomRail = v))} />
+              {hasGuardrail && <>
+                <MInput label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
+                  onChange={(v) => set((d) => void (d.materials.picketSpacing = v))} />
+                <MSelect label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
+                  options={presets.bottomRail} lang={lang}
+                  onChange={(v) => set((d) => void (d.materials.bottomRail = v))} />
+              </>}
               <MSelect label={mt(lang, "finish")} value={data.materials.finish}
                 options={finishOptions} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.finish = v))} />
@@ -1531,21 +1528,39 @@ export default function MeasureEditor({
 
         {/* Site & finish conditions — what surface existed when measured */}
         <Card stage="setup" title={`🧱 ${mt(lang, "finishTitle")}`}>
+          <ChipRow
+            label={mt(lang, "floorChangeQuestion")}
+            value={data.finish.floorChange}
+            options={[
+              ["none", mt(lang, "floorChangeNone")],
+              ["bottom", mt(lang, "floorChangeBottom")],
+              ["top", mt(lang, "floorChangeTop")],
+              ["both", mt(lang, "floorChangeBoth")],
+            ]}
+            onChange={(v) => set((d) => void (d.finish.floorChange = v as FinishSpec["floorChange"]))}
+          />
           <Grid>
-            <MInput label={mt(lang, "bottomSurface")} placeholder="—" value={data.finish.bottomSurface}
-              onChange={(v) => set((d) => void (d.finish.bottomSurface = v))} />
-            <MInput label={mt(lang, "topSurface")} placeholder="—" value={data.finish.topSurface}
-              onChange={(v) => set((d) => void (d.finish.topSurface = v))} />
-            <MInput label={mt(lang, "futureTopping")} placeholder="—" value={data.finish.futureTopping}
-              onChange={(v) => set((d) => void (d.finish.futureTopping = v))} />
-            <MInput label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
-              onChange={(v) => set((d) => void (d.finish.treadCovering = v))} />
-            <MInput label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
-              onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
-            <MInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
+            {(data.finish.floorChange === "bottom" || data.finish.floorChange === "both") && (
+              <MInput label={mt(lang, "bottomAdjustment")} placeholder='+ 3/4"' value={data.finish.bottomAdjustment}
+                onChange={(v) => set((d) => void (d.finish.bottomAdjustment = v))} />
+            )}
+            {(data.finish.floorChange === "top" || data.finish.floorChange === "both") && (
+              <MInput label={mt(lang, "topAdjustment")} placeholder='+ 3/4"' value={data.finish.topAdjustment}
+                onChange={(v) => set((d) => void (d.finish.topAdjustment = v))} />
+            )}
+            {(hasFlights || isSpiral) && (
+              <MInput label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
+                onChange={(v) => set((d) => void (d.finish.treadCovering = v))} />
+            )}
+            {(isWallRail || data.datums.orientation.includes("wall")) && (
+              <MInput label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
+                onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
+            )}
+            <ChoiceMInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
+              choices={[["No", mt(lang, "choiceNo")], ["Yes", mt(lang, "choiceYes")]]}
               onChange={(v) => set((d) => void (d.finish.demoPending = v))} />
           </Grid>
-          <button
+          {((data.finish.floorChange !== "" && data.finish.floorChange !== "none") || data.finish.demoPending === "Yes") && <button
             onClick={() => set((d) => void (d.finish.verifyAfterFinishes = !d.finish.verifyAfterFinishes))}
             className={`mt-3 px-3 py-2.5 rounded-lg border text-sm font-semibold ${
               data.finish.verifyAfterFinishes
@@ -1554,45 +1569,28 @@ export default function MeasureEditor({
             }`}
           >
             {data.finish.verifyAfterFinishes ? "☑" : "☐"} {mt(lang, "verifyAfterFinishes")}
-          </button>
+          </button>}
         </Card>
 
-        {/* Fabrication details (conditional per shape) */}
+        {/* Field-observed constraints that determine later fabrication decisions. */}
         <Card stage="specs" title={`🔩 ${mt(lang, "fabTitle")}`}>
           <Grid>
-            {data.segments.length > 1 && (
-              <>
-                <MInput label={mt(lang, "fabCorners")} placeholder="—" value={data.fab.corners}
-                  onChange={(v) => set((d) => void (d.fab.corners = v))} />
-                <MInput label={mt(lang, "fabFlightConnection")} placeholder="—" value={data.fab.flightConnection}
-                  onChange={(v) => set((d) => void (d.fab.flightConnection = v))} />
-              </>
-            )}
-            {!isWallRail && (
-              <>
-                <MInput label={mt(lang, "fabBottomClearance")} value={data.fab.bottomClearance}
-                  onChange={(v) => set((d) => void (d.fab.bottomClearance = v))} />
-                <MInput label={mt(lang, "fabInfill")} placeholder="—" value={data.fab.infill}
-                  onChange={(v) => set((d) => void (d.fab.infill = v))} />
-              </>
-            )}
-            <MInput label={mt(lang, "fabSplices")} placeholder="—" value={data.fab.splices}
-              onChange={(v) => set((d) => void (d.fab.splices = v))} />
-            <MInput label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
+            <ChoiceMInput label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
+              choices={[["No restriction", mt(lang, "choiceNoRestriction")]]}
               onChange={(v) => set((d) => void (d.fab.maxPiece = v))} />
-            <MInput label={mt(lang, "fabAccess")} placeholder="—" value={data.fab.access}
+            <ChoiceMInput label={mt(lang, "fabAccess")} placeholder="—" value={data.fab.access}
+              choices={accessChoices(lang)}
               onChange={(v) => set((d) => void (d.fab.access = v))} />
             {sheet.shape === "level_run" && (
-              <MInput label={mt(lang, "fabGate")} placeholder="—" value={data.fab.gate}
+              <ChoiceMInput label={mt(lang, "fabGate")} placeholder="—" value={data.fab.gate}
+                choices={[["No gate", mt(lang, "choiceNoGate")], ["Gate included", mt(lang, "choiceGateIncluded")]]}
                 onChange={(v) => set((d) => void (d.fab.gate = v))} />
             )}
-            <MInput label={mt(lang, "fabTouchup")} placeholder="—" value={data.fab.touchup}
-              onChange={(v) => set((d) => void (d.fab.touchup = v))} />
           </Grid>
         </Card>
 
         {/* Control dimensions — independent measurements the software cross-checks */}
-        {!isCustom && (
+        {!isCustom && hasFlights && (
         <Card stage="locations" title={`🎯 ${mt(lang, "controlsTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
           <Grid>
@@ -1600,8 +1598,6 @@ export default function MeasureEditor({
               <MInput label={mt(lang, "floorToFloor")} value={data.overall.floorToFloor}
                 onChange={(v) => set((d) => void (d.overall.floorToFloor = v))} />
             )}
-            <MInput label={mt(lang, "totalRise")} value={data.overall.totalRise}
-              onChange={(v) => set((d) => void (d.overall.totalRise = v))} />
             {!multiFlight && (
               <MInput label={mt(lang, "totalRun")} value={data.overall.totalRun}
                 onChange={(v) => set((d) => void (d.overall.totalRun = v))} />
@@ -2210,18 +2206,6 @@ function ChoiceMInput({
   );
 }
 
-function datumChoices(lang: string, position: "bottom" | "top"): [string, string][] {
-  const shared: [string, string][] = [
-    ["Finished floor", mt(lang, "choiceFinishedFloor")],
-    ["Bare concrete", mt(lang, "choiceBareConcrete")],
-    ["Subfloor", mt(lang, "choiceSubfloor")],
-    ["Deck surface", mt(lang, "choiceDeckSurface")],
-  ];
-  return position === "bottom"
-    ? [...shared, ["Top of first tread", mt(lang, "choiceFirstTread")]]
-    : [...shared, ["Finished landing", mt(lang, "choiceFinishedLanding")]];
-}
-
 function commonThicknessChoices(lang: string): [string, string][] {
   return [
     ["0", mt(lang, "choiceNone")],
@@ -2246,6 +2230,15 @@ function obstructionChoices(lang: string): [string, string][] {
     ["Joist", mt(lang, "choiceJoist")],
     ["Pipe", mt(lang, "choicePipe")],
     ["Wire", mt(lang, "choiceWire")],
+  ];
+}
+
+function accessChoices(lang: string): [string, string][] {
+  return [
+    ["Direct walk-in", mt(lang, "choiceWalkIn")],
+    ["Stairs", mt(lang, "choiceAccessStairs")],
+    ["Elevator", mt(lang, "choiceElevator")],
+    ["Crane / lift", mt(lang, "choiceCrane")],
   ];
 }
 

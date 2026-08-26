@@ -491,7 +491,18 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const gaps: Gap[] = [];
   const has = (s: string | undefined | null) => !!s && s.trim() !== "";
 
-  if (!has(data.datums.orientation)) gaps.push({ key: "orientation" });
+  if (shape !== "custom" && shape !== "spiral" && !has(data.datums.orientation)) {
+    gaps.push({ key: "orientation" });
+  }
+  if (!has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
+  if (
+    (data.finish.floorChange === "bottom" || data.finish.floorChange === "both") &&
+    !has(data.finish.bottomAdjustment)
+  ) gaps.push({ key: "bottom_adjustment" });
+  if (
+    (data.finish.floorChange === "top" || data.finish.floorChange === "both") &&
+    !has(data.finish.topAdjustment)
+  ) gaps.push({ key: "top_adjustment" });
 
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const hasPlatform = data.segments.some((s) => s.kind === "platform");
@@ -667,8 +678,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     });
   });
 
-  // fabrication constraints ("one piece" / "N/A" are valid answers)
-  if (!has(data.fab.splices)) gaps.push({ key: "splices" });
+  // The worker records the site constraint; the shop decides splice method.
   if (!has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
 
   // required photo slots (+ the landing when there is one)
