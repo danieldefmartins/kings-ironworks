@@ -796,6 +796,36 @@ export default function MeasureEditor({
         {!isSpiral && !isWallRail && !isCustom && (
           <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
             <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
+            <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
+              {viewList.length > 1 && (
+                <div className="mb-3 flex gap-2">
+                  {viewList.map(([vw, key]) => (
+                    <button key={vw} type="button" onClick={() => setView(vw)}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
+                      {mt(lang, key)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {movingPostId && (
+                <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-950/40 p-3 text-sm text-amber-200">
+                  <span className="flex-1">↔ {mt(lang, "movePostHint")}</span>
+                  <button type="button" onClick={() => setMovingPostId(null)} className="rounded-full border border-amber-700 px-2 py-1 text-xs">{mt(lang, "cancel")}</button>
+                </div>
+              )}
+              <Sketch
+                shape={sheet.shape}
+                data={data}
+                lang={lang}
+                view={view}
+                onTapStep={() => {}}
+                onTapPlatform={() => {}}
+                onHoldStep={holdStepLocation}
+                onHoldPlatform={holdPlatformLocation}
+                onHoldPost={(id) => setMovingPostId(id)}
+                onToggleWallSide={toggleSketchWall}
+              />
+            </div>
             {posts.filter((po) => po.pointType !== "railing_post").length === 0 && (
               <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
             )}
@@ -887,7 +917,7 @@ export default function MeasureEditor({
         )}
 
         {/* Sketch (custom shapes draw their own plan below instead) */}
-        {!isCustom && ["setup", "posts", "locations"].includes(activeStage) && (
+        {!isCustom && ["posts", "locations"].includes(activeStage) && (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
           <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
           {!isSpiral && !isWallRail && (

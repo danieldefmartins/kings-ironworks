@@ -1210,21 +1210,33 @@ function FrontSketch({
   const showRight = side === "Right" || side === "Both" || side === "";
   const dimmed = side === ""; // no side chosen yet — show both faded
 
-  const x0 = 52, x1 = 288, treadY = 150, railTop = 70;
+  const visibleSteps = Math.max(1, Math.min(flight?.steps.length || 1, 14));
+  const stepGap = Math.max(5, Math.min(10, 90 / visibleSteps));
+  const x0 = 52, x1 = 288, treadY = 176;
+  const upperTreadY = treadY - (visibleSteps - 1) * stepGap;
+  const railTop = Math.max(24, upperTreadY - 62);
   const inset = 26;
   const railColor = dimmed ? p.ghost : p.post;
 
   return (
     <svg viewBox="0 0 340 235" className="w-full" style={{ maxHeight: 320 }}>
-      {/* ground + tread surface seen from the front */}
-      <line x1={16} y1={205} x2={324} y2={205} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
-      <line x1={x0} y1={treadY} x2={x1} y2={treadY} stroke={p.line} strokeWidth={2.5} />
-      <line x1={x0} y1={treadY} x2={x0} y2={treadY + 16} stroke={p.line} strokeWidth={2} />
-      <line x1={x1} y1={treadY} x2={x1} y2={treadY + 16} stroke={p.line} strokeWidth={2} />
+      {/* Looking upward from the bottom: every tread edge remains visible. */}
+      <line x1={16} y1={210} x2={324} y2={210} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
+      {Array.from({ length: visibleSteps }, (_, i) => {
+        const y = treadY - i * stepGap;
+        return (
+          <g key={i}>
+            <line x1={x0} y1={y} x2={x1} y2={y} stroke={p.line} strokeWidth={i === 0 ? 2.8 : 1.7} />
+            <line x1={x0} y1={y} x2={x0} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
+            <line x1={x1} y1={y} x2={x1} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
+            <text x={x0 + 8} y={y - 2} fontSize={6.5} fill={p.dim}>{i + 1}</text>
+          </g>
+        );
+      })}
 
       {/* stair width dimension */}
-      <line x1={x0} y1={treadY + 28} x2={x1} y2={treadY + 28} stroke={p.dim} strokeWidth={1} />
-      <text x={(x0 + x1) / 2} y={treadY + 42} fontSize={10} fontWeight={700} textAnchor="middle" fill={widthVal.fill}>
+      <line x1={x0} y1={treadY + 14} x2={x1} y2={treadY + 14} stroke={p.dim} strokeWidth={1} />
+      <text x={(x0 + x1) / 2} y={treadY + 27} fontSize={10} fontWeight={700} textAnchor="middle" fill={widthVal.fill}>
         ⟵ {mt(lang, "width")}: {widthVal.text} ⟶
       </text>
 
