@@ -353,6 +353,20 @@ export default function MeasureEditor({
     setPlacementMenu(null);
   }
 
+  // Tapping an item on the sketch opens what-to-do-with-it (move / remove).
+  // While another item is being moved, the tap is a destination instead, so
+  // landing on top of an existing marker still drops it there.
+  function tapPost(id: string) {
+    if (movingPostId) {
+      const target = dataRef.current.posts.find((po) => po.id === id);
+      if (!target) return;
+      if (target.stepIdx === null) addPlatformPost(target.segIdx);
+      else addStepPost(target.segIdx, target.stepIdx);
+      return;
+    }
+    setSelectedPostId(id);
+  }
+
   function defaultSide(): "left" | "right" {
     return dataRef.current.datums.orientation === "right_wall" ? "left" : "right";
   }
@@ -837,6 +851,7 @@ export default function MeasureEditor({
                 onTapPlatform={tapStructurePlatform}
                 onHoldStep={holdStepLocation}
                 onHoldPlatform={holdPlatformLocation}
+                onTapPost={tapPost}
                 onHoldPost={(id) => setMovingPostId(id)}
                 onToggleWallSide={toggleSketchWall}
               />
@@ -983,6 +998,7 @@ export default function MeasureEditor({
                 onTapPlatform={addPlatformPost}
                 onHoldStep={holdStepLocation}
                 onHoldPlatform={holdPlatformLocation}
+                onTapPost={tapPost}
                 onHoldPost={(id) => setMovingPostId(id)}
                 onToggleWallSide={toggleSketchWall}
               />
@@ -1001,7 +1017,8 @@ export default function MeasureEditor({
                   onTapPlatform={addPlatformPost}
                   onHoldStep={holdStepLocation}
                   onHoldPlatform={holdPlatformLocation}
-                  onHoldPost={(id) => setMovingPostId(id)}
+                  onTapPost={tapPost}
+                onHoldPost={(id) => setMovingPostId(id)}
                   onToggleWallSide={toggleSketchWall}
                 />
               </div>

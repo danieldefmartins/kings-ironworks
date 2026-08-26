@@ -147,6 +147,26 @@ if (!mb) {
   }
 }
 
+// --- 3c) tapping an item opens move / remove, and remove works ----------
+{
+  const m = page.locator("svg circle[fill='transparent']").first();
+  const mb2 = await m.boundingBox();
+  await page.touchscreen.tap(mb2.x + mb2.width / 2, mb2.y + mb2.height / 2);
+  await page.waitForTimeout(500);
+  const opened = await page.getByText(/Choose what you want to do/i).isVisible().catch(() => false);
+  check(opened, "tap on an item opens its move / remove choices");
+  await page.screenshot({ path: OUT + "hold-5-item-actions.png" });
+  if (opened) {
+    const sheetPanel = page.locator("div.fixed.inset-0").last();
+    const relocate = await sheetPanel.getByRole("button", { name: /relocate|move/i }).first().isVisible().catch(() => false);
+    check(relocate, "the item actions offer Move");
+    await sheetPanel.getByRole("button", { name: /^✕ Remove$/ }).tap();
+    await page.waitForTimeout(600);
+    const gone = !(await page.getByText(/E1 — Concrete wall/).isVisible().catch(() => false));
+    check(gone, "removing the item from the sketch deletes it");
+  }
+}
+
 // --- 4) touch-action is actually set on the press targets ---------------
 const ta = await page.locator("svg rect[fill='transparent']").first().evaluate((el) => getComputedStyle(el).touchAction);
 check(ta === "none", `press targets set touch-action:none (got "${ta}")`);

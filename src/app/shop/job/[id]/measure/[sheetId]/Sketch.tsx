@@ -91,6 +91,7 @@ export default function Sketch({
   onTapStep,
   onTapPlatform,
   onHoldStep,
+  onTapPost,
   onHoldPost,
   onHoldPlatform,
   onToggleWallSide,
@@ -103,6 +104,7 @@ export default function Sketch({
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
   onHoldStep?: (segIdx: number, stepIdx: number) => void;
+  onTapPost?: (postId: string) => void;
   onHoldPost?: (postId: string) => void;
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
@@ -132,6 +134,7 @@ export default function Sketch({
         onTapStep={onTapStep}
         onTapPlatform={onTapPlatform}
         onHoldStep={onHoldStep}
+        onTapPost={onTapPost}
         onHoldPost={onHoldPost}
         onHoldPlatform={onHoldPlatform}
         onToggleWallSide={onToggleWallSide}
@@ -336,6 +339,7 @@ function PlanSketch({
   onTapStep,
   onTapPlatform,
   onHoldStep,
+  onTapPost,
   onHoldPost,
   onHoldPlatform,
   onToggleWallSide,
@@ -347,6 +351,7 @@ function PlanSketch({
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
   onHoldStep?: (segIdx: number, stepIdx: number) => void;
+  onTapPost?: (postId: string) => void;
   onHoldPost?: (postId: string) => void;
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
@@ -422,7 +427,7 @@ function PlanSketch({
             postNo += 1;
             const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
-              <PlanPoint key={`p${po.id}`} po={po} x={PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
+              <PlanPoint key={`p${po.id}`} po={po} x={PLAN_TREAD / 2} y={py} n={postNo} p={p} onTap={onTapPost} onHold={onHoldPost} />
             );
           });
         }
@@ -507,7 +512,7 @@ function PlanSketch({
         const frac = (idx + 1) / (curvePosts.length + 1);
         const pp = rotPt2(centerLocal, sgn, th * frac, 0, po.side === "right" ? PLAN_W / 2 : -PLAN_W / 2);
         els.push(
-          <PlanPoint key={`cp${po.id}`} po={po} x={pp.x} y={pp.y} n={postNo} p={p} onHold={onHoldPost} />
+          <PlanPoint key={`cp${po.id}`} po={po} x={pp.x} y={pp.y} n={postNo} p={p} onTap={onTapPost} onHold={onHoldPost} />
         );
       });
       groups.push({
@@ -555,7 +560,7 @@ function PlanSketch({
         postNo += 1;
         const frac = (idx + 1) / (rampPosts.length + 1);
         els.push(
-          <PlanPoint key={`rp${po.id}`} po={po} x={frac * len} y={po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight ? PLAN_W / 2 : -PLAN_W / 2} n={postNo} p={p} onHold={onHoldPost} />
+          <PlanPoint key={`rp${po.id}`} po={po} x={frac * len} y={po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight ? PLAN_W / 2 : -PLAN_W / 2} n={postNo} p={p} onTap={onTapPost} onHold={onHoldPost} />
         );
       });
       groups.push({
@@ -599,7 +604,7 @@ function PlanSketch({
             postNo += 1;
             const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
             els.push(
-              <PlanPoint key={`p${po.id}`} po={po} x={i * PLAN_TREAD + PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
+              <PlanPoint key={`p${po.id}`} po={po} x={i * PLAN_TREAD + PLAN_TREAD / 2} y={py} n={postNo} p={p} onTap={onTapPost} onHold={onHoldPost} />
             );
           });
         }
@@ -663,7 +668,7 @@ function PlanSketch({
         postNo += 1;
         const frac = (idx + 1) / (platPosts.length + 1);
         els.push(
-          <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? platTop : po.side === "right" ? platBottom : openRight ? platBottom : platTop} n={postNo} p={p} onHold={onHoldPost} />
+          <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? platTop : po.side === "right" ? platBottom : openRight ? platBottom : platTop} n={postNo} p={p} onTap={onTapPost} onHold={onHoldPost} />
         );
       });
       groups.push({
@@ -746,12 +751,13 @@ function pointStyle(po: PostMeasure, p: Palette) {
   return { color: p.post, r: 4, label: "P", square: false };
 }
 
-function PlanPoint({ po, x, y, n, p, onHold }: {
-  po: PostMeasure; x: number; y: number; n: number; p: Palette; onHold?: (id: string) => void;
+function PlanPoint({ po, x, y, n, p, onTap, onHold }: {
+  po: PostMeasure; x: number; y: number; n: number; p: Palette;
+  onTap?: (id: string) => void; onHold?: (id: string) => void;
 }) {
   const s = pointStyle(po, p);
   return (
-    <g {...pressHandlers(undefined, () => onHold?.(po.id))}>
+    <g {...pressHandlers(() => onTap?.(po.id), () => onHold?.(po.id))}>
       <circle cx={x} cy={y} r={Math.max(12, s.r + 5)} fill="transparent" />
       {s.square
         ? <rect x={x - s.r} y={y - s.r} width={s.r * 2} height={s.r * 2} rx={po.pointType === "concrete_wall" ? 1 : 2} fill={s.color} />
