@@ -92,14 +92,18 @@ function completeData(photos) {
     ],
     posts: [
       {
-        id: "p1", segIdx: 0, stepIdx: 0, pos: "", fromNosing: "3", fromEdge: "2",
+        id: "p1", pointType: "railing_post", side: "right", segIdx: 0, stepIdx: 0,
+        pos: "", distanceFromFirst: "0", fromNosing: "3", fromEdge: "2",
         mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
         substrate: "granite 6", edgeDist: "", obstruction: "none",
+        existingW: "", existingD: "", skirtProjection: "", skirtHeight: "", clipDetail: "",
       },
       {
-        id: "p2", segIdx: 0, stepIdx: 1, pos: "", fromNosing: "3", fromEdge: "2",
+        id: "p2", pointType: "railing_post", side: "right", segIdx: 0, stepIdx: 1,
+        pos: "", distanceFromFirst: "11", fromNosing: "3", fromEdge: "2",
         mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
         substrate: "granite 6", edgeDist: "", obstruction: "none",
+        existingW: "", existingD: "", skirtProjection: "", skirtHeight: "", clipDetail: "",
       },
     ],
     spiral: null,
@@ -319,10 +323,10 @@ customData.plan = {
   ],
   closed: true,
   segs: [
-    { len: "100", note: "" },
-    { len: "100", note: "" },
-    { len: "100", note: "" },
-    { len: "100", note: "" },
+    { len: "100", note: "", kind: "level", steps: "", rise: "", run: "", width: "", stepMeasures: [] },
+    { len: "100", note: "", kind: "level", steps: "", rise: "", run: "", width: "", stepMeasures: [] },
+    { len: "100", note: "", kind: "level", steps: "", rise: "", run: "", width: "", stepMeasures: [] },
+    { len: "100", note: "", kind: "level", steps: "", rise: "", run: "", width: "", stepMeasures: [] },
   ],
 };
 await api({ type: "update", id: customId, jobId: JOB, data: customData }, cookie2);
@@ -335,12 +339,13 @@ check(
   (await api({ type: "approve", id: customId, jobId: JOB, confirmReference: true })).status === 200
 );
 
-// open drawing must block (closure can only be verified on closed shapes)
+// Open paths are valid for real stair/railing routes; closure checks apply
+// only when the user explicitly closes the drawing.
 const openPlan = structuredClone(customData);
 openPlan.plan.closed = false;
 openPlan.plan.segs = openPlan.plan.segs.slice(0, 3);
 await api({ type: "update", id: customId, jobId: JOB, data: openPlan }, cookie2);
-check("open custom drawing → submit 422", (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422);
+check("open custom drawing → submit 200", (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 200);
 
 // custom closure check: one wrong length ⇒ red ⇒ submit blocked
 const badClose = structuredClone(customData);
@@ -350,6 +355,18 @@ check(
   "custom bad closure → submit 422",
   (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 422
 );
+
+const typedCustom = structuredClone(customData);
+typedCustom.plan.segs[0] = {
+  ...typedCustom.plan.segs[0],
+  kind: "flight", steps: "2", rise: "7", run: "11", width: "42",
+  stepMeasures: [
+    { rise: "7", run: "11", nosing: "1", levelGap: "0" },
+    { rise: "7", run: "11", nosing: "1", levelGap: "0" },
+  ],
+};
+await api({ type: "update", id: customId, jobId: JOB, data: typedCustom }, cookie2);
+check("typed custom flight → submit 200", (await api({ type: "submit", id: customId, jobId: JOB }, cookie2)).status === 200);
 
 // ---- rail spans: mandatory endpoints, valid methods, dual-molding math -----
 const cn = await api({ type: "create", jobId: JOB, shape: "straight", steps1: 2, name: "API SPAN" }, cookie2);

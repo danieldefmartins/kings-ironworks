@@ -414,10 +414,23 @@ export function newSpan(): RailSpan {
 // line segments, then dimensions each drawn segment. The drawing stays
 // structured — every line is a numbered segment with its own measurement —
 // so completeness checks and the shop printout still work.
+export type PlanSegmentKind = "" | "flight" | "landing" | "level" | "ramp" | "curve";
+
+export interface PlanSegment {
+  len: string;
+  note: string;
+  kind: PlanSegmentKind;
+  steps: string;
+  rise: string;
+  run: string;
+  width: string;
+  stepMeasures: StepMeasure[]; // optional per-step corrections for irregular custom flights
+}
+
 export interface PlanDrawing {
   points: { x: number; y: number }[]; // canvas coords, snapped
   closed: boolean; // last point connects back to the first
-  segs: { len: string; note: string }[]; // one per drawn line, in draw order
+  segs: PlanSegment[]; // one typed segment per drawn line, in draw order
 }
 
 export type Units = "in" | "ftin";
@@ -810,7 +823,20 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     fab: { ...blankFab(), ...(d.fab || {}) },
     photos: d.photos || [],
     annotations: d.annotations || {},
-    plan: d.plan ?? null,
+    plan: d.plan ? {
+      ...d.plan,
+      segs: d.plan.segs.map((sg) => ({
+        ...sg,
+        // Drawings saved before typed custom segments existed represented
+        // ordinary level railing lines; keep them valid and editable.
+        kind: sg.kind ?? "level",
+        steps: sg.steps ?? "",
+        rise: sg.rise ?? "",
+        run: sg.run ?? "",
+        width: sg.width ?? "",
+        stepMeasures: (sg.stepMeasures || []).map((st) => ({ ...st, levelGap: st.levelGap ?? "" })),
+      })),
+    } : null,
     spans: (d.spans || []).map((sp) => ({
       ...newSpan(),
       ...sp,
@@ -873,7 +899,10 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       data.spiral.columnSize
     );
   }
-  if (data.plan) for (const seg of data.plan.segs) vals.push(seg.len);
+  if (data.plan) for (const seg of data.plan.segs) {
+    vals.push(seg.len, seg.kind, seg.steps, seg.rise, seg.run, seg.width);
+    for (const st of seg.stepMeasures || []) vals.push(st.rise, st.run, st.nosing);
+  }
   vals.push(data.rail.height, data.materials.post, data.materials.topRail);
   const total = vals.length;
   const filled = vals.filter((v) => v && v.trim() !== "").length;

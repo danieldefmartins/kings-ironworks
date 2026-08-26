@@ -6,7 +6,7 @@
 // below. Structured lines — not loose ink — so checks and printing still work.
 
 import { useRef, useState } from "react";
-import type { PlanDrawing } from "@/lib/shop/measure";
+import type { PlanDrawing, PlanSegment } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 
 const VW = 340;
@@ -64,7 +64,7 @@ export default function PlanDraw({
 
   function apply(points: { x: number; y: number }[], closed: boolean) {
     const n = segCountOf(points, closed);
-    const segs = Array.from({ length: n }, (_, i) => plan.segs[i] || { len: "", note: "" });
+    const segs = Array.from({ length: n }, (_, i) => plan.segs[i] || blankPlanSegment());
     onChange({ points, closed, segs });
   }
 
@@ -203,6 +203,53 @@ export default function PlanDraw({
           🗑 {mt(lang, "clearDraw")}
         </button>
       </div>
+      {plan.segs.some((sg) => sg.kind) && <CustomSidePreview plan={plan} lang={lang} />}
+    </div>
+  );
+}
+
+function blankPlanSegment(): PlanSegment {
+  return { len: "", note: "", kind: "", steps: "", rise: "", run: "", width: "", stepMeasures: [] };
+}
+
+function CustomSidePreview({ plan, lang }: { plan: PlanDrawing; lang: string }) {
+  const W = 340;
+  const H = 190;
+  const usable = 300;
+  const typed = plan.segs.filter((sg) => sg.kind);
+  const unit = typed.length ? usable / typed.length : usable;
+  let x = 20;
+  let y = 160;
+  const els: React.ReactNode[] = [];
+  typed.forEach((sg, i) => {
+    const x2 = x + unit;
+    if (sg.kind === "flight") {
+      const count = Math.max(1, Math.min(20, Number.parseInt(sg.steps, 10) || 1));
+      const totalUp = Math.min(105, Math.max(28, count * 7));
+      const dx = unit / count;
+      const dy = totalUp / count;
+      let path = `M ${x} ${y}`;
+      for (let s = 0; s < count; s += 1) path += ` h ${dx} v ${-dy}`;
+      els.push(<path key={i} d={path} fill="none" stroke="#f59e0b" strokeWidth={2.2} />);
+      y -= totalUp;
+    } else if (sg.kind === "ramp" || sg.kind === "curve") {
+      const up = sg.rise.trim() ? 42 : 0;
+      els.push(<path key={i} d={`M ${x} ${y} ${sg.kind === "curve" ? `Q ${(x + x2) / 2} ${y - up - 12}` : "L"} ${x2} ${y - up}`} fill="none" stroke="#f59e0b" strokeWidth={2.2} />);
+      y -= up;
+    } else {
+      els.push(<line key={i} x1={x} y1={y} x2={x2} y2={y} stroke="#d4d4d4" strokeWidth={3} />);
+    }
+    els.push(<text key={`t${i}`} x={(x + x2) / 2} y={y - 8} textAnchor="middle" fontSize={8} fill="#fbbf24">{i + 1}</text>);
+    x = x2;
+  });
+  return (
+    <div className="mt-4 rounded-xl border border-neutral-700 bg-neutral-950 p-3">
+      <div className="mb-2 text-sm font-bold">↗ {mt(lang, "generatedSideView")}</div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 240 }}>
+        <line x1={10} y1={160} x2={330} y2={160} stroke="#3f3f46" strokeDasharray="4 4" />
+        {els}
+      </svg>
+      <p className="text-xs text-neutral-500">{mt(lang, "generatedSideHint")}</p>
     </div>
   );
 }

@@ -685,6 +685,12 @@ export function CustomPlanSketch({
     const a = pts[i];
     const b = pts[(i + 1) % pts.length];
     const lv = v(plan.segs[i]?.len, p);
+    const sg = plan.segs[i];
+    const typeColor = sg?.kind === "flight" ? p.post
+      : sg?.kind === "landing" ? "#38bdf8"
+        : sg?.kind === "ramp" ? "#a78bfa"
+          : sg?.kind === "curve" ? "#34d399"
+            : p.line;
     const mx = (a.x + b.x) / 2;
     const my = (a.y + b.y) / 2;
     const dx = b.x - a.x;
@@ -695,7 +701,7 @@ export function CustomPlanSketch({
     const oy = (dx / L) * 11;
     els.push(
       <g key={i}>
-        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={p.line} strokeWidth={2.4} strokeLinecap="round" />
+        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={typeColor} strokeWidth={sg?.kind === "flight" ? 4 : 2.8} strokeLinecap="round" />
         <circle cx={mx + ox * 1.9} cy={my + oy * 1.9} r={7} fill="none" stroke={p.ghost} />
         <text x={mx + ox * 1.9} y={my + oy * 1.9 + 3} fontSize={8} textAnchor="middle" fill={p.dim}>
           {i + 1}
@@ -703,6 +709,11 @@ export function CustomPlanSketch({
         <text x={mx + ox * 0.4} y={my + oy * 0.4 + 3} fontSize={9} fontWeight={700} textAnchor="middle" fill={lv.fill}>
           {lv.text}
         </text>
+        {sg?.kind && (
+          <text x={mx - ox * 1.1} y={my - oy * 1.1 + 3} fontSize={7.5} fontWeight={800} textAnchor="middle" fill={typeColor}>
+            {sg.kind === "flight" ? `${mt(lang, "step")} × ${sg.steps || "?"}` : mt(lang, `segment_${sg.kind}`)}
+          </text>
+        )}
       </g>
     );
   }

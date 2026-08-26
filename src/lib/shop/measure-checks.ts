@@ -509,9 +509,12 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     } else {
       const missingLens = plan.segs.filter((sg) => !has(sg.len)).length;
       if (missingLens > 0) gaps.push({ key: "plan_lengths", detail: `${missingLens}` });
-      // closure verification only works on closed shapes — close along the
-      // wall side if the rail itself is open
-      if (!plan.closed) gaps.push({ key: "plan_open" });
+      const missingTypes = plan.segs.filter((sg) => !has(sg.kind)).length;
+      if (missingTypes > 0) gaps.push({ key: "plan_types", detail: `${missingTypes}` });
+      const incompleteFlights = plan.segs.filter(
+        (sg) => sg.kind === "flight" && (!has(sg.steps) || !has(sg.rise) || !has(sg.run) || !has(sg.width))
+      ).length;
+      if (incompleteFlights > 0) gaps.push({ key: "plan_flights", detail: `${incompleteFlights}` });
     }
   } else if (shape === "level_run") {
     const seg = data.segments[0] as PlatformSegment | undefined;

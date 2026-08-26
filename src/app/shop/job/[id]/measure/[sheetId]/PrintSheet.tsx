@@ -308,6 +308,9 @@ export default function PrintSheet({
               <tr>
                 <Th>#</Th>
                 <Th>{mt(lang, "length")}</Th>
+                <Th>{mt(lang, "segmentType")}</Th>
+                <Th>{mt(lang, "steps")}</Th>
+                <Th>{mt(lang, "rise")} / {mt(lang, "run")}</Th>
                 <Th>{mt(lang, "segNoteLbl")}</Th>
               </tr>
             </thead>
@@ -316,6 +319,9 @@ export default function PrintSheet({
                 <tr key={i}>
                   <Td>{i + 1}</Td>
                   <Td><Val v={sg.len} /></Td>
+                  <Td>{sg.kind ? mt(lang, `segment_${sg.kind}`) : <Val v="" />}</Td>
+                  <Td><Val v={sg.steps || ""} /></Td>
+                  <Td><Val v={sg.rise || ""} /> / <Val v={sg.run || ""} /></Td>
                   <Td>{sg.note ? <b>{sg.note}</b> : <Val v="" />}</Td>
                 </tr>
               ))}

@@ -83,12 +83,12 @@ const CurveSchema = z.object({
 });
 const PostSchema = z.object({
   id: z.string().max(40),
-  pointType: z.enum(["railing_post", "existing_post", "concrete_wall", "clip"]),
+  pointType: z.enum(["railing_post", "existing_post", "concrete_wall", "clip"]).optional(),
   side: z.enum(["", "left", "right"]).optional(),
   segIdx: z.number().int().min(0).max(30),
   stepIdx: z.number().int().min(0).max(120).nullable(),
   pos: meas,
-  distanceFromFirst: meas,
+  distanceFromFirst: meas.optional(),
   fromNosing: meas,
   fromEdge: meas,
   mount: z.string().max(40),
@@ -98,13 +98,13 @@ const PostSchema = z.object({
   substrate: z.string().max(200),
   edgeDist: z.string().max(200),
   obstruction: z.string().max(200),
-  existingW: meas,
-  existingD: meas,
-  skirtProjection: meas,
-  skirtHeight: meas,
+  existingW: meas.optional(),
+  existingD: meas.optional(),
+  skirtProjection: meas.optional(),
+  skirtHeight: meas.optional(),
   columnToWall: meas.optional(),
   columnToPlatformEdge: meas.optional(),
-  clipDetail: z.string().max(300),
+  clipDetail: z.string().max(300).optional(),
 });
 const SpiralSchema = z
   .object({
@@ -163,7 +163,16 @@ const PlanSchema = z
   .object({
     points: z.array(z.object({ x: z.number(), y: z.number() })).max(80),
     closed: z.boolean(),
-    segs: z.array(z.object({ len: meas, note: z.string().max(200) })).max(80),
+    segs: z.array(z.object({
+      len: meas,
+      note: z.string().max(200),
+      kind: z.enum(["", "flight", "landing", "level", "ramp", "curve"]).optional(),
+      steps: meas.optional(),
+      rise: meas.optional(),
+      run: meas.optional(),
+      width: meas.optional(),
+      stepMeasures: z.array(StepSchema).max(60).optional(),
+    })).max(80),
   })
   .nullable()
   .optional();
