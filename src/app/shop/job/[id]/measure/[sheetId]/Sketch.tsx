@@ -183,6 +183,47 @@ const PLAN_TREAD = 17; // px per tread along the run
 const PLAN_W = 54; // stair strip width in px
 const PLAN_LAND = 66; // landing square
 
+function landingOutline(
+  turn: PlatformSegment["turn"],
+  size: number,
+  top: number,
+  bottom: number,
+  switchbackOffset: number,
+  hasIncomingFlight: boolean,
+  hasOutgoingFlight: boolean,
+) {
+  const halfOpening = PLAN_W / 2;
+  const mid = size / 2;
+  const parts: string[] = [];
+  const line = (x1: number, y1: number, x2: number, y2: number) => parts.push(`M ${x1} ${y1} L ${x2} ${y2}`);
+
+  // Top/bottom openings are where a 90-degree outgoing flight joins.
+  if (turn === "left" && hasOutgoingFlight) {
+    line(0, top, mid - halfOpening, top);
+    line(mid + halfOpening, top, size, top);
+  } else line(0, top, size, top);
+  if (turn === "right" && hasOutgoingFlight) {
+    line(0, bottom, mid - halfOpening, bottom);
+    line(mid + halfOpening, bottom, size, bottom);
+  } else line(0, bottom, size, bottom);
+
+  // A straight continuation exits through the right edge.
+  if (turn === "none" && hasOutgoingFlight) {
+    line(size, top, size, -halfOpening);
+    line(size, halfOpening, size, bottom);
+  } else line(size, top, size, bottom);
+
+  // Incoming and U-return flights use separate openings on the left edge.
+  if (hasIncomingFlight) line(0, top, 0, -halfOpening);
+  else line(0, top, 0, turn === "u" && hasOutgoingFlight ? switchbackOffset - halfOpening : bottom);
+  if (hasIncomingFlight && turn === "u" && hasOutgoingFlight) {
+    line(0, halfOpening, 0, switchbackOffset - halfOpening);
+    line(0, switchbackOffset + halfOpening, 0, bottom);
+  } else if (hasIncomingFlight) line(0, halfOpening, 0, bottom);
+  else if (turn === "u" && hasOutgoingFlight) line(0, switchbackOffset + halfOpening, 0, bottom);
+  return parts.join(" ");
+}
+
 function pressHandlers(tap?: () => void, hold?: () => void) {
   let timer: ReturnType<typeof setTimeout> | null = null;
   let held = false;
@@ -517,7 +558,15 @@ function PlanSketch({
       const lv = v(pl.length, p);
       const dv = v(pl.depth, p);
       const els: React.ReactNode[] = [
-        <rect key="r" x={0} y={platTop} width={L} height={platBottom - platTop} fill="none" stroke={p.line} strokeWidth={2} />,
+        <path key="r" d={landingOutline(
+          pl.turn,
+          L,
+          platTop,
+          platBottom,
+          switchbackOffset,
+          data.segments[segIdx - 1]?.kind === "flight",
+          data.segments[segIdx + 1]?.kind === "flight",
+        )} fill="none" stroke={p.line} strokeWidth={2} />,
         <text key="l" x={L / 2} y={-L / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
           {lv.text}
         </text>,
