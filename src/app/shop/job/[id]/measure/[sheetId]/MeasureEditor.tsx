@@ -2126,12 +2126,12 @@ function MInput({
 }) {
   const unitPh = useContext(PlaceholderCtx);
   return (
-    <label className="block min-w-0">
+    <div className="block min-w-0">
       {label && (
-        <span className={`text-[11px] text-neutral-400 block mb-1 ${labelClass}`}>
+        <div className={`text-[11px] text-neutral-400 flex items-center mb-1 ${labelClass}`}>
           {label}
           {hint && <InfoHint text={hint} diagram={hintDiagram} />}
-        </span>
+        </div>
       )}
       <input
         data-m="1"
@@ -2139,22 +2139,37 @@ function MInput({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder || unitPh}
         autoComplete="off"
+        aria-label={label}
         className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base"
       />
-    </label>
+    </div>
   );
 }
 
 function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" | "nosing" | "walkline" }) {
+  const [open, setOpen] = useState(false);
   return (
-    <span className="group relative ml-1 inline-block align-middle" onClick={(e) => e.preventDefault()}>
-      <button type="button" aria-label={text} className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-700 text-[11px] font-bold text-amber-300">
+    <span className="relative ml-1 inline-block align-middle">
+      <button
+        type="button"
+        aria-label={text}
+        aria-expanded={open}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((value) => !value);
+        }}
+        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-700 text-xs font-bold text-amber-300 active:bg-amber-500/20"
+      >
         i
       </button>
-      <span role="tooltip" className="pointer-events-none absolute left-0 top-6 z-50 hidden w-64 rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl group-focus-within:block group-hover:block">
+      {open && <span role="tooltip" className="absolute left-0 top-7 z-50 block w-64 rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl">
         {diagram && <MeasurementHintDiagram kind={diagram} />}
         {text}
-      </span>
+        <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(false); }} className="mt-2 block w-full rounded border border-neutral-600 py-1.5 text-center text-xs font-bold text-neutral-200">
+          ×
+        </button>
+      </span>}
     </span>
   );
 }
