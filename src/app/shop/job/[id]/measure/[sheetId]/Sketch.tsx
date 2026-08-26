@@ -179,6 +179,12 @@ function OrientBanner({
 
 // ---- Plan (top) view — the full path of the rail from above ----------------
 
+// SVG transform numbers must serialise identically on the server and in the
+// browser, or React tears the sketch down and re-renders it as a hydration
+// mismatch. Trig results differ in their last float digit between the two, so
+// round before they reach the attribute.
+const r3 = (n: number) => Math.round(n * 1000) / 1000;
+
 const PLAN_TREAD = 17; // px per tread along the run
 const PLAN_W = 54; // stair strip width in px
 const PLAN_LAND = 66; // landing square
@@ -224,29 +230,100 @@ function landingOutline(
   return parts.join(" ");
 }
 
-function pressHandlers(tap?: () => void, hold?: () => void) {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  let held = false;
-  const clear = () => {
-    if (timer) clearTimeout(timer);
-    timer = null;
+// Touch targets on the sketch are only a few millimetres wide. `touch-action:
+// none` is what actually stops the browser from treating a hold as the start
+// of a page pan and firing pointercancel — preventDefault() on pointerdown
+// does not. The rest keeps iOS from popping the selection callout mid-hold.
+const PRESS_STYLE: React.CSSProperties = {
+  cursor: "pointer",
+  touchAction: "none",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+  WebkitTouchCallout: "none",
+};
+
+const HOLD_MS = 500;
+const DRAG_SLOP = 16; // px of finger travel before a press counts as a drag
+
+interface PressState {
+  timer: ReturnType<typeof setTimeout> | null;
+  done: boolean; // the press already fired, or was dragged away
+  ox: number;
+  oy: number;
+}
+
+// The press must survive re-renders. This editor re-renders constantly while a
+// finger is down (autosave banner, cross-checks, the issue toast), and a
+// closure-local timer would be thrown away with the old handler — the press
+// then died silently: no tap, and a stray hold from the orphaned timer. Keyed
+// on the DOM node, which React keeps across those re-renders.
+const pressState = new WeakMap<Element, PressState>();
+
+// A touch produces a compatibility `click` a moment after pointerup, at the
+// same coordinates. Since a press acts on pointerup, that click lands on
+// whatever the press just opened — it was dismissing the point-type sheet the
+// instant it appeared. preventDefault on pointerdown does not stop it, so drop
+// the one click that follows.
+function swallowNextClick() {
+  if (typeof document === "undefined") return;
+  const eat = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    done();
   };
+  const done = () => {
+    document.removeEventListener("click", eat, true);
+    clearTimeout(t);
+  };
+  const t = setTimeout(done, 400);
+  document.addEventListener("click", eat, true);
+}
+
+function endPress(el: Element): PressState | undefined {
+  const st = pressState.get(el);
+  if (st?.timer) clearTimeout(st.timer);
+  pressState.delete(el);
+  return st;
+}
+
+function pressHandlers(tap?: () => void, hold?: () => void) {
   return {
+    style: PRESS_STYLE,
     onPointerDown: (e: React.PointerEvent<SVGElement>) => {
       e.preventDefault();
-      held = false;
-      timer = setTimeout(() => {
-        held = true;
+      const el = e.currentTarget;
+      endPress(el);
+      // No setPointerCapture here: touch pointers are implicitly captured to
+      // the element that took the pointerdown, so a fingertip drifting off a
+      // 3 mm target still completes its press. Asking for capture explicitly
+      // is redundant and costs the quick tap.
+      const st: PressState = { timer: null, done: false, ox: e.clientX, oy: e.clientY };
+      st.timer = setTimeout(() => {
+        st.timer = null;
+        st.done = true;
+        if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(30);
         hold?.();
-      }, 550);
+      }, HOLD_MS);
+      pressState.set(el, st);
+    },
+    onPointerMove: (e: React.PointerEvent<SVGElement>) => {
+      const st = pressState.get(e.currentTarget);
+      if (!st?.timer) return;
+      // Only a deliberate drag cancels — jitter during a hold must not.
+      if (Math.hypot(e.clientX - st.ox, e.clientY - st.oy) > DRAG_SLOP) {
+        clearTimeout(st.timer);
+        st.timer = null;
+        st.done = true;
+      }
     },
     onPointerUp: (e: React.PointerEvent<SVGElement>) => {
       e.preventDefault();
-      clear();
-      if (!held) tap?.();
+      const st = endPress(e.currentTarget);
+      if (!st) return;
+      swallowNextClick();
+      if (!st.done) tap?.();
     },
-    onPointerCancel: clear,
-    onPointerLeave: clear,
+    onPointerCancel: (e: React.PointerEvent<SVGElement>) => void endPress(e.currentTarget),
     onContextMenu: (e: React.MouseEvent<SVGElement>) => e.preventDefault(),
   };
 }
@@ -332,6 +409,15 @@ function PlanSketch({
         }
         const stepPosts = data.posts.filter((po) => po.segIdx === segIdx && po.stepIdx === i);
         if (!wallRail) {
+          // The area target goes down first so the point markers stay on top
+          // and keep their own press handlers reachable.
+          if (onTapStep) {
+            els.push(
+              <rect key="tap" x={0} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
+                fill="transparent"
+                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
+            );
+          }
           stepPosts.forEach((po) => {
             postNo += 1;
             const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : -PLAN_W / 2;
@@ -339,13 +425,6 @@ function PlanSketch({
               <PlanPoint key={`p${po.id}`} po={po} x={PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
             );
           });
-          if (onTapStep) {
-            els.push(
-              <rect key="tap" x={0} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
-                fill="transparent" style={{ cursor: "pointer" }}
-                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
-            );
-          }
         }
         if (i === 0) {
           els.push(
@@ -356,7 +435,7 @@ function PlanSketch({
         }
         groups.push({
           node: (
-            <g key={`wfl${segIdx}-${i}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+            <g key={`wfl${segIdx}-${i}`} transform={`translate(${r3(cx)} ${r3(cy)}) rotate(${r3(ang)})`}>
               {els}
             </g>
           ),
@@ -417,6 +496,12 @@ function PlanSketch({
         </text>,
       ];
       const curvePosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <path key="tap" d={edge(0)} fill="none" stroke="transparent" strokeWidth={PLAN_W}
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
+        );
+      }
       curvePosts.forEach((po, idx) => {
         postNo += 1;
         const frac = (idx + 1) / (curvePosts.length + 1);
@@ -425,16 +510,9 @@ function PlanSketch({
           <PlanPoint key={`cp${po.id}`} po={po} x={pp.x} y={pp.y} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
-      if (onTapPlatform && !wallRail) {
-        els.push(
-          <path key="tap" d={edge(0)} fill="none" stroke="transparent" strokeWidth={PLAN_W}
-            style={{ cursor: "pointer" }}
-            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
-        );
-      }
       groups.push({
         node: (
-          <g key={`cu${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+          <g key={`cu${segIdx}`} transform={`translate(${r3(cx)} ${r3(cy)}) rotate(${r3(ang)})`}>
             {els}
           </g>
         ),
@@ -466,6 +544,13 @@ function PlanSketch({
         </text>,
       ];
       const rampPosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <rect key="tap" x={0} y={-PLAN_W / 2} width={len} height={PLAN_W}
+            fill="transparent"
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
+        );
+      }
       rampPosts.forEach((po, idx) => {
         postNo += 1;
         const frac = (idx + 1) / (rampPosts.length + 1);
@@ -473,16 +558,9 @@ function PlanSketch({
           <PlanPoint key={`rp${po.id}`} po={po} x={frac * len} y={po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight ? PLAN_W / 2 : -PLAN_W / 2} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
-      if (onTapPlatform && !wallRail) {
-        els.push(
-          <rect key="tap" x={0} y={-PLAN_W / 2} width={len} height={PLAN_W}
-            fill="transparent" style={{ cursor: "pointer" }}
-            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
-        );
-      }
       groups.push({
         node: (
-          <g key={`rpg${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+          <g key={`rpg${segIdx}`} transform={`translate(${r3(cx)} ${r3(cy)}) rotate(${r3(ang)})`}>
             {els}
           </g>
         ),
@@ -510,6 +588,13 @@ function PlanSketch({
         );
         const stepPosts = data.posts.filter((po) => po.segIdx === segIdx && po.stepIdx === i);
         if (!wallRail) {
+          if (onTapStep) {
+            els.push(
+              <rect key={`tap${i}`} x={i * PLAN_TREAD} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
+                fill="transparent"
+                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
+            );
+          }
           stepPosts.forEach((po, pi) => {
             postNo += 1;
             const py = po.side === "left" ? -PLAN_W / 2 : po.side === "right" ? PLAN_W / 2 : openRight && !openLeft ? PLAN_W / 2 : openLeft && !openRight ? -PLAN_W / 2 : pi % 2 === 0 ? PLAN_W / 2 : -PLAN_W / 2;
@@ -517,13 +602,6 @@ function PlanSketch({
               <PlanPoint key={`p${po.id}`} po={po} x={i * PLAN_TREAD + PLAN_TREAD / 2} y={py} n={postNo} p={p} onHold={onHoldPost} />
             );
           });
-          if (onTapStep) {
-            els.push(
-              <rect key={`tap${i}`} x={i * PLAN_TREAD} y={-PLAN_W / 2} width={PLAN_TREAD} height={PLAN_W}
-                fill="transparent" style={{ cursor: "pointer" }}
-                {...pressHandlers(() => onTapStep(segIdx, i), () => onHoldStep?.(segIdx, i))} />
-            );
-          }
         }
       });
       // width label across the strip start
@@ -540,7 +618,7 @@ function PlanSketch({
       );
       groups.push({
         node: (
-          <g key={`fl${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+          <g key={`fl${segIdx}`} transform={`translate(${r3(cx)} ${r3(cy)}) rotate(${r3(ang)})`}>
             {els}
           </g>
         ),
@@ -575,6 +653,12 @@ function PlanSketch({
         </text>,
       ];
       const platPosts = sortPlatPosts(data.posts.filter((po) => po.segIdx === segIdx));
+      if (onTapPlatform && !wallRail) {
+        els.push(
+          <rect key="tap" x={0} y={platTop} width={L} height={platBottom - platTop} fill="transparent"
+            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
+        );
+      }
       platPosts.forEach((po, idx) => {
         postNo += 1;
         const frac = (idx + 1) / (platPosts.length + 1);
@@ -582,16 +666,9 @@ function PlanSketch({
           <PlanPoint key={`pp${po.id}`} po={po} x={frac * L} y={po.side === "left" ? platTop : po.side === "right" ? platBottom : openRight ? platBottom : platTop} n={postNo} p={p} onHold={onHoldPost} />
         );
       });
-      if (onTapPlatform && !wallRail) {
-        els.push(
-          <rect key="tap" x={0} y={platTop} width={L} height={platBottom - platTop} fill="transparent"
-            style={{ cursor: "pointer" }}
-            {...pressHandlers(() => onTapPlatform(segIdx), () => onHoldPlatform?.(segIdx))} />
-        );
-      }
       groups.push({
         node: (
-          <g key={`pl${segIdx}`} transform={`translate(${cx} ${cy}) rotate(${ang})`}>
+          <g key={`pl${segIdx}`} transform={`translate(${r3(cx)} ${r3(cy)}) rotate(${r3(ang)})`}>
             {els}
           </g>
         ),
@@ -674,7 +751,7 @@ function PlanPoint({ po, x, y, n, p, onHold }: {
 }) {
   const s = pointStyle(po, p);
   return (
-    <g {...pressHandlers(undefined, () => onHold?.(po.id))} style={{ cursor: "pointer" }}>
+    <g {...pressHandlers(undefined, () => onHold?.(po.id))}>
       <circle cx={x} cy={y} r={Math.max(12, s.r + 5)} fill="transparent" />
       {s.square
         ? <rect x={x - s.r} y={y - s.r} width={s.r * 2} height={s.r * 2} rx={po.pointType === "concrete_wall" ? 1 : 2} fill={s.color} />
@@ -975,7 +1052,7 @@ function StairSketch({
       outline += ` L ${x + len} ${y - drop}`;
       els.push(
         <text key={`rp${segIdx}`} x={x + len / 2} y={y - drop / 2 - 10} fontSize={9} textAnchor="middle" fill={lv.fill}
-          transform={`rotate(${(Math.atan2(-drop, len) * 180) / Math.PI} ${x + len / 2} ${y - drop / 2 - 10})`}>
+          transform={`rotate(${r3((Math.atan2(-drop, len) * 180) / Math.PI)} ${r3(x + len / 2)} ${r3(y - drop / 2 - 10)})`}>
           {lv.text}
         </text>
       );
@@ -1020,7 +1097,7 @@ function StairSketch({
           fontWeight={700}
           textAnchor="middle"
           fill={rl.fill}
-          transform={`rotate(${(Math.atan2(dy, dx) * 180) / Math.PI} ${(x1 + x2) / 2 - 14} ${(y1 + y2) / 2 - 12})`}
+          transform={`rotate(${r3((Math.atan2(dy, dx) * 180) / Math.PI)} ${r3((x1 + x2) / 2 - 14)} ${r3((y1 + y2) / 2 - 12)})`}
         >
           {rl.text}
         </text>
@@ -1171,7 +1248,6 @@ function LevelSketch({
           width={W - 60}
           height={baseY - railY + 20}
           fill="transparent"
-          style={{ cursor: "pointer" }}
           {...pressHandlers(() => onTapPlatform(0), () => onHoldPlatform?.(0))}
         />
       )}
@@ -1219,7 +1295,7 @@ function RampSketch({
         );
       })}
       <text x={(x1 + x2) / 2 - 10} y={(y1 + y2) / 2 - 14} fontSize={10} fontWeight={700} fill={lv.fill}
-        transform={`rotate(${(Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI} ${(x1 + x2) / 2 - 10} ${(y1 + y2) / 2 - 14})`}>
+        transform={`rotate(${r3((Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI)} ${r3((x1 + x2) / 2 - 10)} ${r3((y1 + y2) / 2 - 14)})`}>
         {lv.text}
       </text>
       <text x={x1 + 44} y={y1 - 8} fontSize={10} fontWeight={700} fill={av.fill}>
@@ -1314,7 +1390,7 @@ function FrontSketch({
       {/* rail height dimension */}
       <line x1={x1 + 18} y1={treadY} x2={x1 + 18} y2={railTop - 8} stroke={p.dim} strokeWidth={1} />
       <text x={x1 + 24} y={(treadY + railTop) / 2} fontSize={9} fontWeight={700} fill={hv.fill}
-        transform={`rotate(90 ${x1 + 24} ${(treadY + railTop) / 2})`} textAnchor="middle">
+        transform={`rotate(90 ${r3(x1 + 24)} ${r3((treadY + railTop) / 2)})`} textAnchor="middle">
         {hv.text}
       </text>
       <text x={x1 + 4} y={railTop - 16} fontSize={8} fill={p.dim} textAnchor="end">
@@ -1372,7 +1448,7 @@ function LevelSectionSketch({
       {/* height dim */}
       <line x1={cx + 44} y1={groundY} x2={cx + 44} y2={railTop - 12} stroke={p.dim} strokeWidth={1} />
       <text x={cx + 52} y={(groundY + railTop) / 2} fontSize={10} fontWeight={700} fill={hv.fill}
-        transform={`rotate(90 ${cx + 52} ${(groundY + railTop) / 2})`} textAnchor="middle">
+        transform={`rotate(90 ${r3(cx + 52)} ${r3((groundY + railTop) / 2)})`} textAnchor="middle">
         {hv.text}
       </text>
       <text x={cx + 44} y={railTop - 20} fontSize={8} fill={p.dim} textAnchor="middle">
@@ -1430,7 +1506,7 @@ function SpiralSideSketch({
       {/* floor-to-floor dim */}
       <line x1={300} y1={botY} x2={300} y2={topY} stroke={p.dim} strokeWidth={1} />
       <text x={310} y={(botY + topY) / 2} fontSize={10} fontWeight={700} fill={fv.fill}
-        transform={`rotate(90 ${310} ${(botY + topY) / 2})`} textAnchor="middle">
+        transform={`rotate(90 ${310} ${r3((botY + topY) / 2)})`} textAnchor="middle">
         {fv.text}
       </text>
       <text x={296} y={topY - 8} fontSize={8} fill={p.dim} textAnchor="end">

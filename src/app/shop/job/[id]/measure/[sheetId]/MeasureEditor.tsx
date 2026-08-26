@@ -353,16 +353,31 @@ export default function MeasureEditor({
     setPlacementMenu(null);
   }
 
+  function defaultSide(): "left" | "right" {
+    return dataRef.current.datums.orientation === "right_wall" ? "left" : "right";
+  }
+
+  // Holding a location always offers the "what is here?" choices. Moving an
+  // item is reached by holding the item's own marker, or by its Relocate
+  // button — an item already on a tread must not block adding a second one.
   function holdStepLocation(segIdx: number, stepIdx: number) {
-    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === stepIdx);
-    if (existing) setMovingPostId(existing.id);
-    else setPlacementMenu({ segIdx, stepIdx, side: "right" });
+    setPlacementMenu({ segIdx, stepIdx, side: defaultSide() });
   }
 
   function holdPlatformLocation(segIdx: number) {
-    const existing = dataRef.current.posts.find((p) => p.segIdx === segIdx && p.stepIdx === null);
-    if (existing) setMovingPostId(existing.id);
-    else setPlacementMenu({ segIdx, stepIdx: null, side: "right" });
+    setPlacementMenu({ segIdx, stepIdx: null, side: defaultSide() });
+  }
+
+  // Existing Structures stage: a plain tap opens the same choices, so adding a
+  // wall or column never depends on a long press landing correctly.
+  function tapStructureStep(segIdx: number, stepIdx: number) {
+    if (movingPostId) return addStepPost(segIdx, stepIdx);
+    setPlacementMenu({ segIdx, stepIdx, side: defaultSide() });
+  }
+
+  function tapStructurePlatform(segIdx: number) {
+    if (movingPostId) return addPlatformPost(segIdx);
+    setPlacementMenu({ segIdx, stepIdx: null, side: defaultSide() });
   }
 
   function setSpan(idx: number, key: "label" | "topSpan" | "lowerSpan" | "note", value: string) {
@@ -818,17 +833,15 @@ export default function MeasureEditor({
                 data={data}
                 lang={lang}
                 view={view}
-                onTapStep={() => {}}
-                onTapPlatform={() => {}}
+                onTapStep={tapStructureStep}
+                onTapPlatform={tapStructurePlatform}
                 onHoldStep={holdStepLocation}
                 onHoldPlatform={holdPlatformLocation}
                 onHoldPost={(id) => setMovingPostId(id)}
                 onToggleWallSide={toggleSketchWall}
               />
             </div>
-            {posts.filter((po) => po.pointType !== "railing_post").length === 0 && (
-              <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
-            )}
+            <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
             <div className="space-y-3">
               {posts.filter((po) => po.pointType !== "railing_post").map((po, n) => (
                 <div key={po.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
