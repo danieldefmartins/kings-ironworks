@@ -775,13 +775,17 @@ export default function MeasureEditor({
             {mt(lang, "sketchOrientationHint")}
           </div>
           <Grid>
-            <MInput label={mt(lang, "bottomDatum")} hint={mt(lang, "bottomDatumInfo")} hintDiagram="bottom" placeholder="—" value={data.datums.bottomDatum}
+            <ChoiceMInput label={mt(lang, "bottomDatum")} hint={mt(lang, "bottomDatumInfo")} hintDiagram="bottom" placeholder="—" value={data.datums.bottomDatum}
+              choices={datumChoices(lang, "bottom")}
               onChange={(v) => set((d) => void (d.datums.bottomDatum = v))} />
-            <MInput label={mt(lang, "topDatum")} hint={mt(lang, "topDatumInfo")} hintDiagram="top" placeholder="—" value={data.datums.topDatum}
+            <ChoiceMInput label={mt(lang, "topDatum")} hint={mt(lang, "topDatumInfo")} hintDiagram="top" placeholder="—" value={data.datums.topDatum}
+              choices={datumChoices(lang, "top")}
               onChange={(v) => set((d) => void (d.datums.topDatum = v))} />
-            <MInput label={mt(lang, "nosingRefLbl")} hint={mt(lang, "nosingRefInfo")} hintDiagram="nosing" placeholder="—" value={data.datums.nosingRef}
+            <ChoiceMInput label={mt(lang, "nosingRefLbl")} hint={mt(lang, "nosingRefInfo")} hintDiagram="nosing" placeholder="—" value={data.datums.nosingRef}
+              choices={[["Front edge of nosing", mt(lang, "choiceNosingFront")], ["Face of riser", mt(lang, "choiceRiserFace")], ["Centerline", mt(lang, "choiceCenterline")]]}
               onChange={(v) => set((d) => void (d.datums.nosingRef = v))} />
-            <MInput label={mt(lang, "walklineLbl")} hint={mt(lang, "walklineInfo")} hintDiagram="walkline" value={data.datums.walkline}
+            <ChoiceMInput label={mt(lang, "walklineLbl")} hint={mt(lang, "walklineInfo")} hintDiagram="walkline" value={data.datums.walkline}
+              choices={[["Mid-tread", mt(lang, "choiceMidTread")], ['12" from narrow edge', mt(lang, "choiceWalkline12")]]}
               onChange={(v) => set((d) => void (d.datums.walkline = v))} />
           </Grid>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -839,8 +843,8 @@ export default function MeasureEditor({
                     <MInput label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
                       onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
                     {po.pointType === "existing_post" && <>
-                      <MInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
-                        onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
+                      <ChoiceMInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
+                        choices={commonThicknessChoices(lang)} onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
                       <MInput label={mt(lang, "skirtHeight")} value={po.skirtHeight}
                         onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
                     </>}
@@ -1205,8 +1209,8 @@ export default function MeasureEditor({
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
               <MInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slope = v))} />
-              <MInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
-                onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
+              <ChoiceMInput label={mt(lang, "slopeDir")} placeholder="—" value={seg.slopeDir}
+                choices={slopeDirectionChoices(lang)} onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
             </Grid>
             {(seg.turn === "left" || seg.turn === "right") && (
               <div className="mt-3">
@@ -1356,8 +1360,8 @@ export default function MeasureEditor({
                     )}
                     {po.pointType === "existing_post" && (
                       <>
-                        <MInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
-                          onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
+                        <ChoiceMInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
+                          choices={commonThicknessChoices(lang)} onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
                         <MInput label={mt(lang, "skirtHeight")} placeholder="—" value={po.skirtHeight}
                           onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
                         <MInput label={mt(lang, "columnToWall")} value={po.columnToWall}
@@ -1384,8 +1388,8 @@ export default function MeasureEditor({
                         onChange={(v) => setPost(set, po.id, "substrate", v)} />
                       <MInput label={mt(lang, "postEdgeDist")} value={po.edgeDist}
                         onChange={(v) => setPost(set, po.id, "edgeDist", v)} />
-                      <MInput label={mt(lang, "postObstruction")} placeholder="—" value={po.obstruction}
-                        onChange={(v) => setPost(set, po.id, "obstruction", v)} />
+                      <ChoiceMInput label={mt(lang, "postObstruction")} placeholder="—" value={po.obstruction}
+                        choices={obstructionChoices(lang)} onChange={(v) => setPost(set, po.id, "obstruction", v)} />
                       <button
                         onClick={() =>
                           setPhotoSlot({
@@ -2172,6 +2176,77 @@ function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" 
       </span>}
     </span>
   );
+}
+
+function ChoiceMInput({
+  label,
+  value,
+  onChange,
+  choices,
+  placeholder,
+  hint,
+  hintDiagram,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  choices: [string, string][];
+  placeholder?: string;
+  hint?: string;
+  hintDiagram?: "bottom" | "top" | "nosing" | "walkline";
+}) {
+  return (
+    <div>
+      <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} hint={hint} hintDiagram={hintDiagram} />
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {choices.map(([stored, shown]) => (
+          <button key={stored} type="button" onClick={() => onChange(stored)}
+            className={`rounded-full border px-2.5 py-1.5 text-xs ${value === stored ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-300"}`}>
+            {shown}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function datumChoices(lang: string, position: "bottom" | "top"): [string, string][] {
+  const shared: [string, string][] = [
+    ["Finished floor", mt(lang, "choiceFinishedFloor")],
+    ["Bare concrete", mt(lang, "choiceBareConcrete")],
+    ["Subfloor", mt(lang, "choiceSubfloor")],
+    ["Deck surface", mt(lang, "choiceDeckSurface")],
+  ];
+  return position === "bottom"
+    ? [...shared, ["Top of first tread", mt(lang, "choiceFirstTread")]]
+    : [...shared, ["Finished landing", mt(lang, "choiceFinishedLanding")]];
+}
+
+function commonThicknessChoices(lang: string): [string, string][] {
+  return [
+    ["0", mt(lang, "choiceNone")],
+    ['3/4"', '3/4"'],
+    ['1"', '1"'],
+    ['1 1/2"', '1 1/2"'],
+  ];
+}
+
+function slopeDirectionChoices(lang: string): [string, string][] {
+  return [
+    ["Left", mt(lang, "choiceLeft")],
+    ["Right", mt(lang, "choiceRight")],
+    ["Toward stairs", mt(lang, "choiceTowardStairs")],
+    ["Away from stairs", mt(lang, "choiceAwayStairs")],
+  ];
+}
+
+function obstructionChoices(lang: string): [string, string][] {
+  return [
+    ["None", mt(lang, "choiceNone")],
+    ["Joist", mt(lang, "choiceJoist")],
+    ["Pipe", mt(lang, "choicePipe")],
+    ["Wire", mt(lang, "choiceWire")],
+  ];
 }
 
 function MeasurementHintDiagram({ kind }: { kind: "bottom" | "top" | "nosing" | "walkline" }) {
