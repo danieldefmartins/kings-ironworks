@@ -527,9 +527,11 @@ export default function MeasureEditor({
   const anchorOptions = orgSettings?.options?.anchors?.length
     ? orgSettings.options.anchors
     : [...ANCHOR_OPTIONS];
-  const finishOptions = orgSettings?.options?.finishes?.length
-    ? orgSettings.options.finishes
-    : [...SPEC_OPTIONS.finish_type];
+  const finishOptions = Array.from(new Set([
+    ...(orgSettings?.options?.finishes?.length ? orgSettings.options.finishes : SPEC_OPTIONS.finish_type),
+    "Galvanizing + DTM Epoxy",
+    "Galvanizing + Powder Coat",
+  ]));
   const colorOptions = orgSettings?.options?.colors?.length
     ? orgSettings.options.colors
     : [...SPEC_OPTIONS.color];

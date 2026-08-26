@@ -430,7 +430,13 @@ export function categoryLabel(lang: string | undefined, cat: string): string {
 }
 
 export const SPEC_OPTIONS = {
-  finish_type: ["DTM Epoxy", "Galvanizing", "Powder Coat"],
+  finish_type: [
+    "DTM Epoxy",
+    "Galvanizing",
+    "Powder Coat",
+    "Galvanizing + DTM Epoxy",
+    "Galvanizing + Powder Coat",
+  ],
   finish_sheen: ["Flat", "Semi-gloss", "Gloss"],
   color: ["Black", "White", "Bronze", "Custom"],
   mounting: ["Metal base plate", "Core-drill + concrete"],
@@ -442,6 +448,8 @@ const SPEC_MAP: Record<Lang, Record<string, string>> = {
     "DTM Epoxy": "DTM Epóxi",
     Galvanizing: "Galvanização",
     "Powder Coat": "Pintura a Pó",
+    "Galvanizing + DTM Epoxy": "Galvanização + DTM Epóxi",
+    "Galvanizing + Powder Coat": "Galvanização + Pintura a Pó",
     "Per plans": "Conforme projeto",
     Flat: "Fosco",
     "Semi-gloss": "Semibrilho",
@@ -457,6 +465,8 @@ const SPEC_MAP: Record<Lang, Record<string, string>> = {
     "DTM Epoxy": "DTM Epóxico",
     Galvanizing: "Galvanizado",
     "Powder Coat": "Pintura en Polvo",
+    "Galvanizing + DTM Epoxy": "Galvanizado + DTM Epóxico",
+    "Galvanizing + Powder Coat": "Galvanizado + Pintura en Polvo",
     "Per plans": "Según planos",
     Flat: "Mate",
     "Semi-gloss": "Semibrillo",
