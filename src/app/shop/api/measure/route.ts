@@ -118,6 +118,51 @@ const SpiralSchema = z
     landingNote: short,
   })
   .nullable();
+const WallBandSchema = z.object({
+  id: z.string().max(40),
+  label: z.string().max(120),
+  setback: meas,
+  fromTop: meas,
+  toTop: meas,
+});
+const WellSchema = z
+  .object({
+    construction: z.enum(["", "poured_concrete", "block", "corrugated", "stone", "timber"]),
+    lengthAtHouse: meas,
+    projection: meas,
+    insideLength: meas,
+    insideProjection: meas,
+    wallThickness: meas,
+    diagA: meas,
+    diagB: meas,
+    depth: meas,
+    topToGrade: meas,
+    windowW: meas,
+    windowH: meas,
+    sillToFloor: meas,
+    windowSwing: z.enum(["", "in", "out", "slider", "fixed"]),
+    deliverables: z.array(z.enum(["grate", "guard", "gate", "ladder"])).max(4),
+    guardHeight: meas,
+    gateWidth: meas,
+    gateSwing: z.enum(["", "in", "out"]),
+    gateHinge: z.enum(["", "left", "right"]),
+    gateLatch: short,
+    ladderWidth: meas,
+    ladderRungs: meas,
+    ladderSpacing: meas,
+    ladderStandoff: meas,
+    ladderTopExt: meas,
+    grateBearing: z.enum(["", "surface", "recessed", "angle_frame"]),
+    grateHinged: z.boolean(),
+    grateLoad: short,
+    grateInfill: short,
+    wallRef: z.string().max(120),
+    bands: z.array(WallBandSchema).max(12),
+    postToWall: meas,
+    maxSphere: meas,
+    notes: short,
+  })
+  .nullable();
 const DatumsSchema = z.object({
   orientation: z.enum(["", "left_wall", "right_wall", "both_open", "both_wall"]),
   bottomDatum: short,
@@ -228,6 +273,7 @@ const MeasureDataSchema = z.object({
     .max(12),
   posts: z.array(PostSchema).max(120),
   spiral: SpiralSchema,
+  well: WellSchema.optional(),
   rail: z.object({
     kind: z.string().max(40),
     height: meas,
@@ -327,7 +373,9 @@ export async function POST(req: NextRequest) {
           entityId: rows[0]?.id,
           detail: { shape: seeded.shape, preset: preset || null, jobId: jobOk },
         });
-        return NextResponse.json({ ok: true, id: rows[0]?.id });
+        // The row goes back too, so a caller does not have to re-fetch the
+        // sheet just to learn what the shape seeded.
+        return NextResponse.json({ ok: true, id: rows[0]?.id, sheet: rows[0] ?? null });
       }
 
       // Seller convenience: turn the device's GPS fix into a street address

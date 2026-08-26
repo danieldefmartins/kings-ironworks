@@ -12,6 +12,7 @@ export type MeasureShape =
   | "ramp"
   | "wall_rail"
   | "spiral"
+  | "window_well"
   | "builder"
   | "custom";
 
@@ -24,6 +25,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "ramp",
   "wall_rail",
   "spiral",
+  "window_well",
   "builder",
   "custom",
 ];
@@ -148,6 +150,114 @@ export interface SpiralData {
   columnSize: string;
   clearWidth: string;
   landingNote: string;
+}
+
+// ---- Window / egress wells -------------------------------------------------
+// A well is a concrete (or block / corrugated) box against the house holding a
+// basement egress window. KIW supplies three things over it, in any
+// combination: a grate, a guard with a gate, and a ladder down to the window.
+
+export type WellDeliverable = "grate" | "guard" | "gate" | "ladder";
+
+export const WELL_DELIVERABLES: WellDeliverable[] = ["grate", "guard", "gate", "ladder"];
+
+// One horizontal band of the house wall the guard runs past. The guard's end
+// post is dimensioned off the MOST PROUD surface (usually a water table trim),
+// so every other band is recorded by how far it sits BACK from that face —
+// the deepest one governs how close the post has to be. See wellClearance().
+export interface WallBand {
+  id: string;
+  label: string; // "Water table trim", "Lap siding", "Foundation"
+  setback: string; // how far back from the proud face (0 = it IS the proud face)
+  fromTop: string; // band's top edge, measured down from the top of the well wall
+  toTop: string; // band's bottom edge, same datum
+}
+
+export interface WellData {
+  construction: "" | "poured_concrete" | "block" | "corrugated" | "stone" | "timber";
+  // Footprint, taken at the TOP of the well wall
+  lengthAtHouse: string; // outside to outside, along the house
+  projection: string; // outside face of the far wall, out from the house
+  insideLength: string; // clear inside, along the house
+  insideProjection: string; // clear inside, out from the house
+  wallThickness: string; // bearing width on top of the wall
+  diagA: string; // inside corner to opposite corner — squareness
+  diagB: string;
+  depth: string; // top of the well wall down to the well floor
+  topToGrade: string; // + wall stands above grade, - it sits below
+  // The window in the foundation
+  windowW: string;
+  windowH: string;
+  sillToFloor: string; // window sill above the well floor
+  windowSwing: "" | "in" | "out" | "slider" | "fixed";
+  // What KIW is supplying
+  deliverables: WellDeliverable[];
+  // Guard + gate
+  guardHeight: string;
+  gateWidth: string;
+  gateSwing: "" | "in" | "out";
+  gateHinge: "" | "left" | "right";
+  gateLatch: string;
+  // Ladder
+  ladderWidth: string;
+  ladderRungs: string;
+  ladderSpacing: string; // rung to rung, on centre
+  ladderStandoff: string; // rung face to the wall behind it
+  ladderTopExt: string; // how far the rails run above the well wall
+  // Grate
+  grateBearing: "" | "surface" | "recessed" | "angle_frame";
+  grateHinged: boolean;
+  grateLoad: string;
+  grateInfill: string;
+  // House wall profile — drives the 4" sphere solver
+  wallRef: string; // what the proud face is
+  bands: WallBand[];
+  postToWall: string; // measured clear gap, post face to the PROUD face
+  maxSphere: string; // code sphere for this jurisdiction (default 4)
+  notes: string;
+}
+
+export function newWallBand(label = ""): WallBand {
+  return { id: newPostId(), label, setback: "", fromTop: "", toTop: "" };
+}
+
+export function blankWell(): WellData {
+  return {
+    construction: "",
+    lengthAtHouse: "",
+    projection: "",
+    insideLength: "",
+    insideProjection: "",
+    wallThickness: "",
+    diagA: "",
+    diagB: "",
+    depth: "",
+    topToGrade: "",
+    windowW: "",
+    windowH: "",
+    sillToFloor: "",
+    windowSwing: "",
+    deliverables: [],
+    guardHeight: "",
+    gateWidth: "",
+    gateSwing: "",
+    gateHinge: "",
+    gateLatch: "",
+    ladderWidth: "",
+    ladderRungs: "",
+    ladderSpacing: "",
+    ladderStandoff: "",
+    ladderTopExt: "",
+    grateBearing: "",
+    grateHinged: false,
+    grateLoad: "",
+    grateInfill: "",
+    wallRef: "",
+    bands: [],
+    postToWall: "",
+    maxSphere: "4",
+    notes: "",
+  };
 }
 
 export interface RailSpec {
@@ -443,6 +553,7 @@ export interface MeasureData {
   segments: Segment[];
   posts: PostMeasure[];
   spiral: SpiralData | null;
+  well: WellData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -567,6 +678,7 @@ export function newMeasureData(
 ): MeasureData {
   let segments: Segment[] = [];
   let spiral: SpiralData | null = null;
+  let well: WellData | null = null;
 
   switch (shape) {
     case "straight":
@@ -596,6 +708,9 @@ export function newMeasureData(
     case "custom":
       segments = [];
       break;
+    case "window_well":
+      well = blankWell();
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -615,6 +730,7 @@ export function newMeasureData(
     segments,
     posts: [],
     spiral,
+    well,
     plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
@@ -811,6 +927,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       clipDetail: p.clipDetail ?? "",
     })),
     spiral: d.spiral ?? null,
+    well: d.well ? { ...blankWell(), ...d.well, deliverables: d.well.deliverables ?? [], bands: (d.well.bands || []).map((b) => ({ ...newWallBand(), ...b })) } : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -859,6 +976,9 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
   switch (shape) {
     case "spiral":
       return ["overall_bottom", "overall_top"];
+    case "window_well":
+      // The wall profile photo is the one that settles the 4" argument.
+      return ["well_overall", "well_wall_profile", "well_window", "well_inside"];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -896,6 +1016,15 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
     }
   }
   for (const p of data.posts) vals.push(p.distanceFromFirst, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
+  if (data.well) {
+    const w = data.well;
+    vals.push(w.construction, w.lengthAtHouse, w.projection, w.depth, w.wallThickness);
+    if (w.deliverables.includes("guard")) vals.push(w.guardHeight, w.postToWall, w.wallRef);
+    if (w.deliverables.includes("gate")) vals.push(w.gateWidth, w.gateSwing, w.gateHinge);
+    if (w.deliverables.includes("ladder")) vals.push(w.ladderWidth, w.ladderRungs, w.ladderSpacing, w.ladderStandoff);
+    if (w.deliverables.includes("grate")) vals.push(w.grateBearing, w.grateInfill, w.grateLoad);
+    for (const b of w.bands) vals.push(b.label, b.setback);
+  }
   if (data.spiral) {
     vals.push(
       data.spiral.floorToFloor,

@@ -134,6 +134,17 @@ export default function ShapeIcon({
           <path d="M4 46h40" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "window_well":
+      // house wall on the left, the well box against it, guard over the top
+      return (
+        <svg {...common}>
+          <path d="M8 4v40" strokeWidth={2.5} />
+          <path d="M8 20h28v20H8" />
+          <path d="M8 24h5v12H8" strokeWidth={1.5} />
+          <path d="M14 14h28" strokeWidth={2} />
+          <path d="M20 14v6M28 14v6M36 14v6" strokeWidth={1.5} />
+        </svg>
+      );
     case "spiral":
       return (
         <svg {...common}>

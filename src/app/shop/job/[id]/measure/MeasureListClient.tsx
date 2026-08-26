@@ -39,7 +39,7 @@ export default function MeasureListClient({
   const [err, setErr] = useState<string | null>(null);
 
   const twoFlights = shape ? TWO_FLIGHT_SHAPES.includes(shape) : false;
-  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom";
+  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well";
 
   async function create() {
     if (!shape) return;

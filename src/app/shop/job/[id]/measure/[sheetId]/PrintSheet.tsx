@@ -19,7 +19,7 @@ import type {
   PostMeasure,
   RampSegment,
 } from "@/lib/shop/measure";
-import type { CheckResult } from "@/lib/shop/measure-checks";
+import { formatIn, wellClearance, type CheckResult } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
 import Sketch, { sketchViews } from "./Sketch";
@@ -487,6 +487,109 @@ export default function PrintSheet({
               {mt(lang, "length")}: <Val v={ramp.length} /> · {mt(lang, "totalRise")}:{" "}
               <Val v={ramp.rise} /> · ∠ <Val v={ramp.angleDeg} /> · {mt(lang, "width")}:{" "}
               <Val v={ramp.width} />
+            </div>
+          )}
+
+          {data.well && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "wellTitle")}</SectionTitle>
+              <div>
+                <b>{mt(lang, "wellDeliverables")} </b>
+                {data.well.deliverables.length === 0
+                  ? "—"
+                  : data.well.deliverables.map((k) => mt(lang, `wellD_${k}`)).join(" · ")}
+              </div>
+              <div>
+                {mt(lang, "wellConstruction")}:{" "}
+                <Val v={data.well.construction ? mt(lang, `wellC_${data.well.construction}`) : ""} /> ·{" "}
+                {mt(lang, "wellLengthAtHouse")}: <Val v={data.well.lengthAtHouse} /> ·{" "}
+                {mt(lang, "wellProjection")}: <Val v={data.well.projection} /> ·{" "}
+                {mt(lang, "wellDepth")}: <Val v={data.well.depth} />
+              </div>
+              <div>
+                {mt(lang, "wellInside")}: <Val v={data.well.insideLength} /> ×{" "}
+                <Val v={data.well.insideProjection} /> · {mt(lang, "wellWallThickness")}:{" "}
+                <Val v={data.well.wallThickness} /> · {mt(lang, "wellDiagA")}/{mt(lang, "wellDiagB")}:{" "}
+                <Val v={data.well.diagA} /> / <Val v={data.well.diagB} />
+              </div>
+              <div>
+                {mt(lang, "wellWindowTitle")}: <Val v={data.well.windowW} /> ×{" "}
+                <Val v={data.well.windowH} /> · {mt(lang, "wellSillToFloor")}:{" "}
+                <Val v={data.well.sillToFloor} />
+              </div>
+
+              {data.well.deliverables.includes("guard") && (
+                <div className="mt-1 border border-black/40 p-1">
+                  <b>{mt(lang, "wellWallTitle")}</b>
+                  <div>
+                    {mt(lang, "wellWallRef")}: <Val v={data.well.wallRef} /> ·{" "}
+                    {mt(lang, "wellGuardHeight")}: <Val v={data.well.guardHeight} />
+                  </div>
+                  {data.well.bands.map((b, i) => (
+                    <div key={b.id}>
+                      {i + 1}. <Val v={b.label} /> — {mt(lang, "wellBandSetback")}:{" "}
+                      <Val v={b.setback} />
+                      {(b.fromTop || b.toTop) && (
+                        <> (<Val v={b.fromTop} /> → <Val v={b.toTop} />)</>
+                      )}
+                    </div>
+                  ))}
+                  {(() => {
+                    const cl = wellClearance(data.well);
+                    if (!cl) return null;
+                    if (cl.impossible) {
+                      return <div className="font-bold">⚠ {mt(lang, "wellSolverImpossible")}</div>;
+                    }
+                    return (
+                      <div className="font-bold">
+                        {mt(lang, "wellSolverTitle")}: {formatIn(cl.allowed)}{" "}
+                        {mt(lang, "wellSolverMax")} {data.well.wallRef || mt(lang, "wellProudFace")}
+                        {cl.worst !== null && (
+                          <>
+                            {" "}· {mt(lang, "wellSolverActual")} {formatIn(cl.worst)}{" "}
+                            {mt(lang, "wellAt")} {cl.deepest}
+                            {cl.worst > cl.sphere ? " ✗" : " ✓"}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  <div>
+                    {mt(lang, "wellPostToWall")}: <Val v={data.well.postToWall} />
+                  </div>
+                </div>
+              )}
+
+              {data.well.deliverables.includes("gate") && (
+                <div>
+                  <b>{mt(lang, "wellD_gate")}: </b>
+                  {mt(lang, "wellGateWidth")}: <Val v={data.well.gateWidth} /> ·{" "}
+                  {mt(lang, "wellGateSwing")}:{" "}
+                  <Val v={data.well.gateSwing ? mt(lang, data.well.gateSwing === "in" ? "wellSwingIn" : "wellSwingOut") : ""} /> ·{" "}
+                  {mt(lang, "wellGateHinge")}: <Val v={data.well.gateHinge} /> ·{" "}
+                  {mt(lang, "wellGateLatch")}: <Val v={data.well.gateLatch} />
+                </div>
+              )}
+              {data.well.deliverables.includes("ladder") && (
+                <div>
+                  <b>{mt(lang, "wellD_ladder")}: </b>
+                  {mt(lang, "wellLadderWidth")}: <Val v={data.well.ladderWidth} /> ·{" "}
+                  {mt(lang, "wellLadderRungs")}: <Val v={data.well.ladderRungs} /> @{" "}
+                  <Val v={data.well.ladderSpacing} /> · {mt(lang, "wellLadderStandoff")}:{" "}
+                  <Val v={data.well.ladderStandoff} /> · {mt(lang, "wellLadderTopExt")}:{" "}
+                  <Val v={data.well.ladderTopExt} />
+                </div>
+              )}
+              {data.well.deliverables.includes("grate") && (
+                <div>
+                  <b>{mt(lang, "wellD_grate")}: </b>
+                  {mt(lang, "wellGrateBearing")}:{" "}
+                  <Val v={data.well.grateBearing ? mt(lang, `wellGB_${data.well.grateBearing}`) : ""} /> ·{" "}
+                  {mt(lang, "wellGrateInfill")}: <Val v={data.well.grateInfill} /> ·{" "}
+                  {mt(lang, "wellGrateLoad")}: <Val v={data.well.grateLoad} />
+                  {data.well.grateHinged ? ` · ${mt(lang, "wellGrateHinged")}` : ""}
+                </div>
+              )}
             </div>
           )}
 

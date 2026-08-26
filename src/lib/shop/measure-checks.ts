@@ -17,6 +17,7 @@ import {
   type PostMeasure,
   type RampSegment,
   type Termination,
+  type WellData,
 } from "./measure";
 
 // ---- Parsing ---------------------------------------------------------------
@@ -177,6 +178,140 @@ function curveChecks(seg: CurveSegment, tol: Tolerances, tag?: string): CheckRes
   return out;
 }
 
+
+// ---- Window wells ----------------------------------------------------------
+
+// The 4" sphere rule against a house wall that is not a single plane.
+//
+// The guard's end post is dimensioned off the most PROUD surface — normally a
+// water table trim standing off the siding. Every other band of the wall sits
+// further back, so the real gap at that band is the measured gap PLUS that
+// band's setback. The deepest band therefore governs:
+//
+//     gap at band i = postToWall + setback_i
+//     worst gap     = postToWall + max(setback)
+//     allowed       = sphere - max(setback)
+//
+// Measure 4" off the trim and a 1 1/4" recess behind it opens 5 1/4" at the
+// foundation — which is what fails inspection. Returns null when the profile
+// has not been measured yet.
+export interface WellClearance {
+  sphere: number;
+  maxSetback: number;
+  deepest: string; // label of the governing band
+  allowed: number; // largest permissible post gap off the proud face
+  actual: number | null; // what was measured
+  worst: number | null; // the real gap at the deepest band
+  impossible: boolean; // profile alone busts the sphere — needs a closure plate
+}
+
+export function wellClearance(well: WellData | null | undefined): WellClearance | null {
+  if (!well) return null;
+  const sphere = parseMeas(well.maxSphere) ?? 4;
+  const bands = (well.bands || [])
+    .map((b) => ({ label: b.label, setback: parseMeas(b.setback) }))
+    .filter((b) => b.setback !== null) as { label: string; setback: number }[];
+  if (bands.length === 0) return null;
+  let deep = bands[0];
+  for (const b of bands) if (b.setback > deep.setback) deep = b;
+  const maxSetback = Math.max(0, deep.setback);
+  const allowed = sphere - maxSetback;
+  const actual = parseMeas(well.postToWall);
+  return {
+    sphere,
+    maxSetback,
+    deepest: deep.label,
+    allowed,
+    actual,
+    worst: actual === null ? null : actual + maxSetback,
+    impossible: allowed <= 0,
+  };
+}
+
+function wellChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const w = data.well;
+  if (!w) return out;
+
+  // Inside dims must agree with the outside dims less the wall thickness.
+  // A well has a return wall at each end but no wall on the house side.
+  const outL = parseMeas(w.lengthAtHouse);
+  const outP = parseMeas(w.projection);
+  const th = parseMeas(w.wallThickness);
+  const inL = parseMeas(w.insideLength);
+  const inP = parseMeas(w.insideProjection);
+  out.push(compare("well_inside_length", outL !== null && th !== null ? outL - 2 * th : null, inL, tol.runSum, "in"));
+  out.push(compare("well_inside_proj", outP !== null && th !== null ? outP - th : null, inP, tol.runSum, "in"));
+
+  // Squareness: the two inside diagonals of a rectangular well must match.
+  const dA = parseMeas(w.diagA);
+  const dB = parseMeas(w.diagB);
+  out.push(compare("well_square", dA, dB, tol.rake, "in"));
+
+  // THE clearance check — red blocks submit.
+  const cl = wellClearance(w);
+  if (w.deliverables.includes("guard")) {
+    if (!cl) {
+      out.push({ key: "well_clearance", level: "na", expected: null, actual: null, delta: null, unit: "in" });
+    } else if (cl.impossible) {
+      out.push({
+        key: "well_clearance",
+        level: "red",
+        expected: cl.allowed,
+        actual: cl.actual,
+        delta: null,
+        unit: "in",
+        detail: cl.deepest,
+      });
+    } else if (cl.actual === null) {
+      out.push({ key: "well_clearance", level: "na", expected: cl.allowed, actual: null, delta: null, unit: "in", detail: cl.deepest });
+    } else {
+      // Any worst-case gap over the sphere fails outright — this is code, not
+      // a shop tolerance, so it does not get a yellow band.
+      const over = cl.worst! - cl.sphere;
+      out.push({
+        key: "well_clearance",
+        level: over > 0.0001 ? "red" : "green",
+        expected: cl.allowed,
+        actual: cl.actual,
+        delta: over,
+        unit: "in",
+        detail: cl.deepest,
+      });
+    }
+  }
+
+  // Egress advisories (IRC R310) — jurisdictions vary, so these only warn.
+  const depth = parseMeas(w.depth);
+  if (depth !== null && depth > 44 && !w.deliverables.includes("ladder")) {
+    out.push({ key: "well_ladder_required", level: "yellow", expected: 44, actual: depth, delta: depth - 44, unit: "in" });
+  }
+  if (outP !== null && outP < 36) {
+    out.push({ key: "well_projection_min", level: "yellow", expected: 36, actual: outP, delta: outP - 36, unit: "in" });
+  }
+  if (inL !== null && inP !== null) {
+    const sqft = (inL * inP) / 144;
+    if (sqft < 9) {
+      out.push({ key: "well_area_min", level: "yellow", expected: 9, actual: Math.round(sqft * 100) / 100, delta: Math.round((sqft - 9) * 100) / 100, unit: "in" });
+    }
+  }
+  if (w.deliverables.includes("ladder")) {
+    const sp = parseMeas(w.ladderSpacing);
+    if (sp !== null && sp > 18) {
+      out.push({ key: "well_rung_spacing", level: "yellow", expected: 18, actual: sp, delta: sp - 18, unit: "in" });
+    }
+    const so = parseMeas(w.ladderStandoff);
+    if (so !== null && so < 3) {
+      out.push({ key: "well_rung_standoff", level: "yellow", expected: 3, actual: so, delta: so - 3, unit: "in" });
+    }
+    const lw = parseMeas(w.ladderWidth);
+    if (lw !== null && lw < 12) {
+      out.push({ key: "well_ladder_width", level: "yellow", expected: 12, actual: lw, delta: lw - 12, unit: "in" });
+    }
+  }
+  return out;
+}
+
 export function runChecks(
   data: MeasureData,
   shape: MeasureShape,
@@ -184,6 +319,7 @@ export function runChecks(
 ): CheckResult[] {
   const tol = tolIn || TOLERANCES;
   if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol)];
+  if (shape === "window_well") return wellChecks(data, tol);
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape, tol);
   }
@@ -490,11 +626,15 @@ export interface Gap {
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const gaps: Gap[] = [];
   const has = (s: string | undefined | null) => !!s && s.trim() !== "";
+  // A well sheet may be grate-only, in which case there is no rail piece and
+  // none of the guardrail material or span requirements apply.
+  const isWell = shape === "window_well";
+  const wellGuard = isWell && !!data.well?.deliverables.includes("guard");
 
-  if (shape !== "custom" && shape !== "spiral" && !has(data.datums.orientation)) {
+  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && !has(data.datums.orientation)) {
     gaps.push({ key: "orientation" });
   }
-  if (!has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
+  if (!isWell && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
   if (
     (data.finish.floorChange === "bottom" || data.finish.floorChange === "both") &&
     !has(data.finish.bottomAdjustment)
@@ -510,7 +650,51 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
   );
 
-  if (shape === "spiral") {
+  if (shape === "window_well") {
+    const w = data.well;
+    if (!w) {
+      gaps.push({ key: "well_missing" });
+    } else {
+      if (w.deliverables.length === 0) gaps.push({ key: "well_deliverable" });
+      if (!has(w.construction)) gaps.push({ key: "well_construction" });
+      for (const [k, v] of [
+        ["well_length", w.lengthAtHouse],
+        ["well_projection", w.projection],
+        ["well_depth", w.depth],
+        ["well_thickness", w.wallThickness],
+      ] as const) if (!has(v)) gaps.push({ key: k });
+
+      if (w.deliverables.includes("guard")) {
+        if (!has(w.guardHeight)) gaps.push({ key: "well_guard_height" });
+        // The wall profile is what makes the guard pass inspection.
+        if (!has(w.wallRef)) gaps.push({ key: "well_wall_ref" });
+        if (w.bands.length === 0) gaps.push({ key: "well_wall_bands" });
+        else {
+          const bad = w.bands.filter((b) => !has(b.label) || !has(b.setback)).length;
+          if (bad > 0) gaps.push({ key: "well_band_fields", detail: `${bad}` });
+        }
+        if (!has(w.postToWall)) gaps.push({ key: "well_post_to_wall" });
+      }
+      if (w.deliverables.includes("gate")) {
+        if (!has(w.gateWidth)) gaps.push({ key: "well_gate_width" });
+        if (!has(w.gateSwing)) gaps.push({ key: "well_gate_swing" });
+        if (!has(w.gateHinge)) gaps.push({ key: "well_gate_hinge" });
+      }
+      if (w.deliverables.includes("ladder")) {
+        for (const [k, v] of [
+          ["well_ladder_width", w.ladderWidth],
+          ["well_ladder_rungs", w.ladderRungs],
+          ["well_ladder_spacing", w.ladderSpacing],
+          ["well_ladder_standoff", w.ladderStandoff],
+        ] as const) if (!has(v)) gaps.push({ key: k });
+      }
+      if (w.deliverables.includes("grate")) {
+        if (!has(w.grateBearing)) gaps.push({ key: "well_grate_bearing" });
+        if (!has(w.grateInfill)) gaps.push({ key: "well_grate_infill" });
+        if (!has(w.grateLoad)) gaps.push({ key: "well_grate_load" });
+      }
+    }
+  } else if (shape === "spiral") {
     if (!data.spiral || !has(data.spiral.floorToFloor)) gaps.push({ key: "floor_to_floor" });
     if (!data.spiral || !has(data.spiral.diameter)) gaps.push({ key: "diameter" });
   } else if (shape === "custom") {
@@ -647,12 +831,13 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   });
 
   // materials the shop cannot order without
-  if (shape !== "wall_rail" && !has(data.materials.post)) gaps.push({ key: "mat_post" });
-  if (!has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
+  if (shape !== "wall_rail" && (!isWell || wellGuard) && !has(data.materials.post)) gaps.push({ key: "mat_post" });
+  if ((!isWell || wellGuard) && !has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
   if (!has(data.materials.finish)) gaps.push({ key: "mat_finish" });
   if (
     (data.rail.kind === "Guardrail" || data.rail.kind === "Both") &&
     shape !== "wall_rail" &&
+    (!isWell || wellGuard) &&
     !has(data.materials.picket)
   ) {
     gaps.push({ key: "mat_picket" });
@@ -660,13 +845,14 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 
   // Every rail piece: how long is it and how does EACH end attach? At least
   // one span, both terminations defined, methods valid for their substrate.
-  if (data.spans.length === 0) {
+  const skipSpans = isWell && !wellGuard;
+  if (data.spans.length === 0 && !skipSpans) {
     gaps.push({ key: "span_missing" });
   }
   const termPhotos = new Set(data.photos.map((p) => p.slot));
   const postIds = new Set(data.posts.map((p) => p.id));
   const spanIds = new Set(data.spans.map((sp) => sp.id));
-  data.spans.forEach((sp, i) => {
+  (skipSpans ? [] : data.spans).forEach((sp, i) => {
     const tag = `#${i + 1}`;
     if (!has(sp.topSpan)) gaps.push({ key: "span_top", detail: tag });
     const anyMolding = sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "";

@@ -13,9 +13,10 @@ import type {
   PostMeasure,
   RampSegment,
   SpiralData,
+  WellData,
 } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
-import { parseMeas, sortPlatPosts } from "@/lib/shop/measure-checks";
+import { formatIn, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
 export { sortPlatPosts };
 
 const RUN = 46;
@@ -70,6 +71,13 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
       ["side", "sectionView"],
     ];
   if (shape === "custom") return [["plan", "planView"]];
+  // A well is read from above for the footprint and in section for the wall
+  // profile — the section is where the 4" gap problem is actually visible.
+  if (shape === "window_well")
+    return [
+      ["plan", "planView"],
+      ["side", "sectionView"],
+    ];
   if (shape === "ramp")
     return [
       ["side", "sideView"],
@@ -112,6 +120,12 @@ export default function Sketch({
   const p = light ? LIGHT : DARK;
 
   if (shape === "custom") return <CustomPlanSketch data={data} p={p} lang={lang} />;
+  if (shape === "window_well")
+    return view === "plan" ? (
+      <WellPlanSketch well={data.well} p={p} lang={lang} />
+    ) : (
+      <WellSectionSketch well={data.well} p={p} lang={lang} />
+    );
   if (shape === "spiral")
     return view === "front" ? (
       <SpiralSketch spiral={data.spiral} p={p} lang={lang} />
@@ -1581,6 +1595,261 @@ function SpiralSketch({
       <text x={250} y={106} fontSize={9} fill={p.dim}>
         {mt(lang, "treadsCount")}: {treads}
       </text>
+    </svg>
+  );
+}
+
+// ---- Window / egress well --------------------------------------------------
+
+// Plan: the well box against the house, with the gate opening and the ladder
+// marked where they were measured.
+function WellPlanSketch({ well, p, lang }: { well: WellData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 258;
+  const houseY = 34; // face of the house wall
+  const wellL = 40;
+  const wellR = W - 40;
+  const wellB = 186;
+  const th = 11; // drawn wall thickness
+
+  const has = (k: keyof WellData) => {
+    const val = well?.[k];
+    return typeof val === "string" && val.trim() !== "";
+  };
+  const d = (k: keyof WellData) => v(typeof well?.[k] === "string" ? (well[k] as string) : "", p);
+  const wants = (k: string) => !!well?.deliverables.includes(k as never);
+
+  const gateW = 74;
+  const gateX = (wellL + wellR) / 2 - gateW / 2;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 320 }}>
+      {/* house wall, hatched */}
+      <defs>
+        <pattern id="wellHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke={p.ghost} strokeWidth="2.5" />
+        </pattern>
+      </defs>
+      <rect x={0} y={0} width={W} height={houseY} fill="url(#wellHatch)" stroke={p.line} strokeWidth={1} />
+      <text x={8} y={houseY - 9} fontSize={8.5} fontWeight={700} fill={p.dim}>
+        {mt(lang, "houseWall").toUpperCase()}
+      </text>
+
+      {/* well walls — three sides, open against the house */}
+      <path
+        d={`M ${wellL} ${houseY} L ${wellL} ${wellB} L ${wellR} ${wellB} L ${wellR} ${houseY}`}
+        fill="none"
+        stroke={p.line}
+        strokeWidth={2.5}
+      />
+      <path
+        d={`M ${wellL + th} ${houseY} L ${wellL + th} ${wellB - th} L ${wellR - th} ${wellB - th} L ${wellR - th} ${houseY}`}
+        fill="none"
+        stroke={p.line}
+        strokeWidth={1.4}
+      />
+
+      {/* the basement window, in the foundation */}
+      <rect x={wellL + 34} y={houseY - 4} width={wellR - wellL - 68} height={8} fill={p.ghost} stroke={p.line} strokeWidth={1.4} />
+      <text x={(wellL + wellR) / 2} y={houseY + 20} fontSize={8} textAnchor="middle" fill={p.dim}>
+        {mt(lang, "wellWindow")} {d("windowW").text}
+      </text>
+
+      {/* ladder, drawn against the house below the window */}
+      {wants("ladder") && (
+        <g>
+          {[0, 1, 2].map((i) => (
+            <line key={i} x1={wellL + 46} y1={houseY + 34 + i * 13} x2={wellL + 46 + 44} y2={houseY + 34 + i * 13} stroke={p.post} strokeWidth={2} />
+          ))}
+          <line x1={wellL + 46} y1={houseY + 30} x2={wellL + 46} y2={houseY + 34 + 2 * 13 + 4} stroke={p.post} strokeWidth={1.6} />
+          <line x1={wellL + 90} y1={houseY + 30} x2={wellL + 90} y2={houseY + 34 + 2 * 13 + 4} stroke={p.post} strokeWidth={1.6} />
+          <text x={wellL + 68} y={houseY + 34 + 3 * 13 + 6} fontSize={8} textAnchor="middle" fill={p.post}>
+            {mt(lang, "wellLadder")}
+          </text>
+        </g>
+      )}
+
+      {/* grate hatching over the opening */}
+      {wants("grate") && !wants("guard") && (
+        <g>
+          {Array.from({ length: 7 }, (_, i) => (
+            <line key={i} x1={wellL + th + 6 + i * ((wellR - wellL - 2 * th - 12) / 6)} y1={houseY + 4}
+              x2={wellL + th + 6 + i * ((wellR - wellL - 2 * th - 12) / 6)} y2={wellB - th - 4}
+              stroke={p.ghost} strokeWidth={1.6} />
+          ))}
+          <text x={wellR - th - 6} y={wellB - th - 10} fontSize={8} textAnchor="end" fill={p.dim}>
+            {mt(lang, "wellGrate")}
+          </text>
+        </g>
+      )}
+
+      {/* guard line along the top of the wall, with the gate opening */}
+      {wants("guard") && (
+        <g>
+          <line x1={wellL} y1={wellB} x2={wants("gate") ? gateX : wellR} y2={wellB} stroke={p.post} strokeWidth={3.5} />
+          {wants("gate") && <line x1={gateX + gateW} y1={wellB} x2={wellR} y2={wellB} stroke={p.post} strokeWidth={3.5} />}
+          <line x1={wellL} y1={houseY} x2={wellL} y2={wellB} stroke={p.post} strokeWidth={3.5} />
+          <line x1={wellR} y1={houseY} x2={wellR} y2={wellB} stroke={p.post} strokeWidth={3.5} />
+          {/* end posts where the guard meets the house — the 4" problem */}
+          <circle cx={wellL} cy={houseY + 3} r={4.5} fill={p.post} />
+          <circle cx={wellR} cy={houseY + 3} r={4.5} fill={p.post} />
+          {wants("gate") && (
+            <g>
+              <path d={`M ${gateX} ${wellB} A ${gateW} ${gateW} 0 0 1 ${gateX} ${wellB - gateW}`}
+                fill="none" stroke={p.ghost} strokeWidth={1.2} strokeDasharray="4 3" />
+              <text x={gateX + gateW / 2} y={wellB + 16} fontSize={8.5} textAnchor="middle" fill={p.post}>
+                {mt(lang, "wellGate")} {d("gateWidth").text}
+              </text>
+            </g>
+          )}
+        </g>
+      )}
+
+      {/* dimensions */}
+      <line x1={wellL} y1={wellB + 40} x2={wellR} y2={wellB + 40} stroke={p.dim} strokeWidth={1} />
+      <text x={(wellL + wellR) / 2} y={wellB + 52} fontSize={9} textAnchor="middle" fill={d("lengthAtHouse").fill}>
+        {d("lengthAtHouse").text}
+      </text>
+      <line x1={wellR + 16} y1={houseY} x2={wellR + 16} y2={wellB} stroke={p.dim} strokeWidth={1} />
+      <text x={wellR + 20} y={(houseY + wellB) / 2} fontSize={9} fill={d("projection").fill}>
+        {d("projection").text}
+      </text>
+      {(has("insideLength") || has("insideProjection")) && (
+        <text x={wellL + th + 6} y={wellB - th - 10} fontSize={8} fill={p.dim}>
+          {mt(lang, "wellInside")} {d("insideLength").text} × {d("insideProjection").text}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+// Section: the house wall in profile with every measured band, the well below
+// and the guard post standing off. This is the drawing that shows why a post
+// set off the trim can still fail at the siding behind it.
+function WellSectionSketch({ well, p, lang }: { well: WellData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 268;
+  const proudX = 150; // the most-proud wall face (the datum)
+  const topY = 96; // top of the well wall
+  const floorY = 214;
+  const wellOutX = 300;
+
+  const d = (k: keyof WellData) => v(typeof well?.[k] === "string" ? (well[k] as string) : "", p);
+  const wants = (k: string) => !!well?.deliverables.includes(k as never);
+  const cl = wellClearance(well);
+
+  // Bands drawn as steps back from the proud face; 1" ≈ 9px, capped so a big
+  // number cannot run off the drawing.
+  const SCALE = 9;
+  const bands = (well?.bands || []).map((b) => ({
+    label: b.label,
+    back: Math.min(40, Math.max(0, parseMeas(b.setback) ?? 0)) * SCALE,
+  }));
+
+  const postX = cl?.actual !== null && cl?.actual !== undefined ? proudX - Math.min(60, cl.actual * SCALE) : proudX - 34;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 330 }}>
+      <defs>
+        <pattern id="wellHatch2" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke={p.ghost} strokeWidth="2.5" />
+        </pattern>
+      </defs>
+
+      {/* the house, to the left; wall face steps out at the proud band */}
+      <rect x={0} y={0} width={proudX} height={H} fill="url(#wellHatch2)" />
+      <text x={8} y={16} fontSize={8.5} fontWeight={700} fill={p.dim}>
+        {mt(lang, "houseWall").toUpperCase()}
+      </text>
+
+      {/* each measured band, stepped back from the proud face */}
+      {bands.length === 0 ? (
+        <line x1={proudX} y1={0} x2={proudX} y2={topY} stroke={p.line} strokeWidth={2} />
+      ) : (
+        bands.map((b, i) => {
+          // Start below the HOUSE WALL caption so labels never sit under it.
+          const BAND_TOP = 26;
+          const bandH = (topY - BAND_TOP) / bands.length;
+          const y0 = BAND_TOP + i * bandH;
+          const x = proudX - b.back;
+          return (
+            <g key={i}>
+              {i === 0 && <line x1={proudX} y1={0} x2={proudX} y2={y0} stroke={p.line} strokeWidth={2} />}
+              <rect x={x} y={y0} width={proudX - x} height={bandH} fill="#00000022" />
+              <line x1={x} y1={y0} x2={x} y2={y0 + bandH} stroke={p.line} strokeWidth={2} />
+              <line x1={x} y1={y0 + bandH} x2={proudX} y2={y0 + bandH} stroke={p.line} strokeWidth={1} />
+              <text x={6} y={y0 + bandH / 2 + 3} fontSize={7.5} fill={p.dim}>
+                {b.label || `#${i + 1}`}
+              </text>
+            </g>
+          );
+        })
+      )}
+      {/* the well: top of wall, far wall, floor */}
+      <line x1={proudX} y1={topY} x2={wellOutX} y2={topY} stroke={p.line} strokeWidth={2.5} />
+      <line x1={wellOutX} y1={topY} x2={wellOutX} y2={floorY} stroke={p.line} strokeWidth={2.5} />
+      <line x1={proudX} y1={floorY} x2={wellOutX} y2={floorY} stroke={p.line} strokeWidth={2.5} />
+
+      {/* window in the foundation */}
+      <rect x={proudX} y={topY + 18} width={7} height={62} fill={p.ghost} stroke={p.line} strokeWidth={1.2} />
+      <text x={proudX + 12} y={topY + 34} fontSize={8} fill={d("windowH").fill}>
+        {mt(lang, "wellWindow")} {d("windowH").text}
+      </text>
+
+      {/* ladder rungs against the house */}
+      {wants("ladder") && (
+        <g>
+          {[0, 1, 2, 3].map((i) => (
+            <line key={i} x1={proudX + 10} y1={topY + 26 + i * 26} x2={proudX + 34} y2={topY + 26 + i * 26} stroke={p.post} strokeWidth={2.5} />
+          ))}
+          <text x={proudX + 40} y={floorY - 8} fontSize={8} fill={p.post}>
+            {mt(lang, "wellRungSpacing")} {d("ladderSpacing").text}
+          </text>
+        </g>
+      )}
+
+      {/* depth */}
+      <line x1={wellOutX + 14} y1={topY} x2={wellOutX + 14} y2={floorY} stroke={p.dim} strokeWidth={1} />
+      <text x={wellOutX + 18} y={(topY + floorY) / 2} fontSize={9} fill={d("depth").fill}>
+        {d("depth").text}
+      </text>
+
+      {/* guard: the end post standing off the proud face */}
+      {wants("guard") && (
+        <g>
+          <line x1={postX} y1={topY} x2={postX} y2={topY - 72} stroke={p.post} strokeWidth={4} />
+          <text x={postX + 8} y={topY - 74} fontSize={8.5} fill={p.post}>
+            {mt(lang, "wellPost")}
+          </text>
+          {/* measured gap, off the proud face */}
+          <line x1={postX} y1={topY - 30} x2={proudX} y2={topY - 30} stroke={p.dim} strokeWidth={1} />
+          <text x={postX + 6} y={topY - 34} fontSize={8} fill={d("postToWall").fill}>
+            {d("postToWall").text}
+          </text>
+          {/* the gap that actually governs, back at the deepest band */}
+          {cl && cl.worst !== null && (
+            <line x1={postX} y1={topY - 14} x2={proudX - Math.min(40, cl.maxSetback * SCALE)} y2={topY - 14}
+              stroke={cl.worst > cl.sphere ? "#dc2626" : "#16a34a"} strokeWidth={2.5} />
+          )}
+        </g>
+      )}
+
+      {/* guard height */}
+      {wants("guard") && (
+        <text x={postX + 8} y={topY - 56} fontSize={8} fill={d("guardHeight").fill}>
+          {d("guardHeight").text}
+        </text>
+      )}
+
+      {/* The verdict gets its own line at the foot of the drawing, where it
+          cannot collide with the wall bands. */}
+      {wants("guard") && cl && cl.worst !== null && (
+        <text x={4} y={H - 5} fontSize={9} fontWeight={700}
+          fill={cl.worst > cl.sphere ? "#dc2626" : "#16a34a"}>
+          {cl.worst > cl.sphere ? "\u2717" : "\u2713"} {formatIn(cl.worst)} {mt(lang, "wellAt")}{" "}
+          {cl.deepest || "—"} ({mt(lang, "wellMaxWord")} {formatIn(cl.sphere)})
+        </text>
+      )}
     </svg>
   );
 }

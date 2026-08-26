@@ -33,6 +33,11 @@ import {
   type RampSegment,
   type CurveSegment,
   type Termination,
+  type WellDeliverable,
+  type WellData,
+  type WallBand,
+  WELL_DELIVERABLES,
+  newWallBand,
 } from "@/lib/shop/measure";
 import {
   runChecks,
@@ -40,6 +45,7 @@ import {
   formatIn,
   orderedPosts,
   mergeTolerances,
+  wellClearance,
   type CheckResult,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
@@ -367,6 +373,27 @@ export default function MeasureEditor({
     setSelectedPostId(id);
   }
 
+  function setWell(fn: (w: WellData) => void) {
+    set((d) => {
+      if (d.well) fn(d.well);
+    });
+  }
+
+  function toggleDeliverable(k: WellDeliverable) {
+    setWell((w) => {
+      w.deliverables = w.deliverables.includes(k)
+        ? w.deliverables.filter((x) => x !== k)
+        : [...w.deliverables, k];
+    });
+  }
+
+  function setBand(id: string, key: keyof WallBand, value: string) {
+    setWell((w) => {
+      const b = w.bands.find((x) => x.id === id);
+      if (b && key !== "id") b[key] = value;
+    });
+  }
+
   function defaultSide(): "left" | "right" {
     return dataRef.current.datums.orientation === "right_wall" ? "left" : "right";
   }
@@ -571,6 +598,11 @@ export default function MeasureEditor({
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
   const gapStage = (key: string): EditorStage => {
     if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
+    if (key.startsWith("well_")) {
+      if (key.startsWith("well_grate") || key.startsWith("well_ladder") || key.startsWith("well_gate")) return "specs";
+      if (key.startsWith("well_wall") || key === "well_post_to_wall" || key === "well_band_fields") return "locations";
+      return "setup";
+    }
     if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
     if (key.startsWith("post")) return "locations";
     if (key.startsWith("span") || key.startsWith("term") ||
@@ -589,6 +621,10 @@ export default function MeasureEditor({
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
+  const isWell = sheet.shape === "window_well";
+  const well = data.well;
+  const wellWants = (k: WellDeliverable) => !!well?.deliverables.includes(k);
+  const clearance = wellClearance(well);
   const flights = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "flight") as { seg: FlightSegment; i: number }[];
@@ -822,7 +858,210 @@ export default function MeasureEditor({
           </div>
         </Card>}
 
-        {!isSpiral && !isWallRail && !isCustom && (
+        {isWell && well && (
+          <>
+            <Card stage="setup" title={`🪟 ${mt(lang, "wellTitle")}`}>
+              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "wellHint")}</p>
+              <div className="mb-4">
+                <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellDeliverables")}</div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {WELL_DELIVERABLES.map((k) => {
+                    const on = well.deliverables.includes(k);
+                    return (
+                      <button key={k} type="button" onClick={() => toggleDeliverable(k)}
+                        className={`rounded-xl border p-3 text-sm font-bold ${on ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
+                        {on ? "✓ " : ""}{mt(lang, `wellD_${k}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <Grid>
+                <MSelect label={mt(lang, "wellConstruction")} value={well.construction} lang={lang}
+                  options={["poured_concrete", "block", "corrugated", "stone", "timber"]}
+                  labels={Object.fromEntries(["poured_concrete", "block", "corrugated", "stone", "timber"].map((k) => [k, mt(lang, `wellC_${k}`)]))}
+                  onChange={(v) => setWell((w) => void (w.construction = v as WellData["construction"]))} />
+                <MInput label={mt(lang, "wellLengthAtHouse")} value={well.lengthAtHouse}
+                  onChange={(v) => setWell((w) => void (w.lengthAtHouse = v))} />
+                <MInput label={mt(lang, "wellProjection")} value={well.projection}
+                  onChange={(v) => setWell((w) => void (w.projection = v))} />
+                <MInput label={mt(lang, "wellWallThickness")} value={well.wallThickness}
+                  onChange={(v) => setWell((w) => void (w.wallThickness = v))} />
+                <MInput label={mt(lang, "wellInsideLength")} value={well.insideLength}
+                  onChange={(v) => setWell((w) => void (w.insideLength = v))} />
+                <MInput label={mt(lang, "wellInsideProjection")} value={well.insideProjection}
+                  onChange={(v) => setWell((w) => void (w.insideProjection = v))} />
+                <MInput label={mt(lang, "wellDepth")} value={well.depth}
+                  onChange={(v) => setWell((w) => void (w.depth = v))} />
+                <MInput label={mt(lang, "wellTopToGrade")} placeholder="—" value={well.topToGrade}
+                  onChange={(v) => setWell((w) => void (w.topToGrade = v))} />
+                <MInput label={mt(lang, "wellDiagA")} value={well.diagA}
+                  onChange={(v) => setWell((w) => void (w.diagA = v))} />
+                <MInput label={mt(lang, "wellDiagB")} value={well.diagB}
+                  onChange={(v) => setWell((w) => void (w.diagB = v))} />
+              </Grid>
+              <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellWindowTitle")}</div>
+              <Grid>
+                <MInput label={mt(lang, "wellWindowW")} value={well.windowW}
+                  onChange={(v) => setWell((w) => void (w.windowW = v))} />
+                <MInput label={mt(lang, "wellWindowH")} value={well.windowH}
+                  onChange={(v) => setWell((w) => void (w.windowH = v))} />
+                <MInput label={mt(lang, "wellSillToFloor")} value={well.sillToFloor}
+                  onChange={(v) => setWell((w) => void (w.sillToFloor = v))} />
+                <MSelect label={mt(lang, "wellWindowSwing")} value={well.windowSwing} lang={lang}
+                  options={["in", "out", "slider", "fixed"]}
+                  labels={{ in: mt(lang, "wellSwingIn"), out: mt(lang, "wellSwingOut"), slider: mt(lang, "wellSlider"), fixed: mt(lang, "wellFixed") }}
+                  onChange={(v) => setWell((w) => void (w.windowSwing = v as WellData["windowSwing"]))} />
+              </Grid>
+            </Card>
+
+            {wellWants("guard") && (
+              <Card stage="locations" title={`📐 ${mt(lang, "wellWallTitle")}`}>
+                <p className="mb-3 text-xs text-neutral-400">{mt(lang, "wellWallHint")}</p>
+                <Grid>
+                  <MInput label={mt(lang, "wellWallRef")} value={well.wallRef}
+                    onChange={(v) => setWell((w) => void (w.wallRef = v))} />
+                  <MInput label={mt(lang, "wellMaxSphere")} value={well.maxSphere}
+                    onChange={(v) => setWell((w) => void (w.maxSphere = v))} />
+                </Grid>
+
+                <div className="mt-4 mb-2 flex items-center">
+                  <span className="text-sm font-bold text-neutral-300">{mt(lang, "wellBands")}</span>
+                  <button type="button"
+                    onClick={() => setWell((w) => void w.bands.push(newWallBand()))}
+                    className="ml-auto rounded-full border border-amber-600 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300">
+                    + {mt(lang, "wellAddBand")}
+                  </button>
+                </div>
+                {well.bands.length === 0 && (
+                  <p className="mb-3 text-sm text-neutral-500">{mt(lang, "wellNoBands")}</p>
+                )}
+                <div className="space-y-3">
+                  {well.bands.map((b, i) => (
+                    <div key={b.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+                      <div className="mb-2 flex items-center">
+                        <span className="font-bold text-amber-400">{mt(lang, "wellBand")} {i + 1}</span>
+                        <button type="button"
+                          onClick={() => setWell((w) => void (w.bands = w.bands.filter((x) => x.id !== b.id)))}
+                          className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
+                          ✕ {mt(lang, "removePost")}
+                        </button>
+                      </div>
+                      <Grid>
+                        <MInput label={mt(lang, "wellBandLabel")} value={b.label}
+                          onChange={(v) => setBand(b.id, "label", v)} />
+                        <MInput label={mt(lang, "wellBandSetback")} value={b.setback}
+                          onChange={(v) => setBand(b.id, "setback", v)} />
+                        <MInput label={mt(lang, "wellBandFrom")} placeholder="—" value={b.fromTop}
+                          onChange={(v) => setBand(b.id, "fromTop", v)} />
+                        <MInput label={mt(lang, "wellBandTo")} placeholder="—" value={b.toTop}
+                          onChange={(v) => setBand(b.id, "toTop", v)} />
+                      </Grid>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4">
+                  <MInput label={mt(lang, "wellPostToWall")} value={well.postToWall}
+                    onChange={(v) => setWell((w) => void (w.postToWall = v))} />
+                </div>
+
+                {/* The answer: where the post is allowed to sit. */}
+                {clearance && (
+                  <div className={`mt-4 rounded-xl border p-4 ${clearance.impossible || (clearance.worst !== null && clearance.worst > clearance.sphere) ? "border-red-700 bg-red-950/40" : "border-green-700 bg-green-950/30"}`}>
+                    <div className="text-sm font-bold text-neutral-200">{mt(lang, "wellSolverTitle")}</div>
+                    {clearance.impossible ? (
+                      <p className="mt-2 text-sm text-red-300">{mt(lang, "wellSolverImpossible")}</p>
+                    ) : (
+                      <>
+                        <p className="mt-2 text-2xl font-black text-amber-300">
+                          {formatIn(clearance.allowed)}
+                        </p>
+                        <p className="text-xs text-neutral-400">
+                          {mt(lang, "wellSolverMax")} {well.wallRef || mt(lang, "wellProudFace")}
+                        </p>
+                        <p className="mt-2 text-xs text-neutral-400">
+                          {formatIn(clearance.sphere)} − {formatIn(clearance.maxSetback)} ({clearance.deepest || "—"})
+                        </p>
+                        {clearance.worst !== null && (
+                          <p className={`mt-2 text-sm font-bold ${clearance.worst > clearance.sphere ? "text-red-300" : "text-green-300"}`}>
+                            {clearance.worst > clearance.sphere ? "✗" : "✓"} {mt(lang, "wellSolverActual")} {formatIn(clearance.worst)} {mt(lang, "wellAt")} {clearance.deepest || "—"}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+                <Grid>
+                  <MInput label={mt(lang, "wellGuardHeight")} value={well.guardHeight}
+                    onChange={(v) => setWell((w) => void (w.guardHeight = v))} />
+                </Grid>
+              </Card>
+            )}
+
+            {(wellWants("gate") || wellWants("ladder") || wellWants("grate")) && (
+              <Card stage="specs" title={`🔧 ${mt(lang, "wellPartsTitle")}`}>
+                {wellWants("gate") && (
+                  <div className="mb-4">
+                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_gate")}</div>
+                    <Grid>
+                      <MInput label={mt(lang, "wellGateWidth")} value={well.gateWidth}
+                        onChange={(v) => setWell((w) => void (w.gateWidth = v))} />
+                      <ChipRow label={mt(lang, "wellGateSwing")} value={well.gateSwing}
+                        options={[["in", mt(lang, "wellSwingIn")], ["out", mt(lang, "wellSwingOut")]]}
+                        onChange={(v) => setWell((w) => void (w.gateSwing = v as WellData["gateSwing"]))} />
+                      <ChipRow label={mt(lang, "wellGateHinge")} value={well.gateHinge}
+                        options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
+                        onChange={(v) => setWell((w) => void (w.gateHinge = v as WellData["gateHinge"]))} />
+                      <MInput label={mt(lang, "wellGateLatch")} placeholder="—" value={well.gateLatch}
+                        onChange={(v) => setWell((w) => void (w.gateLatch = v))} />
+                    </Grid>
+                  </div>
+                )}
+                {wellWants("ladder") && (
+                  <div className="mb-4">
+                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_ladder")}</div>
+                    <Grid>
+                      <MInput label={mt(lang, "wellLadderWidth")} value={well.ladderWidth}
+                        onChange={(v) => setWell((w) => void (w.ladderWidth = v))} />
+                      <MInput label={mt(lang, "wellLadderRungs")} value={well.ladderRungs}
+                        onChange={(v) => setWell((w) => void (w.ladderRungs = v))} />
+                      <MInput label={mt(lang, "wellLadderSpacing")} value={well.ladderSpacing}
+                        onChange={(v) => setWell((w) => void (w.ladderSpacing = v))} />
+                      <MInput label={mt(lang, "wellLadderStandoff")} value={well.ladderStandoff}
+                        onChange={(v) => setWell((w) => void (w.ladderStandoff = v))} />
+                      <MInput label={mt(lang, "wellLadderTopExt")} placeholder="—" value={well.ladderTopExt}
+                        onChange={(v) => setWell((w) => void (w.ladderTopExt = v))} />
+                    </Grid>
+                  </div>
+                )}
+                {wellWants("grate") && (
+                  <div>
+                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_grate")}</div>
+                    <Grid>
+                      <MSelect label={mt(lang, "wellGrateBearing")} value={well.grateBearing} lang={lang}
+                        options={["surface", "recessed", "angle_frame"]}
+                        labels={Object.fromEntries(["surface", "recessed", "angle_frame"].map((k) => [k, mt(lang, `wellGB_${k}`)]))}
+                        onChange={(v) => setWell((w) => void (w.grateBearing = v as WellData["grateBearing"]))} />
+                      <MInput label={mt(lang, "wellGrateInfill")} value={well.grateInfill}
+                        onChange={(v) => setWell((w) => void (w.grateInfill = v))} />
+                      <MInput label={mt(lang, "wellGrateLoad")} value={well.grateLoad}
+                        onChange={(v) => setWell((w) => void (w.grateLoad = v))} />
+                    </Grid>
+                    <label className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
+                      <input type="checkbox" checked={well.grateHinged}
+                        onChange={(e) => setWell((w) => void (w.grateHinged = e.target.checked))}
+                        className="h-5 w-5 accent-amber-500" />
+                      {mt(lang, "wellGrateHinged")}
+                    </label>
+                  </div>
+                )}
+              </Card>
+            )}
+          </>
+        )}
+
+        {!isSpiral && !isWallRail && !isCustom && !isWell && (
           <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
             <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
             <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
@@ -952,9 +1191,11 @@ export default function MeasureEditor({
             <div className="text-xs text-neutral-500 mb-2">
               {mt(
                 lang,
-                sheet.shape === "level_run" || sheet.shape === "ramp"
-                  ? "sketchHintLevel"
-                  : "sketchHintPosts"
+                isWell
+                  ? "sketchHintWell"
+                  : sheet.shape === "level_run" || sheet.shape === "ramp"
+                    ? "sketchHintLevel"
+                    : "sketchHintPosts"
               )}
             </div>
           )}
@@ -1336,7 +1577,7 @@ export default function MeasureEditor({
         ))}
 
         {/* Posts */}
-        {!isSpiral && !isWallRail && !isCustom && (
+        {!isSpiral && !isWallRail && !isCustom && !isWell && (
           <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
             {posts.length === 0 && (
               <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
@@ -1462,6 +1703,7 @@ export default function MeasureEditor({
         )}
 
         {/* Railing */}
+        {(!isWell || wellWants("guard")) && (
         <Card stage="posts" title={mt(lang, "railSection")}>
           <Grid>
             <MSelect label={mt(lang, "railKind")} value={data.rail.kind}
@@ -1486,8 +1728,10 @@ export default function MeasureEditor({
             )}
           </Grid>
         </Card>
+        )}
 
         {/* Rail spans — every piece: length + BOTH end terminations */}
+        {(!isWell || wellWants("guard")) && (
         <Card stage="posts" title={`🔗 ${mt(lang, "spansTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "spansHint")}</div>
           <div className="space-y-4">
@@ -1553,6 +1797,7 @@ export default function MeasureEditor({
             {mt(lang, "addSpan")}
           </button>
         </Card>
+        )}
 
         {/* Materials */}
         <Card stage="specs" title={mt(lang, "materialsTitle")}>
