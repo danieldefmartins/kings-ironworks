@@ -58,6 +58,8 @@ import {
   orderedPosts,
   mergeTolerances,
   wellClearance,
+  sphereClearance,
+  parseMeas,
   type CheckResult,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
@@ -84,12 +86,16 @@ const LangCtx = createContext<string>("en");
 type EditorStage = "setup" | "posts" | "level" | "steps" | "locations" | "specs" | "photos" | "review";
 const StageCtx = createContext<EditorStage>("setup");
 
+// The order a measurer actually works in on site: read the site and what is
+// already there, decide where the posts go and dimension them off the first
+// step, then measure the steps themselves. Everything the shop needs but the
+// tape does not comes afterwards.
 const EDITOR_STAGES: { id: EditorStage; icon: string; labelKey: string }[] = [
   { id: "setup", icon: "1", labelKey: "stageSite" },
-  { id: "posts", icon: "2", labelKey: "stagePostsBasic" },
-  { id: "level", icon: "3", labelKey: "stageLevelCheck" },
-  { id: "steps", icon: "4", labelKey: "stageSteps" },
-  { id: "locations", icon: "5", labelKey: "stageAnglesLocations" },
+  { id: "locations", icon: "2", labelKey: "stageAnglesLocations" },
+  { id: "steps", icon: "3", labelKey: "stageSteps" },
+  { id: "level", icon: "4", labelKey: "stageLevelCheck" },
+  { id: "posts", icon: "5", labelKey: "stagePostsBasic" },
   { id: "specs", icon: "6", labelKey: "stageShop" },
   { id: "photos", icon: "7", labelKey: "stagePhotos" },
   { id: "review", icon: "8", labelKey: "stageReview" },
@@ -1703,6 +1709,8 @@ export default function MeasureEditor({
                         onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
                     </>}
                   </Grid>
+                  <SkirtSolver lang={lang} po={po}
+                    onGap={(v) => setPost(set, po.id, "infillGap", v)} />
                 </div>
               ))}
             </div>
@@ -2975,6 +2983,45 @@ function setPost(
 }
 
 // ---- Small UI pieces -------------------------------------------------------
+
+// A skirt at the base of an existing column makes the gap above it bigger
+// than the one the measurer took off the skirt. This asks for that gap and
+// says, in inches, how big it is allowed to be.
+function SkirtSolver({
+  lang,
+  po,
+  onGap,
+}: {
+  lang: string;
+  po: PostMeasure;
+  onGap: (v: string) => void;
+}) {
+  const skirt = parseMeas(po.skirtProjection);
+  if (skirt === null || skirt <= 0) return null;
+  const cl = sphereClearance(parseMeas(po.infillGap), skirt);
+  const bad = cl.impossible || cl.fails;
+  return (
+    <div className={`mt-3 rounded-xl border p-3 ${bad ? "border-red-700 bg-red-950/40" : "border-green-800 bg-green-950/25"}`}>
+      <p className="mb-2 text-xs text-neutral-300">{mt(lang, "skirtSolverHint")}</p>
+      <MInput help="infillGap" label={mt(lang, "infillGap")} value={po.infillGap} onChange={onGap} />
+      {cl.impossible ? (
+        <p className="mt-2 text-sm font-bold text-red-300">{mt(lang, "skirtImpossible")}</p>
+      ) : (
+        <>
+          <p className="mt-2 text-xl font-black text-amber-300">{formatIn(cl.allowed)}</p>
+          <p className="text-[11px] text-neutral-400">
+            {mt(lang, "skirtSolverMax")} · {formatIn(cl.sphere)} − {formatIn(cl.setback)}
+          </p>
+          {cl.real !== null && (
+            <p className={`mt-1 text-sm font-bold ${cl.fails ? "text-red-300" : "text-green-300"}`}>
+              {cl.fails ? "✗" : "✓"} {mt(lang, "skirtSolverReal")} {formatIn(cl.real)}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 function ConditionFields({
   lang,

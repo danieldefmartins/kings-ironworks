@@ -104,6 +104,7 @@ const PostSchema = z.object({
   skirtHeight: meas.optional(),
   columnToWall: meas.optional(),
   columnToPlatformEdge: meas.optional(),
+  infillGap: meas.optional(),
   clipDetail: z.string().max(300).optional(),
 });
 const SpiralSchema = z

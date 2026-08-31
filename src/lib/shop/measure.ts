@@ -92,6 +92,11 @@ export interface PostMeasure {
   existingD: string;
   skirtProjection: string; // molding/skirt projection beyond the structural post face
   skirtHeight: string;
+  // Gap measured from the infill (end picket or rail end) to the face of that
+  // skirt — the surface that sticks out furthest. Above the skirt the column
+  // steps back, so the real gap up there is this plus the skirt projection,
+  // which is what an inspector's sphere finds. See sphereClearance().
+  infillGap: string;
   columnToWall: string; // clear distance from existing column/post face to wall
   columnToPlatformEdge: string; // clear distance from column/post face to platform edge
   clipDetail: string;
@@ -1207,6 +1212,7 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
     existingD: "",
     skirtProjection: "",
     skirtHeight: "",
+    infillGap: "",
     columnToWall: "",
     columnToPlatformEdge: "",
     clipDetail: "",
@@ -1248,6 +1254,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       existingD: p.existingD ?? "",
       skirtProjection: p.skirtProjection ?? "",
       skirtHeight: p.skirtHeight ?? "",
+      infillGap: p.infillGap ?? "",
       columnToWall: p.columnToWall ?? "",
       columnToPlatformEdge: p.columnToPlatformEdge ?? "",
       clipDetail: p.clipDetail ?? "",

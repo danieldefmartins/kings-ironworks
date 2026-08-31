@@ -179,6 +179,49 @@ function curveChecks(seg: CurveSegment, tol: Tolerances, tag?: string): CheckRes
 }
 
 
+
+// ---- The sphere rule against a surface that is not one plane ---------------
+//
+// The same trap shows up in two places: a window well guard next to a house
+// wall with a water table trim, and a stair rail next to an existing column
+// with a skirt at its base. In both, the measurer naturally works off the
+// surface that sticks out furthest — the trim, the skirt — and above it the
+// surface steps BACK. The real gap up there is what was measured plus that
+// step-back, and that is what an inspector's sphere finds.
+//
+//     real gap = gap measured to the proud face + how far the face behind sits back
+//     allowed  = sphere - step-back
+//
+// Measure 4" off a 3/4" skirt and you have opened 4 3/4" above it.
+export interface SphereClearance {
+  sphere: number;
+  setback: number; // how far the surface behind sits back from the proud face
+  allowed: number; // the largest gap that may be measured to the proud face
+  measured: number | null;
+  real: number | null; // what the sphere will actually find
+  fails: boolean;
+  impossible: boolean; // the step-back alone busts the sphere
+}
+
+export function sphereClearance(
+  measuredToProud: number | null,
+  setback: number,
+  sphere = 4
+): SphereClearance {
+  const back = Math.max(0, setback);
+  const allowed = sphere - back;
+  const real = measuredToProud === null ? null : measuredToProud + back;
+  return {
+    sphere,
+    setback: back,
+    allowed,
+    measured: measuredToProud,
+    real,
+    fails: real !== null && real > sphere + 0.0001,
+    impossible: allowed <= 0,
+  };
+}
+
 // ---- Window wells ----------------------------------------------------------
 
 // The 4" sphere rule against a house wall that is not a single plane.
@@ -515,20 +558,53 @@ function balconyChecks(data: MeasureData): CheckResult[] {
   return out;
 }
 
+
+// Existing columns and walls with a skirt or trim at the base: the gap the
+// measurer took off the skirt is not the gap the inspector will find above it.
+function skirtChecks(data: MeasureData, sphere = 4): CheckResult[] {
+  const out: CheckResult[] = [];
+  for (const p of data.posts) {
+    if (p.pointType !== "existing_post" && p.pointType !== "concrete_wall") continue;
+    const skirt = parseMeas(p.skirtProjection);
+    if (skirt === null || skirt <= 0) continue;
+    const cl = sphereClearance(parseMeas(p.infillGap), skirt, sphere);
+    const tag = `${p.pointType === "concrete_wall" ? "wall" : "column"}`;
+    if (cl.impossible) {
+      out.push({ key: "skirt_clearance", level: "red", expected: cl.allowed, actual: cl.measured, delta: null, unit: "in", detail: tag });
+    } else if (cl.measured === null) {
+      out.push({ key: "skirt_clearance", level: "na", expected: cl.allowed, actual: null, delta: null, unit: "in", detail: tag });
+    } else {
+      out.push({
+        key: "skirt_clearance",
+        level: cl.fails ? "red" : "green",
+        expected: cl.allowed,
+        actual: cl.measured,
+        delta: cl.real! - cl.sphere,
+        unit: "in",
+        detail: tag,
+      });
+    }
+  }
+  return out;
+}
+
 export function runChecks(
   data: MeasureData,
   shape: MeasureShape,
   tolIn?: Tolerances
 ): CheckResult[] {
   const tol = tolIn || TOLERANCES;
-  if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol)];
+  // An existing column or wall with a skirt is a hazard wherever posts are
+  // placed, so this rides along with whatever else the shape checks.
+  const skirt = skirtChecks(data);
+  if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol), ...skirt];
   if (shape === "window_well") return wellChecks(data, tol);
   if (shape === "fire_escape") return fireChecks(data, tol);
   if (shape === "gate") return gateChecks(data, tol);
   if (shape === "fence") return fenceChecks(data, tol);
   if (shape === "balcony") return balconyChecks(data);
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
-    return spiralOrLevelChecks(data, shape, tol);
+    return [...spiralOrLevelChecks(data, shape, tol), ...skirt];
   }
 
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
@@ -707,7 +783,7 @@ export function runChecks(
     out.push({ key: "width_var", level: "na", expected: null, actual: null, delta: null, unit: "in" });
   }
 
-  return out;
+  return [...out, ...skirt];
 }
 
 // Span molding math: the top clear span minus the lower clear span must equal
@@ -1170,6 +1246,13 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       if (!has(p.anchor)) gaps.push({ key: "existing_material", detail: tag });
       if (!has(p.existingW) || !has(p.existingD)) gaps.push({ key: "existing_post_size", detail: tag });
       if (!has(p.skirtProjection)) gaps.push({ key: "post_skirt", detail: tag });
+      // A skirt that projects makes the gap above it bigger than the one you
+      // measured, so the measured gap is needed to work out whether the
+      // infill passes. No projection, nothing to work out.
+      const skirt = parseMeas(p.skirtProjection);
+      if (skirt !== null && skirt > 0 && !has(p.infillGap)) {
+        gaps.push({ key: "post_infill_gap", detail: tag });
+      }
     }
     if ((p.pointType === "concrete_wall" || p.pointType === "clip") && !has(p.anchor)) {
       gaps.push({ key: "existing_material", detail: tag });
