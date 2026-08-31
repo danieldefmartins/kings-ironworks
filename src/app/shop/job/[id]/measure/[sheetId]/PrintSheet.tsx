@@ -258,6 +258,9 @@ export default function PrintSheet({
         <span>
           {mt(lang, "orientBanner")}
           {orientation ? ` · ${mt(lang, `orient_${orientation}`)}` : " · ______________"}
+          {data.routing?.setting
+            ? ` · ${mt(lang, data.routing.setting === "interior" ? "routingInterior" : "routingExterior")}`
+            : ""}
         </span>
         <span>
           {mt(lang, "unitsLabel")}:{" "}

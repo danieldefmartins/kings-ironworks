@@ -28,6 +28,7 @@ import {
   type FlightSegment,
   type MeasureData,
   type FinishSpec,
+  type DatumsSpec,
   type MeasureSheet,
   type PlatformSegment,
   type PostMeasure,
@@ -88,6 +89,8 @@ const LangCtx = createContext<string>("en");
 
 type EditorStage = "setup" | "posts" | "level" | "steps" | "locations" | "specs" | "photos" | "review";
 const StageCtx = createContext<EditorStage>("setup");
+// True while the Site step is holding everything back behind the routing card.
+const SetupLockCtx = createContext<boolean>(false);
 
 // The order a measurer actually works in on site: read the site and what is
 // already there, decide where the posts go and dimension them off the first
@@ -806,6 +809,13 @@ export default function MeasureEditor({
     setActiveStage(st);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  // Jumping to a specific missing item must never land on a step that is
+  // holding its content back — the routing card still comes first, but the
+  // item the worker asked for is there too.
+  function jumpToGap(st: EditorStage) {
+    if (st === "setup") setSetupUnlocked(true);
+    goToStage(st);
+  }
   // Nothing measured yet reads as "Start measuring" rather than "Continue".
   const started = sheetProgress(data).filled > 0 || data.photos.length > 0;
 
@@ -878,6 +888,55 @@ export default function MeasureEditor({
   // Datums and the wall/open orientation describe a stair run. A well or a
   // fire escape carries its own reference frame, so the card stays hidden.
   const needsPostReference = !isWallRail && !isCustom && !isSpiral && !isWell && !isFire && !isGate && !isFence && !isBalcony;
+
+  // ---- Early routing --------------------------------------------------------
+  // Which of the routing questions this shape has any use for. A gate has no
+  // stair orientation; a fire escape inspection orders no finish.
+  const routing = data.routing;
+  const asksOrientation = needsPostReference;
+  const asksRailKind = (!isWell || wellWants("guard")) && (!isFire || fireNew);
+  const asksFloorChange = !isWell && !isFire && !isGate && !isFence && !isBalcony;
+  const asksExisting = !isGate && !isFence && !isFire;
+  const asksStdFinish = !isFire || fireNew;
+  const routingChecks: boolean[] = [
+    !!routing.setting,
+    ...(asksRailKind ? [!!data.rail.kind] : []),
+    ...(asksOrientation ? [!!data.datums.orientation] : []),
+    ...(asksExisting ? [!!routing.existing] : []),
+    ...(asksFloorChange ? [!!data.finish.floorChange] : []),
+    ...(asksFloorChange ? [!!data.finish.demoPending] : []),
+    ...(asksStdFinish ? [!!routing.standardFinish] : []),
+  ];
+  const routingAnswered = routingChecks.filter(Boolean).length;
+  const routingTotal = routingChecks.length;
+  const routingDone = routingAnswered === routingTotal;
+  // The routing card collapses once answered; "Show everything anyway" is the
+  // escape hatch for a measurer who wants the whole step regardless.
+  const [routingOpen, setRoutingOpen] = useState(false);
+  const [setupUnlocked, setSetupUnlocked] = useState(false);
+  // A first-run funnel, not a cage: a sheet that already has measurements in
+  // it is never re-gated, and the escape hatch is always on the card.
+  const setupLocked = !routingDone && !setupUnlocked && !started;
+  const showRoutingCard = !routingDone || routingOpen;
+  const setRouting = (fn: (r: typeof routing) => void) => set((d) => fn(d.routing));
+  // The shop's usual finish for this sheet — whatever the sheet already holds,
+  // which is the seeded default or the answer carried from the last job.
+  const standardFinishLine = [data.materials.finish, data.materials.color]
+    .filter((x) => x.trim() !== "")
+    .join(" — ");
+  const usesStandardFinish = routing.standardFinish === "yes";
+  const existingLabelKey: Record<string, string> = {
+    none: "routingExistingNone",
+    posts: "routingExistingPosts",
+    columns: "routingExistingColumns",
+    both: "routingExistingBoth",
+  };
+  const routingSummary = [
+    routing.setting && mt(lang, routing.setting === "interior" ? "routingInterior" : "routingExterior"),
+    asksRailKind && data.rail.kind && optLabel(lang, data.rail.kind),
+    asksExisting && routing.existing && mt(lang, existingLabelKey[routing.existing]),
+    asksStdFinish && usesStandardFinish && standardFinishLine,
+  ].filter((x): x is string => !!x);
 
   // Direct slot photo: the native OS picker (camera / photo library) uploads
   // straight into the slot — the markup modal stays a separate, optional step.
@@ -1067,7 +1126,7 @@ export default function MeasureEditor({
           {status === "in_progress" && (
             <button
               type="button"
-              onClick={() => goToStage(nextTarget ? nextTarget.stage : "review")}
+              onClick={() => jumpToGap(nextTarget ? nextTarget.stage : "review")}
               className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left min-h-[64px] ${
                 ready.remaining > 0
                   ? "border-amber-500 bg-amber-500/10 active:bg-amber-500/20"
@@ -1137,6 +1196,140 @@ export default function MeasureEditor({
         </div>
 
         <StageCtx.Provider value={activeStage}>
+        <SetupLockCtx.Provider value={setupLocked}>
+
+        {/* Routing — the few answers that decide what the rest of this sheet
+            needs to ask at all. */}
+        {showRoutingCard ? (
+          <Card stage="setup" always title={`🧭 ${mt(lang, "routingTitle")}`}>
+            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "routingHint")}</p>
+            <div className="space-y-4">
+              <ChipRow
+                label={mt(lang, "routingSetting")}
+                value={routing.setting}
+                options={[
+                  ["interior", mt(lang, "routingInterior")],
+                  ["exterior", mt(lang, "routingExterior")],
+                ]}
+                onChange={(v) => setRouting((r) => void (r.setting = v as typeof r.setting))}
+              />
+              {asksRailKind && (
+                <ChipRow
+                  help="railKind"
+                  label={mt(lang, "railKind")}
+                  value={data.rail.kind}
+                  options={RAIL_KIND_OPTIONS.map((o) => [o, optLabel(lang, o)] as [string, string])}
+                  onChange={(v) => set((d) => void (d.rail.kind = v))}
+                />
+              )}
+              {asksOrientation && (
+                <ChipRow
+                  help="orientation"
+                  label={mt(lang, "orientationLbl")}
+                  value={data.datums.orientation}
+                  options={[
+                    ["left_wall", mt(lang, "orient_left_wall")],
+                    ["right_wall", mt(lang, "orient_right_wall")],
+                    ["both_wall", mt(lang, "orient_both_wall")],
+                    ["both_open", mt(lang, "orient_both_open")],
+                  ]}
+                  onChange={(v) => set((d) => void (d.datums.orientation = v as DatumsSpec["orientation"]))}
+                />
+              )}
+              {asksExisting && (
+                <ChipRow
+                  label={mt(lang, "routingExisting")}
+                  value={routing.existing}
+                  options={[
+                    ["none", mt(lang, "routingExistingNone")],
+                    ["posts", mt(lang, "routingExistingPosts")],
+                    ["columns", mt(lang, "routingExistingColumns")],
+                    ["both", mt(lang, "routingExistingBoth")],
+                  ]}
+                  onChange={(v) => setRouting((r) => void (r.existing = v as typeof r.existing))}
+                />
+              )}
+              {asksFloorChange && (
+                <>
+                  <ChipRow
+                    help="floorChangeQuestion"
+                    label={mt(lang, "floorChangeQuestion")}
+                    value={data.finish.floorChange}
+                    options={[
+                      ["none", mt(lang, "floorChangeNone")],
+                      ["bottom", mt(lang, "floorChangeBottom")],
+                      ["top", mt(lang, "floorChangeTop")],
+                      ["both", mt(lang, "floorChangeBoth")],
+                    ]}
+                    onChange={(v) => set((d) => void (d.finish.floorChange = v as FinishSpec["floorChange"]))}
+                  />
+                  <ChipRow
+                    label={mt(lang, "demoPending")}
+                    value={data.finish.demoPending}
+                    options={[["No", mt(lang, "choiceNo")], ["Yes", mt(lang, "choiceYes")]]}
+                    onChange={(v) => set((d) => void (d.finish.demoPending = v))}
+                  />
+                </>
+              )}
+              {asksStdFinish && (
+                <div>
+                  <ChipRow
+                    label={mt(lang, "routingStdFinish")}
+                    value={routing.standardFinish}
+                    options={[
+                      ["yes", mt(lang, "routingStdYes")],
+                      ["no", mt(lang, "routingStdNo")],
+                    ]}
+                    onChange={(v) => setRouting((r) => void (r.standardFinish = v as typeof r.standardFinish))}
+                  />
+                  {usesStandardFinish && standardFinishLine && (
+                    <div className="mt-1.5 text-xs text-neutral-400">
+                      {mt(lang, "routingStdFinishIs")}: <span className="text-neutral-200">{standardFinishLine}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            {setupLocked && (
+              <div className="mt-4 border-t border-neutral-800 pt-3">
+                <div className="text-xs text-neutral-400">
+                  {routingAnswered}/{routingTotal} · {mt(lang, "routingRemaining")}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSetupUnlocked(true)}
+                  className="mt-2 min-h-[48px] rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-sm font-bold text-neutral-300"
+                >
+                  {mt(lang, "routingShowAll")}
+                </button>
+              </div>
+            )}
+            {routingDone && routingOpen && (
+              <button
+                type="button"
+                onClick={() => setRoutingOpen(false)}
+                className="mt-4 min-h-[48px] w-full rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-sm font-bold text-neutral-300"
+              >
+                {mt(lang, "routingCollapse")}
+              </button>
+            )}
+          </Card>
+        ) : (
+          <Card stage="setup" always title={`🧭 ${mt(lang, "routingTitle")}`}>
+            <div className="flex items-center gap-3">
+              <span className="flex-1 text-sm text-neutral-300">
+                ✓ {mt(lang, "routingDone")} · {routingSummary.join(" · ")}
+              </span>
+              <button
+                type="button"
+                onClick={() => setRoutingOpen(true)}
+                className="min-h-[48px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-sm font-bold text-neutral-300"
+              >
+                {mt(lang, "routingRedo")}
+              </button>
+            </div>
+          </Card>
+        )}
         {/* Datums & orientation — where every measurement originates */}
         {(hasFlights || needsPostReference) && <Card stage="setup" title={`🧭 ${mt(lang, "datumsTitle")}`}>
           <div className="mb-3 rounded-lg border border-amber-900/50 bg-amber-500/5 p-3 text-sm text-amber-200">
@@ -2434,9 +2627,6 @@ export default function MeasureEditor({
         {(!isWell || wellWants("guard")) && (!isFire || fireNew) && (
         <Card stage="posts" title={mt(lang, "railSection")}>
           <Grid>
-            <MSelect help="railKind" label={mt(lang, "railKind")} value={data.rail.kind}
-              options={[...RAIL_KIND_OPTIONS]} lang={lang}
-              onChange={(v) => set((d) => void (d.rail.kind = v))} />
             <MInput help="railHeight" label={mt(lang, "railHeight")} value={data.rail.height}
               carried={carriedNote("rail.height", data.rail.height)}
               onClearCarried={() => set((d) => void (d.rail.height = ""))}
@@ -2559,16 +2749,36 @@ export default function MeasureEditor({
                   onClearCarried={() => set((d) => void (d.materials.bottomRail = ""))}
                   onChange={(v) => { set((d) => void (d.materials.bottomRail = v)); }} />
               </>}
-              <MSelect help="finish" label={mt(lang, "finish")} value={data.materials.finish}
-                options={finishOptions} lang={lang} spec
-                carried={carriedNote("materials.finish", data.materials.finish)}
-                onClearCarried={() => set((d) => void (d.materials.finish = ""))}
-                onChange={(v) => { set((d) => void (d.materials.finish = v)); }} />
-              <MSelect help="color" label={mt(lang, "color")} value={data.materials.color}
-                options={colorOptions} lang={lang} spec
-                carried={carriedNote("materials.color", data.materials.color)}
-                onClearCarried={() => set((d) => void (d.materials.color = ""))}
-                onChange={(v) => { set((d) => void (d.materials.color = v)); }} />
+              {usesStandardFinish ? (
+                <div className="sm:col-span-2 flex items-center gap-3 rounded-lg border border-neutral-700 bg-neutral-950/60 p-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[11px] text-neutral-400">{mt(lang, "routingStdFinishIs")}</span>
+                    <span className="block truncate text-sm font-bold text-neutral-100">
+                      {standardFinishLine || "—"}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setRouting((r) => void (r.standardFinish = "no"))}
+                    className="min-h-[48px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-800 px-4 text-sm font-bold text-neutral-300"
+                  >
+                    {mt(lang, "carriedChange")}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <MSelect help="finish" label={mt(lang, "finish")} value={data.materials.finish}
+                    options={finishOptions} lang={lang} spec
+                    carried={carriedNote("materials.finish", data.materials.finish)}
+                    onClearCarried={() => set((d) => void (d.materials.finish = ""))}
+                    onChange={(v) => { set((d) => void (d.materials.finish = v)); }} />
+                  <MSelect help="color" label={mt(lang, "color")} value={data.materials.color}
+                    options={colorOptions} lang={lang} spec
+                    carried={carriedNote("materials.color", data.materials.color)}
+                    onClearCarried={() => set((d) => void (d.materials.color = ""))}
+                    onChange={(v) => { set((d) => void (d.materials.color = v)); }} />
+                </>
+              )}
             </Grid>
             <MInput help="matNotes" label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
               onChange={(v) => set((d) => void (d.materials.notes = v))} />
@@ -2577,17 +2787,19 @@ export default function MeasureEditor({
 
         {/* Site & finish conditions — what surface existed when measured */}
         <Card stage="setup" title={`🧱 ${mt(lang, "finishTitle")}`}>
-          <ChipRow help="floorChangeQuestion"
-            label={mt(lang, "floorChangeQuestion")}
-            value={data.finish.floorChange}
-            options={[
-              ["none", mt(lang, "floorChangeNone")],
-              ["bottom", mt(lang, "floorChangeBottom")],
-              ["top", mt(lang, "floorChangeTop")],
-              ["both", mt(lang, "floorChangeBoth")],
-            ]}
-            onChange={(v) => set((d) => void (d.finish.floorChange = v as FinishSpec["floorChange"]))}
-          />
+          {!asksFloorChange && (
+            <ChipRow help="floorChangeQuestion"
+              label={mt(lang, "floorChangeQuestion")}
+              value={data.finish.floorChange}
+              options={[
+                ["none", mt(lang, "floorChangeNone")],
+                ["bottom", mt(lang, "floorChangeBottom")],
+                ["top", mt(lang, "floorChangeTop")],
+                ["both", mt(lang, "floorChangeBoth")],
+              ]}
+              onChange={(v) => set((d) => void (d.finish.floorChange = v as FinishSpec["floorChange"]))}
+            />
+          )}
           <Grid>
             {(data.finish.floorChange === "bottom" || data.finish.floorChange === "both") && (
               <MInput help="bottomAdjustment" label={mt(lang, "bottomAdjustment")} placeholder='+ 3/4"' value={data.finish.bottomAdjustment}
@@ -2605,9 +2817,11 @@ export default function MeasureEditor({
               <MInput help="wallFinish" label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
                 onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
             )}
-            <ChoiceMInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
-              choices={[["No", mt(lang, "choiceNo")], ["Yes", mt(lang, "choiceYes")]]}
-              onChange={(v) => set((d) => void (d.finish.demoPending = v))} />
+            {!asksFloorChange && (
+              <ChoiceMInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
+                choices={[["No", mt(lang, "choiceNo")], ["Yes", mt(lang, "choiceYes")]]}
+                onChange={(v) => set((d) => void (d.finish.demoPending = v))} />
+            )}
           </Grid>
           {((data.finish.floorChange !== "" && data.finish.floorChange !== "none") || data.finish.demoPending === "Yes") && <button
             onClick={() => set((d) => void (d.finish.verifyAfterFinishes = !d.finish.verifyAfterFinishes))}
@@ -2857,7 +3071,7 @@ export default function MeasureEditor({
               tone="amber"
               items={orderedGaps}
               label={gapLabel}
-              onJump={(g) => goToStage(gapStage(g.key))}
+              onJump={(g) => jumpToGap(gapStage(g.key))}
             />
           )}
           {orderedDocGaps.length > 0 && (
@@ -2866,7 +3080,7 @@ export default function MeasureEditor({
               tone="sky"
               items={orderedDocGaps}
               label={gapLabel}
-              onJump={(g) => goToStage(gapStage(g.key))}
+              onJump={(g) => jumpToGap(gapStage(g.key))}
             />
           )}
 
@@ -2969,6 +3183,7 @@ export default function MeasureEditor({
             </button>
           )}
         </div>
+        </SetupLockCtx.Provider>
         </StageCtx.Provider>
       </div>
 
@@ -2985,15 +3200,41 @@ export default function MeasureEditor({
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {(["railing_post", "existing_post", "concrete_wall", "clip"] as const).map((type) => (
-                <button key={type} type="button" onClick={() => addTypedPoint(type)}
-                  className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
-                  {type === "railing_post" ? "▣" : type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
-                  {mt(lang, `point_${type}`)}
+            {/* Told at the start that nothing is already there, the menu leads
+                with the only thing that usually is: a new railing post. The
+                rest stay one tap away — a column can always turn up on site. */}
+            {routing.existing === "none" ? (
+              <>
+                <button type="button" onClick={() => addTypedPoint("railing_post")}
+                  className="w-full rounded-xl border border-amber-600 bg-amber-500/10 p-4 text-left font-bold text-amber-300 active:bg-amber-500/20">
+                  ▣ {mt(lang, "point_railing_post")}
                 </button>
-              ))}
-            </div>
+                <details className="mt-2">
+                  <summary className="cursor-pointer select-none py-2 text-xs text-neutral-400">
+                    + {mt(lang, "placementOther")}
+                  </summary>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {(["existing_post", "concrete_wall", "clip"] as const).map((type) => (
+                      <button key={type} type="button" onClick={() => addTypedPoint(type)}
+                        className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
+                        {type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
+                        {mt(lang, `point_${type}`)}
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {(["railing_post", "existing_post", "concrete_wall", "clip"] as const).map((type) => (
+                  <button key={type} type="button" onClick={() => addTypedPoint(type)}
+                    className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
+                    {type === "railing_post" ? "▣" : type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
+                    {mt(lang, `point_${type}`)}
+                  </button>
+                ))}
+              </div>
+            )}
             <button type="button" onClick={() => setPlacementMenu(null)} className="w-full mt-3 rounded-xl border border-neutral-700 py-3">
               {mt(lang, "cancel")}
             </button>
@@ -3247,13 +3488,20 @@ function Card({
   title,
   children,
   stage,
+  /** Shown even while the Site step is still waiting on the routing answers. */
+  always = false,
 }: {
   title: string;
   children: React.ReactNode;
   stage: EditorStage;
+  always?: boolean;
 }) {
   const activeStage = useContext(StageCtx);
+  const setupLocked = useContext(SetupLockCtx);
   if (activeStage !== stage) return null;
+  // Until the routing questions are answered there is no point showing the
+  // conditions they decide the relevance of.
+  if (stage === "setup" && setupLocked && !always) return null;
   return (
     <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
       <div className="font-bold mb-3">{title}</div>

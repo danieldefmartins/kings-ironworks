@@ -276,6 +276,11 @@ const DatumsSchema = z.object({
   postRef: z.enum(["", "centerline", "face"]),
   surfaceState: z.enum(["", "finished", "unfinished", "mixed"]),
 });
+const RoutingSchema = z.object({
+  setting: z.enum(["", "interior", "exterior"]),
+  existing: z.enum(["", "none", "posts", "columns", "both"]),
+  standardFinish: z.enum(["", "yes", "no"]),
+});
 const FinishSchema = z.object({
   bottomSurface: short,
   topSurface: short,
@@ -411,6 +416,8 @@ const MeasureDataSchema = z.object({
     notes: note,
   }),
   datums: DatumsSchema,
+  // Older sheets predate routing; normalizeMeasureData fills it in.
+  routing: RoutingSchema.optional(),
   finish: FinishSchema,
   fab: FabSchema,
   photos: z.array(PhotoSchema).max(80),

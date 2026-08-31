@@ -608,6 +608,20 @@ export interface DatumsSpec {
   surfaceState: "" | "finished" | "unfinished" | "mixed";
 }
 
+// The handful of answers that decide which questions are worth asking at all.
+// They are put first, on their own card, so the rest of the sheet can shrink
+// to what this job actually is instead of listing every condition that could
+// possibly exist.
+export interface RoutingSpec {
+  setting: "" | "interior" | "exterior";
+  existing: "" | "none" | "posts" | "columns" | "both";
+  standardFinish: "" | "yes" | "no"; // use the shop's usual finish and colour
+}
+
+export function blankRouting(): RoutingSpec {
+  return { setting: "", existing: "", standardFinish: "" };
+}
+
 // What surface existed when measured — the classic "right number, wrong day" trap.
 export interface FinishSpec {
   bottomSurface: string;
@@ -867,6 +881,7 @@ export interface MeasureData {
   materials: MaterialsSpec;
   overall: OverallSpec;
   datums: DatumsSpec;
+  routing: RoutingSpec;
   finish: FinishSpec;
   fab: FabDetails;
   photos: MeasurePhoto[];
@@ -1077,6 +1092,7 @@ export function newMeasureData(
     },
     overall: blankOverall(),
     datums: blankDatums(),
+    routing: blankRouting(),
     finish: blankFinish(),
     fab: blankFab(),
     photos: [],
@@ -1297,6 +1313,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     },
     overall: { ...blankOverall(), ...(d.overall || {}) },
     datums: { ...blankDatums(), ...(d.datums || {}) },
+    routing: { ...blankRouting(), ...(d.routing || {}) },
     finish: { ...blankFinish(), ...(d.finish || {}) },
     fab: { ...blankFab(), ...(d.fab || {}) },
     photos: d.photos || [],
