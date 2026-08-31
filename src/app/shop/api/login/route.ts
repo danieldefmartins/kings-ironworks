@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyWorkerPin, audit, recentLoginFailures } from "@/lib/shop/db";
-import { makeToken, SHOP_COOKIE } from "@/lib/shop/session";
+import { verifyWorkerPin, getWorkerAuthState, audit, recentLoginFailures } from "@/lib/shop/db";
+import {
+  makeToken,
+  credentialFingerprint,
+  sessionCookieOptions,
+  SHOP_COOKIE,
+} from "@/lib/shop/session";
 
 const MAX_FAILURES = 5;
 const WINDOW_MIN = 15;
@@ -34,14 +39,18 @@ export async function POST(req: NextRequest) {
       workerId: worker.id,
       detail: { ua: req.headers.get("user-agent")?.slice(0, 200) || null },
     });
+    // The session is bound to the credentials it was issued against, so
+    // changing this worker's PIN or privileges ends it everywhere at once.
+    const state = await getWorkerAuthState(worker.id);
+    if (!state) {
+      return NextResponse.json({ error: "Worker not found" }, { status: 401 });
+    }
     const res = NextResponse.json({ ok: true, worker });
-    res.cookies.set(SHOP_COOKIE, makeToken(worker.id), {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/shop",
-      maxAge: 60 * 60 * 12, // 12h shift
-    });
+    res.cookies.set(
+      SHOP_COOKIE,
+      makeToken(worker.id, credentialFingerprint(state)),
+      sessionCookieOptions()
+    );
     return res;
   } catch (e) {
     return NextResponse.json(

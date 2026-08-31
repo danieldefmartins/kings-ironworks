@@ -92,6 +92,7 @@ export default async function JobTravelerPage({
         qc={qc}
         photos={photos}
         canSeePrices={canSeePrices}
+        isAdmin={!!worker.is_admin}
         lang={lang}
       />
     </div>

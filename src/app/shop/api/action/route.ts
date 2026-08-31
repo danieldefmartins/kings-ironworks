@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionWorker } from "@/lib/shop/session";
+import { getSessionWorker, touchSession } from "@/lib/shop/session";
 import {
   sbSelect,
   sbUpdate,
@@ -13,6 +13,7 @@ import {
   audit,
   saveOrgSettings,
   getOrgSettings,
+  setJobArchived,
 } from "@/lib/shop/db";
 
 export const runtime = "nodejs";
@@ -22,6 +23,8 @@ export async function POST(req: NextRequest) {
   if (!worker) {
     return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   }
+  // An active shift keeps its session alive; an abandoned tablet does not.
+  await touchSession();
 
   try {
     const body = await req.json();
@@ -48,6 +51,29 @@ export async function POST(req: NextRequest) {
           pulled: !!pulled,
           pulled_by: pulled ? worker.id : null,
           pulled_at: pulled ? now : null,
+        });
+        break;
+      }
+
+      // Take a finished job off the shop floor, or bring one back. The jobs
+      // list has always filtered on this column; until now nothing could set
+      // it, so a completed job stayed on every worker's list forever.
+      case "job_archive": {
+        if (!worker.is_admin) {
+          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        }
+        const { jobId, archived } = body;
+        if (typeof jobId !== "string" || !jobId) {
+          return NextResponse.json({ error: "Bad job id" }, { status: 400 });
+        }
+        const updated = await setJobArchived(jobId, !!archived);
+        if (!updated) {
+          return NextResponse.json({ error: "Job not found" }, { status: 404 });
+        }
+        await audit(archived ? "job_archive" : "job_restore", {
+          workerId: worker.id,
+          entity: "job",
+          entityId: jobId,
         });
         break;
       }

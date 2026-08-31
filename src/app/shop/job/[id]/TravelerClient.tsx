@@ -48,6 +48,7 @@ export default function TravelerClient({
   qc,
   photos,
   canSeePrices,
+  isAdmin = false,
   lang,
 }: {
   job: Job;
@@ -56,6 +57,7 @@ export default function TravelerClient({
   qc: QcCheck[];
   photos: Photo[];
   canSeePrices: boolean;
+  isAdmin?: boolean;
   lang: string;
 }) {
   const router = useRouter();
@@ -102,6 +104,21 @@ export default function TravelerClient({
       {err && (
         <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-3 mb-4 text-sm">
           {err}
+        </div>
+      )}
+
+      {job.archived && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+          <span className="flex-1 text-sm text-neutral-300">📦 {t(lang, "jobArchivedNote")}</span>
+          {isAdmin && (
+            <button
+              onClick={() => act({ type: "job_archive", jobId: job.id, archived: false })}
+              disabled={busy}
+              className="min-h-[48px] shrink-0 rounded-lg border border-neutral-600 bg-neutral-800 px-4 text-sm font-bold text-neutral-200 disabled:opacity-50"
+            >
+              {t(lang, "restoreJob")}
+            </button>
+          )}
         </div>
       )}
 
@@ -310,6 +327,23 @@ export default function TravelerClient({
         </div>
         <p className="text-xs text-neutral-500 mt-2">{t(lang, "qcNote")}</p>
       </Section>
+
+      {/* Administration, deliberately at the bottom and deliberately quiet. */}
+      {isAdmin && !job.archived && (
+        <div className="mt-8 border-t border-neutral-800 pt-4">
+          <button
+            onClick={() => {
+              if (!window.confirm(t(lang, "archiveJobConfirm"))) return;
+              act({ type: "job_archive", jobId: job.id, archived: true });
+            }}
+            disabled={busy}
+            className="min-h-[48px] rounded-lg border border-neutral-700 bg-neutral-900 px-4 text-sm font-bold text-neutral-400 disabled:opacity-50"
+          >
+            📦 {t(lang, "archiveJob")}
+          </button>
+          <p className="mt-2 text-xs text-neutral-500">{t(lang, "archiveJobNote")}</p>
+        </div>
+      )}
     </div>
   );
 }

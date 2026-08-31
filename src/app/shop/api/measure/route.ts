@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSessionWorker } from "@/lib/shop/session";
+import { getSessionWorker, touchSession } from "@/lib/shop/session";
 import {
   sbSelect,
   sbInsert,
@@ -450,6 +450,8 @@ async function loadSheet(id: string, jobId?: string): Promise<MeasureSheet | nul
 export async function POST(req: NextRequest) {
   const worker = await getSessionWorker();
   if (!worker) return bad("Not signed in", 401);
+  // An active shift keeps its session alive; an abandoned tablet does not.
+  await touchSession();
 
   try {
     const body = await req.json();

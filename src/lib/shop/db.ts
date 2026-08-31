@@ -179,6 +179,24 @@ export async function verifyWorkerPin(
   };
 }
 
+// Just the fields a session is bound to. Kept separate from getWorkerById so
+// the PIN is only ever read where it is actually needed.
+export interface WorkerAuthState {
+  pin: string | null;
+  active: boolean;
+  is_admin: boolean;
+}
+
+export async function getWorkerAuthState(id: string): Promise<WorkerAuthState | null> {
+  const rows = await sbSelect<{ pin: string | null; active: boolean; is_admin: boolean | null }[]>(
+    "kiw_shop_workers",
+    `select=pin,active,is_admin&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
+  );
+  const r = rows[0];
+  if (!r) return null;
+  return { pin: r.pin ?? null, active: !!r.active, is_admin: !!r.is_admin };
+}
+
 export async function getWorkerById(id: string): Promise<Worker | null> {
   const rows = await sbSelect<Worker[]>(
     "kiw_shop_workers",
@@ -263,6 +281,24 @@ export async function listWorkersWithRates(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
     `select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
+  );
+}
+
+// Archiving is how a finished job leaves the shop floor without leaving the
+// record. listJobs() has always filtered on this column; nothing could set it.
+export async function setJobArchived(jobId: string, archived: boolean): Promise<Job | null> {
+  const rows = await sbUpdate<Job[]>(
+    "kiw_shop_jobs",
+    `org_id=eq.${ORG_ID}&id=eq.${jobId}`,
+    { archived }
+  );
+  return rows[0] || null;
+}
+
+export async function listArchivedJobs(): Promise<Job[]> {
+  return sbSelect<Job[]>(
+    "kiw_shop_jobs",
+    `select=*&org_id=eq.${ORG_ID}&archived=eq.true&order=job_number.asc`
   );
 }
 

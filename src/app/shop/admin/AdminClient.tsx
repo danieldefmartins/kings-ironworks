@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { t } from "@/lib/shop/i18n";
 
 interface WorkerRow {
   id: string;
@@ -71,6 +72,8 @@ export default function AdminClient({
   deposits,
   depositTotal,
   archivedDepositTotal,
+  archivedJobs = [],
+  lang = "en",
 }: {
   workers: WorkerRow[];
   jobs: JobRow[];
@@ -78,6 +81,8 @@ export default function AdminClient({
   deposits: DepositRow[];
   depositTotal: number;
   archivedDepositTotal: number;
+  archivedJobs?: { id: string; label: string }[];
+  lang?: string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -400,6 +405,34 @@ export default function AdminClient({
             </div>
           ))}
         </div>
+      </section>
+
+      {/* The way back for a job that was taken off the board. */}
+      <section className="mt-8">
+        <h2 className="mb-2 font-display text-lg font-bold">{t(lang, "archivedJobs")}</h2>
+        {archivedJobs.length === 0 ? (
+          <p className="text-sm text-neutral-500">{t(lang, "noArchivedJobs")}</p>
+        ) : (
+          <div className="space-y-2">
+            {archivedJobs.map((j) => (
+              <div
+                key={j.id}
+                className="flex items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-3"
+              >
+                <Link href={`/shop/job/${j.id}`} className="min-w-0 flex-1 truncate text-sm text-neutral-200">
+                  {j.label}
+                </Link>
+                <button
+                  disabled={busy}
+                  onClick={() => act({ type: "job_archive", jobId: j.id, archived: false })}
+                  className="min-h-[48px] shrink-0 rounded-lg border border-neutral-600 bg-neutral-800 px-4 text-sm font-bold text-neutral-200 disabled:opacity-50"
+                >
+                  {t(lang, "restoreJob")}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );

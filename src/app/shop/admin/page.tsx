@@ -4,6 +4,7 @@ import {
   listWorkersWithRates,
   getAllTimeEntries,
   listJobsWithDeposits,
+  listArchivedJobs,
   depositValue,
   contractValue,
   entryHours,
@@ -21,7 +22,7 @@ export default async function ShopAdminPage() {
   if (!worker) redirect("/shop/login");
   if (!worker.is_admin) redirect("/shop");
 
-  const [workers, entries, jobs, depositJobs] = await Promise.all([
+  const [workers, entries, jobs, depositJobs, archivedJobs] = await Promise.all([
     listWorkersWithRates(),
     getAllTimeEntries(),
     sbSelect<Job[]>(
@@ -29,6 +30,7 @@ export default async function ShopAdminPage() {
       `select=id,job_number,customer_name,project_type,archived&org_id=eq.${ORG_ID}&order=job_number.asc`
     ),
     listJobsWithDeposits(),
+    listArchivedJobs(),
   ]);
 
   const workerById = new Map(workers.map((w) => [w.id, w]));
@@ -137,6 +139,11 @@ export default async function ShopAdminPage() {
         deposits={deposits}
         depositTotal={depositTotal}
         archivedDepositTotal={archivedDepositTotal}
+        archivedJobs={archivedJobs.map((j) => ({
+          id: j.id,
+          label: `${j.job_number} — ${j.customer_name}`,
+        }))}
+        lang={worker.lang || "en"}
       />
     </div>
   );
