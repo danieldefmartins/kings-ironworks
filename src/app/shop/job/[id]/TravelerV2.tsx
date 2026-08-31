@@ -20,16 +20,15 @@
 //                      something other than what you are obviously doing.
 //   NOTHING REMOVED    every capability the old screen had is still reachable.
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Job, CutItem, Material, QcCheck, Photo } from "@/lib/shop/shared";
 import { STAGES } from "@/lib/shop/shared";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
-import TimeClock from "./TimeClock";
 import MaterialKit from "./MaterialKit";
+import { nextUp } from "@/lib/shop/next-up";
 import {
-  MaterialAdder,
   SpecsPanel,
   PhotosSection,
   QcRow,
@@ -81,6 +80,7 @@ export default function TravelerV2({
   const matDone = materials.filter((m) => m.pulled).length;
   const qcDone = qc.filter((q) => q.passed !== null).length;
   const refresh = () => startTransition(() => router.refresh());
+  const now = nextUp(job, cut, materials, qc, photos);
 
   return (
     <div className="mx-auto max-w-2xl px-4 pb-32">
@@ -161,29 +161,63 @@ export default function TravelerV2({
         </div>
       )}
 
-      {/* ── The one thing to do right now. ── */}
-      <TimeClock
-        jobId={job.id}
-        lang={lang}
-        myStartedAt={myStartedAt}
-        activeWorkers={activeWorkers}
-        totalHours={totalHours}
-      />
+      {/* ── What this job needs now, at the stage it is actually at. ── */}
+      <section className="rounded-2xl border border-amber-700/40 bg-neutral-900/70 p-4">
+        <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-amber-500">
+          {t(lang, "nowTitle")} · {stageLabel(lang, job.current_stage)}
+        </div>
 
-      {next && (
-        <button
-          onClick={() => act({ type: "stage_set", jobId: job.id, stage: next })}
-          disabled={busy}
-          className="mt-3 flex min-h-[64px] w-full items-center justify-center gap-2 rounded-2xl bg-amber-500 px-4 text-[17px] font-bold text-black active:scale-[0.99] disabled:opacity-50"
-        >
-          {t(lang, "moveTo")} {stageLabel(lang, next)} →
-        </button>
-      )}
+        <ul className="space-y-2.5">
+          {now.items.map((it) => (
+            <li key={it.key} className="flex items-center gap-3">
+              <span
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px] ${
+                  it.done ? "bg-emerald-500 text-black" : "border-2 border-neutral-600 text-transparent"
+                }`}
+              >
+                ✓
+              </span>
+              <span className={`flex-1 text-[15px] ${it.done ? "text-neutral-500" : "text-neutral-100"}`}>
+                {it.text}
+              </span>
+              {!it.done && it.action.kind !== "none" && (
+                <button
+                  onClick={() => {
+                    if (it.action.kind === "measure") router.push(`/shop/job/${job.id}/measure`);
+                    else if (it.action.kind === "open") setOpen(it.action.row);
+                  }}
+                  className="min-h-[40px] shrink-0 rounded-xl border border-amber-600/60 px-3 text-[14px] font-semibold text-amber-400 active:bg-amber-500/10"
+                >
+                  {it.actionText}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+
+        {next && (
+          <button
+            onClick={() => act({ type: "stage_set", jobId: job.id, stage: next })}
+            disabled={busy}
+            className="mt-4 min-h-[60px] w-full rounded-2xl bg-amber-500 text-[17px] font-bold text-black active:scale-[0.99] disabled:opacity-50"
+          >
+            {t(lang, "moveTo")} {stageLabel(lang, next)} →
+          </button>
+        )}
+      </section>
 
       {/* ── The work. Each row states what is in it; tap to open. ── */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/60">
+        <ClockRow
+          lang={lang}
+          jobId={job.id}
+          myStartedAt={myStartedAt}
+          activeWorkers={activeWorkers}
+          totalHours={totalHours}
+        />
+
         <Row
-          icon="📷"
+          icon={<Icon name="photo" />}
           label={t(lang, "photos")}
           value={photos.length ? String(photos.length) : ""}
           openState={open === "photos"}
@@ -201,7 +235,7 @@ export default function TravelerV2({
         {/* Materials and "material pull" were one idea split across two
             headings. One list; a line is either ordered or pulled. */}
         <Row
-          icon="🧱"
+          icon={<Icon name="steel" />}
           label={t(lang, "materialsList")}
           value={
             cut.length || materials.length
@@ -255,7 +289,7 @@ export default function TravelerV2({
         </Row>
 
         <Row
-          icon="✅"
+          icon={<Icon name="check" />}
           label={t(lang, "qcTitle")}
           value={qc.length ? `${qcDone}/${qc.length}` : ""}
           openState={open === "qc"}
@@ -269,7 +303,7 @@ export default function TravelerV2({
         </Row>
 
         <Row
-          icon="📋"
+          icon={<Icon name="spec" />}
           label={t(lang, "specs")}
           value={[job.finish_type, job.color, job.mounting].filter(Boolean).join(" · ")}
           openState={open === "specs"}
@@ -323,7 +357,7 @@ export default function TravelerV2({
 function Row({
   icon, label, value, openState, onClick, children,
 }: {
-  icon: string; label: string; value: string; openState: boolean;
+  icon: React.ReactNode; label: string; value: string; openState: boolean;
   onClick: () => void; children: React.ReactNode;
 }) {
   return (
@@ -332,12 +366,107 @@ function Row({
         onClick={onClick}
         className="flex min-h-[60px] w-full items-center gap-3 px-4 text-left active:bg-neutral-800/60"
       >
-        <span className="text-xl" aria-hidden>{icon}</span>
+        <span className="text-neutral-400" aria-hidden>{icon}</span>
         <span className="flex-1 text-[17px] font-semibold">{label}</span>
         <span className="max-w-[45%] truncate text-[15px] text-neutral-500">{value}</span>
         <span className={`text-neutral-600 transition-transform ${openState ? "rotate-90" : ""}`}>›</span>
       </button>
       {openState && <div className="px-4 pb-4">{children}</div>}
     </div>
+  );
+}
+
+// The clock, once it is a habit, is a status line — not a billboard. Running
+// it shows green with the elapsed time; stopped it is one quiet tap. The
+// "press START every time you begin" coaching lives in the old screen and in
+// training, not permanently on every job for the rest of the shop's life.
+function ClockRow({
+  lang, jobId, myStartedAt, activeWorkers, totalHours,
+}: {
+  lang: string; jobId: string; myStartedAt: string | null;
+  activeWorkers: string[]; totalHours: number;
+}) {
+  const router = useRouter();
+  const [, startTransition] = useTransition();
+  const [busy, setBusy] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const running = !!myStartedAt;
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      // Same GPS stamp the full clock takes, and it never blocks the press.
+      const loc = await new Promise<{ lat: number; lng: number } | null>((res) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) return res(null);
+        const done = setTimeout(() => res(null), 6000);
+        navigator.geolocation.getCurrentPosition(
+          (p) => { clearTimeout(done); res({ lat: p.coords.latitude, lng: p.coords.longitude }); },
+          () => { clearTimeout(done); res(null); },
+          { timeout: 6000 },
+        );
+      });
+      const r = await fetch("/shop/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: running ? "time_stop" : "time_start", jobId, lat: loc?.lat, lng: loc?.lng }),
+      });
+      if (r.ok) startTransition(() => router.refresh());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const mins = running ? Math.floor((nowMs - new Date(myStartedAt!).getTime()) / 60000) : 0;
+  const elapsed = `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
+
+  return (
+    <div className="border-b border-neutral-800">
+      <button
+        onClick={toggle}
+        disabled={busy}
+        className={`flex min-h-[60px] w-full items-center gap-3 px-4 text-left active:bg-neutral-800/60 disabled:opacity-50 ${
+          running ? "bg-emerald-950/40" : ""
+        }`}
+      >
+        <span className={`text-xl ${running ? "text-emerald-400" : "text-neutral-400"}`} aria-hidden>
+          {running ? "■" : "▶"}
+        </span>
+        <span className="flex-1 text-[17px] font-semibold">
+          {running ? t(lang, "clockOut") : t(lang, "clockIn")}
+        </span>
+        <span className={`text-[15px] ${running ? "font-bold text-emerald-400" : "text-neutral-500"}`}>
+          {running ? elapsed : `${totalHours.toFixed(1)} h`}
+        </span>
+      </button>
+      {activeWorkers.length > 0 && (
+        <p className="px-4 pb-2 text-[13px] text-emerald-400/80">
+          ● {activeWorkers.join(", ")}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// One weight, one size, consistent across every device — unlike emoji, which
+// are a different typeface on Android, iPadOS and Chrome and read as
+// placeholder art in a tool people use all day.
+function Icon({ name }: { name: "photo" | "steel" | "check" | "spec" }) {
+  const d = {
+    photo: "M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h4l1.5 2h2A1.5 1.5 0 0 1 17 8.5v6A1.5 1.5 0 0 1 15.5 16h-11A1.5 1.5 0 0 1 3 14.5v-6Z M10 13.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
+    steel: "M3 6h14 M3 10h14 M3 14h14 M6 6v8 M14 6v8",
+    check: "M4 10.5 8 14.5 16 6",
+    spec: "M6 3h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M8 7h4 M8 10h4 M8 13h2",
+  }[name];
+  return (
+    <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" fill="none"
+      stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {d.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}
+    </svg>
   );
 }
