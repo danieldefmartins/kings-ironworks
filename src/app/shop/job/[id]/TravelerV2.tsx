@@ -27,6 +27,7 @@ import { STAGES } from "@/lib/shop/shared";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import TimeClock from "./TimeClock";
+import MaterialKit from "./MaterialKit";
 import {
   MaterialAdder,
   SpecsPanel,
@@ -210,7 +211,27 @@ export default function TravelerV2({
           openState={open === "materials"}
           onClick={() => setOpen(open === "materials" ? null : "materials")}
         >
-          <MaterialAdder jobId={job.id} lang={lang} busy={busy} act={act} />
+          {/* Offer the parts THIS kind of job is made of, not a blank box. */}
+          <MaterialKit
+            projectType={job.project_type}
+            lang={lang}
+            busy={busy}
+            onAdd={(profile, size, qty) =>
+              act({ type: "cut_add", jobId: job.id, profile, size, qty, length: "" })
+            }
+          />
+          {cut.length > 0 && (
+            <ul className="mt-3 divide-y divide-neutral-800">
+              {cut.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 py-2.5">
+                  <span className={`flex-1 text-[15px] ${c.status !== "pending" ? "text-neutral-500 line-through" : ""}`}>
+                    {c.qty ? `${c.qty} × ` : ""}{c.size} <span className="text-neutral-500">— {c.profile}</span>
+                  </span>
+                  <span className="text-[13px] text-neutral-500">{c.status}</span>
+                </li>
+              ))}
+            </ul>
+          )}
           {materials.length > 0 && (
             <ul className="mt-3 divide-y divide-neutral-800">
               {materials.map((m) => (
