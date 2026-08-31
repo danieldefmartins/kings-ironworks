@@ -238,6 +238,47 @@ c = await save(c, (data) => {
 r = await submit(c);
 check(!r.reds.includes("plan_closure"), "correcting the closed run clears it", r.reds.join(",") || "none");
 
+// ------------------------------------------------ points on drawn lines ----
+// Custom sheets could never carry posts, columns, walls or clips: the post
+// model addressed a tread, which a drawn line does not have.
+console.log("\nPOINTS ON DRAWN LINES");
+c = await save(c, (data) => {
+  data.posts = [
+    {
+      id: "pt-1", pointType: "railing_post", side: "",
+      segIdx: 0, stepIdx: null,
+      pathId: "run-a", planSegIdx: 1,
+      pos: "36", distanceFromFirst: "", fromNosing: "", fromEdge: "2",
+      mount: "Base plate", anchor: "Concrete",
+      plate: "", anchors: "", substrate: "", edgeDist: "", obstruction: "",
+      existingW: "", existingD: "", skirtProjection: "", skirtHeight: "",
+      infillGap: "", columnToWall: "", columnToPlatformEdge: "", clipDetail: "",
+    },
+    {
+      id: "pt-2", pointType: "existing_post", side: "",
+      segIdx: 0, stepIdx: null,
+      pathId: "run-b", planSegIdx: 0,
+      pos: "12", distanceFromFirst: "", fromNosing: "", fromEdge: "1",
+      mount: "", anchor: "Wood",
+      plate: "", anchors: "", substrate: "", edgeDist: "", obstruction: "",
+      existingW: "6", existingD: "6",
+      // a trim that projects proud of the column face — the sphere check
+      // must still run on a drawn shape, not just on stairs
+      skirtProjection: "3/4", skirtHeight: "8",
+      infillGap: "4", columnToWall: "", columnToPlatformEdge: "", clipDetail: "",
+    },
+  ];
+});
+r = await submit(c);
+check(
+  r.reds.includes("skirt_clearance"),
+  "a trimmed column on a DRAWN run still fails the 4\" sphere — the point persisted",
+  r.reds.join(",") || "none"
+);
+c = await save(c, (data) => void (data.posts[1].infillGap = "3 1/4"));
+r = await submit(c);
+check(!r.reds.includes("skirt_clearance"), "and 3 1/4\" to the trim face clears", r.reds.join(",") || "none");
+
 // A legacy single-run drawing still loads.
 let legacy = await make("custom", "E2E LEGACY");
 legacy = await save(legacy, (data) => {

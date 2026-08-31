@@ -89,6 +89,9 @@ const PostSchema = z.object({
   side: z.enum(["", "left", "right"]).optional(),
   segIdx: z.number().int().min(0).max(30),
   stepIdx: z.number().int().min(0).max(120).nullable(),
+  // Drawn shapes locate a point on a line of a run instead of a tread.
+  pathId: z.string().max(40).optional(),
+  planSegIdx: z.number().int().min(0).max(80).optional(),
   pos: meas,
   distanceFromFirst: meas.optional(),
   fromNosing: meas,

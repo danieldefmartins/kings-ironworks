@@ -78,7 +78,14 @@ export interface PostMeasure {
   side: "" | "left" | "right"; // always viewed from bottom step looking up
   segIdx: number; // which segment the post sits on
   stepIdx: number | null; // tread index within a flight (0 = bottom step); null = on the platform/landing
-  pos: string; // platform posts: distance along the platform from its start
+  // Drawn shapes (custom, deck) address a point differently: a stair's
+  // "third tread, 4 in from the nosing" has no meaning on a drawn line. A
+  // point there hangs off one line of one run, measured along it from the
+  // line's start. Both are absent on stair sheets.
+  pathId?: string; // which drawn run
+  planSegIdx?: number; // which line within that run, in draw order
+  pos: string; // platform posts: distance along the platform from its start;
+  //             drawn points: distance along the line from its start
   distanceFromFirst: string; // first-step edge to the edge of the destination tread
   fromNosing: string; // setback from the tread nosing (or platform edge)
   fromEdge: string; // setback from the open side edge
@@ -1326,6 +1333,12 @@ export function blankFab(): FabDetails {
     gate: "",
     touchup: "",
   };
+}
+
+// A point on a drawn line. segIdx/stepIdx are left at the stair defaults and
+// are never read for these — pathId/planSegIdx are what locate it.
+export function newPlanPost(pathId: string, planSegIdx: number): PostMeasure {
+  return { ...newPost(0, null), pathId, planSegIdx };
 }
 
 export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {

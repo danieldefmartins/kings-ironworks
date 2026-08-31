@@ -9,6 +9,7 @@ import {
   type CarryoverKey,
   MOUNT_OPTIONS,
 } from "@/lib/shop/measure";
+import { planPaths, newPlanPost } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
   Card,
@@ -62,7 +63,15 @@ export default function PostsSection({
 }) {
   return (
     <>
-      {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && !isDeck && (
+      {(() => {
+        // Drawn shapes (custom, deck) carry points too — they are just located
+        // on a drawn line instead of a tread. Everything below the position
+        // fields is identical, so the card is shared.
+        const isDrawn = isCustom || isDeck;
+        const runs = isDrawn ? planPaths(data.plan) : [];
+        const addPlanPoint = (pathId: string, segIdx: number) =>
+          set((d) => void d.posts.push(newPlanPost(pathId, segIdx)));
+        return !isSpiral && !isWallRail && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
         <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
           {posts.length === 0 && (
             <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
@@ -74,9 +83,11 @@ export default function PostsSection({
                   <span className="font-bold text-amber-400">
                     P{n + 1}{" "}
                     <span className="text-neutral-400 font-normal text-sm">
-                      {po.stepIdx !== null
-                        ? `— ${mt(lang, "onStep")} ${postStepNumber(data, po)}`
-                        : `— ${mt(lang, "onPlatform")}`}
+                      {po.pathId
+                        ? `— ${runs.find((r) => r.id === po.pathId)?.label || mt(lang, "runLbl")} · ${mt(lang, "onLine")} ${(po.planSegIdx ?? 0) + 1}`
+                        : po.stepIdx !== null
+                          ? `— ${mt(lang, "onStep")} ${postStepNumber(data, po)}`
+                          : `— ${mt(lang, "onPlatform")}`}
                     </span>
                   </span>
                   <button onClick={() => removePost(po.id)}
@@ -99,7 +110,24 @@ export default function PostsSection({
                   options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                   onChange={(v) => setPost(set, po.id, "side", v)} />
                 <Grid>
-                  {po.stepIdx !== null ? (
+                  {po.pathId ? (
+                    <>
+                      <MSelect help="onRun" label={mt(lang, "onRun")} lang={lang}
+                        value={po.pathId}
+                        options={runs.map((r) => r.id)}
+                        labels={Object.fromEntries(runs.map((r, ri) => [r.id, r.label || `${mt(lang, "runLbl")} ${ri + 1}`]))}
+                        onChange={(v) => setPost(set, po.id, "pathId", v)} />
+                      <MSelect help="onLine" label={mt(lang, "onLine")} lang={lang}
+                        value={String((po.planSegIdx ?? 0) + 1)}
+                        options={(runs.find((r) => r.id === po.pathId)?.segs || []).map((_, si) => String(si + 1))}
+                        onChange={(v) => set((d) => {
+                          const t = d.posts.find((x) => x.id === po.id);
+                          if (t) t.planSegIdx = Math.max(0, (parseInt(v, 10) || 1) - 1);
+                        })} />
+                      <MInput help="alongLine" label={mt(lang, "alongLine")} value={po.pos}
+                        onChange={(v) => setPost(set, po.id, "pos", v)} />
+                    </>
+                  ) : po.stepIdx !== null ? (
                     <>
                       <MInput help="distanceFromFirst" label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
                         onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />
@@ -188,8 +216,41 @@ export default function PostsSection({
               </div>
             ))}
           </div>
+
+          {isDrawn && (
+            <div className="mt-4 rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
+              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-neutral-400">
+                {mt(lang, "addPointToLine")}
+              </div>
+              {runs.length === 0 && (
+                <div className="text-sm text-neutral-500">{mt(lang, "drawFirst")}</div>
+              )}
+              <div className="space-y-2">
+                {runs.map((rn, ri) => (
+                  rn.segs.length === 0 ? null : (
+                    <div key={rn.id} className="flex flex-wrap items-center gap-1.5">
+                      <span className="mr-1 text-xs font-bold text-amber-400">
+                        {rn.label || `${mt(lang, "runLbl")} ${ri + 1}`}
+                      </span>
+                      {rn.segs.map((_, si) => (
+                        <button
+                          key={si}
+                          onClick={() => addPlanPoint(rn.id, si)}
+                          className="rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-1.5 text-xs font-bold text-neutral-200"
+                        >
+                          ＋ {si + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-neutral-500">{mt(lang, "addPointHint")}</p>
+            </div>
+          )}
         </Card>
-      )}
+        );
+      })()}
 
       {/* Railing */}
     </>
