@@ -598,7 +598,7 @@ export function runChecks(
   // An existing column or wall with a skirt is a hazard wherever posts are
   // placed, so this rides along with whatever else the shape checks.
   const skirt = skirtChecks(data);
-  if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol), ...skirt];
+  if (shape === "custom") return [...customChecks(data), ...spanChecks(data), ...skirt];
   if (shape === "window_well") return wellChecks(data, tol);
   if (shape === "fire_escape") return fireChecks(data, tol);
   if (shape === "gate") return gateChecks(data, tol);
@@ -794,7 +794,10 @@ function mtStep(fl: FlightSegment, si: number): string {
   return `s${si + 1}`;
 }
 
-function spanChecks(data: MeasureData, tol: Tolerances = TOLERANCES): CheckResult[] {
+// The molding-span check compares one measured difference against another, so
+// it carries its own fixed tolerance rather than a shop-configurable one — it
+// is the only check in this file that does.
+function spanChecks(data: MeasureData): CheckResult[] {
   const out: CheckResult[] = [];
   data.spans.forEach((sp, i) => {
     const top = parseMeas(sp.topSpan);
@@ -836,7 +839,7 @@ function spiralOrLevelChecks(
       out.push({ key: "spiral_riser", level: "na", expected: null, actual: null, delta: null, unit: "in" });
     }
   }
-  out.push(...spanChecks(data, tol));
+  out.push(...spanChecks(data));
   if (shape === "ramp") {
     const seg = data.segments[0];
     if (seg && seg.kind === "ramp") {
