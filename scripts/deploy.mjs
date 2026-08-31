@@ -7,11 +7,17 @@
 // Auth, in order of preference:
 //
 //   1. RAILWAY_TOKEN — a project token from the Railway dashboard
-//      (Project → Settings → Tokens). These do NOT expire, which is the
-//      whole point: the CLI login token dies after about three days and has
-//      interrupted every deploy session so far.
-//   2. ~/.railway/config.json — whatever `railway login` last wrote. Works,
-//      but expect to re-run `railway login` every few days.
+//      (Project → Settings → Tokens). These do NOT expire.
+//   2. ~/.railway/config.json — what `railway login` last wrote.
+//
+// Why (2) kept dying mid-session: `user.accessToken` in that file is good for
+// only about an HOUR (see `user.tokenExpiresAt`, a unix seconds stamp). The
+// browser login is not what expires — the CLI silently refreshes itself using
+// the stored refreshToken. This script reads the file directly, so it used to
+// pick up a stale token an hour after login and fail with "Not Authorized",
+// which looked like the login had been lost. Now it runs `railway whoami`
+// first: that makes the CLI do its own refresh and rewrite config.json, and we
+// re-read the fresh token afterwards. No browser round trip.
 //
 // The commit must already be pushed: Railway builds from GitHub, not from
 // the working tree. `railway up` is not an option here — public/ is ~1.6 GB
@@ -27,15 +33,37 @@ const SERVICE_ID = "693109ba-ad77-4b15-9040-e05ed2e14dec";
 const ENVIRONMENT_ID = "1ea4e56d-8b75-456c-81bb-9525dd16ba2a";
 const PROJECT_ID = "71f01ca9-22d5-47ac-b7ef-3eba571c78f7";
 
+function readConfig() {
+  try {
+    return JSON.parse(readFileSync(join(homedir(), ".railway", "config.json"), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+// The stored access token lasts about an hour. Ask the CLI to do something
+// harmless first so it refreshes and rewrites the file; then read it back.
+function refreshCliToken() {
+  try {
+    execSync("railway whoami", { stdio: "ignore", timeout: 30000 });
+    return true;
+  } catch {
+    return false; // not installed, or the refresh token is genuinely dead
+  }
+}
+
 function token() {
   if (process.env.RAILWAY_TOKEN) return { value: process.env.RAILWAY_TOKEN, from: "RAILWAY_TOKEN" };
-  try {
-    const cfg = JSON.parse(readFileSync(join(homedir(), ".railway", "config.json"), "utf8"));
-    const t = cfg?.user?.accessToken || cfg?.user?.token;
-    if (t) return { value: t, from: "railway login" };
-  } catch {
-    /* fall through to the error below */
+
+  let cfg = readConfig();
+  const expiresAt = cfg?.user?.tokenExpiresAt; // unix seconds
+  const stale = typeof expiresAt === "number" && expiresAt * 1000 - Date.now() < 120_000;
+  if (!cfg || stale) {
+    if (refreshCliToken()) cfg = readConfig();
   }
+
+  const t = cfg?.user?.accessToken || cfg?.user?.token;
+  if (t) return { value: t, from: "railway login" };
   return null;
 }
 
@@ -83,7 +111,7 @@ try {
 } catch (e) {
   const hint =
     auth.from === "railway login"
-      ? "\n  The CLI token expires after a few days. Run `railway login`, or set a project token as RAILWAY_TOKEN to stop this recurring."
+      ? "\n  The CLI access token lasts about an hour and the auto-refresh above did not take.\n  Run `railway login`, or set a project token as RAILWAY_TOKEN to stop this recurring."
       : "";
   console.error(`Deploy request rejected: ${e.message}${hint}`);
   process.exit(1);
