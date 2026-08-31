@@ -8,9 +8,11 @@
 //
 //   1. RAILWAY_TOKEN — a project token from the Railway dashboard
 //      (Project → Settings → Tokens). These do NOT expire.
-//   2. ~/.railway/kiw-project-token — the same thing kept in a file, so no
-//      shell setup is needed. chmod 600 it.
-//   3. ~/.railway/config.json — what `railway login` last wrote.
+//   2. ~/.railway/kiw-project-token — a project token in a file, so no shell
+//      setup is needed. Scoped to this project only.
+//   3. ~/.railway/account-token — a workspace API token. Same idea but reaches
+//      EVERY project on the account, so any Railway deploy can use it.
+//   4. ~/.railway/config.json — what `railway login` last wrote.
 //
 // Why (2) kept dying mid-session: `user.accessToken` in that file is good for
 // only about an HOUR (see `user.tokenExpiresAt`, a unix seconds stamp). The
@@ -58,22 +60,30 @@ function refreshCliToken() {
 // no browser login — ever. Create one at Railway → the project → Settings →
 // Tokens, then put it here WITHOUT it passing through a terminal you are
 // sharing (on macOS: copy it, then `pbpaste > ~/.railway/kiw-project-token`).
-const TOKEN_FILE = join(homedir(), ".railway", "kiw-project-token");
+// Narrowest first: a token that can only touch this project is preferred over
+// one that can touch every project.
+const TOKEN_FILES = [
+  join(homedir(), ".railway", "kiw-project-token"),
+  join(homedir(), ".railway", "account-token"),
+];
 
 function readTokenFile() {
-  try {
-    const t = readFileSync(TOKEN_FILE, "utf8").trim();
-    return t || null;
-  } catch {
-    return null;
+  for (const f of TOKEN_FILES) {
+    try {
+      const t = readFileSync(f, "utf8").trim();
+      if (t) return { value: t, from: f };
+    } catch {
+      /* try the next one */
+    }
   }
+  return null;
 }
 
 function token() {
   if (process.env.RAILWAY_TOKEN) return { value: process.env.RAILWAY_TOKEN, from: "RAILWAY_TOKEN" };
 
   const filed = readTokenFile();
-  if (filed) return { value: filed, from: TOKEN_FILE };
+  if (filed) return filed;
 
   let cfg = readConfig();
   const expiresAt = cfg?.user?.tokenExpiresAt; // unix seconds
