@@ -7,10 +7,6 @@ import {
   ANCHOR_OPTIONS,
   MATERIAL_PRESETS,
   newPost,
-  newFlightSegment,
-  newPlatformSegment,
-  blankRamp,
-  blankCurve,
   sheetProgress,
   type FlightSegment,
   type MeasureSheet,
@@ -40,7 +36,7 @@ import {
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS } from "@/lib/shop/i18n";
-import Sketch, { sketchViews, type SketchView } from "./Sketch";
+import { sketchViews, type SketchView } from "./Sketch";
 import PrintSheet from "./PrintSheet";
 import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
@@ -53,6 +49,7 @@ import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
 import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
+import SketchSections from "./sections/SketchSections";
 import StairSections from "./sections/StairSections";
 import PostsSection from "./sections/PostsSection";
 import RailSections from "./sections/RailSections";
@@ -68,16 +65,6 @@ import {
   SetupLockCtx,
   StageCtx,
   type EditorStage,
-  setPost,
-  Card,
-  ChipRow,
-  ChoiceMInput,
-  Grid,
-  MInput,
-  MSelect,
-  SkirtSolver,
-  SmallBtn,
-  commonThicknessChoices,
 } from "./fields";
 import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 
@@ -1020,224 +1007,30 @@ export default function MeasureEditor({
           />
         )}
 
-        {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
-          <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
-            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
-            <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
-              {viewList.length > 1 && (
-                <div className="mb-3 flex gap-2">
-                  {viewList.map(([vw, key]) => (
-                    <button key={vw} type="button" onClick={() => setView(vw)}
-                      className={`min-h-[44px] rounded-full border px-4 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
-                      {mt(lang, key)}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {movingPostId && (
-                <div className="mb-3 flex items-center gap-2 rounded-lg border border-amber-500 bg-amber-950/40 p-3 text-sm text-amber-200">
-                  <span className="flex-1">↔ {mt(lang, "movePostHint")}</span>
-                  <button type="button" onClick={() => setMovingPostId(null)} className="rounded-full border border-amber-700 px-2 py-1 text-xs">{mt(lang, "cancel")}</button>
-                </div>
-              )}
-              <Sketch
-                shape={sheet.shape}
-                data={data}
-                lang={lang}
-                view={view}
-                onTapStep={tapStructureStep}
-                onTapPlatform={tapStructurePlatform}
-                onHoldStep={holdStepLocation}
-                onHoldPlatform={holdPlatformLocation}
-                onTapPost={tapPost}
-                onHoldPost={(id) => setMovingPostId(id)}
-                onToggleWallSide={toggleSketchWall}
-              />
-            </div>
-            <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
-            <div className="space-y-3">
-              {posts.filter((po) => po.pointType !== "railing_post").map((po, n) => (
-                <div key={po.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
-                  <div className="mb-2 flex items-center">
-                    <span className="font-bold text-amber-400">E{n + 1} — {mt(lang, `point_${po.pointType}`)}</span>
-                    <button type="button" onClick={() => removePost(po.id)} className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
-                      ✕ {mt(lang, "removePost")}
-                    </button>
-                  </div>
-                  <Grid>
-                    <ChipRow help="stairSideLookingUp" label={mt(lang, "stairSideLookingUp")} value={po.side}
-                      options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
-                      onChange={(v) => setPost(set, po.id, "side", v)} />
-                    <MSelect help="existingMaterial" label={mt(lang, "existingMaterial")} value={po.anchor} options={anchorOptions} lang={lang}
-                      onChange={(v) => setPost(set, po.id, "anchor", v)} />
-                    <MInput help="existingPostWidth" label={mt(lang, "existingPostWidth")} value={po.existingW}
-                      onChange={(v) => setPost(set, po.id, "existingW", v)} />
-                    <MInput help="existingPostDepth" label={mt(lang, "existingPostDepth")} value={po.existingD}
-                      onChange={(v) => setPost(set, po.id, "existingD", v)} />
-                    <MInput help="columnToWall" label={mt(lang, "columnToWall")} value={po.columnToWall}
-                      onChange={(v) => setPost(set, po.id, "columnToWall", v)} />
-                    <MInput help="columnToPlatformEdge" label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
-                      onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
-                    {po.pointType === "existing_post" && <>
-                      <ChoiceMInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
-                        choices={commonThicknessChoices(lang)} onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
-                      <MInput help="skirtHeight" label={mt(lang, "skirtHeight")} value={po.skirtHeight}
-                        onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
-                    </>}
-                  </Grid>
-                  <SkirtSolver lang={lang} po={po}
-                    onGap={(v) => setPost(set, po.id, "infillGap", v)} />
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {platforms.filter(({ seg }) => seg.turn !== "none").length > 0 && (
-          <Card stage="setup" title={`↪ ${mt(lang, "layoutDirectionTitle")}`}>
-            <p className="mb-3 text-xs text-neutral-400">{mt(lang, "layoutDirectionHint")}</p>
-            <div className="space-y-3">
-              {platforms.filter(({ seg }) => seg.turn !== "none").map(({ seg, i }, landingIndex) => (
-                <ChipRow key={i} label={`${mt(lang, "landing")} ${landingIndex + 1}`}
-                  value={seg.turn === "u" ? "left" : seg.turn}
-                  options={[["left", `↰ ${mt(lang, "turnLeft")}`], ["right", `↱ ${mt(lang, "turnRight")}`]]}
-                  onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).turn = (v || "left") as "left" | "right"))} />
-              ))}
-            </div>
-            {platforms.filter(({ seg }) => seg.turn !== "none").length === 2 && (
-              <p className="mt-3 rounded-lg border border-neutral-800 bg-neutral-950/50 p-2 text-xs text-neutral-400">{mt(lang, "threeFlightTurnHint")}</p>
-            )}
-          </Card>
-        )}
-
-        {/* Mixed assembly: build the staircase segment by segment */}
-        {isBuilder && (
-          <Card stage="steps" title={`🧱 ${mt(lang, "segmentsTitle")}`}>
-            <div className="text-xs text-neutral-500 mb-3">{mt(lang, "segmentsHint")}</div>
-            <div className="flex flex-wrap gap-2">
-              <SmallBtn onClick={() => set((d) => void d.segments.push(newFlightSegment(3)))}>
-                {mt(lang, "addFlightSeg")}
-              </SmallBtn>
-              <SmallBtn onClick={() => set((d) => void d.segments.push(newPlatformSegment("left")))}>
-                {mt(lang, "addLandingSeg")}
-              </SmallBtn>
-              <SmallBtn onClick={() => set((d) => void d.segments.push(blankRamp()))}>
-                {mt(lang, "addRampSeg")}
-              </SmallBtn>
-              <SmallBtn onClick={() => set((d) => void d.segments.push(blankCurve()))}>
-                {mt(lang, "addCurveSeg")}
-              </SmallBtn>
-              {data.segments.length > 1 && (
-                <SmallBtn
-                  onClick={() =>
-                    set((d) => {
-                      const last = d.segments.length - 1;
-                      d.segments.pop();
-                      d.posts = d.posts.filter((po) => po.segIdx !== last);
-                    })
-                  }
-                >
-                  {mt(lang, "removeLastSeg")}
-                </SmallBtn>
-              )}
-            </div>
-          </Card>
-        )}
-
-        {/* Sketch (custom shapes draw their own plan below instead) */}
-        {!isCustom && ["posts", "locations"].includes(activeStage) && (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
-          <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
-          {!isSpiral && !isWallRail && (
-            <div className="text-xs text-neutral-500 mb-2">
-              {mt(
-                lang,
-                isGate
-                  ? "sketchHintGate"
-                  : isFence
-                  ? "sketchHintFence"
-                  : isBalcony
-                  ? "sketchHintBalcony"
-                  : isFire
-                  ? "sketchHintFire"
-                  : isWell
-                  ? "sketchHintWell"
-                  : sheet.shape === "level_run" || sheet.shape === "ramp"
-                    ? "sketchHintLevel"
-                    : "sketchHintPosts"
-              )}
-            </div>
-          )}
-          {movingPostId && (
-            <div className="mb-3 rounded-lg border border-amber-500 bg-amber-950/40 p-3 text-sm text-amber-200 flex items-center gap-2">
-              <span className="flex-1">↔ {mt(lang, "movePostHint")}</span>
-              <button type="button" onClick={() => setMovingPostId(null)} className="rounded-full border border-amber-700 px-2 py-1 text-xs">
-                {mt(lang, "cancel")}
-              </button>
-            </div>
-          )}
-          {/* View chips — phones show one view; md+ adds a second beside it */}
-          {viewList.length > 1 && (
-            <div className="flex gap-2 mb-3">
-              {viewList.map(([vw, key]) => (
-                <button
-                  key={vw}
-                  onClick={() => setView(vw)}
-                  className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
-                    view === vw
-                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                  }`}
-                >
-                  {mt(lang, key)}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
-            <div>
-              <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
-                {mt(lang, viewList.find(([vw]) => vw === view)?.[1] || viewList[0][1])}
-              </div>
-              <Sketch
-                shape={sheet.shape}
-                data={data}
-                lang={lang}
-                view={view}
-                onTapStep={addStepPost}
-                onTapPlatform={addPlatformPost}
-                onHoldStep={holdStepLocation}
-                onHoldPlatform={holdPlatformLocation}
-                onTapPost={tapPost}
-                onHoldPost={(id) => setMovingPostId(id)}
-                onToggleWallSide={toggleSketchWall}
-              />
-            </div>
-            {viewList.length > 1 && (
-              <div className="hidden md:block">
-                <div className="text-[11px] text-neutral-500 mb-1">
-                  {mt(lang, viewList.find(([vw]) => vw !== view)![1])}
-                </div>
-                <Sketch
-                  shape={sheet.shape}
-                  data={data}
-                  lang={lang}
-                  view={viewList.find(([vw]) => vw !== view)![0]}
-                  onTapStep={addStepPost}
-                  onTapPlatform={addPlatformPost}
-                  onHoldStep={holdStepLocation}
-                  onHoldPlatform={holdPlatformLocation}
-                  onTapPost={tapPost}
-                onHoldPost={(id) => setMovingPostId(id)}
-                  onToggleWallSide={toggleSketchWall}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* Spiral geometry */}
+        <SketchSections
+          lang={lang}
+          data={data}
+          set={set}
+          shape={sheet.shape}
+          activeStage={activeStage}
+          view={view}
+          viewList={viewList}
+          setView={setView}
+          movingPostId={movingPostId}
+          setMovingPostId={setMovingPostId}
+          posts={posts}
+          platforms={platforms}
+          anchorOptions={anchorOptions}
+          addStepPost={addStepPost}
+          addPlatformPost={addPlatformPost}
+          holdStepLocation={holdStepLocation}
+          holdPlatformLocation={holdPlatformLocation}
+          tapStructureStep={tapStructureStep}
+          tapStructurePlatform={tapStructurePlatform}
+          tapPost={tapPost}
+          removePost={removePost}
+          toggleSketchWall={toggleSketchWall}
+        />
         <StairSections
           lang={lang}
           data={data}
