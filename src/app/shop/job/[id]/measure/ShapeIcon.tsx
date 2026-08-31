@@ -134,6 +134,36 @@ export default function ShapeIcon({
           <path d="M4 46h40" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "gate":
+      // two posts, a double leaf, ground line
+      return (
+        <svg {...common}>
+          <path d="M8 8v34M40 8v34" strokeWidth={2.5} />
+          <path d="M10 14h13v24H10zM25 14h13v24H25z" strokeWidth={1.6} />
+          <path d="M14 14v24M19 14v24M29 14v24M34 14v24" strokeWidth={1} />
+          <path d="M4 44h40" strokeDasharray="3 3" strokeWidth={1.5} />
+        </svg>
+      );
+    case "fence":
+      // a run of bays receding
+      return (
+        <svg {...common}>
+          <path d="M7 12v28M20 14v26M33 16v24M44 18v22" strokeWidth={2.2} />
+          <path d="M7 20h37M7 32h37" strokeWidth={1.8} />
+          <path d="M2 42h44" strokeDasharray="3 3" strokeWidth={1.5} />
+        </svg>
+      );
+    case "balcony":
+      // slab edge in section with a rail standing on it
+      return (
+        <svg {...common}>
+          <path d="M4 30h26v8H4z" strokeWidth={2} />
+          <path d="M24 30V10" strokeWidth={2.5} />
+          <path d="M14 14h22" strokeWidth={2.2} />
+          <path d="M28 14v16M32 14v16M36 14v16" strokeWidth={1.2} />
+          <path d="M24 30v6" strokeWidth={2} />
+        </svg>
+      );
     case "fire_escape":
       // building wall left, stacked balconies, zig-zag stair, ladder to grade
       return (

@@ -490,6 +490,98 @@ export default function PrintSheet({
             </div>
           )}
 
+          {data.gate && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "gateTitle")}</SectionTitle>
+              <div>
+                {data.gate.use ? mt(lang, `gateU_${data.gate.use}`) : "—"} ·{" "}
+                {data.gate.operation ? mt(lang, `gateO_${data.gate.operation}`) : "—"} ·{" "}
+                {mt(lang, "gateWidthTop")}: <Val v={data.gate.widthTop} /> /{" "}
+                <Val v={data.gate.widthBottom} /> · {mt(lang, "gateHeightHinge")}:{" "}
+                <Val v={data.gate.heightHinge} /> / <Val v={data.gate.heightLatch} />
+              </div>
+              <div>
+                {mt(lang, "gateGroundClearance")}: <Val v={data.gate.groundClearance} /> ·{" "}
+                {mt(lang, "gateGradeRise")}: <Val v={data.gate.gradeRise} /> ·{" "}
+                {mt(lang, "gateSurface")}: <Val v={data.gate.surface} /> ·{" "}
+                {mt(lang, "gateHingeSide")}: <Val v={data.gate.hingeSide} />
+              </div>
+              <div>
+                {mt(lang, "gateInfill")}: <Val v={data.gate.infill} /> ·{" "}
+                {mt(lang, "gateHinges")}: <Val v={data.gate.hinges} /> ·{" "}
+                {mt(lang, "gateLatch")}: <Val v={data.gate.latch} /> ·{" "}
+                {mt(lang, "gatePostSize")}: <Val v={data.gate.postSize} /> ·{" "}
+                {mt(lang, "gateFooting")}: <Val v={data.gate.footingDepth} />
+              </div>
+              {data.gate.automated && (
+                <div>
+                  <b>{mt(lang, "gateAutomated")}: </b>
+                  <Val v={data.gate.opener} /> · {mt(lang, "gatePower")}:{" "}
+                  <Val v={data.gate.powerAtGate} /> · <Val v={data.gate.safetyDevices} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {data.fence && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "fenceTitle")}</SectionTitle>
+              <div>
+                {mt(lang, "fenceTotalRun")}: <Val v={data.fence.totalRun} /> ·{" "}
+                {mt(lang, "fenceHeight")}: <Val v={data.fence.height} /> ·{" "}
+                {mt(lang, "fencePostSpacing")}: <Val v={data.fence.postSpacing} /> ·{" "}
+                {mt(lang, "fencePostSize")}: <Val v={data.fence.postSize} /> ·{" "}
+                {mt(lang, "fenceFooting")}: <Val v={data.fence.footingDepth} />
+              </div>
+              <div>
+                <Val v={data.fence.startTerm} /> → <Val v={data.fence.endTerm} /> ·{" "}
+                {mt(lang, "fenceUtilities")}: <Val v={data.fence.utilities} />
+                {data.fence.gates ? <> · {mt(lang, "fenceGates")}: <Val v={data.fence.gates} /></> : null}
+              </div>
+              {data.fence.segments.map((sg, i) => (
+                <div key={sg.id}>
+                  {sg.label || i + 1}. <Val v={sg.length} />
+                  {sg.panels ? <> · <Val v={sg.panels} /> {mt(lang, "fenceSegPanels")}</> : null}
+                  {sg.turnDeg ? <> · ⟲ <Val v={sg.turnDeg} /></> : null}
+                  {sg.gradeChange ? (
+                    <> · <Val v={sg.gradeChange} />{" "}
+                      {sg.followsGrade ? mt(lang, sg.followsGrade === "stepped" ? "fenceStepped" : "fenceRacked") : ""}
+                    </>
+                  ) : null}
+                  {sg.obstruction ? <> · <Val v={sg.obstruction} /></> : null}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data.balcony && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "balTitle")}</SectionTitle>
+              <div>
+                {data.balcony.kind ? mt(lang, `balK_${data.balcony.kind}`) : "—"} ·{" "}
+                {data.balcony.mount ? mt(lang, `balM_${data.balcony.mount}`) : "—"} ·{" "}
+                {mt(lang, "balEdgeLength")}: <Val v={data.balcony.edgeLength} /> ·{" "}
+                {mt(lang, "balGuardHeight")}: <Val v={data.balcony.guardHeight} /> ·{" "}
+                {mt(lang, "balPicketSpacing")}: <Val v={data.balcony.picketSpacing} />
+              </div>
+              <div className="border border-black/40 p-1">
+                <b>{mt(lang, "balAnchorTitle")}: </b>
+                {mt(lang, "balSlabMaterial")}: <Val v={data.balcony.slabMaterial} /> ·{" "}
+                {mt(lang, "balSlabThickness")}: <Val v={data.balcony.slabThickness} /> ·{" "}
+                {mt(lang, "balAnchorType")}: <Val v={data.balcony.anchorType} /> ·{" "}
+                {mt(lang, "balEmbedment")}: <Val v={data.balcony.anchorEmbedment} /> ·{" "}
+                {mt(lang, "balEdgeDistance")}: <Val v={data.balcony.edgeDistance} />
+                {data.balcony.platePlan ? <> · <Val v={data.balcony.platePlan} /></> : null}
+              </div>
+              <div>
+                {mt(lang, "balFinishedFloor")}: <Val v={data.balcony.finishedFloor} /> ·{" "}
+                {mt(lang, "balReturns")}: <Val v={data.balcony.returns} />
+                {data.balcony.drainage ? <> · {mt(lang, "balDrainage")}: <Val v={data.balcony.drainage} /></> : null}
+                {data.balcony.doorOpening ? <> · {mt(lang, "balDoorOpening")}: <Val v={data.balcony.doorOpening} /></> : null}
+              </div>
+            </div>
+          )}
+
           {data.fire && (
             <div className="mt-2">
               <SectionTitle>{mt(lang, "fireTitle")}</SectionTitle>

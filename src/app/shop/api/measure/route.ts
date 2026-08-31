@@ -118,6 +118,46 @@ const SpiralSchema = z
     landingNote: short,
   })
   .nullable();
+const GateSchema = z
+  .object({
+    use: z.enum(["", "driveway", "walk", "service", "pool"]),
+    operation: z.enum(["", "single_swing", "double_swing", "slide", "bifold"]),
+    widthTop: meas, widthBottom: meas, heightHinge: meas, heightLatch: meas,
+    diagA: meas, diagB: meas, groundClearance: meas, gradeRise: meas,
+    swingDir: z.enum(["", "in", "out", "both"]),
+    hingeSide: z.enum(["", "left", "right"]),
+    surface: short,
+    postsExisting: z.boolean(), postSize: short, postMaterial: short, footingDepth: meas,
+    leafCount: meas, infill: short, picketSpacing: meas, hinges: short, latch: short, dropRod: short,
+    automated: z.boolean(), opener: short,
+    powerAtGate: z.enum(["", "yes", "no", "unknown"]),
+    safetyDevices: short, notes: short,
+  })
+  .nullable();
+const FenceSegmentSchema = z.object({
+  id: z.string().max(40), label: z.string().max(60), length: meas, panels: meas, height: meas,
+  turnDeg: meas, gradeChange: meas,
+  followsGrade: z.enum(["", "racked", "stepped"]),
+  obstruction: short,
+});
+const FenceSchema = z
+  .object({
+    segments: z.array(FenceSegmentSchema).max(40),
+    totalRun: meas, panelWidth: meas, postSpacing: meas, postSize: short, footingDepth: meas,
+    height: meas, picketSpacing: meas, gates: short, startTerm: short, endTerm: short,
+    utilities: short, notes: short,
+  })
+  .nullable();
+const BalconySchema = z
+  .object({
+    kind: z.enum(["", "balcony", "juliet", "deck_edge", "roof_edge"]),
+    mount: z.enum(["", "top", "fascia", "core_drill", "embedded"]),
+    edgeLength: meas, projection: meas, slabThickness: meas, slabMaterial: short,
+    edgeCondition: short, guardHeight: meas, picketSpacing: meas, returns: short, corners: short,
+    anchorType: short, anchorEmbedment: meas, edgeDistance: meas, minCover: meas, platePlan: short,
+    doorOpening: meas, finishedFloor: short, drainage: short, notes: short,
+  })
+  .nullable();
 const ConditionSchema = z.object({
   rating: z.enum(["", "pass", "monitor", "fail"]),
   rust: short,
@@ -336,6 +376,9 @@ const MeasureDataSchema = z.object({
   spiral: SpiralSchema,
   well: WellSchema.optional(),
   fire: FireEscapeSchema.optional(),
+  gate: GateSchema.optional(),
+  fence: FenceSchema.optional(),
+  balcony: BalconySchema.optional(),
   rail: z.object({
     kind: z.string().max(40),
     height: meas,

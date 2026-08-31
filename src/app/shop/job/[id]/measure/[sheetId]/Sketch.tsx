@@ -15,6 +15,9 @@ import type {
   SpiralData,
   WellData,
   FireEscapeData,
+  GateData,
+  FenceData,
+  BalconyData,
 } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { formatIn, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
@@ -85,6 +88,13 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
       ["front", "elevationView"],
       ["plan", "planView"],
     ];
+  if (shape === "gate") return [["front", "elevationView"]];
+  if (shape === "fence") return [["front", "elevationView"]];
+  if (shape === "balcony")
+    return [
+      ["side", "sectionView"],
+      ["front", "elevationView"],
+    ];
   if (shape === "ramp")
     return [
       ["side", "sideView"],
@@ -127,6 +137,14 @@ export default function Sketch({
   const p = light ? LIGHT : DARK;
 
   if (shape === "custom") return <CustomPlanSketch data={data} p={p} lang={lang} />;
+  if (shape === "gate") return <GateSketch gate={data.gate} p={p} lang={lang} />;
+  if (shape === "fence") return <FenceSketch fence={data.fence} p={p} lang={lang} />;
+  if (shape === "balcony")
+    return view === "front" ? (
+      <BalconyElevationSketch bal={data.balcony} p={p} lang={lang} />
+    ) : (
+      <BalconySectionSketch bal={data.balcony} p={p} lang={lang} />
+    );
   if (shape === "fire_escape")
     return view === "plan" ? (
       <FirePlanSketch fire={data.fire} p={p} lang={lang} />
@@ -2046,6 +2064,293 @@ function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Pal
       </text>
       <text x={left} y={bottom + 48} fontSize={8} fill={p.dim}>
         {l0?.label ? `${l0.label} — ` : ""}{mt(lang, "feDeck")}: {v(l0?.deck, p).text}
+      </text>
+    </svg>
+  );
+}
+
+// ---- Gate ------------------------------------------------------------------
+
+// Elevation looking at the opening: both posts, the leaf (or leaves), the
+// clearance under it and the grade it has to swing over.
+function GateSketch({ gate, p, lang }: { gate: GateData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 250;
+  const leftX = 52;
+  const rightX = 288;
+  const topY = 44;
+  const gradeY = 186;
+  const clearY = gradeY - 16;
+
+  const d = (k: keyof GateData) => v(typeof gate?.[k] === "string" ? (gate[k] as string) : "", p);
+  const dbl = gate?.operation === "double_swing" || gate?.operation === "bifold";
+  const slide = gate?.operation === "slide";
+  const rise = parseMeas(gate?.gradeRise || "");
+  const clear = parseMeas(gate?.groundClearance || "");
+  const binds = rise !== null && clear !== null && rise > 0 && clear <= rise;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 340 }}>
+      {/* grade — drawn sloping when a rise was recorded */}
+      <line x1={0} y1={gradeY} x2={W} y2={rise !== null && rise > 0 ? gradeY - 14 : gradeY}
+        stroke={p.line} strokeWidth={2} />
+      <text x={4} y={gradeY + 14} fontSize={8} fill={p.dim}>
+        {mt(lang, "gateGrade").toUpperCase()}
+      </text>
+
+      {/* posts */}
+      <rect x={leftX - 9} y={topY} width={9} height={gradeY - topY} fill={p.ghost} stroke={p.line} strokeWidth={1.6} />
+      <rect x={rightX} y={topY} width={9} height={gradeY - topY - 14} fill={p.ghost} stroke={p.line} strokeWidth={1.6} />
+
+      {/* leaf / leaves */}
+      {slide ? (
+        <g>
+          <rect x={leftX} y={topY} width={rightX - leftX} height={clearY - topY} fill="none" stroke={p.post} strokeWidth={2.5} />
+          <path d={`M ${leftX} ${topY - 10} L ${leftX - 40} ${topY - 10}`} stroke={p.ghost} strokeWidth={1.4} strokeDasharray="5 3" />
+          <text x={leftX - 42} y={topY - 14} fontSize={8} textAnchor="end" fill={p.dim}>
+            {mt(lang, "gateSlideBack")}
+          </text>
+        </g>
+      ) : (
+        <g>
+          <rect x={leftX} y={topY} width={(rightX - leftX) / (dbl ? 2 : 1)} height={clearY - topY}
+            fill="none" stroke={p.post} strokeWidth={2.5} />
+          {dbl && (
+            <rect x={leftX + (rightX - leftX) / 2} y={topY} width={(rightX - leftX) / 2} height={clearY - topY}
+              fill="none" stroke={p.post} strokeWidth={2.5} />
+          )}
+        </g>
+      )}
+
+      {/* infill */}
+      {Array.from({ length: 9 }, (_, i) => (
+        <line key={i} x1={leftX + 8 + i * ((rightX - leftX - 16) / 8)} y1={topY + 4}
+          x2={leftX + 8 + i * ((rightX - leftX - 16) / 8)} y2={clearY - 4} stroke={p.ghost} strokeWidth={1.2} />
+      ))}
+
+      {/* clearance under the leaf — the number the swing check turns on */}
+      <line x1={leftX} y1={clearY} x2={rightX} y2={clearY} stroke={binds ? "#dc2626" : p.dim} strokeWidth={1.4} strokeDasharray="4 3" />
+      <text x={rightX + 16} y={clearY + 4} fontSize={8} fill={binds ? "#dc2626" : d("groundClearance").fill}>
+        {d("groundClearance").text}
+      </text>
+
+      {/* widths, top and bottom */}
+      <line x1={leftX} y1={topY - 14} x2={rightX} y2={topY - 14} stroke={p.dim} strokeWidth={1} />
+      <text x={(leftX + rightX) / 2} y={topY - 18} fontSize={9} textAnchor="middle" fill={d("widthTop").fill}>
+        {d("widthTop").text}
+      </text>
+      <text x={(leftX + rightX) / 2} y={gradeY + 26} fontSize={9} textAnchor="middle" fill={d("widthBottom").fill}>
+        {d("widthBottom").text}
+      </text>
+
+      {/* height */}
+      <line x1={26} y1={topY} x2={26} y2={gradeY} stroke={p.dim} strokeWidth={1} />
+      <text x={30} y={(topY + gradeY) / 2} fontSize={9} fill={d("heightHinge").fill}>
+        {d("heightHinge").text}
+      </text>
+
+      {/* the verdict */}
+      {rise !== null && rise > 0 && (
+        <text x={4} y={H - 6} fontSize={9} fontWeight={700} fill={binds ? "#dc2626" : "#16a34a"}>
+          {binds ? "✗" : "✓"} {mt(lang, "gateRiseLabel")} {d("gradeRise").text} · {mt(lang, "gateClearLabel")} {d("groundClearance").text}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+// ---- Fence run -------------------------------------------------------------
+
+// The run laid out flat: each segment as a bay of panels, turns marked, grade
+// change noted under the segment that carries it.
+function FenceSketch({ fence, p, lang }: { fence: FenceData | null; p: Palette; lang: string }) {
+  const segs = fence?.segments || [];
+  const W = 340;
+  const H = 210;
+  const baseY = 150;
+  const topY = 74;
+  const gutter = 32; // room for the height dimension, left of the first post
+  const usable = W - gutter - 14;
+  const per = segs.length ? usable / segs.length : usable;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 280 }}>
+      <line x1={12} y1={baseY} x2={W - 12} y2={baseY} stroke={p.line} strokeWidth={2} />
+      <text x={12} y={baseY + 14} fontSize={8} fill={p.dim}>
+        {mt(lang, "gateGrade").toUpperCase()}
+      </text>
+
+      {segs.map((sg, i) => {
+        const x0 = gutter + i * per;
+        const x1 = x0 + per - 6;
+        const turn = parseMeas(sg.turnDeg || "");
+        return (
+          <g key={sg.id}>
+            {/* posts at each end of the bay */}
+            <line x1={x0} y1={topY} x2={x0} y2={baseY} stroke={p.post} strokeWidth={3} />
+            <line x1={x1} y1={topY} x2={x1} y2={baseY} stroke={p.post} strokeWidth={3} />
+            {/* rails */}
+            <line x1={x0} y1={topY + 6} x2={x1} y2={topY + 6} stroke={p.line} strokeWidth={2} />
+            <line x1={x0} y1={baseY - 12} x2={x1} y2={baseY - 12} stroke={p.line} strokeWidth={2} />
+            {/* pickets */}
+            {Array.from({ length: 6 }, (_, k) => (
+              <line key={k} x1={x0 + 5 + k * ((x1 - x0 - 10) / 5)} y1={topY + 4}
+                x2={x0 + 5 + k * ((x1 - x0 - 10) / 5)} y2={baseY - 8} stroke={p.ghost} strokeWidth={1.2} />
+            ))}
+            {/* segment length */}
+            <text x={(x0 + x1) / 2} y={baseY + 26} fontSize={8.5} textAnchor="middle" fill={v(sg.length, p).fill}>
+              {v(sg.length, p).text}
+            </text>
+            <text x={(x0 + x1) / 2} y={topY - 6} fontSize={8} textAnchor="middle" fill={p.dim}>
+              {sg.label || i + 1}
+            </text>
+            {/* a turn at the end of this bay */}
+            {turn !== null && turn !== 0 && (
+              <text x={x1 + 3} y={topY - 6} fontSize={8.5} fill={p.post}>
+                ⟲{sg.turnDeg}
+              </text>
+            )}
+            {/* grade change */}
+            {sg.gradeChange && sg.gradeChange.trim() !== "" && (
+              <text x={(x0 + x1) / 2} y={baseY + 38} fontSize={7.5} textAnchor="middle" fill={p.dim}>
+                {sg.followsGrade === "stepped" ? mt(lang, "fenceStepped") : mt(lang, "fenceRacked")} {sg.gradeChange}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* height + total run */}
+      <line x1={16} y1={topY} x2={16} y2={baseY} stroke={p.dim} strokeWidth={1} />
+      <text x={4} y={(topY + baseY) / 2 - 6} fontSize={8.5} fill={v(fence?.height, p).fill}>
+        {v(fence?.height, p).text}
+      </text>
+      <text x={W / 2} y={24} fontSize={9} textAnchor="middle" fill={v(fence?.totalRun, p).fill}>
+        {mt(lang, "fenceTotalRun")}: {v(fence?.totalRun, p).text}
+      </text>
+      <text x={W / 2} y={40} fontSize={8} textAnchor="middle" fill={p.dim}>
+        {v(fence?.startTerm, p).text} → {v(fence?.endTerm, p).text}
+      </text>
+    </svg>
+  );
+}
+
+// ---- Balcony / juliet ------------------------------------------------------
+
+// Section through the slab edge: where the anchor lands, how deep it goes and
+// how close to the edge — the two numbers that decide if the rail holds.
+function BalconySectionSketch({ bal, p, lang }: { bal: BalconyData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 250;
+  const slabTop = 132;
+  const slabBot = 176;
+  const edgeX = 250;
+  const railTop = 40;
+
+  const d = (k: keyof BalconyData) => v(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p);
+  const emb = parseMeas(bal?.anchorEmbedment || "");
+  const th = parseMeas(bal?.slabThickness || "");
+  const cover = parseMeas(bal?.minCover || "") ?? 0;
+  const breaks = emb !== null && th !== null && emb + cover > th;
+  const fascia = bal?.mount === "fascia";
+  const postX = fascia ? edgeX + 6 : edgeX - 34;
+  const embPx = emb !== null && th !== null && th > 0 ? Math.min(44, (emb / th) * (slabBot - slabTop)) : 20;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 330 }}>
+      <defs>
+        <pattern id="balHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke={p.ghost} strokeWidth="2.5" />
+        </pattern>
+      </defs>
+
+      {/* slab */}
+      <rect x={0} y={slabTop} width={edgeX} height={slabBot - slabTop} fill="url(#balHatch)" stroke={p.line} strokeWidth={2} />
+      <text x={8} y={slabTop - 8} fontSize={8.5} fontWeight={700} fill={p.dim}>
+        {mt(lang, "balSlab").toUpperCase()}
+      </text>
+      {/* thickness */}
+      <line x1={edgeX + 30} y1={slabTop} x2={edgeX + 30} y2={slabBot} stroke={p.dim} strokeWidth={1} />
+      <text x={edgeX + 34} y={(slabTop + slabBot) / 2 + 3} fontSize={8.5} fill={d("slabThickness").fill}>
+        {d("slabThickness").text}
+      </text>
+
+      {/* post */}
+      <line x1={postX} y1={slabTop} x2={postX} y2={railTop} stroke={p.post} strokeWidth={4} />
+      <line x1={postX - 22} y1={railTop} x2={postX + 22} y2={railTop} stroke={p.post} strokeWidth={3} />
+      {[0.3, 0.6].map((f) => (
+        <line key={f} x1={postX - 16 + f * 20} y1={slabTop} x2={postX - 16 + f * 20} y2={railTop} stroke={p.ghost} strokeWidth={1.2} />
+      ))}
+      <text x={postX - 26} y={railTop - 8} fontSize={8.5} fill={d("guardHeight").fill}>
+        {d("guardHeight").text}
+      </text>
+
+      {/* the anchor going into the slab */}
+      <line x1={postX} y1={slabTop} x2={postX} y2={slabTop + embPx}
+        stroke={breaks ? "#dc2626" : "#16a34a"} strokeWidth={3.5} />
+      <text x={postX + 6} y={slabTop + embPx + 10} fontSize={8} fill={breaks ? "#dc2626" : d("anchorEmbedment").fill}>
+        {d("anchorEmbedment").text}
+      </text>
+
+      {/* edge distance */}
+      <line x1={postX} y1={slabTop - 10} x2={edgeX} y2={slabTop - 10} stroke={p.dim} strokeWidth={1} />
+      <text x={(postX + edgeX) / 2} y={slabTop - 14} fontSize={8} textAnchor="middle" fill={d("edgeDistance").fill}>
+        {d("edgeDistance").text}
+      </text>
+
+      {breaks && (
+        <text x={4} y={H - 6} fontSize={9} fontWeight={700} fill="#dc2626">
+          ✗ {mt(lang, "balBreaksThrough")}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+// Elevation along the edge — length, returns and the opening a juliet fronts.
+function BalconyElevationSketch({ bal, p, lang }: { bal: BalconyData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 200;
+  const left = 40;
+  const right = 300;
+  const floorY = 150;
+  const railTop = 56;
+  const d = (k: keyof BalconyData) => v(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p);
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 280 }}>
+      <line x1={12} y1={floorY} x2={W - 12} y2={floorY} stroke={p.line} strokeWidth={2.5} />
+      <text x={12} y={floorY + 15} fontSize={8} fill={p.dim}>
+        {mt(lang, "balFinishedFloorShort").toUpperCase()}
+      </text>
+
+      {/* rail */}
+      <line x1={left} y1={railTop} x2={right} y2={railTop} stroke={p.post} strokeWidth={3} />
+      <line x1={left} y1={railTop} x2={left} y2={floorY} stroke={p.post} strokeWidth={3.5} />
+      <line x1={right} y1={railTop} x2={right} y2={floorY} stroke={p.post} strokeWidth={3.5} />
+      {Array.from({ length: 12 }, (_, i) => (
+        <line key={i} x1={left + 10 + i * ((right - left - 20) / 11)} y1={railTop}
+          x2={left + 10 + i * ((right - left - 20) / 11)} y2={floorY} stroke={p.ghost} strokeWidth={1.2} />
+      ))}
+
+      {/* the door a juliet fronts */}
+      {bal?.kind === "juliet" && (
+        <g>
+          <rect x={(left + right) / 2 - 34} y={railTop - 30} width={68} height={30}
+            fill="none" stroke={p.ghost} strokeWidth={1.4} strokeDasharray="4 3" />
+          <text x={(left + right) / 2} y={railTop - 34} fontSize={8} textAnchor="middle" fill={p.dim}>
+            {d("doorOpening").text}
+          </text>
+        </g>
+      )}
+
+      <line x1={left} y1={floorY + 22} x2={right} y2={floorY + 22} stroke={p.dim} strokeWidth={1} />
+      <text x={(left + right) / 2} y={floorY + 36} fontSize={9} textAnchor="middle" fill={d("edgeLength").fill}>
+        {d("edgeLength").text}
+      </text>
+      <line x1={24} y1={railTop} x2={24} y2={floorY} stroke={p.dim} strokeWidth={1} />
+      <text x={27} y={(railTop + floorY) / 2} fontSize={8.5} fill={d("guardHeight").fill}>
+        {d("guardHeight").text}
       </text>
     </svg>
   );

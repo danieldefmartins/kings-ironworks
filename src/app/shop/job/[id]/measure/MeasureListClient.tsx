@@ -39,7 +39,7 @@ export default function MeasureListClient({
   const [err, setErr] = useState<string | null>(null);
 
   const twoFlights = shape ? TWO_FLIGHT_SHAPES.includes(shape) : false;
-  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well";
+  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
 
   async function create() {
     if (!shape) return;
@@ -145,6 +145,8 @@ export default function MeasureListClient({
                     ? mt(lang, "stepsFlight1")
                     : shape === "fire_escape"
                     ? mt(lang, "fireStories")
+                    : shape === "fence"
+                    ? mt(lang, "fenceSegment")
                     : shape === "spiral"
                     ? mt(lang, "treadsCount")
                     : twoFlights

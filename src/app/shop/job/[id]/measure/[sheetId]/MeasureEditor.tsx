@@ -38,6 +38,11 @@ import {
   type FireEscapeData,
   type FireLevel,
   type FireCondition,
+  type GateData,
+  type FenceData,
+  type FenceSegment,
+  type BalconyData,
+  newFenceSegment,
   FIRE_PURPOSES,
   CONDITION_RATINGS,
   newFireLevel,
@@ -379,6 +384,22 @@ export default function MeasureEditor({
     setSelectedPostId(id);
   }
 
+  function setGate(fn: (g: GateData) => void) {
+    set((d) => { if (d.gate) fn(d.gate); });
+  }
+  function setFence(fn: (f: FenceData) => void) {
+    set((d) => { if (d.fence) fn(d.fence); });
+  }
+  function setSeg(id: string, fn: (sg: FenceSegment) => void) {
+    setFence((f) => {
+      const sg = f.segments.find((x) => x.id === id);
+      if (sg) fn(sg);
+    });
+  }
+  function setBalcony(fn: (b: BalconyData) => void) {
+    set((d) => { if (d.balcony) fn(d.balcony); });
+  }
+
   function setFire(fn: (f: FireEscapeData) => void) {
     set((d) => {
       if (d.fire) fn(d.fire);
@@ -617,6 +638,9 @@ export default function MeasureEditor({
   const canSubmit = gaps.length === 0 && redChecks.length === 0;
   const gapStage = (key: string): EditorStage => {
     if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
+    if (key.startsWith("gate_")) return key === "gate_opener" || key === "gate_power" || key === "gate_safety" ? "specs" : "setup";
+    if (key.startsWith("fence_")) return key.startsWith("fence_seg") ? "steps" : "setup";
+    if (key.startsWith("bal_")) return key.includes("anchor") || key.includes("embed") || key.includes("edge_distance") || key.includes("slab") ? "locations" : "setup";
     if (key.startsWith("fire_")) {
       if (key.startsWith("fire_stair") || key === "fire_floor_to_floor") return "steps";
       if (key.startsWith("fire_ladder")) return "specs";
@@ -651,6 +675,12 @@ export default function MeasureEditor({
   const firePurpose = fire?.purpose || "";
   const fireSurvey = isFire && (firePurpose === "inspect" || firePurpose === "repair");
   const fireNew = isFire && firePurpose === "new";
+  const isGate = sheet.shape === "gate";
+  const isFence = sheet.shape === "fence";
+  const isBalcony = sheet.shape === "balcony";
+  const gate = data.gate;
+  const fence = data.fence;
+  const balcony = data.balcony;
   const isWell = sheet.shape === "window_well";
   const well = data.well;
   const wellWants = (k: WellDeliverable) => !!well?.deliverables.includes(k);
@@ -678,7 +708,7 @@ export default function MeasureEditor({
   const hasGuardrail = data.rail.kind !== "Handrail";
   // Datums and the wall/open orientation describe a stair run. A well or a
   // fire escape carries its own reference frame, so the card stays hidden.
-  const needsPostReference = !isWallRail && !isCustom && !isSpiral && !isWell && !isFire;
+  const needsPostReference = !isWallRail && !isCustom && !isSpiral && !isWell && !isFire && !isGate && !isFence && !isBalcony;
 
   // Direct slot photo: the native OS picker (camera / photo library) uploads
   // straight into the slot — the markup modal stays a separate, optional step.
@@ -889,6 +919,231 @@ export default function MeasureEditor({
             />}
           </div>
         </Card>}
+
+        {isGate && gate && (
+          <>
+            <Card stage="setup" title={`🚪 ${mt(lang, "gateTitle")}`}>
+              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "gateHint")}</p>
+              <Grid>
+                <MSelect label={mt(lang, "gateUse")} value={gate.use} lang={lang}
+                  options={["driveway", "walk", "service", "pool"]}
+                  labels={Object.fromEntries(["driveway", "walk", "service", "pool"].map((k) => [k, mt(lang, `gateU_${k}`)]))}
+                  onChange={(v) => setGate((g) => void (g.use = v as GateData["use"]))} />
+                <MSelect label={mt(lang, "gateOperation")} value={gate.operation} lang={lang}
+                  options={["single_swing", "double_swing", "slide", "bifold"]}
+                  labels={Object.fromEntries(["single_swing", "double_swing", "slide", "bifold"].map((k) => [k, mt(lang, `gateO_${k}`)]))}
+                  onChange={(v) => setGate((g) => void (g.operation = v as GateData["operation"]))} />
+                <MInput label={mt(lang, "gateWidthTop")} value={gate.widthTop}
+                  onChange={(v) => setGate((g) => void (g.widthTop = v))} />
+                <MInput label={mt(lang, "gateWidthBottom")} value={gate.widthBottom}
+                  onChange={(v) => setGate((g) => void (g.widthBottom = v))} />
+                <MInput label={mt(lang, "gateHeightHinge")} value={gate.heightHinge}
+                  onChange={(v) => setGate((g) => void (g.heightHinge = v))} />
+                <MInput label={mt(lang, "gateHeightLatch")} placeholder="—" value={gate.heightLatch}
+                  onChange={(v) => setGate((g) => void (g.heightLatch = v))} />
+                <MInput label={mt(lang, "gateDiagA")} placeholder="—" value={gate.diagA}
+                  onChange={(v) => setGate((g) => void (g.diagA = v))} />
+                <MInput label={mt(lang, "gateDiagB")} placeholder="—" value={gate.diagB}
+                  onChange={(v) => setGate((g) => void (g.diagB = v))} />
+              </Grid>
+
+              <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "gateGroundTitle")}</div>
+              <p className="mb-2 text-xs text-neutral-400">{mt(lang, "gateGroundHint")}</p>
+              <Grid>
+                <MInput label={mt(lang, "gateGroundClearance")} value={gate.groundClearance}
+                  onChange={(v) => setGate((g) => void (g.groundClearance = v))} />
+                <MInput label={mt(lang, "gateGradeRise")} value={gate.gradeRise}
+                  onChange={(v) => setGate((g) => void (g.gradeRise = v))} />
+                <MInput label={mt(lang, "gateSurface")} value={gate.surface}
+                  onChange={(v) => setGate((g) => void (g.surface = v))} />
+                <ChipRow label={mt(lang, "gateSwingDir")} value={gate.swingDir}
+                  options={[["in", mt(lang, "gateSwingIn")], ["out", mt(lang, "gateSwingOut")], ["both", mt(lang, "gateSwingBoth")]]}
+                  onChange={(v) => setGate((g) => void (g.swingDir = v as GateData["swingDir"]))} />
+                <ChipRow label={mt(lang, "gateHingeSide")} value={gate.hingeSide}
+                  options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
+                  onChange={(v) => setGate((g) => void (g.hingeSide = v as GateData["hingeSide"]))} />
+              </Grid>
+            </Card>
+
+            <Card stage="specs" title={`🔧 ${mt(lang, "gatePostsHardware")}`}>
+              <label className="mb-3 flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={gate.postsExisting}
+                  onChange={(e) => setGate((g) => void (g.postsExisting = e.target.checked))}
+                  className="h-5 w-5 accent-amber-500" />
+                {mt(lang, "gatePostsExisting")}
+              </label>
+              <Grid>
+                <MInput label={mt(lang, "gatePostSize")} value={gate.postSize}
+                  onChange={(v) => setGate((g) => void (g.postSize = v))} />
+                <MInput label={mt(lang, "gatePostMaterial")} placeholder="—" value={gate.postMaterial}
+                  onChange={(v) => setGate((g) => void (g.postMaterial = v))} />
+                <MInput label={mt(lang, "gateFooting")} value={gate.footingDepth}
+                  onChange={(v) => setGate((g) => void (g.footingDepth = v))} />
+                <MInput label={mt(lang, "gateInfill")} value={gate.infill}
+                  onChange={(v) => setGate((g) => void (g.infill = v))} />
+                <MInput label={mt(lang, "gatePicketSpacing")} placeholder="—" value={gate.picketSpacing}
+                  onChange={(v) => setGate((g) => void (g.picketSpacing = v))} />
+                <MInput label={mt(lang, "gateHinges")} value={gate.hinges}
+                  onChange={(v) => setGate((g) => void (g.hinges = v))} />
+                <MInput label={mt(lang, "gateLatch")} value={gate.latch}
+                  onChange={(v) => setGate((g) => void (g.latch = v))} />
+                <MInput label={mt(lang, "gateDropRod")} placeholder="—" value={gate.dropRod}
+                  onChange={(v) => setGate((g) => void (g.dropRod = v))} />
+              </Grid>
+              <label className="mt-4 mb-3 flex items-center gap-2 text-sm text-neutral-300">
+                <input type="checkbox" checked={gate.automated}
+                  onChange={(e) => setGate((g) => void (g.automated = e.target.checked))}
+                  className="h-5 w-5 accent-amber-500" />
+                {mt(lang, "gateAutomated")}
+              </label>
+              {gate.automated && (
+                <Grid>
+                  <MInput label={mt(lang, "gateOpener")} value={gate.opener}
+                    onChange={(v) => setGate((g) => void (g.opener = v))} />
+                  <ChipRow label={mt(lang, "gatePower")} value={gate.powerAtGate}
+                    options={[["yes", mt(lang, "fireOp_yes")], ["no", mt(lang, "gateNo")], ["unknown", mt(lang, "gateUnknown")]]}
+                    onChange={(v) => setGate((g) => void (g.powerAtGate = v as GateData["powerAtGate"]))} />
+                  <MInput label={mt(lang, "gateSafety")} value={gate.safetyDevices}
+                    onChange={(v) => setGate((g) => void (g.safetyDevices = v))} />
+                </Grid>
+              )}
+            </Card>
+          </>
+        )}
+
+        {isFence && fence && (
+          <>
+            <Card stage="setup" title={`🚧 ${mt(lang, "fenceTitle")}`}>
+              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "fenceHint")}</p>
+              <Grid>
+                <MInput label={mt(lang, "fenceTotalRun")} value={fence.totalRun}
+                  onChange={(v) => setFence((f) => void (f.totalRun = v))} />
+                <MInput label={mt(lang, "fenceHeight")} value={fence.height}
+                  onChange={(v) => setFence((f) => void (f.height = v))} />
+                <MInput label={mt(lang, "fencePanelWidth")} placeholder="—" value={fence.panelWidth}
+                  onChange={(v) => setFence((f) => void (f.panelWidth = v))} />
+                <MInput label={mt(lang, "fencePostSpacing")} value={fence.postSpacing}
+                  onChange={(v) => setFence((f) => void (f.postSpacing = v))} />
+                <MInput label={mt(lang, "fencePostSize")} value={fence.postSize}
+                  onChange={(v) => setFence((f) => void (f.postSize = v))} />
+                <MInput label={mt(lang, "fenceFooting")} value={fence.footingDepth}
+                  onChange={(v) => setFence((f) => void (f.footingDepth = v))} />
+                <MInput label={mt(lang, "fencePicketSpacing")} placeholder="—" value={fence.picketSpacing}
+                  onChange={(v) => setFence((f) => void (f.picketSpacing = v))} />
+                <MInput label={mt(lang, "fenceGates")} placeholder="—" value={fence.gates}
+                  onChange={(v) => setFence((f) => void (f.gates = v))} />
+                <MInput label={mt(lang, "fenceStartTerm")} value={fence.startTerm}
+                  onChange={(v) => setFence((f) => void (f.startTerm = v))} />
+                <MInput label={mt(lang, "fenceEndTerm")} value={fence.endTerm}
+                  onChange={(v) => setFence((f) => void (f.endTerm = v))} />
+                <MInput label={mt(lang, "fenceUtilities")} value={fence.utilities}
+                  onChange={(v) => setFence((f) => void (f.utilities = v))} />
+              </Grid>
+            </Card>
+
+            {fence.segments.map((sg, i) => (
+              <Card key={sg.id} stage="steps" title={`${mt(lang, "fenceSegment")} ${sg.label || i + 1}`}>
+                <div className="mb-3 flex items-center gap-2">
+                  <input value={sg.label} onChange={(e) => setSeg(sg.id, (x) => void (x.label = e.target.value))}
+                    placeholder={mt(lang, "fenceSegLabel")}
+                    className="w-40 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-base" />
+                  {fence.segments.length > 1 && (
+                    <button type="button"
+                      onClick={() => setFence((f) => void (f.segments = f.segments.filter((x) => x.id !== sg.id)))}
+                      className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
+                      ✕ {mt(lang, "removePost")}
+                    </button>
+                  )}
+                </div>
+                <Grid>
+                  <MInput label={mt(lang, "fenceSegLength")} value={sg.length}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.length = v))} />
+                  <MInput label={mt(lang, "fenceSegPanels")} placeholder="—" value={sg.panels}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.panels = v))} />
+                  <MInput label={mt(lang, "fenceSegHeight")} placeholder="—" value={sg.height}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.height = v))} />
+                  <MInput label={mt(lang, "fenceSegTurn")} placeholder="°" value={sg.turnDeg}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.turnDeg = v))} />
+                  <MInput label={mt(lang, "fenceSegGrade")} placeholder="—" value={sg.gradeChange}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.gradeChange = v))} />
+                  <ChipRow label={mt(lang, "fenceSegFollows")} value={sg.followsGrade}
+                    options={[["racked", mt(lang, "fenceRacked")], ["stepped", mt(lang, "fenceStepped")]]}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.followsGrade = v as FenceSegment["followsGrade"]))} />
+                  <MInput label={mt(lang, "fenceSegObstruction")} placeholder="—" value={sg.obstruction}
+                    onChange={(v) => setSeg(sg.id, (x) => void (x.obstruction = v))} />
+                </Grid>
+              </Card>
+            ))}
+
+            <Card stage="steps" title={mt(lang, "fenceMoreTitle")}>
+              <button type="button"
+                onClick={() => setFence((f) => void f.segments.push(newFenceSegment(String(f.segments.length + 1))))}
+                className="w-full rounded-xl border border-amber-600 bg-amber-500/10 py-3 font-bold text-amber-300">
+                + {mt(lang, "fenceAddSegment")}
+              </button>
+            </Card>
+          </>
+        )}
+
+        {isBalcony && balcony && (
+          <>
+            <Card stage="setup" title={`🏗 ${mt(lang, "balTitle")}`}>
+              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balHint")}</p>
+              <Grid>
+                <MSelect label={mt(lang, "balKind")} value={balcony.kind} lang={lang}
+                  options={["balcony", "juliet", "deck_edge", "roof_edge"]}
+                  labels={Object.fromEntries(["balcony", "juliet", "deck_edge", "roof_edge"].map((k) => [k, mt(lang, `balK_${k}`)]))}
+                  onChange={(v) => setBalcony((b) => void (b.kind = v as BalconyData["kind"]))} />
+                <MSelect label={mt(lang, "balMount")} value={balcony.mount} lang={lang}
+                  options={["top", "fascia", "core_drill", "embedded"]}
+                  labels={Object.fromEntries(["top", "fascia", "core_drill", "embedded"].map((k) => [k, mt(lang, `balM_${k}`)]))}
+                  onChange={(v) => setBalcony((b) => void (b.mount = v as BalconyData["mount"]))} />
+                <MInput label={mt(lang, "balEdgeLength")} value={balcony.edgeLength}
+                  onChange={(v) => setBalcony((b) => void (b.edgeLength = v))} />
+                <MInput label={mt(lang, "balProjection")} placeholder="—" value={balcony.projection}
+                  onChange={(v) => setBalcony((b) => void (b.projection = v))} />
+                <MInput label={mt(lang, "balGuardHeight")} value={balcony.guardHeight}
+                  onChange={(v) => setBalcony((b) => void (b.guardHeight = v))} />
+                <MInput label={mt(lang, "balPicketSpacing")} placeholder="—" value={balcony.picketSpacing}
+                  onChange={(v) => setBalcony((b) => void (b.picketSpacing = v))} />
+                <MInput label={mt(lang, "balReturns")} value={balcony.returns}
+                  onChange={(v) => setBalcony((b) => void (b.returns = v))} />
+                <MInput label={mt(lang, "balCorners")} placeholder="—" value={balcony.corners}
+                  onChange={(v) => setBalcony((b) => void (b.corners = v))} />
+                <MInput label={mt(lang, "balFinishedFloor")} value={balcony.finishedFloor}
+                  onChange={(v) => setBalcony((b) => void (b.finishedFloor = v))} />
+                <MInput label={mt(lang, "balDrainage")} placeholder="—" value={balcony.drainage}
+                  onChange={(v) => setBalcony((b) => void (b.drainage = v))} />
+                {balcony.kind === "juliet" && (
+                  <MInput label={mt(lang, "balDoorOpening")} value={balcony.doorOpening}
+                    onChange={(v) => setBalcony((b) => void (b.doorOpening = v))} />
+                )}
+              </Grid>
+            </Card>
+
+            <Card stage="locations" title={`⚙ ${mt(lang, "balAnchorTitle")}`}>
+              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balAnchorHint")}</p>
+              <Grid>
+                <MInput label={mt(lang, "balSlabMaterial")} value={balcony.slabMaterial}
+                  onChange={(v) => setBalcony((b) => void (b.slabMaterial = v))} />
+                <MInput label={mt(lang, "balSlabThickness")} value={balcony.slabThickness}
+                  onChange={(v) => setBalcony((b) => void (b.slabThickness = v))} />
+                <MInput label={mt(lang, "balAnchorType")} value={balcony.anchorType}
+                  onChange={(v) => setBalcony((b) => void (b.anchorType = v))} />
+                <MInput label={mt(lang, "balEmbedment")} value={balcony.anchorEmbedment}
+                  onChange={(v) => setBalcony((b) => void (b.anchorEmbedment = v))} />
+                <MInput label={mt(lang, "balEdgeDistance")} value={balcony.edgeDistance}
+                  onChange={(v) => setBalcony((b) => void (b.edgeDistance = v))} />
+                <MInput label={mt(lang, "balMinCover")} placeholder="—" value={balcony.minCover}
+                  onChange={(v) => setBalcony((b) => void (b.minCover = v))} />
+                <MInput label={mt(lang, "balPlatePlan")} placeholder="—" value={balcony.platePlan}
+                  onChange={(v) => setBalcony((b) => void (b.platePlan = v))} />
+                <MInput label={mt(lang, "balEdgeCondition")} placeholder="—" value={balcony.edgeCondition}
+                  onChange={(v) => setBalcony((b) => void (b.edgeCondition = v))} />
+              </Grid>
+            </Card>
+          </>
+        )}
 
         {isFire && fire && (
           <>
@@ -1274,7 +1529,7 @@ export default function MeasureEditor({
           </>
         )}
 
-        {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && (
+        {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
           <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
             <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
             <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
@@ -1404,7 +1659,13 @@ export default function MeasureEditor({
             <div className="text-xs text-neutral-500 mb-2">
               {mt(
                 lang,
-                isFire
+                isGate
+                  ? "sketchHintGate"
+                  : isFence
+                  ? "sketchHintFence"
+                  : isBalcony
+                  ? "sketchHintBalcony"
+                  : isFire
                   ? "sketchHintFire"
                   : isWell
                   ? "sketchHintWell"
@@ -1792,7 +2053,7 @@ export default function MeasureEditor({
         ))}
 
         {/* Posts */}
-        {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && (
+        {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
           <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
             {posts.length === 0 && (
               <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
@@ -1946,7 +2207,7 @@ export default function MeasureEditor({
         )}
 
         {/* Rail spans — every piece: length + BOTH end terminations */}
-        {(!isWell || wellWants("guard")) && (!isFire || fireNew) && (
+        {(!isWell || wellWants("guard")) && (!isFire || fireNew) && !isGate && !isFence && (
         <Card stage="posts" title={`🔗 ${mt(lang, "spansTitle")}`}>
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "spansHint")}</div>
           <div className="space-y-4">

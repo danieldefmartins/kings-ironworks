@@ -14,6 +14,9 @@ export type MeasureShape =
   | "spiral"
   | "window_well"
   | "fire_escape"
+  | "gate"
+  | "fence"
+  | "balcony"
   | "builder"
   | "custom";
 
@@ -28,6 +31,9 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "spiral",
   "window_well",
   "fire_escape",
+  "gate",
+  "fence",
+  "balcony",
   "builder",
   "custom",
 ];
@@ -304,6 +310,145 @@ export function blankFireEscape(levels: number): FireEscapeData {
     paintSystem: "",
     violations: "",
     notes: "",
+  };
+}
+
+// ---- Gates -----------------------------------------------------------------
+// The callback on a gate is almost never the gate — it is the ground. A leaf
+// that swings over rising grade binds before it is fully open, so the bottom
+// clearance and the grade rise across the swing are measured together and
+// checked against each other.
+
+export interface GateData {
+  use: "" | "driveway" | "walk" | "service" | "pool";
+  operation: "" | "single_swing" | "double_swing" | "slide" | "bifold";
+  // The opening, measured at both ends because posts are rarely plumb
+  widthTop: string;
+  widthBottom: string;
+  heightHinge: string;
+  heightLatch: string;
+  diagA: string;
+  diagB: string;
+  // Ground
+  groundClearance: string; // bottom of leaf to grade, closed
+  gradeRise: string; // grade rise across the swing path (+ rises, - falls)
+  swingDir: "" | "in" | "out" | "both";
+  hingeSide: "" | "left" | "right";
+  surface: string; // asphalt / concrete / gravel / grass
+  // Posts
+  postsExisting: boolean;
+  postSize: string;
+  postMaterial: string;
+  footingDepth: string;
+  // Leaf + hardware
+  leafCount: string;
+  infill: string;
+  picketSpacing: string;
+  hinges: string;
+  latch: string;
+  dropRod: string;
+  // Automation
+  automated: boolean;
+  opener: string;
+  powerAtGate: "" | "yes" | "no" | "unknown";
+  safetyDevices: string;
+  notes: string;
+}
+
+export function blankGate(): GateData {
+  return {
+    use: "", operation: "", widthTop: "", widthBottom: "", heightHinge: "", heightLatch: "",
+    diagA: "", diagB: "", groundClearance: "", gradeRise: "", swingDir: "", hingeSide: "",
+    surface: "", postsExisting: false, postSize: "", postMaterial: "", footingDepth: "",
+    leafCount: "", infill: "", picketSpacing: "", hinges: "", latch: "", dropRod: "",
+    automated: false, opener: "", powerAtGate: "", safetyDevices: "", notes: "",
+  };
+}
+
+// ---- Fence runs ------------------------------------------------------------
+// A run is a chain of straight segments. Each is measured on its own AND the
+// whole run is measured end to end, so the two can be checked against each
+// other before anything is cut.
+
+export interface FenceSegment {
+  id: string;
+  label: string;
+  length: string;
+  panels: string; // how many panels this segment takes
+  height: string;
+  turnDeg: string; // direction change at the END of this segment
+  gradeChange: string; // rise or fall along this segment
+  followsGrade: "" | "racked" | "stepped"; // how the panel meets the slope
+  obstruction: string;
+}
+
+export function newFenceSegment(label = ""): FenceSegment {
+  return { id: newPostId(), label, length: "", panels: "", height: "", turnDeg: "", gradeChange: "", followsGrade: "", obstruction: "" };
+}
+
+export interface FenceData {
+  segments: FenceSegment[];
+  totalRun: string; // measured end to end, independent of the segments
+  panelWidth: string; // nominal panel / bay width
+  postSpacing: string;
+  postSize: string;
+  footingDepth: string;
+  height: string; // nominal height for the run
+  picketSpacing: string;
+  gates: string; // how many gates and roughly where
+  startTerm: string; // what the run starts against
+  endTerm: string;
+  utilities: string; // what is buried on the line
+  notes: string;
+}
+
+export function blankFence(segs: number): FenceData {
+  const n = Math.min(24, Math.max(1, segs || 1));
+  return {
+    segments: Array.from({ length: n }, (_, i) => newFenceSegment(String(i + 1))),
+    totalRun: "", panelWidth: "", postSpacing: "", postSize: "", footingDepth: "",
+    height: "", picketSpacing: "", gates: "", startTerm: "", endTerm: "", utilities: "", notes: "",
+  };
+}
+
+// ---- Balcony / juliet railings ---------------------------------------------
+// These anchor into the edge of a slab, which is the one place concrete has
+// the least to give. Embedment against slab thickness, and how close the
+// anchor sits to the edge, are what decide whether the rail holds.
+
+export interface BalconyData {
+  kind: "" | "balcony" | "juliet" | "deck_edge" | "roof_edge";
+  mount: "" | "top" | "fascia" | "core_drill" | "embedded";
+  // The edge being railed
+  edgeLength: string;
+  projection: string; // how far the balcony comes off the building
+  slabThickness: string;
+  slabMaterial: string; // concrete / steel deck / wood framing
+  edgeCondition: string; // spalling, drip edge, overhang
+  // Rail
+  guardHeight: string; // from finished floor
+  picketSpacing: string;
+  returns: string; // returns into the building at each end
+  corners: string;
+  // Anchorage — what the check turns on
+  anchorType: string;
+  anchorEmbedment: string;
+  edgeDistance: string; // anchor centre to the slab edge
+  minCover: string; // cover required below the anchor
+  platePlan: string;
+  // Site
+  doorOpening: string; // the opening a juliet fronts
+  finishedFloor: string; // what the floor will be when the rail goes on
+  drainage: string; // scuppers, drains, slope the rail must clear
+  notes: string;
+}
+
+export function blankBalcony(): BalconyData {
+  return {
+    kind: "", mount: "", edgeLength: "", projection: "", slabThickness: "", slabMaterial: "",
+    edgeCondition: "", guardHeight: "", picketSpacing: "", returns: "", corners: "",
+    anchorType: "", anchorEmbedment: "", edgeDistance: "", minCover: "", platePlan: "",
+    doorOpening: "", finishedFloor: "", drainage: "", notes: "",
   };
 }
 
@@ -710,6 +855,9 @@ export interface MeasureData {
   spiral: SpiralData | null;
   well: WellData | null;
   fire: FireEscapeData | null;
+  gate: GateData | null;
+  fence: FenceData | null;
+  balcony: BalconyData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -836,6 +984,9 @@ export function newMeasureData(
   let spiral: SpiralData | null = null;
   let well: WellData | null = null;
   let fire: FireEscapeData | null = null;
+  let gate: GateData | null = null;
+  let fence: FenceData | null = null;
+  let balcony: BalconyData | null = null;
 
   switch (shape) {
     case "straight":
@@ -872,6 +1023,16 @@ export function newMeasureData(
       // steps1 carries the number of levels for this shape.
       fire = blankFireEscape(steps1);
       break;
+    case "gate":
+      gate = blankGate();
+      break;
+    case "fence":
+      // steps1 carries the number of straight segments in the run.
+      fence = blankFence(steps1);
+      break;
+    case "balcony":
+      balcony = blankBalcony();
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -893,6 +1054,9 @@ export function newMeasureData(
     spiral,
     well,
     fire,
+    gate,
+    fence,
+    balcony,
     plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
@@ -1103,6 +1267,15 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
           overall: { ...blankCondition(), ...(d.fire.overall || {}) },
         }
       : null,
+    gate: d.gate ? { ...blankGate(), ...d.gate } : null,
+    fence: d.fence
+      ? {
+          ...blankFence(1),
+          ...d.fence,
+          segments: (d.fence.segments || []).map((g) => ({ ...newFenceSegment(), ...g })),
+        }
+      : null,
+    balcony: d.balcony ? { ...blankBalcony(), ...d.balcony } : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -1157,6 +1330,13 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
     case "fire_escape":
       // The anchors and the drop ladder are what inspections turn on.
       return ["fe_elevation", "fe_anchors", "fe_ladder", "fe_deck"];
+    case "gate":
+      return ["gate_opening", "gate_posts", "gate_ground"];
+    case "fence":
+      return ["fence_run", "fence_start", "fence_end", "fence_grade"];
+    case "balcony":
+      // The slab edge is the photo the shop argues about.
+      return ["bal_overall", "bal_slab_edge", "bal_mount"];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -1194,6 +1374,20 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
     }
   }
   for (const p of data.posts) vals.push(p.distanceFromFirst, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
+  if (data.gate) {
+    const g = data.gate;
+    vals.push(g.use, g.operation, g.widthTop, g.widthBottom, g.heightHinge, g.groundClearance, g.gradeRise);
+    if (g.automated) vals.push(g.opener, g.powerAtGate);
+  }
+  if (data.fence) {
+    const fc = data.fence;
+    vals.push(fc.totalRun, fc.height, fc.postSpacing, fc.startTerm, fc.endTerm);
+    for (const sg of fc.segments) vals.push(sg.length, sg.height);
+  }
+  if (data.balcony) {
+    const b = data.balcony;
+    vals.push(b.kind, b.mount, b.edgeLength, b.guardHeight, b.slabThickness, b.anchorEmbedment, b.edgeDistance);
+  }
   if (data.fire) {
     const f = data.fire;
     vals.push(f.purpose, f.stories, f.wallMaterial, f.totalHeight);

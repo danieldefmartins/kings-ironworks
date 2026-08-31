@@ -391,6 +391,130 @@ function fireChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
   return out;
 }
 
+
+// ---- Gates -----------------------------------------------------------------
+
+function gateChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const g = data.gate;
+  if (!g) return out;
+
+  // Posts are rarely plumb. Top and bottom widths disagreeing is the number
+  // that decides whether a square leaf will even fit.
+  const wt = parseMeas(g.widthTop);
+  const wb = parseMeas(g.widthBottom);
+  out.push(compare("gate_width_agree", wt, wb, tol.widthVar, "in"));
+
+  // Same for the two post heights, which reveal the grade across the opening.
+  out.push(compare("gate_height_agree", parseMeas(g.heightHinge), parseMeas(g.heightLatch), tol.widthVar, "in"));
+
+  // Squareness of the opening.
+  out.push(compare("gate_square", parseMeas(g.diagA), parseMeas(g.diagB), tol.rake, "in"));
+
+  // THE gate check: a leaf swinging over rising ground binds. The bottom
+  // clearance has to be greater than the grade rise across the swing path,
+  // or the gate stops before it is open.
+  const clear = parseMeas(g.groundClearance);
+  const rise = parseMeas(g.gradeRise);
+  const swings = g.operation === "single_swing" || g.operation === "double_swing" || g.operation === "bifold";
+  if (swings && clear !== null && rise !== null) {
+    if (rise <= 0) {
+      out.push({ key: "gate_swing_clearance", level: "green", expected: 0, actual: clear, delta: null, unit: "in" });
+    } else {
+      out.push({
+        key: "gate_swing_clearance",
+        level: clear > rise ? "green" : "red",
+        expected: rise,
+        actual: clear,
+        delta: clear - rise,
+        unit: "in",
+      });
+    }
+  }
+
+  const ps = parseMeas(g.picketSpacing);
+  if (ps !== null && ps > 4) {
+    out.push({ key: "gate_picket_spacing", level: g.use === "pool" ? "red" : "yellow", expected: 4, actual: ps, delta: ps - 4, unit: "in" });
+  }
+  return out;
+}
+
+// ---- Fence runs ------------------------------------------------------------
+
+function fenceChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const f = data.fence;
+  if (!f) return out;
+
+  // The segments have to add up to the run measured end to end.
+  let sum: number | null = 0;
+  for (const sg of f.segments) {
+    const L = parseMeas(sg.length);
+    if (L === null) { sum = null; break; }
+    sum += L;
+  }
+  out.push(compare("fence_run_sum", sum, parseMeas(f.totalRun), tol.runSum, "in"));
+
+  // And the panels have to add up to the segment they sit in.
+  const pw = parseMeas(f.panelWidth);
+  if (pw !== null && pw > 0) {
+    f.segments.forEach((sg, i) => {
+      const n = parseMeas(sg.panels);
+      const L = parseMeas(sg.length);
+      if (n !== null && L !== null) {
+        out.push(compare("fence_panel_fit", n * pw, L, tol.runSum, "in", sg.label || `#${i + 1}`));
+      }
+    });
+  }
+
+  const ps = parseMeas(f.picketSpacing);
+  if (ps !== null && ps > 4) {
+    out.push({ key: "fence_picket_spacing", level: "yellow", expected: 4, actual: ps, delta: ps - 4, unit: "in" });
+  }
+  return out;
+}
+
+// ---- Balcony / juliet ------------------------------------------------------
+
+function balconyChecks(data: MeasureData): CheckResult[] {
+  const out: CheckResult[] = [];
+  const b = data.balcony;
+  if (!b) return out;
+
+  // An anchor that goes deeper than the slab can hold breaks straight
+  // through it. Embedment plus the cover the shop wants underneath has to
+  // fit inside the slab.
+  const emb = parseMeas(b.anchorEmbedment);
+  const th = parseMeas(b.slabThickness);
+  const cover = parseMeas(b.minCover) ?? 0;
+  if (emb !== null && th !== null) {
+    out.push({
+      key: "bal_embedment",
+      level: emb + cover > th ? "red" : "green",
+      expected: th - cover,
+      actual: emb,
+      delta: emb + cover - th,
+      unit: "in",
+    });
+  }
+
+  // Anchoring too near the edge blows the corner out of the slab.
+  const ed = parseMeas(b.edgeDistance);
+  if (ed !== null && ed < 4) {
+    out.push({ key: "bal_edge_distance", level: ed < 2 ? "red" : "yellow", expected: 4, actual: ed, delta: ed - 4, unit: "in" });
+  }
+
+  const gh = parseMeas(b.guardHeight);
+  if (gh !== null && gh < 42) {
+    out.push({ key: "bal_guard_height", level: "yellow", expected: 42, actual: gh, delta: gh - 42, unit: "in" });
+  }
+  const ps = parseMeas(b.picketSpacing);
+  if (ps !== null && ps > 4) {
+    out.push({ key: "bal_picket_spacing", level: "yellow", expected: 4, actual: ps, delta: ps - 4, unit: "in" });
+  }
+  return out;
+}
+
 export function runChecks(
   data: MeasureData,
   shape: MeasureShape,
@@ -400,6 +524,9 @@ export function runChecks(
   if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol)];
   if (shape === "window_well") return wellChecks(data, tol);
   if (shape === "fire_escape") return fireChecks(data, tol);
+  if (shape === "gate") return gateChecks(data, tol);
+  if (shape === "fence") return fenceChecks(data, tol);
+  if (shape === "balcony") return balconyChecks(data);
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape, tol);
   }
@@ -714,11 +841,17 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // rail pieces to fabricate and no materials to order yet.
   const isFire = shape === "fire_escape";
   const fireNew = isFire && data.fire?.purpose === "new";
+  // Gates, fences and balconies carry their own material and layout fields;
+  // the stair-oriented span and datum requirements do not apply.
+  const isGate = shape === "gate";
+  const isFence = shape === "fence";
+  const isBalcony = shape === "balcony";
+  const selfContained = isGate || isFence;
 
-  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && shape !== "fire_escape" && !has(data.datums.orientation)) {
+  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && shape !== "fire_escape" && shape !== "gate" && shape !== "fence" && shape !== "balcony" && !has(data.datums.orientation)) {
     gaps.push({ key: "orientation" });
   }
-  if (!isWell && !isFire && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
+  if (!isWell && !isFire && !selfContained && !isBalcony && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
   if (
     (data.finish.floorChange === "bottom" || data.finish.floorChange === "both") &&
     !has(data.finish.bottomAdjustment)
@@ -734,7 +867,88 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
   );
 
-  if (shape === "fire_escape") {
+  if (shape === "gate") {
+    const g = data.gate;
+    if (!g) gaps.push({ key: "gate_missing" });
+    else {
+      for (const [k, v] of [
+        ["gate_use", g.use],
+        ["gate_operation", g.operation],
+        ["gate_width_top", g.widthTop],
+        ["gate_width_bottom", g.widthBottom],
+        ["gate_height_hinge", g.heightHinge],
+        ["gate_ground_clearance", g.groundClearance],
+        ["gate_surface", g.surface],
+        ["gate_infill", g.infill],
+        ["gate_hinges", g.hinges],
+        ["gate_latch", g.latch],
+      ] as const) if (!has(v)) gaps.push({ key: k });
+      const swings = g.operation === "single_swing" || g.operation === "double_swing" || g.operation === "bifold";
+      if (swings) {
+        // Without the grade rise the swing-clearance check cannot run at all.
+        if (!has(g.gradeRise)) gaps.push({ key: "gate_grade_rise" });
+        if (!has(g.swingDir)) gaps.push({ key: "gate_swing_dir" });
+        if (!has(g.hingeSide)) gaps.push({ key: "gate_hinge_side" });
+      }
+      if (!g.postsExisting) {
+        if (!has(g.postSize)) gaps.push({ key: "gate_post_size" });
+        if (!has(g.footingDepth)) gaps.push({ key: "gate_footing" });
+      }
+      if (g.automated) {
+        if (!has(g.opener)) gaps.push({ key: "gate_opener" });
+        if (!has(g.powerAtGate)) gaps.push({ key: "gate_power" });
+        if (!has(g.safetyDevices)) gaps.push({ key: "gate_safety" });
+      }
+    }
+  } else if (shape === "fence") {
+    const f = data.fence;
+    if (!f) gaps.push({ key: "fence_missing" });
+    else {
+      for (const [k, v] of [
+        ["fence_total_run", f.totalRun],
+        ["fence_height", f.height],
+        ["fence_post_spacing", f.postSpacing],
+        ["fence_post_size", f.postSize],
+        ["fence_footing", f.footingDepth],
+        ["fence_start_term", f.startTerm],
+        ["fence_end_term", f.endTerm],
+        ["fence_utilities", f.utilities],
+      ] as const) if (!has(v)) gaps.push({ key: k });
+      if (f.segments.length === 0) gaps.push({ key: "fence_segments" });
+      f.segments.forEach((sg, i) => {
+        const tag = sg.label || `#${i + 1}`;
+        if (!has(sg.length)) gaps.push({ key: "fence_seg_length", detail: tag });
+        // How a panel meets a slope changes the whole panel order.
+        if (has(sg.gradeChange) && !has(sg.followsGrade)) {
+          gaps.push({ key: "fence_seg_grade", detail: tag });
+        }
+      });
+    }
+  } else if (shape === "balcony") {
+    const b = data.balcony;
+    if (!b) gaps.push({ key: "balcony_missing" });
+    else {
+      for (const [k, v] of [
+        ["bal_kind", b.kind],
+        ["bal_mount", b.mount],
+        ["bal_edge_length", b.edgeLength],
+        ["bal_guard_height_f", b.guardHeight],
+        ["bal_slab_material", b.slabMaterial],
+        ["bal_finished_floor", b.finishedFloor],
+        ["bal_returns", b.returns],
+      ] as const) if (!has(v)) gaps.push({ key: k });
+      // Anything bolted into a slab edge needs the numbers the check runs on.
+      if (b.mount !== "embedded") {
+        for (const [k, v] of [
+          ["bal_anchor_type", b.anchorType],
+          ["bal_slab_thickness", b.slabThickness],
+          ["bal_embedment_f", b.anchorEmbedment],
+          ["bal_edge_distance_f", b.edgeDistance],
+        ] as const) if (!has(v)) gaps.push({ key: k });
+      }
+      if (b.kind === "juliet" && !has(b.doorOpening)) gaps.push({ key: "bal_door_opening" });
+    }
+  } else if (shape === "fire_escape") {
     const f = data.fire;
     if (!f) {
       gaps.push({ key: "fire_missing" });
@@ -978,7 +1192,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   });
 
   // materials the shop cannot order without
-  if (shape !== "wall_rail" && (!isWell || wellGuard) && (!isFire || fireNew) && !has(data.materials.post)) gaps.push({ key: "mat_post" });
+  if (shape !== "wall_rail" && (!isWell || wellGuard) && (!isFire || fireNew) && !isFence && !has(data.materials.post)) gaps.push({ key: "mat_post" });
   if ((!isWell || wellGuard) && (!isFire || fireNew) && !has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
   if ((!isFire || fireNew) && !has(data.materials.finish)) gaps.push({ key: "mat_finish" });
   if (
@@ -993,7 +1207,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 
   // Every rail piece: how long is it and how does EACH end attach? At least
   // one span, both terminations defined, methods valid for their substrate.
-  const skipSpans = (isWell && !wellGuard) || (isFire && !fireNew);
+  const skipSpans = (isWell && !wellGuard) || (isFire && !fireNew) || selfContained;
   if (data.spans.length === 0 && !skipSpans) {
     gaps.push({ key: "span_missing" });
   }
