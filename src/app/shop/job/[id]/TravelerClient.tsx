@@ -348,7 +348,7 @@ export default function TravelerClient({
   );
 }
 
-function MaterialAdder({
+export function MaterialAdder({
   jobId,
   lang,
   busy,
@@ -509,7 +509,7 @@ function MaterialAdder({
   );
 }
 
-function SpecsPanel({
+export function SpecsPanel({
   job,
   lang,
   busy,
@@ -670,7 +670,7 @@ function SpecTile({
   );
 }
 
-function ChipRow({
+export function ChipRow({
   label,
   options,
   value,
@@ -707,7 +707,7 @@ function ChipRow({
   );
 }
 
-function PhotosSection({
+export function PhotosSection({
   jobId,
   photos,
   canSeePrices,
@@ -899,7 +899,7 @@ function PhotosSection({
   );
 }
 
-function QcRow({
+export function QcRow({
   q,
   busy,
   act,
@@ -960,7 +960,7 @@ function QcRow({
   );
 }
 
-function dueInfo(due: string | null, lang: string) {
+export function dueInfo(due: string | null, lang: string) {
   if (!due) return { text: "—", cls: "text-neutral-400" };
   const d = new Date(due + "T00:00:00");
   const days = Math.ceil((d.getTime() - Date.now()) / 86400000);

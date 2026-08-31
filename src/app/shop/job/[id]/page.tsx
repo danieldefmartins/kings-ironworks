@@ -16,13 +16,18 @@ import {
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import TimeClock from "./TimeClock";
+import TravelerV2 from "./TravelerV2";
 
 export const dynamic = "force-dynamic";
 
 export default async function JobTravelerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  // ?ui=v2 previews the reworked screen against real data without changing
+  // anything for the crew. Remove once it is the default.
+  searchParams?: Promise<{ ui?: string }>;
 }) {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
@@ -31,6 +36,7 @@ export default async function JobTravelerPage({
   const lang = worker.lang || "en";
 
   const { id } = await params;
+  const v2 = ((await searchParams)?.ui || "") === "v2";
   const job = await getJob(id);
   if (!job) notFound();
 
@@ -76,6 +82,22 @@ export default async function JobTravelerPage({
         lang={lang}
         adminLink={!!worker.is_admin}
       />
+      {v2 ? (
+        <TravelerV2
+          job={job}
+          cut={cut}
+          materials={materials}
+          qc={qc}
+          photos={photos}
+          canSeePrices={canSeePrices}
+          isAdmin={!!worker.is_admin}
+          lang={lang}
+          myStartedAt={myRunning ? myRunning.started_at : null}
+          activeWorkers={othersRunning}
+          totalHours={totalHours}
+        />
+      ) : (
+        <>
       <div className="px-4 pt-4 max-w-4xl mx-auto">
         <TimeClock
           jobId={job.id}
@@ -95,6 +117,8 @@ export default async function JobTravelerPage({
         isAdmin={!!worker.is_admin}
         lang={lang}
       />
+        </>
+      )}
     </div>
   );
 }

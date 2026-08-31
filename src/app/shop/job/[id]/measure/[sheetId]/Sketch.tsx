@@ -21,7 +21,7 @@ import type {
 } from "@/lib/shop/measure";
 import { planPaths } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
-import { formatIn, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
+import { formatIn, orderedPosts, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
 export { sortPlatPosts };
 
 const RUN = 46;
@@ -119,6 +119,8 @@ export default function Sketch({
   onHoldStep,
   onTapPost,
   onHoldPost,
+  onTapLine,
+  onHoldLine,
   onHoldPlatform,
   onToggleWallSide,
 }: {
@@ -132,12 +134,25 @@ export default function Sketch({
   onHoldStep?: (segIdx: number, stepIdx: number) => void;
   onTapPost?: (postId: string) => void;
   onHoldPost?: (postId: string) => void;
+  onTapLine?: (pathId: string, segIdx: number, t: number) => void;
+  onHoldLine?: (pathId: string, segIdx: number, t: number) => void;
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
 }) {
   const p = light ? LIGHT : DARK;
 
-  if (shape === "custom") return <CustomPlanSketch data={data} p={p} lang={lang} />;
+  if (shape === "custom" || shape === "deck")
+    return (
+      <CustomPlanSketch
+        data={data}
+        p={p}
+        lang={lang}
+        onTapLine={onTapLine}
+        onHoldLine={onHoldLine}
+        onTapPost={onTapPost}
+        onHoldPost={onHoldPost}
+      />
+    );
   if (shape === "gate") return <GateSketch gate={data.gate} p={p} lang={lang} />;
   if (shape === "fence") return <FenceSketch fence={data.fence} p={p} lang={lang} />;
   if (shape === "balcony")
@@ -333,6 +348,27 @@ function endPress(el: Element): PressState | undefined {
   if (st?.timer) clearTimeout(st.timer);
   pressState.delete(el);
   return st;
+}
+
+// Same two gestures as pressHandlers, but for a target where WHERE you
+// pressed matters. The position is read once at pointerdown and remembered,
+// because the hold fires later from a timer, by which time the event is gone.
+function linePressHandlers(
+  tap: (e: React.PointerEvent<SVGElement>) => void,
+  hold: (e: React.PointerEvent<SVGElement>) => void
+) {
+  let at: React.PointerEvent<SVGElement> | null = null;
+  const base = pressHandlers(
+    () => { if (at) tap(at); },
+    () => { if (at) hold(at); }
+  );
+  return {
+    ...base,
+    onPointerDown: (e: React.PointerEvent<SVGElement>) => {
+      at = e;
+      base.onPointerDown(e);
+    },
+  };
 }
 
 function pressHandlers(tap?: () => void, hold?: () => void) {
@@ -830,14 +866,44 @@ function WallSideToggle({ x, side, wall, lang, p, onToggle }: {
 
 // ---- Custom drawn plan — every drawn line is a dimensioned segment ---------
 
+// Where a placed point sits on the drawing: along its line, at the distance
+// measured from that line's start. With no length entered yet there is nothing
+// to scale against, so it rides at the midpoint until there is.
+export function planPointXY(
+  data: MeasureData,
+  po: PostMeasure
+): { x: number; y: number; nx: number; ny: number } | null {
+  const path = planPaths(data.plan).find((pp) => pp.id === po.pathId);
+  if (!path) return null;
+  const i = po.planSegIdx ?? 0;
+  const a = path.points[i];
+  const b = path.points[(i + 1) % path.points.length];
+  if (!a || !b) return null;
+  const len = parseMeas(path.segs[i]?.len);
+  const along = parseMeas(po.pos);
+  const frac = len && len > 0 && along !== null ? Math.max(0, Math.min(1, along / len)) : 0.5;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const L = Math.hypot(dx, dy) || 1;
+  return { x: a.x + dx * frac, y: a.y + dy * frac, nx: -dy / L, ny: dx / L };
+}
+
 export function CustomPlanSketch({
   data,
   p,
   lang,
+  onTapLine,
+  onHoldLine,
+  onTapPost,
+  onHoldPost,
 }: {
   data: MeasureData;
   p: Palette;
   lang: string;
+  onTapLine?: (pathId: string, segIdx: number, t: number) => void;
+  onHoldLine?: (pathId: string, segIdx: number, t: number) => void;
+  onTapPost?: (postId: string) => void;
+  onHoldPost?: (postId: string) => void;
 }) {
   const paths = planPaths(data.plan).filter((pp) => pp.points.length > 0);
   if (paths.length === 0) {
@@ -867,6 +933,8 @@ export function CustomPlanSketch({
       const b = pts[(i + 1) % pts.length];
       const lv = v(path.segs[i]?.len, p);
       const sg = path.segs[i];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
       const typeColor = sg?.kind === "flight" ? p.post
         : sg?.kind === "landing" ? "#38bdf8"
           : sg?.kind === "ramp" ? "#a78bfa"
@@ -874,15 +942,37 @@ export function CustomPlanSketch({
               : p.line;
       const mx = (a.x + b.x) / 2;
       const my = (a.y + b.y) / 2;
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
       const L = Math.hypot(dx, dy) || 1;
       // label offset perpendicular to the line
       const ox = (-dy / L) * 11;
       const oy = (dx / L) * 11;
+      // Where along this line a finger landed, so a tap places the point at
+      // the spot it was aimed at rather than always at the middle.
+      const along = (e: React.PointerEvent<SVGElement>) => {
+        const svg = (e.currentTarget.ownerSVGElement || e.currentTarget) as SVGSVGElement;
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const loc = pt.matrixTransform(svg.getScreenCTM()!.inverse());
+        const L2 = dx * dx + dy * dy || 1;
+        return Math.max(0, Math.min(1, ((loc.x - a.x) * dx + (loc.y - a.y) * dy) / L2));
+      };
       els.push(
         <g key={`s${pi}-${i}`}>
           <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={typeColor} strokeWidth={sg?.kind === "flight" ? 4 : 2.8} strokeLinecap="round" />
+          {(onTapLine || onHoldLine) && (
+            // Finger-width press target over the line: tap places a railing
+            // post, press-and-hold opens the column / wall / clip menu — the
+            // same two gestures every other sketch uses.
+            <line
+              x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+              stroke="transparent" strokeWidth={16} strokeLinecap="round"
+              {...linePressHandlers(
+                (e) => onTapLine?.(path.id, i, along(e)),
+                (e) => onHoldLine?.(path.id, i, along(e))
+              )}
+            />
+          )}
           <circle cx={mx + ox * 1.9} cy={my + oy * 1.9} r={7} fill="none" stroke={p.ghost} />
           <text x={mx + ox * 1.9} y={my + oy * 1.9 + 3} fontSize={8} textAnchor="middle" fill={p.dim}>
             {i + 1}
@@ -909,6 +999,26 @@ export function CustomPlanSketch({
     pts.forEach((q, i) => {
       els.push(<circle key={`v${pi}-${i}`} cx={q.x} cy={q.y} r={3} fill={p.post} />);
     });
+  });
+
+  // Placed points ride on top of the lines they belong to, numbered the same
+  // way as on every other sketch, and answering the same tap and hold.
+  orderedPosts(data).forEach((po, n) => {
+    if (!po.pathId) return;
+    const at = planPointXY(data, po);
+    if (!at) return;
+    els.push(
+      <PlanPoint
+        key={`pp${po.id}`}
+        po={po}
+        x={at.x + at.nx * 7}
+        y={at.y + at.ny * 7}
+        n={n + 1}
+        p={p}
+        onTap={onTapPost}
+        onHold={onHoldPost}
+      />
+    );
   });
 
   return (

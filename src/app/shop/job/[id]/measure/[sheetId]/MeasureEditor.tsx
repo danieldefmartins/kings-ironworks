@@ -7,6 +7,8 @@ import {
   ANCHOR_OPTIONS,
   MATERIAL_PRESETS,
   newPost,
+  newPlanPost,
+  planPaths,
   sheetProgress,
   type FlightSegment,
   type MeasureSheet,
@@ -33,6 +35,7 @@ import {
   sheetReadiness,
   orderedPosts,
   mergeTolerances,
+  parseMeas,
   wellClearance,
   type Gap,
 } from "@/lib/shop/measure-checks";
@@ -124,7 +127,7 @@ export default function MeasureEditor({
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
-  const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null; side: "left" | "right" } | null>(null);
+  const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null; side: "left" | "right"; pathId?: string; planSegIdx?: number; along?: string } | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
   const [movingPostId, setMovingPostId] = useState<string | null>(null);
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
@@ -180,10 +183,55 @@ export default function MeasureEditor({
     });
   }
 
+  // Distance along a drawn line, from where the finger landed — but only when
+  // that line already carries a measured length. Otherwise there is nothing to
+  // scale against and the measurer fills it in.
+  function alongLine(pathId: string, segIdx: number, t: number): string {
+    const seg = planPaths(dataRef.current.plan).find((r) => r.id === pathId)?.segs[segIdx];
+    const len = parseMeas(seg?.len);
+    return len !== null && len > 0 ? String(Math.round(len * t * 4) / 4) : "";
+  }
+
+  // Tapping a drawn line does what tapping a tread does: drop a railing post,
+  // or land the point currently being moved.
+  function addPlanPost(pathId: string, segIdx: number, t: number) {
+    if (movingPostId) {
+      set((d) => {
+        const po = d.posts.find((x) => x.id === movingPostId);
+        if (po) {
+          po.pathId = pathId;
+          po.planSegIdx = segIdx;
+          po.pos = alongLine(pathId, segIdx, t);
+        }
+      });
+      setMovingPostId(null);
+      return;
+    }
+    set((d) => {
+      const po = newPlanPost(pathId, segIdx);
+      po.pos = alongLine(pathId, segIdx, t);
+      d.posts.push(po);
+    });
+  }
+
+  function holdPlanLocation(pathId: string, segIdx: number, t: number) {
+    setPlacementMenu({
+      segIdx: 0,
+      stepIdx: null,
+      side: "right",
+      pathId,
+      planSegIdx: segIdx,
+      along: alongLine(pathId, segIdx, t),
+    });
+  }
+
   function addTypedPoint(pointType: PostMeasure["pointType"]) {
     if (!placementMenu) return;
     set((d) => {
-      const po = newPost(placementMenu.segIdx, placementMenu.stepIdx);
+      const po = placementMenu.pathId
+        ? newPlanPost(placementMenu.pathId, placementMenu.planSegIdx ?? 0)
+        : newPost(placementMenu.segIdx, placementMenu.stepIdx);
+      if (placementMenu.pathId && placementMenu.along) po.pos = placementMenu.along;
       po.pointType = pointType;
       po.side = placementMenu.side;
       if (pointType === "concrete_wall" || pointType === "clip") {
@@ -1045,6 +1093,8 @@ export default function MeasureEditor({
           addStepPost={addStepPost}
           addPlatformPost={addPlatformPost}
           holdStepLocation={holdStepLocation}
+          addPlanPost={addPlanPost}
+          holdPlanLocation={holdPlanLocation}
           holdPlatformLocation={holdPlatformLocation}
           tapStructureStep={tapStructureStep}
           tapStructurePlatform={tapStructurePlatform}

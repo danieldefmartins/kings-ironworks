@@ -51,6 +51,8 @@ export default function SketchSections({
   addStepPost,
   addPlatformPost,
   holdStepLocation,
+  addPlanPost,
+  holdPlanLocation,
   holdPlatformLocation,
   tapStructureStep,
   tapStructurePlatform,
@@ -74,6 +76,8 @@ export default function SketchSections({
   addStepPost: (segIdx: number, stepIdx: number) => void;
   addPlatformPost: (segIdx: number) => void;
   holdStepLocation: (segIdx: number, stepIdx: number) => void;
+  addPlanPost: (pathId: string, segIdx: number, t: number) => void;
+  holdPlanLocation: (pathId: string, segIdx: number, t: number) => void;
   holdPlatformLocation: (segIdx: number) => void;
   tapStructureStep: (segIdx: number, stepIdx: number) => void;
   tapStructurePlatform: (segIdx: number) => void;
@@ -125,6 +129,8 @@ export default function SketchSections({
               onHoldPlatform={holdPlatformLocation}
               onTapPost={tapPost}
               onHoldPost={(id) => setMovingPostId(id)}
+              onTapLine={addPlanPost}
+              onHoldLine={holdPlanLocation}
               onToggleWallSide={toggleSketchWall}
             />
           </div>
@@ -284,6 +290,8 @@ export default function SketchSections({
               onHoldPlatform={holdPlatformLocation}
               onTapPost={tapPost}
               onHoldPost={(id) => setMovingPostId(id)}
+              onTapLine={addPlanPost}
+              onHoldLine={holdPlanLocation}
               onToggleWallSide={toggleSketchWall}
             />
           </div>
@@ -303,6 +311,8 @@ export default function SketchSections({
                 onHoldPlatform={holdPlatformLocation}
                 onTapPost={tapPost}
               onHoldPost={(id) => setMovingPostId(id)}
+              onTapLine={addPlanPost}
+              onHoldLine={holdPlanLocation}
                 onToggleWallSide={toggleSketchWall}
               />
             </div>
