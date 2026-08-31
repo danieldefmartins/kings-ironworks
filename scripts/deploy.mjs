@@ -8,7 +8,9 @@
 //
 //   1. RAILWAY_TOKEN — a project token from the Railway dashboard
 //      (Project → Settings → Tokens). These do NOT expire.
-//   2. ~/.railway/config.json — what `railway login` last wrote.
+//   2. ~/.railway/kiw-project-token — the same thing kept in a file, so no
+//      shell setup is needed. chmod 600 it.
+//   3. ~/.railway/config.json — what `railway login` last wrote.
 //
 // Why (2) kept dying mid-session: `user.accessToken` in that file is good for
 // only about an HOUR (see `user.tokenExpiresAt`, a unix seconds stamp). The
@@ -52,8 +54,26 @@ function refreshCliToken() {
   }
 }
 
+// A project token parked in a file, so deploys need no environment setup and
+// no browser login — ever. Create one at Railway → the project → Settings →
+// Tokens, then put it here WITHOUT it passing through a terminal you are
+// sharing (on macOS: copy it, then `pbpaste > ~/.railway/kiw-project-token`).
+const TOKEN_FILE = join(homedir(), ".railway", "kiw-project-token");
+
+function readTokenFile() {
+  try {
+    const t = readFileSync(TOKEN_FILE, "utf8").trim();
+    return t || null;
+  } catch {
+    return null;
+  }
+}
+
 function token() {
   if (process.env.RAILWAY_TOKEN) return { value: process.env.RAILWAY_TOKEN, from: "RAILWAY_TOKEN" };
+
+  const filed = readTokenFile();
+  if (filed) return { value: filed, from: TOKEN_FILE };
 
   let cfg = readConfig();
   const expiresAt = cfg?.user?.tokenExpiresAt; // unix seconds
@@ -83,7 +103,12 @@ async function gql(auth, query) {
 
 const auth = token();
 if (!auth) {
-  console.error("No Railway credentials.\n  Set RAILWAY_TOKEN (a non-expiring project token), or run: railway login");
+  console.error(
+    "No Railway credentials. Any one of these fixes it:\n" +
+    "  • put a project token in ~/.railway/kiw-project-token (never expires)\n" +
+    "  • export RAILWAY_TOKEN\n" +
+    "  • run: railway login   (lasts about an hour)"
+  );
   process.exit(1);
 }
 
