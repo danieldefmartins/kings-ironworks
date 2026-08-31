@@ -160,7 +160,11 @@ export function useSheetSync({
       return;
     }
     dirtyRef.current = true;
-    setSaveState("dirty");
+    // A conflicted sheet stays conflicted. Reporting "unsaved" here would take
+    // down the reload banner the moment the measurer typed one more character,
+    // and nothing can save until the page is reloaded — so they would go on
+    // measuring into a sheet that will never accept another write.
+    setSaveState(conflictRef.current ? "conflict" : "dirty");
     const t = setTimeout(requestSave, 900);
     return () => clearTimeout(t);
     // requestSave reads only refs, so it is stable across renders
@@ -227,7 +231,7 @@ export function useSheetSync({
     const flush = () => {
       if (!dirtyRef.current || conflictRef.current) return;
       try {
-        fetch("/shop/api/measure", {
+        void fetch("/shop/api/measure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           keepalive: true,
@@ -238,7 +242,9 @@ export function useSheetSync({
             data: dataRef.current,
             baseUpdatedAt: baseUpdatedAt.current,
           }),
-        });
+          // Leaving the page with no signal rejects; the edit is already on the
+          // device, and an unhandled rejection helps nobody.
+        }).catch(() => {});
       } catch {
         // last-chance save; nothing further to do
       }
@@ -283,6 +289,10 @@ export function useSheetSync({
         const d = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(d.error || failMsg);
         if (d.updated_at) baseUpdatedAt.current = d.updated_at;
+        // A deleted sheet has nothing left to save. This is handled here, not
+        // by the caller, because the caller forgetting is exactly how the exit
+        // flush once came to POST an update for a row that no longer existed.
+        if (body.type === "delete") dirtyRef.current = false;
         setOpErr(null);
         return d as Record<string, unknown>;
       } catch (e) {
@@ -307,13 +317,6 @@ export function useSheetSync({
     requestSave,
     enqueue,
     mutate,
-    /**
-     * Stop trying to save. Called when the sheet is deleted: the unmount flush
-     * would otherwise POST an update for a row that no longer exists.
-     */
-    discardLocalEdits: () => {
-      dirtyRef.current = false;
-    },
     /** Record the concurrency base returned by a mutation this hook did not make. */
     noteUpdatedAt: (at: unknown) => {
       if (typeof at === "string") baseUpdatedAt.current = at;

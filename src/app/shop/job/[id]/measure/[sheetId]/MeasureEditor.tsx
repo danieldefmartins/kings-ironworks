@@ -110,7 +110,6 @@ export default function MeasureEditor({
     requestSave,
     enqueue,
     mutate,
-    discardLocalEdits,
     noteUpdatedAt,
   } = useSheetSync({
     sheet,
@@ -394,7 +393,7 @@ export default function MeasureEditor({
     if (!confirm(mt(lang, "confirmDelete"))) return;
     const ok = await mutate({ type: "delete" }, "Delete failed");
     if (ok) {
-      discardLocalEdits(); // nothing left to save on unmount
+      // No need to stop the autosave by hand — a successful delete does it.
       router.push(`/shop/job/${job.id}/measure`);
     }
   }
