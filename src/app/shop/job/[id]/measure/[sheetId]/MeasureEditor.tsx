@@ -51,7 +51,6 @@ import { helpText } from "@/lib/shop/measure-help";
 import { SPEC_OPTIONS } from "@/lib/shop/i18n";
 import Sketch, { sketchViews, type SketchView } from "./Sketch";
 import PlanDraw from "./PlanDraw";
-import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
@@ -59,6 +58,10 @@ import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
+import SectionsDrawer from "./overlays/SectionsDrawer";
+import PointMenus from "./overlays/PointMenus";
+import PhotoCapture from "./overlays/PhotoCapture";
+import FractionBar from "./overlays/FractionBar";
 import {
   EDITOR_STAGES,
   FRACTIONS,
@@ -67,7 +70,6 @@ import {
   SetupLockCtx,
   StageCtx,
   type EditorStage,
-  insertToken,
   stepNumber,
   postStepNumber,
   setPost,
@@ -2386,199 +2388,42 @@ export default function MeasureEditor({
       </div>
 
       {sectionsOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
-          onClick={() => setSectionsOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-label={mt(lang, "allSections")}
-            className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 text-lg font-bold">{mt(lang, "allSections")}</div>
-            <div className="space-y-2">
-              {EDITOR_STAGES.map((st, i) => {
-                const missing = stageMissing[st.id];
-                const docs = stageDocs[st.id];
-                const note =
-                  st.id === "review"
-                    ? missing
-                      ? { text: mt(lang, "chipNotReady"), tone: "text-amber-400" }
-                      : { text: mt(lang, "chipReady"), tone: "text-green-400" }
-                    : missing
-                      ? { text: `${missing} ${mt(lang, "stageMissing")}`, tone: "text-amber-400" }
-                      : docs
-                        ? { text: `${docs} ${mt(lang, "stageToAdd")}`, tone: "text-sky-400" }
-                        : { text: mt(lang, "stageDone"), tone: "text-green-400" };
-                return (
-                  <button
-                    key={st.id}
-                    type="button"
-                    onClick={() => {
-                      setSectionsOpen(false);
-                      goToStage(st.id);
-                    }}
-                    className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border px-4 text-left ${
-                      activeStage === st.id
-                        ? "border-amber-500 bg-amber-500/10"
-                        : "border-neutral-700 bg-neutral-800"
-                    }`}
-                  >
-                    <span className="w-5 shrink-0 text-sm font-bold text-neutral-500">{i + 1}</span>
-                    <span className="min-w-0 flex-1 truncate font-bold text-neutral-100">
-                      {mt(lang, st.labelKey)}
-                    </span>
-                    <span className={`shrink-0 text-xs font-bold ${note.tone}`}>{note.text}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <button
-              type="button"
-              onClick={() => setSectionsOpen(false)}
-              className="mt-3 min-h-[48px] w-full rounded-xl border border-neutral-700 font-bold text-neutral-300"
-            >
-              {mt(lang, "closeLabel")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {placementMenu && (
-        <div className="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center p-4" onClick={() => setPlacementMenu(null)}>
-          <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
-            <div className="text-lg font-bold mb-1">{mt(lang, "choosePointType")}</div>
-            <div className="text-xs text-neutral-400 mb-3">{mt(lang, "choosePointHint")}</div>
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              {(["left", "right"] as const).map((side) => (
-                <button key={side} type="button" onClick={() => setPlacementMenu((m) => m ? { ...m, side } : m)}
-                  className={`rounded-xl border p-3 font-bold ${placementMenu.side === side ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800"}`}>
-                  {mt(lang, side === "left" ? "leftLookingUp" : "rightLookingUp")}
-                </button>
-              ))}
-            </div>
-            {/* Told at the start that nothing is already there, the menu leads
-                with the only thing that usually is: a new railing post. The
-                rest stay one tap away — a column can always turn up on site. */}
-            {routing.existing === "none" ? (
-              <>
-                <button type="button" onClick={() => addTypedPoint("railing_post")}
-                  className="w-full rounded-xl border border-amber-600 bg-amber-500/10 p-4 text-left font-bold text-amber-300 active:bg-amber-500/20">
-                  ▣ {mt(lang, "point_railing_post")}
-                </button>
-                <details className="mt-2">
-                  <summary className="cursor-pointer select-none py-2 text-xs text-neutral-400">
-                    + {mt(lang, "placementOther")}
-                  </summary>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {(["existing_post", "concrete_wall", "clip"] as const).map((type) => (
-                      <button key={type} type="button" onClick={() => addTypedPoint(type)}
-                        className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
-                        {type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
-                        {mt(lang, `point_${type}`)}
-                      </button>
-                    ))}
-                  </div>
-                </details>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {(["railing_post", "existing_post", "concrete_wall", "clip"] as const).map((type) => (
-                  <button key={type} type="button" onClick={() => addTypedPoint(type)}
-                    className="rounded-xl border border-neutral-700 bg-neutral-800 p-4 text-left font-bold active:bg-neutral-700">
-                    {type === "railing_post" ? "▣" : type === "existing_post" ? "▤" : type === "concrete_wall" ? "▥" : "⊣"}{" "}
-                    {mt(lang, `point_${type}`)}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button type="button" onClick={() => setPlacementMenu(null)} className="w-full mt-3 rounded-xl border border-neutral-700 py-3">
-              {mt(lang, "cancel")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {selectedPostId && (() => {
-        const selected = data.posts.find((po) => po.id === selectedPostId);
-        if (!selected) return null;
-        return (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center" onClick={() => setSelectedPostId(null)}>
-            <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
-              <div className="mb-1 text-lg font-bold">{mt(lang, `point_${selected.pointType}`)}</div>
-              <div className="mb-4 text-xs text-neutral-400">{mt(lang, "selectedPointHint")}</div>
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => { setMovingPostId(selected.id); setSelectedPostId(null); }}
-                  className="rounded-xl border border-amber-600 bg-amber-500/10 p-4 font-bold text-amber-300">
-                  ↔ {mt(lang, "relocatePoint")}
-                </button>
-                <button type="button" onClick={() => { removePost(selected.id); setSelectedPostId(null); }}
-                  className="rounded-xl border border-red-800 bg-red-950/40 p-4 font-bold text-red-300">
-                  ✕ {mt(lang, "removePost")}
-                </button>
-                <button type="button" onClick={() => {
-                  set((d) => {
-                    const po = newPost(selected.segIdx, selected.stepIdx);
-                    po.pointType = selected.pointType;
-                    po.side = selected.side === "left" ? "right" : "left";
-                    po.anchor = selected.anchor;
-                    po.substrate = selected.substrate;
-                    d.posts.push(po);
-                  });
-                  setSelectedPostId(null);
-                }} className="col-span-2 rounded-xl border border-neutral-600 bg-neutral-800 p-3 font-bold text-neutral-200">
-                  ＋ {mt(lang, "addOtherSide")}
-                </button>
-              </div>
-              <button type="button" onClick={() => setSelectedPostId(null)} className="mt-3 w-full rounded-xl border border-neutral-700 py-3">
-                {mt(lang, "cancel")}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Photo capture + markup modal */}
-      {photoSlot && (
-        <PhotoMarkup
-          jobId={job.id}
-          sheetName={name || shapeLabel(lang, sheet.shape)}
+        <SectionsDrawer
           lang={lang}
-          slot={photoSlot.slot}
-          slotLabel={photoSlot.label}
-          onSaved={(path, strokes) => {
-            set((d) => {
-              d.photos = [
-                ...d.photos.filter((p) => p.slot !== photoSlot.slot),
-                { slot: photoSlot.slot, path, takenAt: new Date().toISOString() },
-              ];
-              if (strokes.length > 0) d.annotations[path] = strokes;
-            });
-            setPhotoSlot(null);
+          activeStage={activeStage}
+          stageMissing={stageMissing}
+          stageDocs={stageDocs}
+          onPick={(st) => {
+            setSectionsOpen(false);
+            goToStage(st);
           }}
-          onClose={() => setPhotoSlot(null)}
+          onClose={() => setSectionsOpen(false)}
         />
       )}
-
+      <PointMenus
+        lang={lang}
+        data={data}
+        placementMenu={placementMenu}
+        setPlacementMenu={setPlacementMenu}
+        selectedPostId={selectedPostId}
+        setSelectedPostId={setSelectedPostId}
+        setMovingPostId={setMovingPostId}
+        addTypedPoint={addTypedPoint}
+        removePost={removePost}
+        routing={routing}
+        set={set}
+      />
+      {/* Photo capture + markup modal */}
+      <PhotoCapture
+        lang={lang}
+        jobId={job.id}
+        sheetName={name || shapeLabel(lang, sheet.shape)}
+        slot={photoSlot}
+        set={set}
+        onClose={() => setPhotoSlot(null)}
+      />
       {/* Fraction quick-keys */}
-      {fracBar && (
-        <div className="fixed bottom-0 inset-x-0 bg-neutral-900/95 border-t border-neutral-700 p-2 flex gap-1.5 overflow-x-auto print:hidden z-40">
-          {fracTokens.map((f) => (
-            <button
-              key={f}
-              onPointerDown={(e) => {
-                e.preventDefault();
-                insertToken(f);
-              }}
-              className="shrink-0 px-3 py-2.5 rounded-lg bg-neutral-800 border border-neutral-600 text-amber-300 font-bold text-sm"
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      )}
-
+      <FractionBar show={fracBar} tokens={fracTokens} />
       {/* Print-only branded sheet */}
       <PrintSheet
         job={job}
