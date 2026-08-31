@@ -307,6 +307,13 @@ export function useSheetSync({
     requestSave,
     enqueue,
     mutate,
+    /**
+     * Stop trying to save. Called when the sheet is deleted: the unmount flush
+     * would otherwise POST an update for a row that no longer exists.
+     */
+    discardLocalEdits: () => {
+      dirtyRef.current = false;
+    },
     /** Record the concurrency base returned by a mutation this hook did not make. */
     noteUpdatedAt: (at: unknown) => {
       if (typeof at === "string") baseUpdatedAt.current = at;
