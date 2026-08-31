@@ -17,6 +17,7 @@ export type MeasureShape =
   | "gate"
   | "fence"
   | "balcony"
+  | "deck"
   | "builder"
   | "custom";
 
@@ -34,6 +35,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "gate",
   "fence",
   "balcony",
+  "deck",
   "builder",
   "custom",
 ];
@@ -457,6 +459,84 @@ export function blankBalcony(): BalconyData {
   };
 }
 
+// ---- Deck perimeter railings -----------------------------------------------
+// A deck is not a landing. It is a run of sides that turn at corners, some
+// railed and some not (the side against the house never is), broken by stair
+// openings and gates, and it usually sits on ground that falls away — so the
+// height above grade differs side to side and is what decides whether a guard
+// is required at all.
+//
+// The failure this sheet exists to prevent is the post. A guard post lag-screwed
+// through deck boards alone has nothing but the board to resist a 200 lb push at
+// 36": the moment levers the fasteners straight out of the decking. It has to
+// reach the rim joist or a blocked bay. See deckChecks().
+
+export interface DeckSide {
+  id: string;
+  label: string;
+  length: string; // this side, corner to corner
+  railed: boolean; // the side against the house usually is not
+  turnDeg: string; // direction change at the END of this side (+ left, - right)
+  heightAboveGrade: string; // walking surface to grade AT THIS SIDE
+  opening: "" | "none" | "stairs" | "gate" | "gap"; // what interrupts the rail
+  openingWidth: string;
+  edgeDetail: string; // fascia, picture frame board, cantilever, bump-out
+  obstruction: string; // downspout, AC unit, bench, planter, hot tub
+}
+
+export function newDeckSide(label = ""): DeckSide {
+  return {
+    id: newPostId(), label, length: "", railed: true, turnDeg: "",
+    heightAboveGrade: "", opening: "", openingWidth: "", edgeDetail: "", obstruction: "",
+  };
+}
+
+export const DECK_MOUNTS = ["", "surface", "fascia", "through_bolt", "core_drill", "embedded"] as const;
+export type DeckMount = (typeof DECK_MOUNTS)[number];
+
+export interface DeckData {
+  surface: "" | "wood" | "composite" | "pvc" | "concrete" | "paver" | "roof_deck";
+  occupancy: "" | "residential" | "commercial";
+  // Footprint
+  sides: DeckSide[];
+  totalPerimeter: string; // railed length measured end to end, independent of the sides
+  closedLoop: boolean; // true when the rail returns to itself rather than dying into the house
+  levelNote: string; // multi-level decks: which level this sheet covers
+  outOfLevel: string; // fall measured across the deck
+  // Structure — what the post actually grabs
+  mount: DeckMount;
+  deckingThickness: string;
+  rimJoistSize: string;
+  rimMaterial: string; // PT SYP, LVL, steel, concrete
+  joistDirection: string; // parallel or perpendicular to the railed edge
+  blocking: string; // solid blocking / backing at each post
+  ledgerCondition: string;
+  framingCondition: string; // rot, cupping, previous repairs
+  // Rail
+  guardHeight: string;
+  picketSpacing: string;
+  postSpacing: string; // intended o.c. spacing
+  maxPostSpacing: string; // most the shop will allow for this post size
+  postCount: string;
+  corners: string; // how corners are made: mitre, post at each, welded return
+  gates: string;
+  stairSheets: string; // which stair sheets the stair openings are measured on
+  notes: string;
+}
+
+export function blankDeck(sides: number): DeckData {
+  const n = Math.min(24, Math.max(1, sides || 1));
+  return {
+    surface: "", occupancy: "residential",
+    sides: Array.from({ length: n }, (_, i) => newDeckSide(String(i + 1))),
+    totalPerimeter: "", closedLoop: false, levelNote: "", outOfLevel: "",
+    mount: "", deckingThickness: "", rimJoistSize: "", rimMaterial: "", joistDirection: "",
+    blocking: "", ledgerCondition: "", framingCondition: "",
+    guardHeight: "", picketSpacing: "", postSpacing: "", maxPostSpacing: "", postCount: "",
+    corners: "", gates: "", stairSheets: "", notes: "",
+  };
+}
+
 // ---- Window / egress wells -------------------------------------------------
 // A well is a concrete (or block / corrugated) box against the house holding a
 // basement egress window. KIW supplies three things over it, in any
@@ -859,10 +939,42 @@ export interface PlanSegment {
   stepMeasures: StepMeasure[]; // optional per-step corrections for irregular custom flights
 }
 
-export interface PlanDrawing {
+// One drawn run. A railing job is rarely a single closed outline: it is a run
+// from the wall to the steps, then a separate run continuing past them, then a
+// return. Each of those is its own path, drawn on the same sheet, and an OPEN
+// path is the normal case — closing is only for an outline that genuinely comes
+// back to itself (a full deck perimeter, a landing).
+export interface PlanPath {
+  id: string;
+  label: string; // "Wall to steps", "Front of deck"
   points: { x: number; y: number }[]; // canvas coords, snapped
-  closed: boolean; // last point connects back to the first
+  closed: boolean;
   segs: PlanSegment[]; // one typed segment per drawn line, in draw order
+}
+
+export function newPlanPath(label = ""): PlanPath {
+  return { id: newPostId(), label, points: [], closed: false, segs: [] };
+}
+
+export interface PlanDrawing {
+  // Legacy single-path fields. Sheets drawn before multiple runs existed store
+  // their only run here; planPaths() and normalizeMeasureData() migrate them,
+  // so these stay for backward compatibility and are not written to any more.
+  points: { x: number; y: number }[];
+  closed: boolean;
+  segs: PlanSegment[];
+  paths?: PlanPath[]; // the real model: one entry per separate run
+}
+
+// Always read a drawing through this. It returns the multi-run model, folding a
+// legacy single-path drawing into one path so old sheets keep working.
+export function planPaths(plan: PlanDrawing | null | undefined): PlanPath[] {
+  if (!plan) return [];
+  if (plan.paths && plan.paths.length) return plan.paths;
+  if (plan.points.length) {
+    return [{ id: "legacy", label: "", points: plan.points, closed: plan.closed, segs: plan.segs }];
+  }
+  return [];
 }
 
 export type Units = "in" | "ftin";
@@ -877,6 +989,7 @@ export interface MeasureData {
   gate: GateData | null;
   fence: FenceData | null;
   balcony: BalconyData | null;
+  deck: DeckData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -1007,6 +1120,7 @@ export function newMeasureData(
   let gate: GateData | null = null;
   let fence: FenceData | null = null;
   let balcony: BalconyData | null = null;
+  let deck: DeckData | null = null;
 
   switch (shape) {
     case "straight":
@@ -1053,6 +1167,10 @@ export function newMeasureData(
     case "balcony":
       balcony = blankBalcony();
       break;
+    case "deck":
+      // steps1 carries the number of sides around the perimeter.
+      deck = blankDeck(steps1);
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -1077,7 +1195,11 @@ export function newMeasureData(
     gate,
     fence,
     balcony,
-    plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
+    deck,
+    // A deck that is not a simple rectangle gets the same tap-to-draw top view
+    // the custom shape uses, so odd corners and bump-outs can be drawn and then
+    // dimensioned segment by segment.
+    plan: shape === "custom" || shape === "deck" ? { points: [], closed: false, segs: [] } : null,
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
@@ -1299,6 +1421,13 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
         }
       : null,
     balcony: d.balcony ? { ...blankBalcony(), ...d.balcony } : null,
+    deck: d.deck
+      ? {
+          ...blankDeck(1),
+          ...d.deck,
+          sides: (d.deck.sides || []).map((sd) => ({ ...newDeckSide(), ...sd })),
+        }
+      : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -1320,6 +1449,26 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     annotations: d.annotations || {},
     plan: d.plan ? {
       ...d.plan,
+      // Migrate a legacy single-run drawing into the multi-run model, so a
+      // sheet drawn before separate runs existed keeps its geometry.
+      paths: (d.plan.paths && d.plan.paths.length
+        ? d.plan.paths
+        : d.plan.points?.length
+          ? [{ id: "legacy", label: "", points: d.plan.points, closed: d.plan.closed, segs: d.plan.segs }]
+          : []
+      ).map((pt) => ({
+        ...newPlanPath(),
+        ...pt,
+        segs: (pt.segs || []).map((sg) => ({
+          ...sg,
+          kind: sg.kind ?? "level",
+          steps: sg.steps ?? "",
+          rise: sg.rise ?? "",
+          run: sg.run ?? "",
+          width: sg.width ?? "",
+          stepMeasures: (sg.stepMeasures || []).map((st) => ({ ...st, levelGap: st.levelGap ?? "" })),
+        })),
+      })),
       segs: d.plan.segs.map((sg) => ({
         ...sg,
         // Drawings saved before typed custom segments existed represented
@@ -1361,6 +1510,9 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
     case "balcony":
       // The slab edge is the photo the shop argues about.
       return ["bal_overall", "bal_slab_edge", "bal_mount"];
+    case "deck":
+      // The framing photo is the one that proves the post has something to hold.
+      return ["deck_overall", "deck_framing", "deck_edge", "deck_grade"];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -1388,6 +1540,7 @@ export const FAB_CRITICAL_PHOTO_SLOTS: readonly string[] = [
   "well_wall_profile",
   "bal_slab_edge",
   "fe_anchors",
+  "deck_framing",
 ];
 
 export function isFabCriticalPhoto(slot: string): boolean {

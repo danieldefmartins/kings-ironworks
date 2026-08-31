@@ -22,6 +22,8 @@ import {
   type FenceData,
   type FenceSegment,
   type BalconyData,
+  type DeckData,
+  type DeckSide,
   type WallBand,
   type Carryover,
   type CarryoverKey,
@@ -42,6 +44,7 @@ import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
 import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
+import DeckSections from "./shapes/DeckSections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import SectionsDrawer from "./overlays/SectionsDrawer";
@@ -217,6 +220,12 @@ export default function MeasureEditor({
       const sg = f.segments.find((x) => x.id === id);
       if (sg) fn(sg);
     });
+  }
+  function setDeck(fn: (dk: DeckData) => void) {
+    set((d) => { if (d.deck) fn(d.deck); });
+  }
+  function setDeckSide(id: string, fn: (s: DeckSide) => void) {
+    set((d) => { const sd = d.deck?.sides.find((x) => x.id === id); if (sd) fn(sd); });
   }
   function setBalcony(fn: (b: BalconyData) => void) {
     set((d) => { if (d.balcony) fn(d.balcony); });
@@ -563,9 +572,11 @@ export default function MeasureEditor({
   const isGate = sheet.shape === "gate";
   const isFence = sheet.shape === "fence";
   const isBalcony = sheet.shape === "balcony";
+  const isDeck = sheet.shape === "deck";
   const gate = data.gate;
   const fence = data.fence;
   const balcony = data.balcony;
+  const deck = data.deck;
   const isWell = sheet.shape === "window_well";
   const well = data.well;
   const wellWants = (k: WellDeliverable) => !!well?.deliverables.includes(k);
@@ -593,7 +604,7 @@ export default function MeasureEditor({
   const hasGuardrail = data.rail.kind !== "Handrail";
   // Datums and the wall/open orientation describe a stair run. A well or a
   // fire escape carries its own reference frame, so the card stays hidden.
-  const needsPostReference = !isWallRail && !isCustom && !isSpiral && !isWell && !isFire && !isGate && !isFence && !isBalcony;
+  const needsPostReference = !isWallRail && !isCustom && !isSpiral && !isWell && !isFire && !isGate && !isFence && !isBalcony && !isDeck;
 
   // ---- Early routing --------------------------------------------------------
   // Which of the routing questions this shape has any use for. A gate has no
@@ -601,7 +612,7 @@ export default function MeasureEditor({
   const routing = data.routing;
   const asksOrientation = needsPostReference;
   const asksRailKind = (!isWell || wellWants("guard")) && (!isFire || fireNew);
-  const asksFloorChange = !isWell && !isFire && !isGate && !isFence && !isBalcony;
+  const asksFloorChange = !isWell && !isFire && !isGate && !isFence && !isBalcony && !isDeck;
   const asksExisting = !isGate && !isFence && !isFire;
   const asksStdFinish = !isFire || fireNew;
   const routingChecks: boolean[] = [
@@ -977,6 +988,15 @@ export default function MeasureEditor({
           />
         )}
 
+        {isDeck && deck && (
+          <DeckSections
+            lang={lang}
+            deck={deck}
+            setDeck={setDeck}
+            setSide={setDeckSide}
+          />
+        )}
+
         {isBalcony && balcony && (
           <BalconySections
             lang={lang}
@@ -1062,6 +1082,7 @@ export default function MeasureEditor({
           isGate={isGate}
           isFence={isFence}
           isBalcony={isBalcony}
+          isDeck={isDeck}
         />
         <RailSections
           lang={lang}
@@ -1107,7 +1128,8 @@ export default function MeasureEditor({
           lang={lang}
           data={data}
           set={set}
-          isCustom={isCustom}
+          /* Decks draw too: the perimeter is rarely a plain rectangle. */
+          isCustom={isCustom || isDeck}
         />
         <PhotosSection
           lang={lang}

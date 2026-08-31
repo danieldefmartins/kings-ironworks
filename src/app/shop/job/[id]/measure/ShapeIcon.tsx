@@ -153,6 +153,18 @@ export default function ShapeIcon({
           <path d="M2 42h44" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "deck":
+      // deck in plan: an outline off the house, one side open for stairs
+      return (
+        <svg {...common}>
+          <path d="M4 6v36" strokeWidth={2.5} />
+          <path d="M4 10h30v12M34 30v12H4" strokeWidth={2.2} />
+          <path d="M34 22h8M34 30h8" strokeWidth={2.2} />
+          <path d="M42 22v8" strokeWidth={1.4} strokeDasharray="2 2" />
+          <circle cx={34} cy={10} r={1.8} />
+          <circle cx={34} cy={42} r={1.8} />
+        </svg>
+      );
     case "balcony":
       // slab edge in section with a rail standing on it
       return (

@@ -40,6 +40,7 @@ export default function PostsSection({
   isGate,
   isFence,
   isBalcony,
+  isDeck,
 }: {
   lang: string;
   data: MeasureData;
@@ -57,10 +58,11 @@ export default function PostsSection({
   isGate: boolean;
   isFence: boolean;
   isBalcony: boolean;
+  isDeck: boolean;
 }) {
   return (
     <>
-      {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
+      {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && !isDeck && (
         <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
           {posts.length === 0 && (
             <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>

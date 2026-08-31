@@ -19,6 +19,7 @@ import type {
   FenceData,
   BalconyData,
 } from "@/lib/shop/measure";
+import { planPaths } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { formatIn, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
 export { sortPlatPosts };
@@ -838,8 +839,8 @@ export function CustomPlanSketch({
   p: Palette;
   lang: string;
 }) {
-  const plan = data.plan;
-  if (!plan || plan.points.length === 0) {
+  const paths = planPaths(data.plan).filter((pp) => pp.points.length > 0);
+  if (paths.length === 0) {
     return (
       <svg viewBox="0 0 340 120" className="w-full" style={{ maxHeight: 200 }}>
         <text x={170} y={60} fontSize={11} textAnchor="middle" fill={p.miss}>
@@ -848,54 +849,66 @@ export function CustomPlanSketch({
       </svg>
     );
   }
-  const pts = plan.points;
-  const segCount = plan.closed && pts.length > 2 ? pts.length : pts.length - 1;
-  const xs = pts.map((q) => q.x);
-  const ys = pts.map((q) => q.y);
+  // Every run shares one frame, so the drawing reads as a single site plan.
+  const allPts = paths.flatMap((pp) => pp.points);
+  const xs = allPts.map((q) => q.x);
+  const ys = allPts.map((q) => q.y);
   const minX = Math.min(...xs) - 44;
   const minY = Math.min(...ys) - 34;
   const w = Math.max(...xs) - Math.min(...xs) + 88;
   const h = Math.max(...ys) - Math.min(...ys) + 68;
 
   const els: React.ReactNode[] = [];
-  for (let i = 0; i < segCount; i++) {
-    const a = pts[i];
-    const b = pts[(i + 1) % pts.length];
-    const lv = v(plan.segs[i]?.len, p);
-    const sg = plan.segs[i];
-    const typeColor = sg?.kind === "flight" ? p.post
-      : sg?.kind === "landing" ? "#38bdf8"
-        : sg?.kind === "ramp" ? "#a78bfa"
-          : sg?.kind === "curve" ? "#34d399"
-            : p.line;
-    const mx = (a.x + b.x) / 2;
-    const my = (a.y + b.y) / 2;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const L = Math.hypot(dx, dy) || 1;
-    // label offset perpendicular to the line
-    const ox = (-dy / L) * 11;
-    const oy = (dx / L) * 11;
-    els.push(
-      <g key={i}>
-        <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={typeColor} strokeWidth={sg?.kind === "flight" ? 4 : 2.8} strokeLinecap="round" />
-        <circle cx={mx + ox * 1.9} cy={my + oy * 1.9} r={7} fill="none" stroke={p.ghost} />
-        <text x={mx + ox * 1.9} y={my + oy * 1.9 + 3} fontSize={8} textAnchor="middle" fill={p.dim}>
-          {i + 1}
-        </text>
-        <text x={mx + ox * 0.4} y={my + oy * 0.4 + 3} fontSize={9} fontWeight={700} textAnchor="middle" fill={lv.fill}>
-          {lv.text}
-        </text>
-        {sg?.kind && (
-          <text x={mx - ox * 1.1} y={my - oy * 1.1 + 3} fontSize={7.5} fontWeight={800} textAnchor="middle" fill={typeColor}>
-            {sg.kind === "flight" ? `${mt(lang, "step")} × ${sg.steps || "?"}` : mt(lang, `segment_${sg.kind}`)}
+  paths.forEach((path, pi) => {
+    const pts = path.points;
+    const segCount = path.closed && pts.length > 2 ? pts.length : pts.length - 1;
+    for (let i = 0; i < segCount; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      const lv = v(path.segs[i]?.len, p);
+      const sg = path.segs[i];
+      const typeColor = sg?.kind === "flight" ? p.post
+        : sg?.kind === "landing" ? "#38bdf8"
+          : sg?.kind === "ramp" ? "#a78bfa"
+            : sg?.kind === "curve" ? "#34d399"
+              : p.line;
+      const mx = (a.x + b.x) / 2;
+      const my = (a.y + b.y) / 2;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const L = Math.hypot(dx, dy) || 1;
+      // label offset perpendicular to the line
+      const ox = (-dy / L) * 11;
+      const oy = (dx / L) * 11;
+      els.push(
+        <g key={`s${pi}-${i}`}>
+          <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={typeColor} strokeWidth={sg?.kind === "flight" ? 4 : 2.8} strokeLinecap="round" />
+          <circle cx={mx + ox * 1.9} cy={my + oy * 1.9} r={7} fill="none" stroke={p.ghost} />
+          <text x={mx + ox * 1.9} y={my + oy * 1.9 + 3} fontSize={8} textAnchor="middle" fill={p.dim}>
+            {i + 1}
           </text>
-        )}
-      </g>
-    );
-  }
-  pts.forEach((q, i) => {
-    els.push(<circle key={`v${i}`} cx={q.x} cy={q.y} r={3} fill={p.post} />);
+          <text x={mx + ox * 0.4} y={my + oy * 0.4 + 3} fontSize={9} fontWeight={700} textAnchor="middle" fill={lv.fill}>
+            {lv.text}
+          </text>
+          {sg?.kind && (
+            <text x={mx - ox * 1.1} y={my - oy * 1.1 + 3} fontSize={7.5} fontWeight={800} textAnchor="middle" fill={typeColor}>
+              {sg.kind === "flight" ? `${mt(lang, "step")} × ${sg.steps || "?"}` : mt(lang, `segment_${sg.kind}`)}
+            </text>
+          )}
+        </g>
+      );
+    }
+    // Name each run at its first point, but only when there is more than one.
+    if (paths.length > 1 && pts[0]) {
+      els.push(
+        <text key={`rl${pi}`} x={pts[0].x} y={pts[0].y - 10} fontSize={8} fontWeight={800} textAnchor="middle" fill={p.dim}>
+          {path.label || `${pi + 1}`}
+        </text>
+      );
+    }
+    pts.forEach((q, i) => {
+      els.push(<circle key={`v${pi}-${i}`} cx={q.x} cy={q.y} r={3} fill={p.post} />);
+    });
   });
 
   return (

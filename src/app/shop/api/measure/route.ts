@@ -151,6 +151,25 @@ const FenceSchema = z
     utilities: short, notes: short,
   })
   .nullable();
+const DeckSideSchema = z.object({
+  id: z.string().max(40), label: z.string().max(60), length: meas,
+  railed: z.boolean(), turnDeg: meas, heightAboveGrade: meas,
+  opening: z.enum(["", "none", "stairs", "gate", "gap"]),
+  openingWidth: meas, edgeDetail: short, obstruction: short,
+});
+const DeckSchema = z
+  .object({
+    surface: z.enum(["", "wood", "composite", "pvc", "concrete", "paver", "roof_deck"]),
+    occupancy: z.enum(["", "residential", "commercial"]),
+    sides: z.array(DeckSideSchema).max(40),
+    totalPerimeter: meas, closedLoop: z.boolean(), levelNote: short, outOfLevel: meas,
+    mount: z.enum(["", "surface", "fascia", "through_bolt", "core_drill", "embedded"]),
+    deckingThickness: meas, rimJoistSize: short, rimMaterial: short, joistDirection: short,
+    blocking: short, ledgerCondition: short, framingCondition: short,
+    guardHeight: meas, picketSpacing: meas, postSpacing: meas, maxPostSpacing: meas,
+    postCount: meas, corners: short, gates: short, stairSheets: short, notes: short,
+  })
+  .nullable();
 const BalconySchema = z
   .object({
     kind: z.enum(["", "balcony", "juliet", "deck_edge", "roof_edge"]),
@@ -316,20 +335,35 @@ const StrokeSchema = z.object({
   points: z.array(z.object({ x: z.number(), y: z.number() })).max(2000),
   text: z.string().max(200).optional(),
 });
+const PlanSegSchema = z.object({
+  len: meas,
+  note: z.string().max(200),
+  kind: z.enum(["", "flight", "landing", "level", "ramp", "curve"]).optional(),
+  steps: meas.optional(),
+  rise: meas.optional(),
+  run: meas.optional(),
+  width: meas.optional(),
+  stepMeasures: z.array(StepSchema).max(60).optional(),
+});
+// A drawing holds several separate runs. `points`/`closed`/`segs` are the
+// legacy single-run fields, kept so sheets drawn before runs existed still load.
 const PlanSchema = z
   .object({
     points: z.array(z.object({ x: z.number(), y: z.number() })).max(80),
     closed: z.boolean(),
-    segs: z.array(z.object({
-      len: meas,
-      note: z.string().max(200),
-      kind: z.enum(["", "flight", "landing", "level", "ramp", "curve"]).optional(),
-      steps: meas.optional(),
-      rise: meas.optional(),
-      run: meas.optional(),
-      width: meas.optional(),
-      stepMeasures: z.array(StepSchema).max(60).optional(),
-    })).max(80),
+    segs: z.array(PlanSegSchema).max(80),
+    paths: z
+      .array(
+        z.object({
+          id: z.string().max(40),
+          label: z.string().max(60),
+          points: z.array(z.object({ x: z.number(), y: z.number() })).max(80),
+          closed: z.boolean(),
+          segs: z.array(PlanSegSchema).max(80),
+        })
+      )
+      .max(20)
+      .optional(),
   })
   .nullable()
   .optional();
@@ -387,6 +421,7 @@ const MeasureDataSchema = z.object({
   gate: GateSchema.optional(),
   fence: FenceSchema.optional(),
   balcony: BalconySchema.optional(),
+  deck: DeckSchema.optional(),
   rail: z.object({
     kind: z.string().max(40),
     height: meas,

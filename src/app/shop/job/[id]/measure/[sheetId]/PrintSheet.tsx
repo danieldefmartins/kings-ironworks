@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import type { Job } from "@/lib/shop/shared";
+import { planPaths } from "@/lib/shop/measure";
 import type {
   CurveSegment,
   FlightSegment,
@@ -302,10 +303,15 @@ export default function PrintSheet({
           ))}
       </div>
 
-      {/* Custom shape: dimension table for every drawn line */}
-      {sheet.shape === "custom" && data.plan && data.plan.segs.length > 0 && (
-        <div className="mb-3">
-          <SectionTitle>{mt(lang, "planSegs")}</SectionTitle>
+      {/* Drawn shapes: one dimension table per run, so the shop can tell which
+          piece of steel belongs to which run on site. */}
+      {planPaths(data.plan).map((path, pi, all) => (
+        path.segs.length === 0 ? null : (
+        <div className="mb-3" key={path.id}>
+          <SectionTitle>
+            {mt(lang, "planSegs")}
+            {all.length > 1 ? ` — ${path.label || `${mt(lang, "runLbl")} ${pi + 1}`}${path.closed ? ` (${mt(lang, "closedShort")})` : ""}` : ""}
+          </SectionTitle>
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
               <tr>
@@ -318,7 +324,7 @@ export default function PrintSheet({
               </tr>
             </thead>
             <tbody>
-              {data.plan.segs.map((sg, i) => (
+              {path.segs.map((sg, i) => (
                 <tr key={i}>
                   <Td>{i + 1}</Td>
                   <Td><Val v={sg.len} /></Td>
@@ -331,7 +337,8 @@ export default function PrintSheet({
             </tbody>
           </table>
         </div>
-      )}
+        )
+      ))}
 
       <div className="grid grid-cols-2 gap-4">
         {/* Steps */}

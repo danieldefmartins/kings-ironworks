@@ -147,6 +147,8 @@ export default function MeasureListClient({
                     ? mt(lang, "fireStories")
                     : shape === "fence"
                     ? mt(lang, "fenceSegment")
+                    : shape === "deck"
+                    ? mt(lang, "deckSideCount")
                     : shape === "spiral"
                     ? mt(lang, "treadsCount")
                     : twoFlights

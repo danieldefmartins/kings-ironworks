@@ -6,6 +6,7 @@
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
+  planPaths,
   METHODS_BY_ATTACH,
   HARDWARE_METHODS,
   HW_REQUIRED,
@@ -560,6 +561,146 @@ function balconyChecks(data: MeasureData): CheckResult[] {
 }
 
 
+// ---- Deck perimeters -------------------------------------------------------
+
+function deckChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const dk = data.deck;
+  if (!dk) return out;
+
+  const railed = dk.sides.filter((s) => s.railed);
+
+  // The sides have to add up to the perimeter measured end to end — the same
+  // discipline as a fence run, for the same reason: it is checked before
+  // anything is cut.
+  let sum: number | null = 0;
+  for (const sd of railed) {
+    const L = parseMeas(sd.length);
+    if (L === null) { sum = null; break; }
+    sum += L;
+  }
+  out.push(compare("deck_perimeter_sum", sum, parseMeas(dk.totalPerimeter), tol.runSum, "in"));
+
+  // A closed outline's exterior angles must come to a full turn. On an
+  // irregular deck — 45° cut corners, a bump-out, an octagonal end — this is
+  // what catches a corner nobody wrote down, which no length check can see.
+  if (dk.closedLoop) {
+    let turn: number | null = 0;
+    for (const sd of dk.sides) {
+      const t = sd.turnDeg.trim() === "" ? 0 : parseMeas(sd.turnDeg);
+      if (t === null) { turn = null; break; }
+      turn += t;
+    }
+    if (turn !== null) {
+      out.push({
+        key: "deck_turn_sum",
+        level: Math.abs(Math.abs(turn) - 360) <= 2 ? "green" : "red",
+        expected: 360,
+        actual: Math.abs(turn),
+        delta: Math.abs(turn) - 360,
+        unit: "deg",
+      });
+    }
+  }
+
+  // THE deck check. A post fixed to the deck boards alone has only the board
+  // to resist the moment from a push at guard height; it levers the screws out.
+  // It has to reach the rim joist or solid blocking.
+  if (dk.mount === "surface") {
+    const backed = dk.blocking.trim() !== "";
+    out.push({
+      key: "deck_post_anchorage",
+      level: backed ? "yellow" : "red",
+      expected: null,
+      actual: null,
+      delta: null,
+      unit: "in",
+      detail: backed ? dk.blocking : undefined,
+    });
+  }
+
+  // A walking surface more than 30" above grade needs a guard, and the guard
+  // has a minimum height. Under it is a spec error on something we are about
+  // to fabricate, so it blocks rather than warns.
+  const heights = dk.sides
+    .map((s) => parseMeas(s.heightAboveGrade))
+    .filter((h): h is number => h !== null);
+  const maxHeight = heights.length ? Math.max(...heights) : null;
+  const guardRequired = maxHeight !== null && maxHeight > 30;
+  const minGuard = dk.occupancy === "commercial" ? 42 : 36;
+  const gh = parseMeas(dk.guardHeight);
+  if (guardRequired && gh !== null) {
+    out.push({
+      key: "deck_guard_height",
+      level: gh < minGuard ? "red" : "green",
+      expected: minGuard,
+      actual: gh,
+      delta: gh - minGuard,
+      unit: "in",
+    });
+  }
+
+  // An unrailed side that is high enough to need a guard is either the house
+  // wall or an oversight — warn, never block, because only the measurer knows.
+  dk.sides.forEach((sd, i) => {
+    if (sd.railed) return;
+    const h = parseMeas(sd.heightAboveGrade);
+    if (h !== null && h > 30) {
+      out.push({
+        key: "deck_unrailed_height",
+        level: "yellow",
+        expected: 30,
+        actual: h,
+        delta: h - 30,
+        unit: "in",
+        detail: sd.label || `#${i + 1}`,
+      });
+    }
+  });
+
+  // Posts spaced beyond what the chosen post section can carry.
+  const sp = parseMeas(dk.postSpacing);
+  const maxSp = parseMeas(dk.maxPostSpacing);
+  if (sp !== null) {
+    if (maxSp !== null && sp > maxSp) {
+      out.push({ key: "deck_post_spacing", level: "red", expected: maxSp, actual: sp, delta: sp - maxSp, unit: "in" });
+    } else if (maxSp === null && sp > 72) {
+      out.push({ key: "deck_post_spacing", level: "yellow", expected: 72, actual: sp, delta: sp - 72, unit: "in" });
+    }
+  }
+
+  // Post count against the railed length it has to cover.
+  const n = parseMeas(dk.postCount);
+  if (n !== null && sp !== null && sp > 0 && sum !== null) {
+    out.push(compare("deck_post_fit", (n - 1) * sp, sum, tol.runSum, "in"));
+  }
+
+  const ps = parseMeas(dk.picketSpacing);
+  if (ps !== null && ps > 4) {
+    out.push({ key: "deck_picket_spacing", level: "yellow", expected: 4, actual: ps, delta: ps - 4, unit: "in" });
+  }
+
+  // An opening cannot be wider than the side it is cut out of.
+  dk.sides.forEach((sd, i) => {
+    if (!sd.opening || sd.opening === "none") return;
+    const w = parseMeas(sd.openingWidth);
+    const L = parseMeas(sd.length);
+    if (w !== null && L !== null && w > L) {
+      out.push({
+        key: "deck_opening_fit",
+        level: "red",
+        expected: L,
+        actual: w,
+        delta: w - L,
+        unit: "in",
+        detail: sd.label || `#${i + 1}`,
+      });
+    }
+  });
+
+  return out;
+}
+
 // Existing columns and walls with a skirt or trim at the base: the gap the
 // measurer took off the skirt is not the gap the inspector will find above it.
 function skirtChecks(data: MeasureData, sphere = 4): CheckResult[] {
@@ -604,6 +745,12 @@ export function runChecks(
   if (shape === "gate") return gateChecks(data, tol);
   if (shape === "fence") return fenceChecks(data, tol);
   if (shape === "balcony") return balconyChecks(data);
+  if (shape === "deck") {
+    // An irregular deck can also be drawn, in which case the same
+    // scale-independent closure test the custom shape uses applies here.
+    const drawn = data.plan && data.plan.points.length >= 3 ? customChecks(data) : [];
+    return [...deckChecks(data, tol), ...drawn, ...skirt];
+  }
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return [...spiralOrLevelChecks(data, shape, tol), ...skirt];
   }
@@ -865,39 +1012,50 @@ function spiralOrLevelChecks(
 // whose drawn directions are known and every segment length is entered, the
 // length-weighted direction vectors must sum to ~zero. Catches a wrong
 // segment length without knowing the drawing's scale.
+// A drawing holds one or more runs. An OPEN run is the ordinary case — a rail
+// from the wall to the steps does not come back to itself — so closure is only
+// tested on runs the measurer explicitly closed. Each closed run is checked on
+// its own; one bad outline does not condemn the others.
 function customChecks(data: MeasureData): CheckResult[] {
-  const plan = data.plan;
-  if (!plan || !plan.closed || plan.points.length < 3) {
+  const paths = planPaths(data.plan);
+  const closed = paths.filter((p) => p.closed && p.points.length >= 3);
+  if (!closed.length) {
     return [{ key: "plan_closure", level: "na", expected: null, actual: null, delta: null, unit: "in" }];
   }
-  const n = plan.points.length;
-  let ex = 0;
-  let ey = 0;
-  let perimeter = 0;
-  for (let i = 0; i < n; i++) {
-    const a = plan.points[i];
-    const b = plan.points[(i + 1) % n];
-    const len = parseMeas(plan.segs[i]?.len);
-    if (len === null) {
-      return [{ key: "plan_closure", level: "na", expected: null, actual: null, delta: null, unit: "in" }];
+
+  const out: CheckResult[] = [];
+  closed.forEach((path, idx) => {
+    const tag = path.label || (paths.length > 1 ? `#${idx + 1}` : undefined);
+    const n = path.points.length;
+    let ex = 0;
+    let ey = 0;
+    let perimeter = 0;
+    for (let i = 0; i < n; i++) {
+      const a = path.points[i];
+      const b = path.points[(i + 1) % n];
+      const len = parseMeas(path.segs[i]?.len);
+      if (len === null) {
+        out.push({ key: "plan_closure", level: "na", expected: null, actual: null, delta: null, unit: "in", detail: tag });
+        return;
+      }
+      const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      ex += (len * (b.x - a.x)) / d;
+      ey += (len * (b.y - a.y)) / d;
+      perimeter += len;
     }
-    const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-    ex += (len * (b.x - a.x)) / d;
-    ey += (len * (b.y - a.y)) / d;
-    perimeter += len;
-  }
-  const err = Math.hypot(ex, ey);
-  const pct = perimeter > 0 ? err / perimeter : 0;
-  return [
-    {
+    const err = Math.hypot(ex, ey);
+    const pct = perimeter > 0 ? err / perimeter : 0;
+    out.push({
       key: "plan_closure",
       level: pct <= 0.01 ? "green" : pct <= 0.03 ? "yellow" : "red",
       expected: 0,
       actual: err,
       delta: err,
       unit: "in",
-    },
-  ];
+      detail: tag,
+    });
+  });
+  return out;
 }
 
 // ---- Completeness gate -----------------------------------------------------
@@ -936,9 +1094,12 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const isGate = shape === "gate";
   const isFence = shape === "fence";
   const isBalcony = shape === "balcony";
-  const selfContained = isGate || isFence;
+  // A deck carries its own perimeter, post and material fields; the stair
+  // datum and floor-change questions describe a stair run and do not apply.
+  const isDeck = shape === "deck";
+  const selfContained = isGate || isFence || isDeck;
 
-  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && shape !== "fire_escape" && shape !== "gate" && shape !== "fence" && shape !== "balcony" && !has(data.datums.orientation)) {
+  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && shape !== "fire_escape" && shape !== "gate" && shape !== "fence" && shape !== "balcony" && shape !== "deck" && !has(data.datums.orientation)) {
     gaps.push({ key: "orientation" });
   }
   if (!isWell && !isFire && !selfContained && !isBalcony && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
@@ -1037,6 +1198,47 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
         ] as const) if (!has(v)) gaps.push({ key: k });
       }
       if (b.kind === "juliet" && !has(b.doorOpening)) gaps.push({ key: "bal_door_opening" });
+    }
+  } else if (shape === "deck") {
+    const dk = data.deck;
+    if (!dk) gaps.push({ key: "deck_missing" });
+    else {
+      for (const [k, v] of [
+        ["deck_surface", dk.surface],
+        ["deck_total_perimeter", dk.totalPerimeter],
+        ["deck_mount", dk.mount],
+        ["deck_guard_height_f", dk.guardHeight],
+        ["deck_post_spacing_f", dk.postSpacing],
+        ["deck_corners", dk.corners],
+      ] as const) if (!has(v)) gaps.push({ key: k });
+
+      if (dk.sides.length === 0) gaps.push({ key: "deck_sides" });
+      dk.sides.forEach((sd, i) => {
+        const tag = sd.label || `#${i + 1}`;
+        if (!has(sd.length)) gaps.push({ key: "deck_side_length", detail: tag });
+        // Height above grade decides whether that side needs a guard at all,
+        // so it is needed on every side, railed or not.
+        if (!has(sd.heightAboveGrade)) gaps.push({ key: "deck_side_height", detail: tag });
+        if (sd.opening && sd.opening !== "none" && !has(sd.openingWidth)) {
+          gaps.push({ key: "deck_opening_width", detail: tag });
+        }
+      });
+
+      // Whatever the post grabs has to be described, because the anchorage
+      // check is the reason this sheet exists.
+      if (dk.mount === "surface" || dk.mount === "fascia" || dk.mount === "through_bolt") {
+        if (!has(dk.rimJoistSize)) gaps.push({ key: "deck_rim_size" });
+        if (!has(dk.rimMaterial)) gaps.push({ key: "deck_rim_material" });
+        if (!has(dk.blocking)) gaps.push({ key: "deck_blocking" });
+        if (!has(dk.deckingThickness)) gaps.push({ key: "deck_decking_thickness" });
+      }
+      if (dk.mount === "core_drill" || dk.mount === "embedded") {
+        if (!has(dk.framingCondition)) gaps.push({ key: "deck_framing_condition" });
+      }
+      // A stair opening is measured on its own stair sheet; say which one.
+      if (dk.sides.some((s) => s.opening === "stairs") && !has(dk.stairSheets)) {
+        gaps.push({ key: "deck_stair_sheets", tier: "doc" });
+      }
     }
   } else if (shape === "fire_escape") {
     const f = data.fire;
