@@ -1619,13 +1619,33 @@ export function sortPlatPosts<T extends { pos: string }>(posts: T[]): T[] {
 // several posts may share a tread, landing posts sort by measured position).
 export function orderedPosts(data: MeasureData): PostMeasure[] {
   const out: PostMeasure[] = [];
+
+  // Points on a drawn run are ordered by run, then by line within it, then by
+  // how far along that line they sit. A drawn sheet has no segments at all, so
+  // walking data.segments would silently drop every one of them.
+  const drawn = data.posts.filter((po) => !!po.pathId);
+  if (drawn.length) {
+    const order = new Map(planPaths(data.plan).map((pp, i) => [pp.id, i]));
+    out.push(
+      ...drawn.sort((a, b) => {
+        const ra = order.get(a.pathId!) ?? 999;
+        const rb = order.get(b.pathId!) ?? 999;
+        if (ra !== rb) return ra - rb;
+        const sa = a.planSegIdx ?? 0;
+        const sb = b.planSegIdx ?? 0;
+        if (sa !== sb) return sa - sb;
+        return (parseMeas(a.pos) ?? 0) - (parseMeas(b.pos) ?? 0);
+      })
+    );
+  }
+
   data.segments.forEach((seg, si) => {
     if (seg.kind === "flight") {
       seg.steps.forEach((_, i) => {
-        out.push(...data.posts.filter((po) => po.segIdx === si && po.stepIdx === i));
+        out.push(...data.posts.filter((po) => !po.pathId && po.segIdx === si && po.stepIdx === i));
       });
     } else {
-      out.push(...sortPlatPosts(data.posts.filter((po) => po.segIdx === si)));
+      out.push(...sortPlatPosts(data.posts.filter((po) => !po.pathId && po.segIdx === si)));
     }
   });
   return out;

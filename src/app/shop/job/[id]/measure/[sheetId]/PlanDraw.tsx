@@ -36,13 +36,18 @@ export default function PlanDraw({
   plan,
   lang,
   onChange,
+  onPlacePoint,
 }: {
   plan: PlanDrawing;
   lang: string;
   onChange: (next: PlanDrawing) => void;
+  // Given a run, a line in it, and how far along that line the finger landed
+  // (0..1), drop a point there. Absent on shapes that carry no points.
+  onPlacePoint?: (pathId: string, segIdx: number, alongFraction: number) => void;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [snap, setSnap] = useState(true);
+  const [placing, setPlacing] = useState(false);
 
   const paths = planPaths(plan);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -127,6 +132,8 @@ export default function PlanDraw({
       suppressTapRef.current = false;
       return;
     }
+    // In placing mode the canvas draws nothing; only the lines respond.
+    if (placing) return;
     e.preventDefault();
 
     // No runs yet, or the active one is finished: start a new run.
@@ -205,7 +212,9 @@ export default function PlanDraw({
     <div>
       <div className="text-xs text-neutral-500 mb-2">{mt(lang, "drawHint")}</div>
       <div className="mb-2 rounded-lg border border-amber-900/60 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-200">
-        {!active || active.points.length === 0
+        {placing
+          ? `⊙ ${mt(lang, "placePointHint")}`
+          : !active || active.points.length === 0
           ? `1. ${mt(lang, "tapCanvasStart")}`
           : active.points.length < 2
             ? `2. ${mt(lang, "tapNextCorner")}`
@@ -252,7 +261,32 @@ export default function PlanDraw({
                 if (i === 0) return null;
                 const a = drawnPoints(pi, i - 1, path.points[i - 1]);
                 const b = drawnPoints(pi, i, q);
-                return <line key={`l${i}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colour} strokeWidth={2.4} strokeLinecap="round" />;
+                return (
+                  <g key={`l${i}`}>
+                    <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colour} strokeWidth={2.4} strokeLinecap="round" />
+                    {placing && onPlacePoint && (
+                      // Finger-width grab strip over the line. Only live while
+                      // placing, so it can never eat a drawing tap.
+                      <line
+                        x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                        stroke="transparent" strokeWidth={18} strokeLinecap="round"
+                        style={{ touchAction: "none", cursor: "copy" }}
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          suppressTapRef.current = true;
+                          const p0 = toLocal(e);
+                          const dx = b.x - a.x;
+                          const dy = b.y - a.y;
+                          const L2 = dx * dx + dy * dy || 1;
+                          // project the touch onto the line to get how far
+                          // along it the finger landed
+                          const t = Math.max(0, Math.min(1, ((p0.x - a.x) * dx + (p0.y - a.y) * dy) / L2));
+                          onPlacePoint(path.id, i - 1, t);
+                        }}
+                      />
+                    )}
+                  </g>
+                );
               })}
               {path.closed && path.points.length > 2 && (
                 <line
@@ -339,6 +373,16 @@ export default function PlanDraw({
             className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs font-bold text-neutral-200"
           >
             ✎ {mt(lang, "reopenDraw")}
+          </button>
+        )}
+        {onPlacePoint && (
+          <button
+            onClick={() => setPlacing((v) => !v)}
+            className={`px-3 py-2 rounded-lg border text-xs font-bold ${
+              placing ? "border-sky-500 bg-sky-500/15 text-sky-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"
+            }`}
+          >
+            ⊙ {mt(lang, "placePointMode")}
           </button>
         )}
         <button

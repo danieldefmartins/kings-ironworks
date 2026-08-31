@@ -72,7 +72,10 @@ export default function PostsSection({
         const addPlanPoint = (pathId: string, segIdx: number) =>
           set((d) => void d.posts.push(newPlanPost(pathId, segIdx)));
         return !isSpiral && !isWallRail && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
-        <Card stage="locations" title={`${mt(lang, "posts")} (${posts.length})`}>
+        // On a drawn shape the points live on the same screen as the drawing:
+        // they hang off lines that do not exist until the drawing is made, so
+        // asking for them on an earlier stage is asking the impossible.
+        <Card stage={isDrawn ? "steps" : "locations"} title={`${mt(lang, "posts")} (${posts.length})`}>
           {posts.length === 0 && (
             <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
           )}

@@ -7,7 +7,8 @@
 // A drawing holds several separate runs (wall to steps, then on past them),
 // each dimensioned segment by segment.
 
-import { planPaths, type MeasureData } from "@/lib/shop/measure";
+import { planPaths, newPlanPost, type MeasureData } from "@/lib/shop/measure";
+import { parseMeas } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
   Card,
@@ -55,6 +56,15 @@ export default function PlanSection({
             plan={data.plan}
             lang={lang}
             onChange={(next) => set((d) => void (d.plan = next))}
+            onPlacePoint={(pathId, segIdx, t) => set((d) => {
+              const po = newPlanPost(pathId, segIdx);
+              // Seed the distance along the line from where the finger landed,
+              // if that line already has a measured length. It is a starting
+              // value the measurer corrects, never a measurement.
+              const len = parseMeas(planPaths(d.plan).find((r) => r.id === pathId)?.segs[segIdx]?.len);
+              if (len !== null) po.pos = String(Math.round(len * t * 4) / 4);
+              d.posts.push(po);
+            })}
           />
           {anySegs && (
             <div className="mt-4">
