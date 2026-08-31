@@ -134,6 +134,18 @@ export default function ShapeIcon({
           <path d="M4 46h40" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "fire_escape":
+      // building wall left, stacked balconies, zig-zag stair, ladder to grade
+      return (
+        <svg {...common}>
+          <path d="M7 3v42" strokeWidth={2.5} />
+          <path d="M7 16h24M7 30h24" strokeWidth={2} />
+          <path d="M31 16v-7M31 30v-7" strokeWidth={1.5} />
+          <path d="M31 16L13 30M31 30l-10 8" strokeWidth={1.5} />
+          <path d="M36 34v10M42 34v10M36 37h6M36 41h6" strokeWidth={1.5} />
+          <path d="M4 45h40" strokeDasharray="3 3" strokeWidth={1.5} />
+        </svg>
+      );
     case "window_well":
       // house wall on the left, the well box against it, guard over the top
       return (

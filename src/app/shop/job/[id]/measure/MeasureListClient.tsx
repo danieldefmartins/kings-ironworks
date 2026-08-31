@@ -143,6 +143,8 @@ export default function MeasureListClient({
                 label={
                   preset === "three_flight" || preset === "bifurcated" || shape === "builder"
                     ? mt(lang, "stepsFlight1")
+                    : shape === "fire_escape"
+                    ? mt(lang, "fireStories")
                     : shape === "spiral"
                     ? mt(lang, "treadsCount")
                     : twoFlights

@@ -312,6 +312,85 @@ function wellChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
   return out;
 }
 
+
+// ---- Fire escapes ----------------------------------------------------------
+
+// Geometry that proves itself, plus the handful of code minimums worth
+// flagging. Existing fire escapes routinely fail current code — that is the
+// point of the inspection — so none of these block a sheet. What blocks a
+// NEW installation is handled in requiredGaps.
+function fireChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const f = data.fire;
+  if (!f) return out;
+
+  f.levels.forEach((l, i) => {
+    const tag = l.label ? l.label : `#${i + 1}`;
+
+    // A stair's risers must add up to the floor-to-floor it spans.
+    const n = parseMeas(l.stairRisers);
+    const rise = parseMeas(l.stairRise);
+    const ftf = parseMeas(l.floorToFloor);
+    if (n !== null && rise !== null) {
+      out.push(compare("fe_riser_sum", n * rise, ftf, tol.riseSum, "in", tag));
+    }
+
+    // And the pitch must agree with that rise over that run.
+    const run = parseMeas(l.stairRun);
+    const ang = parseMeas(l.stairAngle);
+    if (rise !== null && run !== null && run > 0) {
+      const calc = (Math.atan2(rise, run) * 180) / Math.PI;
+      out.push(compare("fe_stair_angle", calc, ang, tol.angle, "deg", tag));
+    }
+
+    // Guards: 42" is the current minimum for new work.
+    const gh = parseMeas(l.guardHeight);
+    if (gh !== null && gh < 42) {
+      out.push({ key: "fe_guard_height", level: "yellow", expected: 42, actual: gh, delta: gh - 42, unit: "in", detail: tag });
+    }
+    // Infill: the same 4" sphere as everywhere else.
+    const ps = parseMeas(l.picketSpacing);
+    if (ps !== null && ps > 4) {
+      out.push({ key: "fe_picket_spacing", level: "yellow", expected: 4, actual: ps, delta: ps - 4, unit: "in", detail: tag });
+    }
+  });
+
+  // The stack should account for its own height: the lowest platform, plus
+  // every floor-to-floor above it, equals the top platform above grade.
+  const lowest = f.levels[f.levels.length - 1];
+  const top = f.levels[0];
+  if (lowest && top) {
+    const base = parseMeas(lowest.heightAboveGrade);
+    let sum: number | null = base;
+    for (let i = 0; i < f.levels.length - 1 && sum !== null; i++) {
+      const ftf = parseMeas(f.levels[i].floorToFloor);
+      sum = ftf === null ? null : sum + ftf;
+    }
+    out.push(compare("fe_stack_height", sum, parseMeas(f.totalHeight), tol.riseSum, "in"));
+  }
+
+  // The drop ladder has to actually reach the ground. On an inspection or a
+  // repair survey a ladder that falls short IS the finding being recorded, so
+  // it must never block the sheet — only a new installation is specifying it.
+  if (f.ladder.present) {
+    const spec = f.purpose === "new";
+    const deployed = parseMeas(f.ladder.deployedAboveGrade);
+    if (deployed !== null && deployed > 0) {
+      out.push({ key: "fe_ladder_reach", level: spec ? "red" : "yellow", expected: 0, actual: deployed, delta: deployed, unit: "in" });
+    }
+    const rung = parseMeas(f.ladder.rungSpacing);
+    if (rung !== null && rung > 18) {
+      out.push({ key: "fe_rung_spacing", level: spec ? "red" : "yellow", expected: 18, actual: rung, delta: rung - 18, unit: "in" });
+    }
+    if (f.ladder.operates === "seized") {
+      out.push({ key: "fe_ladder_seized", level: spec ? "red" : "yellow", expected: null, actual: null, delta: null, unit: "in" });
+    } else if (f.ladder.operates === "stiff") {
+      out.push({ key: "fe_ladder_stiff", level: "yellow", expected: null, actual: null, delta: null, unit: "in" });
+    }
+  }
+  return out;
+}
+
 export function runChecks(
   data: MeasureData,
   shape: MeasureShape,
@@ -320,6 +399,7 @@ export function runChecks(
   const tol = tolIn || TOLERANCES;
   if (shape === "custom") return [...customChecks(data), ...spanChecks(data, tol)];
   if (shape === "window_well") return wellChecks(data, tol);
+  if (shape === "fire_escape") return fireChecks(data, tol);
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
     return spiralOrLevelChecks(data, shape, tol);
   }
@@ -630,11 +710,15 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // none of the guardrail material or span requirements apply.
   const isWell = shape === "window_well";
   const wellGuard = isWell && !!data.well?.deliverables.includes("guard");
+  // An inspection or repair survey records an existing structure — it has no
+  // rail pieces to fabricate and no materials to order yet.
+  const isFire = shape === "fire_escape";
+  const fireNew = isFire && data.fire?.purpose === "new";
 
-  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && !has(data.datums.orientation)) {
+  if (shape !== "custom" && shape !== "spiral" && shape !== "window_well" && shape !== "fire_escape" && !has(data.datums.orientation)) {
     gaps.push({ key: "orientation" });
   }
-  if (!isWell && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
+  if (!isWell && !isFire && !has(data.finish.floorChange)) gaps.push({ key: "floor_change" });
   if (
     (data.finish.floorChange === "bottom" || data.finish.floorChange === "both") &&
     !has(data.finish.bottomAdjustment)
@@ -650,7 +734,70 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
   );
 
-  if (shape === "window_well") {
+  if (shape === "fire_escape") {
+    const f = data.fire;
+    if (!f) {
+      gaps.push({ key: "fire_missing" });
+    } else {
+      if (!has(f.purpose)) gaps.push({ key: "fire_purpose" });
+      if (!has(f.wallMaterial)) gaps.push({ key: "fire_wall_material" });
+      if (!has(f.totalHeight)) gaps.push({ key: "fire_total_height" });
+      if (f.levels.length === 0) gaps.push({ key: "fire_levels" });
+
+      f.levels.forEach((l, i) => {
+        const tag = l.label || `#${i + 1}`;
+        // Every purpose needs the balcony footprint and how it holds on.
+        if (!has(l.platLength)) gaps.push({ key: "fire_plat_length", detail: tag });
+        if (!has(l.platWidth)) gaps.push({ key: "fire_plat_width", detail: tag });
+        if (!has(l.heightAboveGrade)) gaps.push({ key: "fire_height_grade", detail: tag });
+
+        if (f.purpose === "new") {
+          // Fabricating it means the full geometry, per level.
+          if (!has(l.deck)) gaps.push({ key: "fire_deck", detail: tag });
+          if (!has(l.guardHeight)) gaps.push({ key: "fire_guard_height", detail: tag });
+          if (!has(l.picketSpacing)) gaps.push({ key: "fire_picket_spacing", detail: tag });
+          if (!has(l.anchorType)) gaps.push({ key: "fire_anchor_type", detail: tag });
+          if (!has(l.anchorCount)) gaps.push({ key: "fire_anchor_count", detail: tag });
+          if (!has(l.openingType)) gaps.push({ key: "fire_opening", detail: tag });
+          // The lowest level drops a ladder instead of a stair.
+          const lowest = i === f.levels.length - 1;
+          if (!lowest) {
+            for (const [k, v] of [
+              ["fire_stair_risers", l.stairRisers],
+              ["fire_stair_rise", l.stairRise],
+              ["fire_stair_run", l.stairRun],
+              ["fire_stair_width", l.stairWidth],
+              ["fire_floor_to_floor", l.floorToFloor],
+            ] as const) if (!has(v)) gaps.push({ key: k, detail: tag });
+          }
+        } else {
+          // Inspecting or repairing: every level needs a verdict.
+          if (!has(l.condition.rating)) gaps.push({ key: "fire_level_rating", detail: tag });
+          if (!has(l.condition.anchors)) gaps.push({ key: "fire_anchor_condition", detail: tag });
+        }
+      });
+
+      if (f.ladder.present) {
+        if (!has(f.ladder.type)) gaps.push({ key: "fire_ladder_type" });
+        if (!has(f.ladder.landingSurface)) gaps.push({ key: "fire_ladder_landing" });
+        if (f.purpose === "new") {
+          if (!has(f.ladder.length)) gaps.push({ key: "fire_ladder_length" });
+          if (!has(f.ladder.width)) gaps.push({ key: "fire_ladder_width" });
+          if (!has(f.ladder.rungSpacing)) gaps.push({ key: "fire_ladder_rung" });
+        } else if (!has(f.ladder.operates)) {
+          gaps.push({ key: "fire_ladder_operates" });
+        }
+      }
+
+      if (f.purpose !== "new" && f.purpose !== "") {
+        if (!has(f.overall.rating)) gaps.push({ key: "fire_overall_rating" });
+      }
+      if (f.purpose === "inspect" && !has(f.loadTest)) gaps.push({ key: "fire_load_test" });
+      if (f.purpose === "repair" && !has(f.violations) && !has(f.notes)) {
+        gaps.push({ key: "fire_repair_scope" });
+      }
+    }
+  } else if (shape === "window_well") {
     const w = data.well;
     if (!w) {
       gaps.push({ key: "well_missing" });
@@ -831,13 +978,14 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   });
 
   // materials the shop cannot order without
-  if (shape !== "wall_rail" && (!isWell || wellGuard) && !has(data.materials.post)) gaps.push({ key: "mat_post" });
-  if ((!isWell || wellGuard) && !has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
-  if (!has(data.materials.finish)) gaps.push({ key: "mat_finish" });
+  if (shape !== "wall_rail" && (!isWell || wellGuard) && (!isFire || fireNew) && !has(data.materials.post)) gaps.push({ key: "mat_post" });
+  if ((!isWell || wellGuard) && (!isFire || fireNew) && !has(data.materials.topRail)) gaps.push({ key: "mat_toprail" });
+  if ((!isFire || fireNew) && !has(data.materials.finish)) gaps.push({ key: "mat_finish" });
   if (
     (data.rail.kind === "Guardrail" || data.rail.kind === "Both") &&
     shape !== "wall_rail" &&
     (!isWell || wellGuard) &&
+    (!isFire || fireNew) &&
     !has(data.materials.picket)
   ) {
     gaps.push({ key: "mat_picket" });
@@ -845,7 +993,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 
   // Every rail piece: how long is it and how does EACH end attach? At least
   // one span, both terminations defined, methods valid for their substrate.
-  const skipSpans = isWell && !wellGuard;
+  const skipSpans = (isWell && !wellGuard) || (isFire && !fireNew);
   if (data.spans.length === 0 && !skipSpans) {
     gaps.push({ key: "span_missing" });
   }
@@ -865,7 +1013,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   });
 
   // The worker records the site constraint; the shop decides splice method.
-  if (!has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
+  if ((!isFire || fireNew) && !has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
 
   // required photo slots (+ the landing when there is one)
   const filled = new Set(data.photos.map((p) => p.slot));

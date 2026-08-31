@@ -118,6 +118,67 @@ const SpiralSchema = z
     landingNote: short,
   })
   .nullable();
+const ConditionSchema = z.object({
+  rating: z.enum(["", "pass", "monitor", "fail"]),
+  rust: short,
+  sectionLoss: short,
+  cracks: short,
+  deck: short,
+  guards: short,
+  anchors: short,
+  notes: short,
+});
+const FireLevelSchema = z.object({
+  id: z.string().max(40),
+  label: z.string().max(60),
+  floorToFloor: meas,
+  heightAboveGrade: meas,
+  platLength: meas,
+  platWidth: meas,
+  deck: short,
+  openingType: z.enum(["", "window", "door"]),
+  openingW: meas,
+  openingH: meas,
+  sillToPlatform: meas,
+  stairRisers: meas,
+  stairRise: meas,
+  stairRun: meas,
+  stairWidth: meas,
+  stairAngle: meas,
+  guardHeight: meas,
+  picketSpacing: meas,
+  anchorType: short,
+  anchorCount: meas,
+  anchorSpacing: meas,
+  condition: ConditionSchema,
+});
+const FireEscapeSchema = z
+  .object({
+    purpose: z.enum(["", "inspect", "repair", "new"]),
+    levels: z.array(FireLevelSchema).max(16),
+    ladder: z.object({
+      present: z.boolean(),
+      type: z.enum(["", "drop", "swing", "counterbalance", "fixed"]),
+      length: meas,
+      width: meas,
+      rungSpacing: meas,
+      stowedAboveGrade: meas,
+      deployedAboveGrade: meas,
+      landingSurface: short,
+      obstructions: short,
+      operates: z.enum(["", "yes", "stiff", "seized"]),
+    }),
+    stories: meas,
+    wallMaterial: short,
+    totalHeight: meas,
+    access: short,
+    overall: ConditionSchema,
+    loadTest: short,
+    paintSystem: short,
+    violations: short,
+    notes: short,
+  })
+  .nullable();
 const WallBandSchema = z.object({
   id: z.string().max(40),
   label: z.string().max(120),
@@ -274,6 +335,7 @@ const MeasureDataSchema = z.object({
   posts: z.array(PostSchema).max(120),
   spiral: SpiralSchema,
   well: WellSchema.optional(),
+  fire: FireEscapeSchema.optional(),
   rail: z.object({
     kind: z.string().max(40),
     height: meas,

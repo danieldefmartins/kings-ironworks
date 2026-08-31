@@ -14,6 +14,7 @@ import type {
   RampSegment,
   SpiralData,
   WellData,
+  FireEscapeData,
 } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { formatIn, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
@@ -78,6 +79,12 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
       ["plan", "planView"],
       ["side", "sectionView"],
     ];
+  // A fire escape is read as an elevation — the whole stack at once.
+  if (shape === "fire_escape")
+    return [
+      ["front", "elevationView"],
+      ["plan", "planView"],
+    ];
   if (shape === "ramp")
     return [
       ["side", "sideView"],
@@ -120,6 +127,12 @@ export default function Sketch({
   const p = light ? LIGHT : DARK;
 
   if (shape === "custom") return <CustomPlanSketch data={data} p={p} lang={lang} />;
+  if (shape === "fire_escape")
+    return view === "plan" ? (
+      <FirePlanSketch fire={data.fire} p={p} lang={lang} />
+    ) : (
+      <FireElevationSketch fire={data.fire} p={p} lang={lang} />
+    );
   if (shape === "window_well")
     return view === "plan" ? (
       <WellPlanSketch well={data.well} p={p} lang={lang} />
@@ -1850,6 +1863,190 @@ function WellSectionSketch({ well, p, lang }: { well: WellData | null; p: Palett
           {cl.deepest || "—"} ({mt(lang, "wellMaxWord")} {formatIn(cl.sphere)})
         </text>
       )}
+    </svg>
+  );
+}
+
+// ---- Fire escape -----------------------------------------------------------
+
+const RATING_FILL: Record<string, string> = {
+  pass: "#16a34a",
+  monitor: "#d97706",
+  fail: "#dc2626",
+};
+
+// Elevation: the building wall on the left, a balcony per floor stepping out
+// from it, stairs zig-zagging between them and the drop ladder at the bottom.
+function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Palette; lang: string }) {
+  const levels = fire?.levels || [];
+  const n = Math.max(1, levels.length);
+  const LEVEL_H = 92;
+  const wallX = 46;
+  const platW = 150;
+  // Room above the top deck for its label and guard, which are drawn upward.
+  const topPad = 48;
+  const H = topPad + n * LEVEL_H + 96;
+  const W = 340;
+  const gradeY = topPad + n * LEVEL_H + 62;
+  const survey = fire?.purpose === "inspect" || fire?.purpose === "repair";
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 520 }}>
+      <defs>
+        <pattern id="feHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke={p.ghost} strokeWidth="2.5" />
+        </pattern>
+      </defs>
+
+      {/* building */}
+      <rect x={0} y={0} width={wallX} height={gradeY} fill="url(#feHatch)" />
+      <line x1={wallX} y1={0} x2={wallX} y2={gradeY} stroke={p.line} strokeWidth={2.5} />
+
+      {/* grade */}
+      <line x1={0} y1={gradeY} x2={W} y2={gradeY} stroke={p.line} strokeWidth={2} />
+      <text x={W - 4} y={gradeY + 13} fontSize={8} textAnchor="end" fill={p.dim}>
+        {mt(lang, "feGrade").toUpperCase()}
+      </text>
+
+      {levels.map((l, i) => {
+        const deckY = topPad + i * LEVEL_H;
+        const lowest = i === levels.length - 1;
+        const gv = v(l.guardHeight, p);
+        const rating = l.condition.rating;
+        const stroke = survey && rating ? RATING_FILL[rating] || p.line : p.line;
+
+        return (
+          <g key={l.id}>
+            {/* the opening it serves */}
+            <rect x={wallX - 13} y={deckY - 30} width={13} height={28} fill={p.ghost} stroke={p.line} strokeWidth={1.2} />
+            {/* balcony deck */}
+            <line x1={wallX} y1={deckY} x2={wallX + platW} y2={deckY} stroke={stroke} strokeWidth={3.5} />
+            {/* guard */}
+            <line x1={wallX + platW} y1={deckY} x2={wallX + platW} y2={deckY - 30} stroke={stroke} strokeWidth={2.5} />
+            <line x1={wallX} y1={deckY - 30} x2={wallX + platW} y2={deckY - 30} stroke={stroke} strokeWidth={2} />
+            {[0.25, 0.5, 0.75].map((f2) => (
+              <line key={f2} x1={wallX + platW * f2} y1={deckY} x2={wallX + platW * f2} y2={deckY - 30}
+                stroke={p.ghost} strokeWidth={1} />
+            ))}
+            {/* anchors into the wall */}
+            <circle cx={wallX + 4} cy={deckY - 4} r={2.6} fill={p.post} />
+            <circle cx={wallX + 4} cy={deckY - 24} r={2.6} fill={p.post} />
+
+            {/* level label + guard height */}
+            <text x={wallX + 6} y={deckY - 36} fontSize={9} fontWeight={700} fill={survey && rating ? stroke : p.val}>
+              {l.label || `#${i + 1}`}
+            </text>
+            <text x={wallX + platW + 5} y={deckY - 14} fontSize={8} fill={gv.fill}>
+              {gv.text}
+            </text>
+
+            {/* stair down to the level below */}
+            {!lowest && (
+              <g>
+                <line x1={wallX + platW} y1={deckY} x2={wallX + 34} y2={deckY + LEVEL_H} stroke={stroke} strokeWidth={2.5} />
+                <line x1={wallX + platW} y1={deckY - 30} x2={wallX + 34} y2={deckY + LEVEL_H - 30} stroke={p.ghost} strokeWidth={1.4} />
+                <text x={wallX + platW / 2 + 22} y={deckY + LEVEL_H / 2 + 4} fontSize={8} fill={v(l.stairRisers, p).fill}>
+                  {v(l.stairRisers, p).text} × {v(l.stairRise, p).text}
+                </text>
+              </g>
+            )}
+
+            {/* floor to floor */}
+            {!lowest && (
+              <g>
+                <line x1={W - 16} y1={deckY} x2={W - 16} y2={deckY + LEVEL_H} stroke={p.dim} strokeWidth={1} />
+                <text x={W - 13} y={deckY + LEVEL_H / 2} fontSize={8} fill={v(l.floorToFloor, p).fill}>
+                  {v(l.floorToFloor, p).text}
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+
+      {/* drop ladder from the lowest balcony */}
+      {fire?.ladder.present && (() => {
+        const lastY = topPad + (levels.length - 1) * LEVEL_H;
+        const lx = wallX + platW - 26;
+        const stow = v(fire.ladder.stowedAboveGrade, p);
+        return (
+          <g>
+            <line x1={lx} y1={lastY} x2={lx} y2={gradeY - 22} stroke={p.post} strokeWidth={2} />
+            <line x1={lx + 20} y1={lastY} x2={lx + 20} y2={gradeY - 22} stroke={p.post} strokeWidth={2} />
+            {[0, 1, 2, 3].map((i) => (
+              <line key={i} x1={lx} y1={lastY + 16 + i * 14} x2={lx + 20} y2={lastY + 16 + i * 14}
+                stroke={p.post} strokeWidth={2} />
+            ))}
+            <text x={lx + 26} y={gradeY - 26} fontSize={8} fill={stow.fill}>
+              {mt(lang, "feStowed")} {stow.text}
+            </text>
+            {fire.ladder.operates === "seized" && (
+              <text x={lx + 26} y={gradeY - 14} fontSize={8.5} fontWeight={700} fill="#dc2626">
+                {mt(lang, "feSeized")}
+              </text>
+            )}
+          </g>
+        );
+      })()}
+
+      {/* total height */}
+      <line x1={12} y1={topPad} x2={12} y2={gradeY} stroke={p.dim} strokeWidth={1} />
+      <text x={16} y={(topPad + gradeY) / 2} fontSize={9} fill={v(fire?.totalHeight, p).fill}>
+        {v(fire?.totalHeight, p).text}
+      </text>
+    </svg>
+  );
+}
+
+// Plan: one balcony seen from above — its footprint off the wall and the
+// opening it serves.
+function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Palette; lang: string }) {
+  const W = 340;
+  const H = 220;
+  const wallY = 40;
+  const l0 = fire?.levels[0];
+  const left = 60;
+  const right = W - 60;
+  const bottom = 170;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 300 }}>
+      <defs>
+        <pattern id="fePlanHatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <line x1="0" y1="0" x2="0" y2="6" stroke={p.ghost} strokeWidth="2.5" />
+        </pattern>
+      </defs>
+      <rect x={0} y={0} width={W} height={wallY} fill="url(#fePlanHatch)" stroke={p.line} strokeWidth={1} />
+      <text x={8} y={wallY - 9} fontSize={8.5} fontWeight={700} fill={p.dim}>
+        {mt(lang, "feBuildingWall").toUpperCase()}
+      </text>
+
+      {/* the opening served */}
+      <rect x={(left + right) / 2 - 30} y={wallY - 5} width={60} height={10} fill={p.ghost} stroke={p.line} strokeWidth={1.4} />
+      <text x={(left + right) / 2} y={wallY + 22} fontSize={8} textAnchor="middle" fill={p.dim}>
+        {l0?.openingType === "door" ? mt(lang, "feDoor") : mt(lang, "feWindow")} {v(l0?.openingW, p).text}
+      </text>
+
+      {/* balcony footprint */}
+      <path d={`M ${left} ${wallY} L ${left} ${bottom} L ${right} ${bottom} L ${right} ${wallY}`}
+        fill="none" stroke={p.post} strokeWidth={3} />
+      {Array.from({ length: 9 }, (_, i) => (
+        <line key={i} x1={left + 4 + i * ((right - left - 8) / 8)} y1={wallY + 4}
+          x2={left + 4 + i * ((right - left - 8) / 8)} y2={bottom - 3} stroke={p.ghost} strokeWidth={1} />
+      ))}
+
+      {/* dimensions */}
+      <line x1={left} y1={bottom + 20} x2={right} y2={bottom + 20} stroke={p.dim} strokeWidth={1} />
+      <text x={(left + right) / 2} y={bottom + 34} fontSize={9} textAnchor="middle" fill={v(l0?.platLength, p).fill}>
+        {v(l0?.platLength, p).text}
+      </text>
+      <line x1={right + 16} y1={wallY} x2={right + 16} y2={bottom} stroke={p.dim} strokeWidth={1} />
+      <text x={right + 20} y={(wallY + bottom) / 2} fontSize={9} fill={v(l0?.platWidth, p).fill}>
+        {v(l0?.platWidth, p).text}
+      </text>
+      <text x={left} y={bottom + 48} fontSize={8} fill={p.dim}>
+        {l0?.label ? `${l0.label} — ` : ""}{mt(lang, "feDeck")}: {v(l0?.deck, p).text}
+      </text>
     </svg>
   );
 }

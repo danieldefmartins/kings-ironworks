@@ -490,6 +490,95 @@ export default function PrintSheet({
             </div>
           )}
 
+          {data.fire && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "fireTitle")}</SectionTitle>
+              <div>
+                <b>{mt(lang, "firePurpose")} </b>
+                {data.fire.purpose ? mt(lang, `fireP_${data.fire.purpose}`) : "—"} ·{" "}
+                {mt(lang, "fireStories")}: <Val v={data.fire.stories} /> ·{" "}
+                {mt(lang, "fireWallMaterial")}: <Val v={data.fire.wallMaterial} /> ·{" "}
+                {mt(lang, "fireTotalHeight")}: <Val v={data.fire.totalHeight} />
+              </div>
+              {data.fire.access && (
+                <div>{mt(lang, "fireAccess")}: <Val v={data.fire.access} /></div>
+              )}
+              {data.fire.violations && (
+                <div><b>{mt(lang, "fireViolations")}: </b><Val v={data.fire.violations} /></div>
+              )}
+
+              {data.fire.levels.map((l, i) => {
+                const lowest = i === data.fire!.levels.length - 1;
+                return (
+                  <div key={l.id} className="mt-1 border border-black/40 p-1">
+                    <b>{mt(lang, "fireLevel")} {l.label || i + 1}</b>
+                    {l.condition.rating && (
+                      <> — <b>{mt(lang, `fireR_${l.condition.rating}`).toUpperCase()}</b></>
+                    )}
+                    <div>
+                      {mt(lang, "firePlatLength")}: <Val v={l.platLength} /> ·{" "}
+                      {mt(lang, "firePlatWidth")}: <Val v={l.platWidth} /> ·{" "}
+                      {mt(lang, "fireHeightGrade")}: <Val v={l.heightAboveGrade} /> ·{" "}
+                      {mt(lang, "fireDeck")}: <Val v={l.deck} />
+                    </div>
+                    <div>
+                      {mt(lang, "fireGuardHeight")}: <Val v={l.guardHeight} /> ·{" "}
+                      {mt(lang, "firePicketSpacing")}: <Val v={l.picketSpacing} /> ·{" "}
+                      {mt(lang, "fireAnchorType")}: <Val v={l.anchorType} /> ×{" "}
+                      <Val v={l.anchorCount} />
+                    </div>
+                    {!lowest && (
+                      <div>
+                        {mt(lang, "fireStairDown")}: <Val v={l.stairRisers} /> ×{" "}
+                        <Val v={l.stairRise} /> / <Val v={l.stairRun} /> ·{" "}
+                        {mt(lang, "fireStairWidth")}: <Val v={l.stairWidth} /> · ∠{" "}
+                        <Val v={l.stairAngle} /> · {mt(lang, "fireFloorToFloor")}:{" "}
+                        <Val v={l.floorToFloor} />
+                      </div>
+                    )}
+                    {(l.condition.rust || l.condition.sectionLoss || l.condition.anchors || l.condition.notes) && (
+                      <div>
+                        {mt(lang, "fireRust")}: <Val v={l.condition.rust} /> ·{" "}
+                        {mt(lang, "fireSectionLoss")}: <Val v={l.condition.sectionLoss} /> ·{" "}
+                        {mt(lang, "fireAnchorCondition")}: <Val v={l.condition.anchors} />
+                        {l.condition.notes ? <> · <Val v={l.condition.notes} /></> : null}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {data.fire.ladder.present && (
+                <div className="mt-1">
+                  <b>{mt(lang, "fireLadderTitle")}: </b>
+                  {data.fire.ladder.type ? mt(lang, `fireLT_${data.fire.ladder.type}`) : "—"} ·{" "}
+                  <Val v={data.fire.ladder.length} /> × <Val v={data.fire.ladder.width} /> ·{" "}
+                  {mt(lang, "fireLadderRung")}: <Val v={data.fire.ladder.rungSpacing} /> ·{" "}
+                  {mt(lang, "fireStowed")}: <Val v={data.fire.ladder.stowedAboveGrade} /> ·{" "}
+                  {mt(lang, "fireDeployed")}: <Val v={data.fire.ladder.deployedAboveGrade} /> ·{" "}
+                  {mt(lang, "fireLandingSurface")}: <Val v={data.fire.ladder.landingSurface} />
+                  {data.fire.ladder.operates && (
+                    <> · <b>{mt(lang, `fireOp_${data.fire.ladder.operates}`)}</b></>
+                  )}
+                  {data.fire.ladder.obstructions && (
+                    <> · {mt(lang, "fireObstructions")}: <Val v={data.fire.ladder.obstructions} /></>
+                  )}
+                </div>
+              )}
+
+              {data.fire.overall.rating && (
+                <div className="mt-1 border border-black/40 p-1">
+                  <b>{mt(lang, "fireOverallTitle")}: {mt(lang, `fireR_${data.fire.overall.rating}`).toUpperCase()}</b>
+                  <div>
+                    {mt(lang, "fireLoadTest")}: <Val v={data.fire.loadTest} /> ·{" "}
+                    {mt(lang, "firePaintSystem")}: <Val v={data.fire.paintSystem} />
+                  </div>
+                  {data.fire.overall.notes && <div><Val v={data.fire.overall.notes} /></div>}
+                </div>
+              )}
+            </div>
+          )}
+
           {data.well && (
             <div className="mt-2">
               <SectionTitle>{mt(lang, "wellTitle")}</SectionTitle>

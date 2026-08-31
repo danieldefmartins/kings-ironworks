@@ -13,6 +13,7 @@ export type MeasureShape =
   | "wall_rail"
   | "spiral"
   | "window_well"
+  | "fire_escape"
   | "builder"
   | "custom";
 
@@ -26,6 +27,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "wall_rail",
   "spiral",
   "window_well",
+  "fire_escape",
   "builder",
   "custom",
 ];
@@ -150,6 +152,159 @@ export interface SpiralData {
   columnSize: string;
   clearWidth: string;
   landingNote: string;
+}
+
+// ---- Fire escapes ----------------------------------------------------------
+// KIW does three different jobs on a fire escape and they need different
+// numbers: a 5-year inspection records condition, a repair records condition
+// plus what is being replaced, and a new installation needs full geometry.
+// The purpose is asked first and drives what the sheet requires.
+
+export type FireEscapePurpose = "" | "inspect" | "repair" | "new";
+export const FIRE_PURPOSES: Exclude<FireEscapePurpose, "">[] = ["inspect", "repair", "new"];
+
+export type ConditionRating = "" | "pass" | "monitor" | "fail";
+export const CONDITION_RATINGS: Exclude<ConditionRating, "">[] = ["pass", "monitor", "fail"];
+
+// What an inspector writes down at one level, or for the structure overall.
+export interface FireCondition {
+  rating: ConditionRating;
+  rust: string; // where, and how deep
+  sectionLoss: string; // measured loss at the worst spot
+  cracks: string;
+  deck: string; // grating / treads
+  guards: string; // loose or missing pickets, rail movement
+  anchors: string; // the connection to the building
+  notes: string;
+}
+
+export function blankCondition(): FireCondition {
+  return { rating: "", rust: "", sectionLoss: "", cracks: "", deck: "", guards: "", anchors: "", notes: "" };
+}
+
+// One floor of the structure: the balcony that serves an opening, and the
+// stair running down from it to the level below.
+export interface FireLevel {
+  id: string;
+  label: string; // "2nd floor"
+  floorToFloor: string; // down to the level below ("" on the lowest level)
+  heightAboveGrade: string; // platform deck above grade
+  // Balcony
+  platLength: string; // along the building wall
+  platWidth: string; // projection out from the wall
+  deck: string; // bar grating / checker plate / open bar
+  // The window or door it serves
+  openingType: "" | "window" | "door";
+  openingW: string;
+  openingH: string;
+  sillToPlatform: string; // step-over height from the deck to the sill
+  // Stair down to the level below — blank on the lowest level, which drops a ladder
+  stairRisers: string;
+  stairRise: string;
+  stairRun: string;
+  stairWidth: string;
+  stairAngle: string;
+  // Guard
+  guardHeight: string;
+  picketSpacing: string;
+  // How this level holds to the building
+  anchorType: string;
+  anchorCount: string;
+  anchorSpacing: string;
+  condition: FireCondition;
+}
+
+export function newFireLevel(label = ""): FireLevel {
+  return {
+    id: newPostId(),
+    label,
+    floorToFloor: "",
+    heightAboveGrade: "",
+    platLength: "",
+    platWidth: "",
+    deck: "",
+    openingType: "",
+    openingW: "",
+    openingH: "",
+    sillToPlatform: "",
+    stairRisers: "",
+    stairRise: "",
+    stairRun: "",
+    stairWidth: "",
+    stairAngle: "",
+    guardHeight: "",
+    picketSpacing: "",
+    anchorType: "",
+    anchorCount: "",
+    anchorSpacing: "",
+    condition: blankCondition(),
+  };
+}
+
+// The last leg to the ground. Almost every violation KIW gets called about
+// lives here: the ladder is seized, or it no longer reaches.
+export interface DropLadder {
+  present: boolean;
+  type: "" | "drop" | "swing" | "counterbalance" | "fixed";
+  length: string;
+  width: string;
+  rungSpacing: string;
+  stowedAboveGrade: string; // bottom rung above grade, stowed
+  deployedAboveGrade: string; // bottom rung above grade, deployed
+  landingSurface: string; // sidewalk / grass / alley / roof
+  obstructions: string; // AC units, fences, parked cars, planting
+  operates: "" | "yes" | "stiff" | "seized";
+}
+
+export function blankLadder(): DropLadder {
+  return {
+    present: true,
+    type: "",
+    length: "",
+    width: "",
+    rungSpacing: "",
+    stowedAboveGrade: "",
+    deployedAboveGrade: "",
+    landingSurface: "",
+    obstructions: "",
+    operates: "",
+  };
+}
+
+export interface FireEscapeData {
+  purpose: FireEscapePurpose;
+  levels: FireLevel[];
+  ladder: DropLadder;
+  // The building it hangs on
+  stories: string;
+  wallMaterial: string; // brick / block / concrete / wood frame / stone
+  totalHeight: string; // top platform deck to grade
+  access: string; // how the crew reaches it — staging, lift, alley width
+  // Inspection outcome
+  overall: FireCondition;
+  loadTest: string;
+  paintSystem: string;
+  violations: string; // what was cited, if this came from a notice
+  notes: string;
+}
+
+export function blankFireEscape(levels: number): FireEscapeData {
+  const n = Math.min(12, Math.max(1, levels || 2));
+  return {
+    purpose: "",
+    // Numbered from the top down, the way they are walked and drawn.
+    levels: Array.from({ length: n }, (_, i) => newFireLevel(String(n - i + 1))),
+    ladder: blankLadder(),
+    stories: String(n),
+    wallMaterial: "",
+    totalHeight: "",
+    access: "",
+    overall: blankCondition(),
+    loadTest: "",
+    paintSystem: "",
+    violations: "",
+    notes: "",
+  };
 }
 
 // ---- Window / egress wells -------------------------------------------------
@@ -554,6 +709,7 @@ export interface MeasureData {
   posts: PostMeasure[];
   spiral: SpiralData | null;
   well: WellData | null;
+  fire: FireEscapeData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -679,6 +835,7 @@ export function newMeasureData(
   let segments: Segment[] = [];
   let spiral: SpiralData | null = null;
   let well: WellData | null = null;
+  let fire: FireEscapeData | null = null;
 
   switch (shape) {
     case "straight":
@@ -711,6 +868,10 @@ export function newMeasureData(
     case "window_well":
       well = blankWell();
       break;
+    case "fire_escape":
+      // steps1 carries the number of levels for this shape.
+      fire = blankFireEscape(steps1);
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -731,6 +892,7 @@ export function newMeasureData(
     posts: [],
     spiral,
     well,
+    fire,
     plan: shape === "custom" ? { points: [], closed: false, segs: [] } : null,
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
@@ -928,6 +1090,19 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     })),
     spiral: d.spiral ?? null,
     well: d.well ? { ...blankWell(), ...d.well, deliverables: d.well.deliverables ?? [], bands: (d.well.bands || []).map((b) => ({ ...newWallBand(), ...b })) } : null,
+    fire: d.fire
+      ? {
+          ...blankFireEscape(1),
+          ...d.fire,
+          levels: (d.fire.levels || []).map((l) => ({
+            ...newFireLevel(),
+            ...l,
+            condition: { ...blankCondition(), ...(l.condition || {}) },
+          })),
+          ladder: { ...blankLadder(), ...(d.fire.ladder || {}) },
+          overall: { ...blankCondition(), ...(d.fire.overall || {}) },
+        }
+      : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -979,6 +1154,9 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
     case "window_well":
       // The wall profile photo is the one that settles the 4" argument.
       return ["well_overall", "well_wall_profile", "well_window", "well_inside"];
+    case "fire_escape":
+      // The anchors and the drop ladder are what inspections turn on.
+      return ["fe_elevation", "fe_anchors", "fe_ladder", "fe_deck"];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -1016,6 +1194,17 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
     }
   }
   for (const p of data.posts) vals.push(p.distanceFromFirst, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
+  if (data.fire) {
+    const f = data.fire;
+    vals.push(f.purpose, f.stories, f.wallMaterial, f.totalHeight);
+    for (const l of f.levels) {
+      vals.push(l.platLength, l.platWidth, l.heightAboveGrade, l.guardHeight);
+      if (f.purpose === "new") vals.push(l.stairRisers, l.stairRise, l.stairRun, l.stairWidth);
+      if (f.purpose !== "new") vals.push(l.condition.rating);
+    }
+    if (f.ladder.present) vals.push(f.ladder.type, f.ladder.length, f.ladder.stowedAboveGrade);
+    if (f.purpose !== "new") vals.push(f.overall.rating);
+  }
   if (data.well) {
     const w = data.well;
     vals.push(w.construction, w.lengthAtHouse, w.projection, w.depth, w.wallThickness);
