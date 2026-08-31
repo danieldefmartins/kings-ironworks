@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { type TimeEntry, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings } from "./shared";
+import { type TimeEntry, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -576,4 +576,24 @@ export async function signPhotoUrl(
   if (!res.ok) return null;
   const data = (await res.json()) as { signedURL?: string };
   return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
+}
+
+// ---- Material catalog & inventory ------------------------------------------
+//
+// Jobs consume catalog items, never a sentence somebody typed. Free text goes
+// to kiw_catalog_requests and stays there until a human turns it into a SKU,
+// so stock counts can never be polluted by four spellings of the same steel.
+
+export async function listCatalog(): Promise<CatalogItem[]> {
+  return sbSelect<CatalogItem[]>(
+    "kiw_materials_catalog",
+    `select=*&org_id=eq.${ORG_ID}&active=eq.true&order=category.asc,display.asc`
+  );
+}
+
+export async function listInventory(): Promise<InventoryRow[]> {
+  return sbSelect<InventoryRow[]>(
+    "kiw_inventory",
+    `select=*&org_id=eq.${ORG_ID}`
+  );
 }

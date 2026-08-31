@@ -167,3 +167,31 @@ export function entryHours(e: TimeEntry, now = Date.now()): number {
   const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
   return Math.max(0, (end - start) / 3600000);
 }
+
+// ---- Material catalog ------------------------------------------------------
+
+export interface CatalogItem {
+  id: string;
+  sku: string;
+  category: string;
+  role_keys: string[];
+  spec: string;          // canonical designation, e.g. "HSS 1-1/2 x 1-1/2 x 11ga"
+  display: string;       // what the crew reads
+  dim_a: number | null;
+  dim_b: number | null;
+  wall: number | null;
+  grade: string | null;
+  stock_length_ft: number | null;
+  weight_per_ft: number | null;
+  unit: string;          // ft | ea | sqft | job
+  active: boolean;
+}
+
+export interface InventoryRow {
+  id: string;
+  catalog_id: string;
+  location: string;
+  on_hand: number;
+  min_qty: number | null;
+  updated_at: string;
+}

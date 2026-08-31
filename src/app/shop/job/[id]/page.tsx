@@ -12,6 +12,7 @@ import {
   entryHours,
   PRICE_CATEGORY,
   type Photo,
+  listCatalog,
 } from "@/lib/shop/db";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
@@ -37,6 +38,7 @@ export default async function JobTravelerPage({
 
   const { id } = await params;
   const v2 = ((await searchParams)?.ui || "") === "v2";
+  const catalog = v2 ? await listCatalog() : [];
   const job = await getJob(id);
   if (!job) notFound();
 
@@ -95,6 +97,7 @@ export default async function JobTravelerPage({
           myStartedAt={myRunning ? myRunning.started_at : null}
           activeWorkers={othersRunning}
           totalHours={totalHours}
+          catalog={catalog}
         />
       ) : (
         <>

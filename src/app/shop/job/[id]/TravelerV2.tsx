@@ -22,26 +22,27 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Job, CutItem, Material, QcCheck, Photo } from "@/lib/shop/shared";
+import type { Job, CutItem, Material, QcCheck, Photo, CatalogItem } from "@/lib/shop/shared";
 import { STAGES } from "@/lib/shop/shared";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import MaterialKit from "./MaterialKit";
+import PhotosV2 from "./PhotosV2";
 import { nextUp } from "@/lib/shop/next-up";
 import {
   SpecsPanel,
-  PhotosSection,
   QcRow,
   dueInfo,
 } from "./TravelerClient";
 
 export default function TravelerV2({
   job, cut, materials, qc, photos, canSeePrices, isAdmin = false, lang,
-  myStartedAt, activeWorkers, totalHours,
+  myStartedAt, activeWorkers, totalHours, catalog,
 }: {
   job: Job; cut: CutItem[]; materials: Material[]; qc: QcCheck[]; photos: Photo[];
   canSeePrices: boolean; isAdmin?: boolean; lang: string;
   myStartedAt: string | null; activeWorkers: string[]; totalHours: number;
+  catalog: CatalogItem[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -223,8 +224,9 @@ export default function TravelerV2({
           openState={open === "photos"}
           onClick={() => setOpen(open === "photos" ? null : "photos")}
         >
-          <PhotosSection
+          <PhotosV2
             jobId={job.id}
+            stage={job.current_stage}
             photos={photos}
             canSeePrices={canSeePrices}
             lang={lang}
@@ -248,40 +250,62 @@ export default function TravelerV2({
           {/* Offer the parts THIS kind of job is made of, not a blank box. */}
           <MaterialKit
             projectType={job.project_type}
+            catalog={catalog}
             lang={lang}
             busy={busy}
-            onAdd={(profile, size, qty) =>
-              act({ type: "cut_add", jobId: job.id, profile, size, qty, length: "" })
+            onAdd={(item, role) =>
+              act({
+                type: "cut_add",
+                jobId: job.id,
+                profile: role.label,
+                size: item.display,
+                qty: "1",
+                length: "",
+                catalogId: item.id,
+              })
+            }
+            onRequest={(description, role) =>
+              act({ type: "catalog_request", jobId: job.id, description, roleKey: role.key })
             }
           />
           {cut.length > 0 && (
             <ul className="mt-3 divide-y divide-neutral-800">
               {cut.map((c) => (
-                <li key={c.id} className="flex items-center gap-3 py-2.5">
-                  <span className={`flex-1 text-[15px] ${c.status !== "pending" ? "text-neutral-500 line-through" : ""}`}>
-                    {c.qty ? `${c.qty} × ` : ""}{c.size} <span className="text-neutral-500">— {c.profile}</span>
+                <li key={c.id} className="flex items-center gap-2 py-2.5">
+                  {/* quantity is edited here, on the line, where you can see
+                      what you already have */}
+                  <input
+                    defaultValue={String(c.qty ?? 1)}
+                    inputMode="decimal"
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v && Number(v) !== Number(c.qty)) act({ type: "cut_qty", id: c.id, qty: v });
+                    }}
+                    className="h-11 w-14 shrink-0 rounded-lg border border-neutral-700 bg-neutral-900 text-center text-[15px] text-neutral-100 outline-none focus:border-amber-500"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className={`block truncate text-[15px] ${c.status !== "pending" ? "text-neutral-500 line-through" : "text-neutral-100"}`}>
+                      {c.size}
+                    </span>
+                    <span className="block truncate text-[12px] text-neutral-500">{c.profile}</span>
                   </span>
-                  <span className="text-[13px] text-neutral-500">{c.status}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {materials.length > 0 && (
-            <ul className="mt-3 divide-y divide-neutral-800">
-              {materials.map((m) => (
-                <li key={m.id} className="flex items-center gap-3 py-2.5">
                   <button
-                    onClick={() => act({ type: "material_toggle", id: m.id, pulled: !m.pulled })}
+                    onClick={() => act({ type: "cut_set", id: c.id, status: c.status === "pending" ? "cut" : "pending" })}
                     disabled={busy}
-                    className={`h-7 w-7 shrink-0 rounded-full border-2 ${
-                      m.pulled ? "border-emerald-500 bg-emerald-500 text-black" : "border-neutral-600"
+                    className={`h-11 w-11 shrink-0 rounded-full border-2 text-[15px] ${
+                      c.status !== "pending" ? "border-emerald-500 bg-emerald-500 text-black" : "border-neutral-600 text-transparent"
                     }`}
                   >
-                    {m.pulled ? "✓" : ""}
+                    ✓
                   </button>
-                  <span className={`flex-1 text-[15px] ${m.pulled ? "text-neutral-500 line-through" : ""}`}>
-                    {m.qty ? `${m.qty} × ` : ""}{m.description}
-                  </span>
+                  <button
+                    onClick={() => act({ type: "cut_delete", id: c.id })}
+                    disabled={busy}
+                    className="h-11 w-9 shrink-0 text-[17px] text-neutral-600"
+                    aria-label="Delete"
+                  >
+                    ✕
+                  </button>
                 </li>
               ))}
             </ul>

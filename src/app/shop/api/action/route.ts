@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
 
       // Add a material line to the job
       case "cut_add": {
-        const { jobId, profile, size, qty, length } = body;
+        const { jobId, profile, size, qty, length, catalogId } = body;
         await sbInsert("kiw_shop_cut_items", {
           org_id: ORG_ID,
           job_id: jobId,
@@ -117,8 +117,38 @@ export async function POST(req: NextRequest) {
           size: size || null,
           qty: qty ? Number(qty) : 1,
           length: length || null,
+          // Points at a real SKU when the line came from the catalog. Null for
+          // every line typed before the catalog existed, which stays readable.
+          catalog_id: typeof catalogId === "string" && catalogId ? catalogId : null,
           status: "pending",
         });
+        break;
+      }
+
+      // Steel nobody has catalogued yet. It is recorded as a REQUEST and does
+      // not join the job or the stock count, so four spellings of one profile
+      // can never reach inventory. The office turns it into a SKU.
+      case "catalog_request": {
+        const { jobId, description, roleKey } = body;
+        if (typeof description !== "string" || !description.trim()) break;
+        await sbInsert("kiw_catalog_requests", {
+          org_id: ORG_ID,
+          description: description.trim().slice(0, 300),
+          role_key: typeof roleKey === "string" ? roleKey : null,
+          job_id: jobId || null,
+          requested_by: worker.id,
+          status: "pending",
+        });
+        break;
+      }
+
+      // Quantity is edited on the line after it exists, not asked for during
+      // the add flow — the flow is three taps and the third one saves.
+      case "cut_qty": {
+        const { id, qty } = body;
+        const n = Number(qty);
+        if (!Number.isFinite(n) || n < 0 || n > 100000) break;
+        await sbUpdate("kiw_shop_cut_items", `org_id=eq.${ORG_ID}&id=eq.${id}`, { qty: n });
         break;
       }
 
