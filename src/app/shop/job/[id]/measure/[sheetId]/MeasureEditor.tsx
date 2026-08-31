@@ -74,6 +74,7 @@ import PlanDraw from "./PlanDraw";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 import { queueEdit, clearEdit, getEdit } from "@/lib/shop/outbox";
+import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 
 const FRACTIONS = [
   '1/16"', '1/8"', '3/16"', '1/4"', '5/16"', '3/8"', '7/16"', '1/2"',
@@ -172,6 +173,7 @@ export default function MeasureEditor({
   const [online, setOnline] = useState(true);
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
+  const [sectionsOpen, setSectionsOpen] = useState(false);
   // Custom sheets open directly on the drawing canvas; otherwise the user
   // lands on the existing-site setup step.
   const [activeStage, setActiveStage] = useState<EditorStage>(sheet.shape === "custom" ? "steps" : "setup");
@@ -633,16 +635,6 @@ export default function MeasureEditor({
     await mutate({ type: "rename", name: n }, "Rename failed");
   }
 
-  async function saveDraft() {
-    await saveName(name);
-    await enqueue(async () => {
-      if (dirtyRef.current) await doSave();
-    });
-    if (!conflictRef.current && !dirtyRef.current) {
-      setInfo(mt(lang, "draftSaved"));
-    }
-  }
-
   async function submitSheet() {
     const d = await mutate({ type: "submit" }, "Submit failed");
     if (d) {
@@ -1030,7 +1022,9 @@ export default function MeasureEditor({
           <div className="text-xs text-neutral-400 mb-3">
             {shapeLabel(lang, sheet.shape)} · {job.customer_name}
           </div>
-          <div className="flex flex-wrap gap-2 items-center">
+          {/* Status and the save state are the only things the measurer needs
+              from the header. Print, units and delete are housekeeping. */}
+          <div className="flex items-center gap-2">
             <span
               className={`text-xs font-bold rounded-full px-3 py-2 border ${
                 status === "approved"
@@ -1046,77 +1040,79 @@ export default function MeasureEditor({
                   ? mt(lang, "submittedBadge")
                   : mt(lang, "inProgress")}
             </span>
-            <button
-              onClick={() => {
-                fetch("/shop/api/measure", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ type: "log_print", id: sheet.id, jobId: job.id, rev }),
-                }).catch(() => {});
-                window.print();
-              }}
-              className="text-xs font-bold rounded-full px-3 py-2 border bg-neutral-800 border-neutral-600 text-neutral-200"
-            >
-              🖨 {mt(lang, "printSheet")}
-            </button>
-            <button
-              type="button"
-              onClick={saveDraft}
-              disabled={saveState === "saving" || saveState === "conflict"}
-              className="text-xs font-bold rounded-full px-3 py-2 border bg-amber-500 border-amber-400 text-black disabled:opacity-50"
-            >
-              💾 {mt(lang, "saveDraft")}
-            </button>
-            <button
-              onClick={deleteSheet}
-              className="text-xs font-bold rounded-full px-3 py-2 border bg-red-950/40 border-red-800 text-red-300"
-            >
-              {mt(lang, "deleteSheet")}
-            </button>
-            <span className="ml-auto text-xs">
+            {/* Autosave is trusted out loud. "Save now" only appears when
+                something has actually gone wrong. */}
+            <span className="min-w-0 flex-1 truncate text-xs">
               {saveState === "saving" && (
                 <span className="text-neutral-500">{mt(lang, "saving")}</span>
               )}
-              {saveState === "saved" && (
+              {(saveState === "saved" || saveState === "idle") && (
                 <span className="text-neutral-500">✓ {mt(lang, "savedAll")}</span>
               )}
               {saveState === "dirty" && (
                 <span className="text-amber-400">● {mt(lang, "unsaved")}</span>
               )}
-              {saveState === "queued" && (
-                <span className="text-amber-300">⬇ {mt(lang, "savedOnDevice")}</span>
-              )}
-              {saveState === "error" && (
+              {(saveState === "queued" || saveState === "error") && (
                 <button
                   onClick={requestSave}
-                  className="text-amber-300 border border-amber-700 bg-amber-950/40 rounded-full px-2.5 py-1 font-bold"
+                  className="min-h-[48px] rounded-full border border-amber-700 bg-amber-950/40 px-3 font-bold text-amber-300"
                 >
-                  ⬇ {mt(lang, "savedOnDevice")} — {mt(lang, "retry")}
+                  ⬇ {mt(lang, "savedOnDevice")} — {mt(lang, "saveNow")}
                 </button>
               )}
             </span>
-          </div>
-          {/* Units */}
-          <div className="flex items-center gap-2 mt-3">
-            <span className="text-[11px] text-neutral-400">{mt(lang, "unitsLabel")}:</span>
-            {(
-              [
-                ["in", `${mt(lang, "unitsIn")} (")`],
-                ["ftin", `${mt(lang, "unitsFtIn")} (' ")`],
-              ] as const
-            ).map(([u, label]) => (
-              <button
-                key={u}
-                onClick={() => set((d) => void (d.units = u))}
-                className={`text-xs font-bold rounded-full px-3 py-1.5 border ${
-                  units === u
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            <MoreMenu label={mt(lang, "moreLabel")} closeLabel={mt(lang, "closeLabel")}>
+              {(close) => (
+                <>
+                  <MoreItem
+                    onClick={() => {
+                      close();
+                      fetch("/shop/api/measure", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "log_print", id: sheet.id, jobId: job.id, rev }),
+                      }).catch(() => {});
+                      window.print();
+                    }}
+                  >
+                    🖨 {mt(lang, "printSheet")}
+                  </MoreItem>
+                  <div className="pt-2 text-[11px] uppercase tracking-widest text-neutral-500">
+                    {mt(lang, "unitsLabel")}
+                  </div>
+                  <div className="flex gap-2">
+                    {(
+                      [
+                        ["in", `${mt(lang, "unitsIn")} (")`],
+                        ["ftin", `${mt(lang, "unitsFtIn")} (' ")`],
+                      ] as const
+                    ).map(([u, label]) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => set((d) => void (d.units = u))}
+                        className={`min-h-[48px] flex-1 rounded-xl border px-3 text-sm font-bold ${
+                          units === u
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <MoreItem
+                    danger
+                    onClick={() => {
+                      close();
+                      deleteSheet();
+                    }}
+                  >
+                    ✕ {mt(lang, "deleteSheet")}
+                  </MoreItem>
+                </>
+              )}
+            </MoreMenu>
           </div>
         </div>
 
@@ -1159,7 +1155,32 @@ export default function MeasureEditor({
               </span>
             </button>
           )}
-          <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Measurement stages">
+          {/* A phone cannot show eight stages at once, and half-clipped chips
+              tell a worker nothing. There, one line says where they are and
+              opens the full list; a tablet has the room for the strip. */}
+          <button
+            type="button"
+            onClick={() => setSectionsOpen(true)}
+            className="flex min-h-[48px] w-full items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-left sm:hidden"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-[10px] font-bold uppercase tracking-wide text-neutral-400">
+                {mt(lang, "stepWord")} {activeStageIndex + 1} {mt(lang, "ofWord")} {EDITOR_STAGES.length}
+              </span>
+              <span className="block truncate text-sm font-bold text-neutral-100">
+                {mt(lang, EDITOR_STAGES[activeStageIndex]?.labelKey || "stageSite")}
+                {stageMissing[activeStage]
+                  ? ` · ${stageMissing[activeStage]} ${mt(lang, "stageMissing")}`
+                  : stageDocs[activeStage]
+                    ? ` · ${stageDocs[activeStage]} ${mt(lang, "stageToAdd")}`
+                    : ""}
+              </span>
+            </span>
+            <span aria-hidden className="shrink-0 text-neutral-400">
+              ☰
+            </span>
+          </button>
+          <div className="hidden gap-2 overflow-x-auto pb-1 sm:flex" aria-label="Measurement stages">
             {EDITOR_STAGES.map((s) => {
               const missing = stageMissing[s.id];
               const docs = stageDocs[s.id];
@@ -1965,7 +1986,7 @@ export default function MeasureEditor({
                 <div className="mb-3 flex gap-2">
                   {viewList.map(([vw, key]) => (
                     <button key={vw} type="button" onClick={() => setView(vw)}
-                      className={`rounded-full border px-3 py-1.5 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
+                      className={`min-h-[44px] rounded-full border px-4 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
                       {mt(lang, key)}
                     </button>
                   ))}
@@ -3187,6 +3208,66 @@ export default function MeasureEditor({
         </StageCtx.Provider>
       </div>
 
+      {sectionsOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
+          onClick={() => setSectionsOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label={mt(lang, "allSections")}
+            className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 text-lg font-bold">{mt(lang, "allSections")}</div>
+            <div className="space-y-2">
+              {EDITOR_STAGES.map((st, i) => {
+                const missing = stageMissing[st.id];
+                const docs = stageDocs[st.id];
+                const note =
+                  st.id === "review"
+                    ? missing
+                      ? { text: mt(lang, "chipNotReady"), tone: "text-amber-400" }
+                      : { text: mt(lang, "chipReady"), tone: "text-green-400" }
+                    : missing
+                      ? { text: `${missing} ${mt(lang, "stageMissing")}`, tone: "text-amber-400" }
+                      : docs
+                        ? { text: `${docs} ${mt(lang, "stageToAdd")}`, tone: "text-sky-400" }
+                        : { text: mt(lang, "stageDone"), tone: "text-green-400" };
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => {
+                      setSectionsOpen(false);
+                      goToStage(st.id);
+                    }}
+                    className={`flex min-h-[56px] w-full items-center gap-3 rounded-xl border px-4 text-left ${
+                      activeStage === st.id
+                        ? "border-amber-500 bg-amber-500/10"
+                        : "border-neutral-700 bg-neutral-800"
+                    }`}
+                  >
+                    <span className="w-5 shrink-0 text-sm font-bold text-neutral-500">{i + 1}</span>
+                    <span className="min-w-0 flex-1 truncate font-bold text-neutral-100">
+                      {mt(lang, st.labelKey)}
+                    </span>
+                    <span className={`shrink-0 text-xs font-bold ${note.tone}`}>{note.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSectionsOpen(false)}
+              className="mt-3 min-h-[48px] w-full rounded-xl border border-neutral-700 font-bold text-neutral-300"
+            >
+              {mt(lang, "closeLabel")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {placementMenu && (
         <div className="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center p-4" onClick={() => setPlacementMenu(null)}>
           <div className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
@@ -3518,7 +3599,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 function SmallBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick}
-      className="px-3 py-2 rounded-lg bg-neutral-800 border border-neutral-700 text-sm text-neutral-200">
+      className="min-h-[48px] px-4 rounded-lg bg-neutral-800 border border-neutral-700 text-sm text-neutral-200">
       {children}
     </button>
   );
@@ -3674,7 +3755,7 @@ function ChoiceMInput({
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {choices.map(([stored, shown]) => (
           <button key={stored} type="button" onClick={() => onChange(stored)}
-            className={`rounded-full border px-2.5 py-1.5 text-xs ${value === stored ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-300"}`}>
+            className={`min-h-[44px] rounded-full border px-3.5 text-xs ${value === stored ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-300"}`}>
             {shown}
           </button>
         ))}
@@ -3818,7 +3899,7 @@ function PresetInput({
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {presets.map((pr) => (
           <button key={pr} onClick={() => onChange(pr)}
-            className={`text-xs px-2.5 py-1.5 rounded-full border ${
+            className={`min-h-[44px] text-xs px-3.5 rounded-full border ${
               value === pr
                 ? "border-amber-500 bg-amber-500/10 text-amber-300"
                 : "border-neutral-700 bg-neutral-800/70 text-neutral-400"
@@ -3857,7 +3938,7 @@ function ChipRow({
           <button
             key={val}
             onClick={() => onChange(value === val ? "" : val)}
-            className={`px-3 py-2 rounded-lg border text-sm font-semibold ${
+            className={`min-h-[48px] px-4 rounded-lg border text-sm font-semibold ${
               value === val
                 ? "border-amber-500 bg-amber-500/10 text-amber-300"
                 : "border-neutral-700 bg-neutral-800 text-neutral-300"

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
 import { t } from "@/lib/shop/i18n";
+import MoreMenu, { MoreItem } from "./MoreMenu";
 
 export default function ShopTopBar({
   workerName,
@@ -38,7 +39,7 @@ export default function ShopTopBar({
         {back ? (
           <Link
             href={back}
-            className="shrink-0 rounded-lg border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
+            className="flex min-h-[48px] shrink-0 items-center rounded-lg border border-neutral-700 px-3 text-sm hover:bg-neutral-800"
           >
             ← {t(lang, "jobs")}
           </Link>
@@ -59,41 +60,52 @@ export default function ShopTopBar({
           </div>
         </div>
       </div>
+      {/* Language, admin and sign-out are housekeeping. They live behind one
+          button so the bar can be the job the worker is standing in front of. */}
       <div className="flex items-center gap-3 shrink-0">
-        <select
-          value={lang}
-          onChange={async (e) => {
-            await fetch("/shop/api/action", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ type: "lang_set", lang: e.target.value }),
-            });
-            router.refresh();
-          }}
-          aria-label="Language"
-          className="rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-2 text-sm appearance-none"
-        >
-          <option value="en">EN</option>
-          <option value="pt">PT</option>
-          <option value="es">ES</option>
-        </select>
-        {adminLink && (
-          <Link
-            href="/shop/admin"
-            className="rounded-lg border border-amber-600/50 text-amber-400 px-3 py-2 text-sm hover:bg-neutral-800"
-          >
-            ⚙ Admin
-          </Link>
-        )}
-        <span className="text-sm text-neutral-300 hidden sm:inline">
-          {workerName}
-        </span>
-        <button
-          onClick={logout}
-          className="rounded-lg border border-neutral-700 px-3 py-2 text-sm hover:bg-neutral-800"
-        >
-          {t(lang, "signOut")}
-        </button>
+        <span className="hidden text-sm text-neutral-300 sm:inline">{workerName}</span>
+        <MoreMenu label={t(lang, "more")} closeLabel={t(lang, "close")}>
+          {(close) => (
+            <>
+              <div className="text-[11px] uppercase tracking-widest text-neutral-500">
+                {t(lang, "language")}
+              </div>
+              <div className="flex gap-2">
+                {(["en", "pt", "es"] as const).map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={async () => {
+                      close();
+                      await fetch("/shop/api/action", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "lang_set", lang: l }),
+                      });
+                      router.refresh();
+                    }}
+                    className={`min-h-[48px] flex-1 rounded-xl border font-bold ${
+                      lang === l
+                        ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                        : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                    }`}
+                  >
+                    {l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+              {adminLink && <MoreItem href="/shop/admin">⚙ Admin</MoreItem>}
+              <MoreItem
+                onClick={() => {
+                  close();
+                  logout();
+                }}
+              >
+                ⇥ {t(lang, "signOut")}
+              </MoreItem>
+            </>
+          )}
+        </MoreMenu>
       </div>
     </div>
   );
