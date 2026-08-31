@@ -5,6 +5,7 @@
 
 import {
   requiredPhotoSlots,
+  isFabCriticalPhoto,
   METHODS_BY_ATTACH,
   HARDWARE_METHODS,
   HW_REQUIRED,
@@ -898,9 +899,19 @@ function customChecks(data: MeasureData): CheckResult[] {
 
 // ---- Completeness gate -----------------------------------------------------
 
+// A missing item is either fabrication-critical — the shop cannot cut steel
+// without it — or documentation, which the job still wants but which must not
+// hold a complete set of measurements hostage. Untagged gaps are "fab".
+export type GapTier = "fab" | "doc";
+
 export interface Gap {
   key: string; // i18n key: gap_<key>
   detail?: string;
+  tier?: GapTier;
+}
+
+export function gapTier(g: Gap): GapTier {
+  return g.tier || "fab";
 }
 
 // What must exist before a sheet can be submitted for review. Requirements
@@ -1264,7 +1275,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       if (!has(p.plate)) gaps.push({ key: "post_plate", detail: tag });
       if (!has(p.anchors)) gaps.push({ key: "post_anchors", detail: tag });
       if (!has(p.edgeDist)) gaps.push({ key: "post_edge", detail: tag });
-      if (!postPhotos.has(`post_${p.id}`)) gaps.push({ key: "post_photo", detail: tag });
+      if (!postPhotos.has(`post_${p.id}`)) gaps.push({ key: "post_photo", detail: tag, tier: "doc" });
     } else if (p.mount === "Core-drill") {
       if (!has(p.anchors)) gaps.push({ key: "post_hole", detail: tag });
       if (!has(p.obstruction)) gaps.push({ key: "post_obstruction", detail: tag });
@@ -1317,22 +1328,71 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const slots = [...requiredPhotoSlots(shape)];
   if (hasPlatform) slots.push("landing");
   for (const slot of slots) {
-    if (!filled.has(slot)) gaps.push({ key: "photo", detail: slot });
+    if (!filled.has(slot)) {
+      gaps.push({ key: "photo", detail: slot, tier: isFabCriticalPhoto(slot) ? "fab" : "doc" });
+    }
   }
 
   return gaps;
 }
 
-// A sheet may be submitted when nothing is missing and no check is red.
+// The single completeness model. Everything on screen — the header line, the
+// stage chips, the review verdict, the submit gate — reads from this, so the
+// worker is never shown two different answers to "am I done?".
+//
+// Two levels, deliberately:
+//   ready    — every fabrication-critical item is answered and no check is
+//              red. The shop can work from this sheet.
+//   docsOpen — ready, but photos or other documentation are still owed. The
+//              sheet submits; the follow-ups stay listed.
+export interface Readiness {
+  fabGaps: Gap[];
+  docGaps: Gap[];
+  redChecks: CheckResult[];
+  checks: CheckResult[];
+  /** The one number the worker sees: what still stands between here and the shop. */
+  remaining: number;
+  /** Documentation still owed once the sheet is fabrication-ready. */
+  docRemaining: number;
+  ready: boolean;
+  docsOpen: boolean;
+  /** Nothing left at all — fabrication and documentation both clear. */
+  complete: boolean;
+}
+
+export function sheetReadiness(
+  data: MeasureData,
+  shape: MeasureShape,
+  tol?: Tolerances
+): Readiness {
+  const gaps = requiredGaps(data, shape);
+  const fabGaps = gaps.filter((g) => gapTier(g) === "fab");
+  const docGaps = gaps.filter((g) => gapTier(g) === "doc");
+  const checks = runChecks(data, shape, tol);
+  const redChecks = checks.filter((c) => c.level === "red");
+  const remaining = fabGaps.length + redChecks.length;
+  return {
+    fabGaps,
+    docGaps,
+    redChecks,
+    checks,
+    remaining,
+    docRemaining: docGaps.length,
+    ready: remaining === 0,
+    docsOpen: remaining === 0 && docGaps.length > 0,
+    complete: remaining === 0 && docGaps.length === 0,
+  };
+}
+
+// A sheet may be submitted once it is fabrication-ready. Documentation gaps
+// travel with it as follow-ups rather than blocking the submission.
 export function submitBlockers(
   data: MeasureData,
   shape: MeasureShape,
   tol?: Tolerances
-): { gaps: Gap[]; redChecks: CheckResult[] } {
-  return {
-    gaps: requiredGaps(data, shape),
-    redChecks: runChecks(data, shape, tol).filter((c) => c.level === "red"),
-  };
+): { gaps: Gap[]; docGaps: Gap[]; redChecks: CheckResult[] } {
+  const r = sheetReadiness(data, shape, tol);
+  return { gaps: r.fabGaps, docGaps: r.docGaps, redChecks: r.redChecks };
 }
 
 // ---- Post ordering (shared by sketches, editor, and revision viewer) -------
@@ -1432,7 +1492,7 @@ function terminationGaps(
     for (const field of HW_REQUIRED[t.method] || []) {
       if (!has(hw[field])) gaps.push({ key: `term_hw_${field}`, detail: tag });
     }
-    if (!photoSlots.has(photoSlot)) gaps.push({ key: "term_photo", detail: tag });
+    if (!photoSlots.has(photoSlot)) gaps.push({ key: "term_photo", detail: tag, tier: "doc" });
   }
   return gaps;
 }

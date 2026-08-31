@@ -1361,6 +1361,22 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
 }
 export const OPTIONAL_PHOTO_SLOTS = ["landing", "obstruction", "tape_critical"] as const;
 
+// Photos the shop genuinely cannot fabricate safely without. Everything else
+// in requiredPhotoSlots() is documentation: still asked for, still listed, but
+// it does not hold a finished set of measurements out of the shop.
+//   - well_wall_profile settles whether the guard clears the 4" sphere
+//   - bal_slab_edge is the slab condition the anchor spec is argued from
+//   - fe_anchors is the whole point of an escape inspection
+export const FAB_CRITICAL_PHOTO_SLOTS: readonly string[] = [
+  "well_wall_profile",
+  "bal_slab_edge",
+  "fe_anchors",
+];
+
+export function isFabCriticalPhoto(slot: string): boolean {
+  return FAB_CRITICAL_PHOTO_SLOTS.includes(slot);
+}
+
 export function newPostId(): string {
   return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }

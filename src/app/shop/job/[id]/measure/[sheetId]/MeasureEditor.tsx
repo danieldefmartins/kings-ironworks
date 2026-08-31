@@ -52,8 +52,7 @@ import {
   newWallBand,
 } from "@/lib/shop/measure";
 import {
-  runChecks,
-  requiredGaps,
+  sheetReadiness,
   formatIn,
   orderedPosts,
   mergeTolerances,
@@ -61,6 +60,7 @@ import {
   sphereClearance,
   parseMeas,
   type CheckResult,
+  type Gap,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { helpText } from "@/lib/shop/measure-help";
@@ -706,7 +706,6 @@ export default function MeasureEditor({
     }
   }
 
-  const prog = sheetProgress(data);
   const posts = orderedPosts(data);
   const orgTol = mergeTolerances(orgSettings?.tolerances);
   // org-configurable lists with KIW constants as fallback
@@ -727,10 +726,15 @@ export default function MeasureEditor({
   const colorOptions = orgSettings?.options?.colors?.length
     ? orgSettings.options.colors
     : [...SPEC_OPTIONS.color];
-  const checks = runChecks(data, sheet.shape, orgTol);
-  const gaps = requiredGaps(data, sheet.shape);
-  const redChecks = checks.filter((c) => c.level === "red");
-  const canSubmit = gaps.length === 0 && redChecks.length === 0;
+  // One completeness model for the whole screen. Header line, stage chips,
+  // review verdict and the submit button all read from this, so the worker is
+  // never shown two different answers to "am I done?".
+  const ready = sheetReadiness(data, sheet.shape, orgTol);
+  const checks = ready.checks;
+  const gaps = ready.fabGaps;
+  const docGaps = ready.docGaps;
+  const redChecks = ready.redChecks;
+  const canSubmit = ready.ready;
   const gapStage = (key: string): EditorStage => {
     if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
     if (key.startsWith("gate_")) return key === "gate_opener" || key === "gate_power" || key === "gate_safety" ? "specs" : "setup";
@@ -757,11 +761,46 @@ export default function MeasureEditor({
     if (key.startsWith("landing_")) return "level";
     return "steps";
   };
-  const stageMissing = EDITOR_STAGES.reduce<Record<EditorStage, number>>((acc, s) => {
-    acc[s.id] = gaps.filter((g) => gapStage(g.key) === s.id).length;
+  const zeroByStage = (): Record<EditorStage, number> => ({
+    setup: 0, posts: 0, level: 0, steps: 0, locations: 0, specs: 0, photos: 0, review: 0,
+  });
+  // Blockers and follow-ups are counted separately so a stage can say "3
+  // missing" or "2 photos to add" — never one number standing for both.
+  const stageMissing = gaps.reduce((acc, g) => {
+    acc[gapStage(g.key)] += 1;
     return acc;
-  }, { setup: 0, posts: 0, level: 0, steps: 0, locations: 0, specs: 0, photos: 0, review: redChecks.length });
+  }, zeroByStage());
+  stageMissing.review += redChecks.length;
+  const stageDocs = docGaps.reduce((acc, g) => {
+    acc[gapStage(g.key)] += 1;
+    return acc;
+  }, zeroByStage());
   const activeStageIndex = EDITOR_STAGES.findIndex((s) => s.id === activeStage);
+
+  // ---- The one thing to do next -------------------------------------------
+  // Gaps come out of requiredGaps in validation order; the worker needs them
+  // in measuring order, so they are sorted by the stage they belong to.
+  const stageOrder = (st: EditorStage) => EDITOR_STAGES.findIndex((x) => x.id === st);
+  const byStage = (a: Gap, b: Gap) => stageOrder(gapStage(a.key)) - stageOrder(gapStage(b.key));
+  const orderedGaps = [...gaps].sort(byStage);
+  const orderedDocGaps = [...docGaps].sort(byStage);
+  const gapLabel = (g: Gap) =>
+    g.key === "photo"
+      ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
+      : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
+  const nextTarget: { stage: EditorStage; label: string } | null = orderedGaps.length
+    ? { stage: gapStage(orderedGaps[0].key), label: gapLabel(orderedGaps[0]) }
+    : redChecks.length
+      ? { stage: "review", label: mt(lang, "check_" + redChecks[0].key) }
+      : orderedDocGaps.length
+        ? { stage: gapStage(orderedDocGaps[0].key), label: gapLabel(orderedDocGaps[0]) }
+        : null;
+  function goToStage(st: EditorStage) {
+    setActiveStage(st);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // Nothing measured yet reads as "Start measuring" rather than "Continue".
+  const started = sheetProgress(data).filled > 0 || data.photos.length > 0;
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
@@ -895,8 +934,7 @@ export default function MeasureEditor({
             />
           </div>
           <div className="text-xs text-neutral-400 mb-3">
-            {shapeLabel(lang, sheet.shape)} · {job.customer_name} · {prog.filled}/{prog.total}{" "}
-            {mt(lang, "filled")}
+            {shapeLabel(lang, sheet.shape)} · {job.customer_name}
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             <span
@@ -989,27 +1027,74 @@ export default function MeasureEditor({
         </div>
 
         <div className="sticky top-0 z-30 -mx-4 px-4 py-2 mb-4 bg-neutral-950/95 backdrop-blur border-y border-neutral-800">
+          {/* The single truth, and the single next action. Everything else on
+              this screen is secondary to it. */}
+          {status === "in_progress" && (
+            <button
+              type="button"
+              onClick={() => goToStage(nextTarget ? nextTarget.stage : "review")}
+              className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left min-h-[64px] ${
+                ready.remaining > 0
+                  ? "border-amber-500 bg-amber-500/10 active:bg-amber-500/20"
+                  : "border-green-600 bg-green-600/10 active:bg-green-600/20"
+              }`}
+            >
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block text-base font-bold ${
+                    ready.remaining > 0 ? "text-amber-300" : "text-green-300"
+                  }`}
+                >
+                  {ready.remaining > 0
+                    ? `${ready.remaining} ${mt(lang, ready.remaining === 1 ? "itemLeft" : "itemsLeft")} · ${mt(lang, started ? "continueMeasuring" : "startMeasuring")}`
+                    : `✓ ${mt(lang, ready.complete ? "allDone" : "readyForShop")}`}
+                </span>
+                {nextTarget && (
+                  <span className="mt-0.5 block truncate text-sm text-neutral-300">
+                    {mt(lang, "nextUp")}: {nextTarget.label}
+                  </span>
+                )}
+                {ready.docsOpen && (
+                  <span className="mt-0.5 block text-xs text-neutral-400">
+                    {ready.docRemaining} {mt(lang, "docsStillToAdd")}
+                  </span>
+                )}
+              </span>
+              <span aria-hidden className="shrink-0 text-2xl text-neutral-400">
+                →
+              </span>
+            </button>
+          )}
           <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Measurement stages">
             {EDITOR_STAGES.map((s) => {
               const missing = stageMissing[s.id];
+              const docs = stageDocs[s.id];
+              // Review is a verdict on the whole sheet, not a stage with its
+              // own to-do list: it must never read "Complete" while anything
+              // is still blocking submission.
+              const note =
+                s.id === "review"
+                  ? missing
+                    ? { text: mt(lang, "chipNotReady"), tone: "text-amber-400" }
+                    : { text: mt(lang, "chipReady"), tone: "text-green-400" }
+                  : missing
+                    ? { text: `${missing} ${mt(lang, "stageMissing")}`, tone: "text-amber-400" }
+                    : docs
+                      ? { text: `${docs} ${mt(lang, "stageToAdd")}`, tone: "text-sky-400" }
+                      : { text: mt(lang, "stageDone"), tone: "text-green-400" };
               return (
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => {
-                    setActiveStage(s.id);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className={`shrink-0 rounded-xl border px-3 py-2 text-left ${
+                  onClick={() => goToStage(s.id)}
+                  className={`shrink-0 rounded-xl border px-3 py-2 text-left min-h-[48px] ${
                     activeStage === s.id
                       ? "border-amber-500 bg-amber-500/10 text-amber-300"
                       : "border-neutral-700 bg-neutral-900 text-neutral-300"
                   }`}
                 >
                   <span className="block text-[10px] font-bold uppercase tracking-wide">{s.icon}. {mt(lang, s.labelKey)}</span>
-                  <span className={`block text-[10px] mt-0.5 ${missing ? "text-amber-400" : "text-green-400"}`}>
-                    {missing ? `${missing} ${mt(lang, "stageMissing")}` : mt(lang, "stageComplete")}
-                  </span>
+                  <span className={`block text-[10px] mt-0.5 ${note.tone}`}>{note.text}</span>
                 </button>
               );
             })}
@@ -2697,32 +2782,25 @@ export default function MeasureEditor({
             ))}
           </div>
 
-          {gaps.length > 0 && (
-            <div className="border border-neutral-700 rounded-lg p-3 mb-4 bg-neutral-950/60">
-              <div className="text-xs font-bold text-neutral-300 mb-1.5">
-                {mt(lang, "gapsTitle")} ({gaps.length})
-              </div>
-              <ul className="text-sm text-neutral-400 space-y-1">
-                {gaps.map((g, i) => (
-                  <li key={i}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveStage(gapStage(g.key));
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className="w-full text-left rounded-md px-2 py-1.5 -mx-2 hover:bg-neutral-800 active:bg-neutral-700"
-                    >
-                      •{" "}
-                      {g.key === "photo"
-                        ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
-                        : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`}
-                      <span className="float-right text-amber-400" aria-hidden>→</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {/* Two lists, never merged: what stops the shop, and what the file
+              still owes. Both jump to the stage that answers them. */}
+          {orderedGaps.length > 0 && (
+            <GapList
+              title={`${mt(lang, "blockersTitle")} (${orderedGaps.length})`}
+              tone="amber"
+              items={orderedGaps}
+              label={gapLabel}
+              onJump={(g) => goToStage(gapStage(g.key))}
+            />
+          )}
+          {orderedDocGaps.length > 0 && (
+            <GapList
+              title={`${mt(lang, "followUpsTitle")} (${orderedDocGaps.length})`}
+              tone="sky"
+              items={orderedDocGaps}
+              label={gapLabel}
+              onJump={(g) => goToStage(gapStage(g.key))}
+            />
           )}
 
           {status === "in_progress" && (
@@ -2730,8 +2808,13 @@ export default function MeasureEditor({
               {redChecks.length > 0 && (
                 <div className="text-sm text-red-300 mb-2">⛔ {mt(lang, "redBlock")}</div>
               )}
-              {canSubmit && (
+              {ready.complete && (
                 <div className="text-sm text-green-300 mb-2">✓ {mt(lang, "allClear")}</div>
+              )}
+              {ready.docsOpen && (
+                <div className="text-sm text-sky-300 mb-2">
+                  ✓ {mt(lang, "readyForShop")} — {mt(lang, "docsOpenNote")}
+                </div>
               )}
               <button
                 onClick={submitSheet}
@@ -3051,6 +3134,45 @@ function ConditionFields({
         <MInput help="fireCondNotes" label={mt(lang, "fireCondNotes")} placeholder="—" value={c.notes} onChange={(v) => onField("notes", v)} />
       </div>
     </>
+  );
+}
+
+// One list of outstanding items. Rows are jump targets, sized for a gloved
+// thumb rather than a mouse.
+function GapList({
+  title,
+  tone,
+  items,
+  label,
+  onJump,
+}: {
+  title: string;
+  tone: "amber" | "sky";
+  items: Gap[];
+  label: (g: Gap) => string;
+  onJump: (g: Gap) => void;
+}) {
+  const arrow = tone === "amber" ? "text-amber-400" : "text-sky-400";
+  return (
+    <div className="border border-neutral-700 rounded-lg p-3 mb-4 bg-neutral-950/60">
+      <div className="text-xs font-bold text-neutral-300 mb-1.5">{title}</div>
+      <ul className="text-sm text-neutral-300 space-y-1">
+        {items.map((g, i) => (
+          <li key={`${g.key}${g.detail || ""}${i}`}>
+            <button
+              type="button"
+              onClick={() => onJump(g)}
+              className="flex w-full min-h-[48px] items-center gap-2 rounded-md px-2 py-2 -mx-2 text-left hover:bg-neutral-800 active:bg-neutral-700"
+            >
+              <span className="flex-1">{label(g)}</span>
+              <span className={`shrink-0 ${arrow}`} aria-hidden>
+                →
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

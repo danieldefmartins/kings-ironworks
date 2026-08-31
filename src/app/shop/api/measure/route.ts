@@ -616,11 +616,14 @@ export async function POST(req: NextRequest) {
           sheet.shape,
           mergeTolerances(orgSettings.tolerances)
         );
+        // Only fabrication-critical gaps block. Documentation follow-ups
+        // (most photos) travel with the sheet and stay listed until they land.
         if (blockers.gaps.length > 0 || blockers.redChecks.length > 0) {
           return NextResponse.json(
             {
               error: "Sheet is not ready to submit",
               gaps: blockers.gaps,
+              docGaps: blockers.docGaps,
               redChecks: blockers.redChecks.map((c) => c.key),
             },
             { status: 422 }
@@ -657,6 +660,9 @@ export async function POST(req: NextRequest) {
           workerId: worker.id,
           entity: "measure_sheet",
           entityId: body.id,
+          detail: blockers.docGaps.length
+            ? { docFollowUps: blockers.docGaps.length }
+            : null,
         });
         return NextResponse.json({ ok: true, updated_at: rows[0]?.updated_at });
       }
