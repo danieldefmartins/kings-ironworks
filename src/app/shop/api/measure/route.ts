@@ -9,6 +9,7 @@ import {
   sbRpc,
   getJob,
   getOrgSettings,
+  getCarryover,
   audit,
   ORG_ID,
 } from "@/lib/shop/db";
@@ -17,6 +18,7 @@ import {
   MEASURE_PRESETS,
   newMeasureData,
   newPresetMeasureData,
+  applyCarryover,
   normalizeMeasureData,
   type MeasureShape,
   type MeasurePreset,
@@ -463,6 +465,11 @@ export async function POST(req: NextRequest) {
         const seeded = preset
           ? newPresetMeasureData(preset, steps1, steps2, steps3)
           : { shape, data: newMeasureData(shape, steps1, steps2) };
+        // Start from the shop's standing answers — material, finish, colour,
+        // rail height, transport limit — so the measurer confirms them instead
+        // of retyping them on every job. Blanks only; the editor badges them.
+        const carry = await getCarryover(worker.id);
+        const carried = carry ? applyCarryover(seeded.data, carry.values) : [];
         const rows = await sbInsert<MeasureSheet[]>(TABLE, {
           org_id: ORG_ID,
           job_id: jobOk,
@@ -477,7 +484,12 @@ export async function POST(req: NextRequest) {
           workerId: worker.id,
           entity: "measure_sheet",
           entityId: rows[0]?.id,
-          detail: { shape: seeded.shape, preset: preset || null, jobId: jobOk },
+          detail: {
+            shape: seeded.shape,
+            preset: preset || null,
+            jobId: jobOk,
+            carried: carried.length ? carried : null,
+          },
         });
         // The row goes back too, so a caller does not have to re-fetch the
         // sheet just to learn what the shape seeded.

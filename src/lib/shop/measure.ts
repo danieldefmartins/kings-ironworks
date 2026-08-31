@@ -1377,6 +1377,118 @@ export function isFabCriticalPhoto(slot: string): boolean {
   return FAB_CRITICAL_PHOTO_SLOTS.includes(slot);
 }
 
+// ---- Shop-standard answers carried between jobs ---------------------------
+//
+// Material, finish, colour, rail height, transport limit and post mounting are
+// shop constants far more often than they are job decisions. Making a measurer
+// retype them on every sheet is the single most repeated piece of work in the
+// tool, so a finished sheet is mined for them and the next one starts filled
+// in — visibly, and only where the field is still blank.
+
+export const CARRYOVER_KEYS = [
+  "materials.post",
+  "materials.topRail",
+  "materials.picket",
+  "materials.picketSpacing",
+  "materials.bottomRail",
+  "materials.finish",
+  "materials.color",
+  "rail.height",
+  "fab.maxPiece",
+  "post.mount",
+  "post.anchors",
+] as const;
+
+export type CarryoverKey = (typeof CARRYOVER_KEYS)[number];
+export type Carryover = Partial<Record<CarryoverKey, string>>;
+
+// Where a suggestion came from, so the badge can say so honestly.
+export type CarryoverSource = "worker" | "shop";
+
+// The value most of this sheet's railing posts used. Posts vary within a
+// sheet; the mode is the shop standard, a single outlier is not.
+function commonPostValue(data: MeasureData, field: "mount" | "anchors"): string {
+  const counts = new Map<string, number>();
+  for (const p of data.posts) {
+    if (p.pointType !== "railing_post") continue;
+    const v = (p[field] || "").trim();
+    if (!v) continue;
+    counts.set(v, (counts.get(v) || 0) + 1);
+  }
+  let best = "";
+  let bestN = 0;
+  for (const [v, n] of counts) {
+    if (n > bestN) {
+      best = v;
+      bestN = n;
+    }
+  }
+  return best;
+}
+
+export function carryoverFrom(data: MeasureData): Carryover {
+  const out: Carryover = {};
+  const put = (k: CarryoverKey, v: string | undefined) => {
+    const t = (v || "").trim();
+    if (t) out[k] = t;
+  };
+  put("materials.post", data.materials.post);
+  put("materials.topRail", data.materials.topRail);
+  put("materials.picket", data.materials.picket);
+  put("materials.picketSpacing", data.materials.picketSpacing);
+  put("materials.bottomRail", data.materials.bottomRail);
+  put("materials.finish", data.materials.finish);
+  put("materials.color", data.materials.color);
+  put("rail.height", data.rail.height);
+  put("fab.maxPiece", data.fab.maxPiece);
+  put("post.mount", commonPostValue(data, "mount"));
+  put("post.anchors", commonPostValue(data, "anchors"));
+  return out;
+}
+
+// Fill blanks only — a suggestion never overwrites something the measurer
+// typed. Mutates `data` and returns the keys it actually filled, so the
+// editor can badge exactly those fields.
+export function applyCarryover(data: MeasureData, c: Carryover): CarryoverKey[] {
+  const filled: CarryoverKey[] = [];
+  const blank = (v: string | undefined) => !v || v.trim() === "";
+
+  const simple: [CarryoverKey, () => boolean, (v: string) => void][] = [
+    ["materials.post", () => blank(data.materials.post), (v) => (data.materials.post = v)],
+    ["materials.topRail", () => blank(data.materials.topRail), (v) => (data.materials.topRail = v)],
+    ["materials.picket", () => blank(data.materials.picket), (v) => (data.materials.picket = v)],
+    ["materials.picketSpacing", () => blank(data.materials.picketSpacing), (v) => (data.materials.picketSpacing = v)],
+    ["materials.bottomRail", () => blank(data.materials.bottomRail), (v) => (data.materials.bottomRail = v)],
+    ["materials.finish", () => blank(data.materials.finish), (v) => (data.materials.finish = v)],
+    ["materials.color", () => blank(data.materials.color), (v) => (data.materials.color = v)],
+    ["rail.height", () => blank(data.rail.height), (v) => (data.rail.height = v)],
+    ["fab.maxPiece", () => blank(data.fab.maxPiece), (v) => (data.fab.maxPiece = v)],
+  ];
+  for (const [key, isBlank, assign] of simple) {
+    const v = c[key];
+    if (v && isBlank()) {
+      assign(v);
+      filled.push(key);
+    }
+  }
+
+  // Post mounting: where the post exists but has not been told how it lands.
+  // Placement is job-specific; how it attaches usually is not.
+  for (const field of ["mount", "anchors"] as const) {
+    const v = c[`post.${field}` as CarryoverKey];
+    if (!v) continue;
+    let touched = false;
+    for (const p of data.posts) {
+      if (p.pointType !== "railing_post") continue;
+      if (!blank(p[field])) continue;
+      p[field] = v;
+      touched = true;
+    }
+    if (touched) filled.push(`post.${field}` as CarryoverKey);
+  }
+  return filled;
+}
+
 export function newPostId(): string {
   return `p${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 }

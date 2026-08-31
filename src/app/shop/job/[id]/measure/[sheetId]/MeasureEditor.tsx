@@ -50,6 +50,9 @@ import {
   type WallBand,
   WELL_DELIVERABLES,
   newWallBand,
+  type Carryover,
+  type CarryoverKey,
+  type CarryoverSource,
 } from "@/lib/shop/measure";
 import {
   sheetReadiness,
@@ -125,6 +128,7 @@ export default function MeasureEditor({
   nameById = {},
   orgSettings,
   history = [],
+  carryover = null,
 }: {
   job: Job;
   sheet: MeasureSheet;
@@ -134,6 +138,8 @@ export default function MeasureEditor({
   nameById?: Record<string, string>;
   orgSettings?: OrgSettings;
   history?: { at: string; action: string; workerId: string | null }[];
+  /** Shop-standard answers from the last finished sheet, or null on the first one. */
+  carryover?: { values: Carryover; source: CarryoverSource } | null;
 }) {
   const router = useRouter();
   const [data, setData] = useState<MeasureData>(sheet.data);
@@ -159,6 +165,7 @@ export default function MeasureEditor({
   // server has not taken yet.
   const [pendingLocal, setPendingLocal] = useState(false);
   const [restored, setRestored] = useState(false);
+
   const [online, setOnline] = useState(true);
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
@@ -801,6 +808,34 @@ export default function MeasureEditor({
   }
   // Nothing measured yet reads as "Start measuring" rather than "Continue".
   const started = sheetProgress(data).filled > 0 || data.photos.length > 0;
+
+  // ---- Carried-over answers ------------------------------------------------
+  // A field is badged only while it still reads exactly as it was suggested.
+  // The moment the measurer edits it, the value is theirs and the badge goes.
+  const carriedLabel = mt(
+    lang,
+    carryover?.source === "shop" ? "carriedFromShop" : "carriedFromLast"
+  );
+  // No stored provenance is needed: the badge is true exactly while the field
+  // still holds the suggested value, and editing it clears the badge by
+  // definition. Sheets created before this feature simply carry nothing.
+  const carriedNote = (key: CarryoverKey, current: string): string | undefined => {
+    const v = current.trim();
+    return v !== "" && carryover?.values[key] === v ? carriedLabel : undefined;
+  };
+  const carriedSummary = ([
+    ["materials.post", data.materials.post],
+    ["materials.topRail", data.materials.topRail],
+    ["materials.picket", data.materials.picket],
+    ["materials.picketSpacing", data.materials.picketSpacing],
+    ["materials.bottomRail", data.materials.bottomRail],
+    ["materials.finish", data.materials.finish],
+    ["materials.color", data.materials.color],
+    ["rail.height", data.rail.height],
+    ["fab.maxPiece", data.fab.maxPiece],
+  ] as [CarryoverKey, string][])
+    .filter(([k, v]) => !!carriedNote(k, v))
+    .map(([, v]) => v);
   const isSpiral = sheet.shape === "spiral";
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
@@ -2320,7 +2355,9 @@ export default function MeasureEditor({
                       <>
                         <MSelect help="mountType" label={mt(lang, "mountType")} value={po.mount}
                           options={[...MOUNT_OPTIONS]} lang={lang}
-                          onChange={(v) => setPost(set, po.id, "mount", v)} />
+                          carried={carriedNote("post.mount", po.mount)}
+                          onClearCarried={() => setPost(set, po.id, "mount", "")}
+                          onChange={(v) => { setPost(set, po.id, "mount", v); }} />
                         <MSelect help="anchorInto" label={mt(lang, "anchorInto")} value={po.anchor}
                           options={anchorOptions} lang={lang}
                           onChange={(v) => setPost(set, po.id, "anchor", v)} />
@@ -2364,7 +2401,9 @@ export default function MeasureEditor({
                       <MInput help="postPlate" label={mt(lang, "postPlate")} placeholder="—" value={po.plate}
                         onChange={(v) => setPost(set, po.id, "plate", v)} />
                       <MInput help="postAnchors" label={mt(lang, "postAnchors")} placeholder="—" value={po.anchors}
-                        onChange={(v) => setPost(set, po.id, "anchors", v)} />
+                        carried={carriedNote("post.anchors", po.anchors)}
+                        onClearCarried={() => setPost(set, po.id, "anchors", "")}
+                        onChange={(v) => { setPost(set, po.id, "anchors", v); }} />
                       <MInput help="postSubstrate" label={mt(lang, "postSubstrate")} placeholder="—" value={po.substrate}
                         onChange={(v) => setPost(set, po.id, "substrate", v)} />
                       <MInput help="postEdgeDist" label={mt(lang, "postEdgeDist")} value={po.edgeDist}
@@ -2399,7 +2438,9 @@ export default function MeasureEditor({
               options={[...RAIL_KIND_OPTIONS]} lang={lang}
               onChange={(v) => set((d) => void (d.rail.kind = v))} />
             <MInput help="railHeight" label={mt(lang, "railHeight")} value={data.rail.height}
-              onChange={(v) => set((d) => void (d.rail.height = v))} />
+              carried={carriedNote("rail.height", data.rail.height)}
+              onClearCarried={() => set((d) => void (d.rail.height = ""))}
+              onChange={(v) => { set((d) => void (d.rail.height = v)); }} />
             {!isWallRail && (
               <MSelect help="railSide" label={mt(lang, "railSide")} value={data.rail.side}
                 options={[...RAIL_SIDE_OPTIONS]} lang={lang}
@@ -2493,27 +2534,41 @@ export default function MeasureEditor({
           <div className="space-y-3">
             {!isWallRail && <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
               presets={presets.post}
-              onChange={(v) => set((d) => void (d.materials.post = v))} />}
+              carried={carriedNote("materials.post", data.materials.post)}
+              onClearCarried={() => set((d) => void (d.materials.post = ""))}
+              onChange={(v) => { set((d) => void (d.materials.post = v)); }} />}
             <PresetInput label={mt(lang, "matTopRail")} value={data.materials.topRail}
               presets={presets.topRail}
-              onChange={(v) => set((d) => void (d.materials.topRail = v))} />
+              carried={carriedNote("materials.topRail", data.materials.topRail)}
+              onClearCarried={() => set((d) => void (d.materials.topRail = ""))}
+              onChange={(v) => { set((d) => void (d.materials.topRail = v)); }} />
             {hasGuardrail && <PresetInput label={mt(lang, "matPicket")} value={data.materials.picket}
               presets={presets.picket}
-              onChange={(v) => set((d) => void (d.materials.picket = v))} />}
+              carried={carriedNote("materials.picket", data.materials.picket)}
+              onClearCarried={() => set((d) => void (d.materials.picket = ""))}
+              onChange={(v) => { set((d) => void (d.materials.picket = v)); }} />}
             <Grid>
               {hasGuardrail && <>
                 <MInput help="matPicketSpacing" label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
-                  onChange={(v) => set((d) => void (d.materials.picketSpacing = v))} />
+                  carried={carriedNote("materials.picketSpacing", data.materials.picketSpacing)}
+                  onClearCarried={() => set((d) => void (d.materials.picketSpacing = ""))}
+                  onChange={(v) => { set((d) => void (d.materials.picketSpacing = v)); }} />
                 <MSelect help="matBottomRail" label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
                   options={presets.bottomRail} lang={lang}
-                  onChange={(v) => set((d) => void (d.materials.bottomRail = v))} />
+                  carried={carriedNote("materials.bottomRail", data.materials.bottomRail)}
+                  onClearCarried={() => set((d) => void (d.materials.bottomRail = ""))}
+                  onChange={(v) => { set((d) => void (d.materials.bottomRail = v)); }} />
               </>}
               <MSelect help="finish" label={mt(lang, "finish")} value={data.materials.finish}
                 options={finishOptions} lang={lang} spec
-                onChange={(v) => set((d) => void (d.materials.finish = v))} />
+                carried={carriedNote("materials.finish", data.materials.finish)}
+                onClearCarried={() => set((d) => void (d.materials.finish = ""))}
+                onChange={(v) => { set((d) => void (d.materials.finish = v)); }} />
               <MSelect help="color" label={mt(lang, "color")} value={data.materials.color}
                 options={colorOptions} lang={lang} spec
-                onChange={(v) => set((d) => void (d.materials.color = v))} />
+                carried={carriedNote("materials.color", data.materials.color)}
+                onClearCarried={() => set((d) => void (d.materials.color = ""))}
+                onChange={(v) => { set((d) => void (d.materials.color = v)); }} />
             </Grid>
             <MInput help="matNotes" label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
               onChange={(v) => set((d) => void (d.materials.notes = v))} />
@@ -2570,6 +2625,8 @@ export default function MeasureEditor({
         <Card stage="specs" title={`🔩 ${mt(lang, "fabTitle")}`}>
           <Grid>
             <ChoiceMInput label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
+              carried={carriedNote("fab.maxPiece", data.fab.maxPiece)}
+              onClearCarried={() => set((d) => void (d.fab.maxPiece = ""))}
               choices={[["No restriction", mt(lang, "choiceNoRestriction")]]}
               onChange={(v) => set((d) => void (d.fab.maxPiece = v))} />
             <ChoiceMInput label={mt(lang, "fabAccess")} placeholder="—" value={data.fab.access}
@@ -2781,6 +2838,16 @@ export default function MeasureEditor({
               <CheckRow key={`${c.key}${i}`} c={c} lang={lang} />
             ))}
           </div>
+
+          {carriedSummary.length > 0 && (
+            <div className="mb-4 rounded-lg border border-sky-900 bg-sky-950/30 p-3">
+              <div className="text-xs font-bold text-sky-200">
+                ↩ {mt(lang, "carriedReviewTitle")} ({carriedSummary.length})
+              </div>
+              <div className="mt-1 text-sm text-neutral-300">{carriedSummary.join(" · ")}</div>
+              <div className="mt-1 text-xs text-neutral-400">{mt(lang, "carriedReviewNote")}</div>
+            </div>
+          )}
 
           {/* Two lists, never merged: what stops the shop, and what the file
               still owes. Both jump to the stage that answers them. */}
@@ -3218,6 +3285,8 @@ function MInput({
   value,
   onChange,
   placeholder,
+  carried,
+  onClearCarried,
 }: {
   label?: string;
   labelClass?: string;
@@ -3228,6 +3297,9 @@ function MInput({
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  /** Set when this value was carried over from an earlier sheet. */
+  carried?: string;
+  onClearCarried?: () => void;
 }) {
   const unitPh = useContext(PlaceholderCtx);
   const lang = useContext(LangCtx);
@@ -3249,6 +3321,28 @@ function MInput({
         aria-label={label}
         className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base"
       />
+      <CarriedNote note={carried} onClear={onClearCarried} />
+    </div>
+  );
+}
+
+// A value the sheet started with because a previous sheet had it. Visible, so
+// nobody submits a carried-over finish without having seen it.
+function CarriedNote({ note, onClear }: { note?: string; onClear?: () => void }) {
+  const lang = useContext(LangCtx);
+  if (!note) return null;
+  return (
+    <div className="mt-1 flex items-center gap-2">
+      <span className="min-w-0 flex-1 truncate text-[11px] text-sky-300/90">↩ {note}</span>
+      {onClear && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="shrink-0 rounded-full border border-sky-800 bg-sky-950/40 px-3 py-1.5 text-[11px] font-bold text-sky-200"
+        >
+          {mt(lang, "carriedChange")}
+        </button>
+      )}
     </div>
   );
 }
@@ -3312,6 +3406,8 @@ function ChoiceMInput({
   placeholder,
   hint,
   hintDiagram,
+  carried,
+  onClearCarried,
 }: {
   label: string;
   value: string;
@@ -3320,10 +3416,13 @@ function ChoiceMInput({
   placeholder?: string;
   hint?: string;
   hintDiagram?: "bottom" | "top" | "nosing" | "walkline";
+  carried?: string;
+  onClearCarried?: () => void;
 }) {
   return (
     <div>
-      <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} hint={hint} hintDiagram={hintDiagram} />
+      <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} hint={hint} hintDiagram={hintDiagram}
+        carried={carried} onClearCarried={onClearCarried} />
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {choices.map(([stored, shown]) => (
           <button key={stored} type="button" onClick={() => onChange(stored)}
@@ -3411,6 +3510,8 @@ function MSelect({
   help,
   spec = false,
   labels,
+  carried,
+  onClearCarried,
 }: {
   label: string;
   value: string;
@@ -3420,6 +3521,8 @@ function MSelect({
   help?: string;
   spec?: boolean;
   labels?: Record<string, string>;
+  carried?: string;
+  onClearCarried?: () => void;
 }) {
   return (
     <div className="block min-w-0">
@@ -3440,6 +3543,7 @@ function MSelect({
           </option>
         ))}
       </select>
+      <CarriedNote note={carried} onClear={onClearCarried} />
     </div>
   );
 }
@@ -3449,15 +3553,20 @@ function PresetInput({
   value,
   presets,
   onChange,
+  carried,
+  onClearCarried,
 }: {
   label: string;
   value: string;
   presets: string[];
   onChange: (v: string) => void;
+  carried?: string;
+  onClearCarried?: () => void;
 }) {
   return (
     <div>
-      <MInput label={label} value={value} onChange={onChange} placeholder="—" />
+      <MInput label={label} value={value} onChange={onChange} placeholder="—"
+        carried={carried} onClearCarried={onClearCarried} />
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {presets.map((pr) => (
           <button key={pr} onClick={() => onChange(pr)}

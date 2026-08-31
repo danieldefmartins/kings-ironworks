@@ -268,7 +268,14 @@ export async function listWorkersWithRates(): Promise<Worker[]> {
 
 // ---- Field measure sheets -------------------------------------------------
 
-import type { MeasureSheet } from "./measure";
+import {
+  carryoverFrom,
+  normalizeMeasureData,
+  type MeasureSheet,
+  type MeasureData,
+  type Carryover,
+  type CarryoverSource,
+} from "./measure";
 
 export async function getMeasureSheets(jobId: string): Promise<MeasureSheet[]> {
   return sbSelect<MeasureSheet[]>(
@@ -283,6 +290,35 @@ export async function getMeasureSheet(id: string): Promise<MeasureSheet | null> 
     `select=*&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
   );
   return rows[0] || null;
+}
+
+// The shop-standard answers to start the next sheet from: the worker's own
+// most recently finished sheet, falling back to the shop's. Blank when this is
+// the first finished sheet anyone has — there is nothing honest to suggest.
+export async function getCarryover(
+  workerId: string
+): Promise<{ values: Carryover; source: CarryoverSource } | null> {
+  const finished = "status=in.(submitted,approved)";
+  const pick = async (filter: string) =>
+    sbSelect<{ data: MeasureData }[]>(
+      "kiw_shop_measure_sheets",
+      `select=data&org_id=eq.${ORG_ID}&${finished}&${filter}order=updated_at.desc&limit=1`
+    );
+  try {
+    const mine = await pick(`submitted_by=eq.${workerId}&`);
+    if (mine[0]) {
+      const values = carryoverFrom(normalizeMeasureData(mine[0].data));
+      if (Object.keys(values).length > 0) return { values, source: "worker" };
+    }
+    const shop = await pick("");
+    if (shop[0]) {
+      const values = carryoverFrom(normalizeMeasureData(shop[0].data));
+      if (Object.keys(values).length > 0) return { values, source: "shop" };
+    }
+  } catch {
+    // Suggestions are a convenience; never let them take the sheet down.
+  }
+  return null;
 }
 
 import type { MeasureRevision } from "./measure";
