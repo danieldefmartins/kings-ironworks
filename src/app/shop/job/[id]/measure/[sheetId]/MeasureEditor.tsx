@@ -34,19 +34,13 @@ import {
   type FenceData,
   type FenceSegment,
   type BalconyData,
-  newFenceSegment,
-  FIRE_PURPOSES,
-  newFireLevel,
   type WallBand,
-  WELL_DELIVERABLES,
-  newWallBand,
   type Carryover,
   type CarryoverKey,
   type CarryoverSource,
 } from "@/lib/shop/measure";
 import {
   sheetReadiness,
-  formatIn,
   orderedPosts,
   mergeTolerances,
   wellClearance,
@@ -60,6 +54,11 @@ import PlanDraw from "./PlanDraw";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
 import { useSheetSync } from "./useSheetSync";
+import GateSections from "./shapes/GateSections";
+import FenceSections from "./shapes/FenceSections";
+import BalconySections from "./shapes/BalconySections";
+import FireEscapeSections from "./shapes/FireEscapeSections";
+import WellSections from "./shapes/WellSections";
 import {
   EDITOR_STAGES,
   FRACTIONS,
@@ -76,7 +75,6 @@ import {
   ChipRow,
   ChoiceMInput,
   CheckRow,
-  ConditionFields,
   GapList,
   Grid,
   InfoHint,
@@ -1110,612 +1108,51 @@ export default function MeasureEditor({
         </Card>}
 
         {isGate && gate && (
-          <>
-            <Card stage="setup" title={`🚪 ${mt(lang, "gateTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "gateHint")}</p>
-              <Grid>
-                <MSelect help="gateUse" label={mt(lang, "gateUse")} value={gate.use} lang={lang}
-                  options={["driveway", "walk", "service", "pool"]}
-                  labels={Object.fromEntries(["driveway", "walk", "service", "pool"].map((k) => [k, mt(lang, `gateU_${k}`)]))}
-                  onChange={(v) => setGate((g) => void (g.use = v as GateData["use"]))} />
-                <MSelect help="gateOperation" label={mt(lang, "gateOperation")} value={gate.operation} lang={lang}
-                  options={["single_swing", "double_swing", "slide", "bifold"]}
-                  labels={Object.fromEntries(["single_swing", "double_swing", "slide", "bifold"].map((k) => [k, mt(lang, `gateO_${k}`)]))}
-                  onChange={(v) => setGate((g) => void (g.operation = v as GateData["operation"]))} />
-                <MInput help="gateWidthTop" label={mt(lang, "gateWidthTop")} value={gate.widthTop}
-                  onChange={(v) => setGate((g) => void (g.widthTop = v))} />
-                <MInput help="gateWidthBottom" label={mt(lang, "gateWidthBottom")} value={gate.widthBottom}
-                  onChange={(v) => setGate((g) => void (g.widthBottom = v))} />
-                <MInput help="gateHeightHinge" label={mt(lang, "gateHeightHinge")} value={gate.heightHinge}
-                  onChange={(v) => setGate((g) => void (g.heightHinge = v))} />
-                <MInput help="gateHeightLatch" label={mt(lang, "gateHeightLatch")} placeholder="—" value={gate.heightLatch}
-                  onChange={(v) => setGate((g) => void (g.heightLatch = v))} />
-                <MInput help="gateDiagA" label={mt(lang, "gateDiagA")} placeholder="—" value={gate.diagA}
-                  onChange={(v) => setGate((g) => void (g.diagA = v))} />
-                <MInput help="gateDiagB" label={mt(lang, "gateDiagB")} placeholder="—" value={gate.diagB}
-                  onChange={(v) => setGate((g) => void (g.diagB = v))} />
-              </Grid>
-
-              <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "gateGroundTitle")}</div>
-              <p className="mb-2 text-xs text-neutral-400">{mt(lang, "gateGroundHint")}</p>
-              <Grid>
-                <MInput help="gateGroundClearance" label={mt(lang, "gateGroundClearance")} value={gate.groundClearance}
-                  onChange={(v) => setGate((g) => void (g.groundClearance = v))} />
-                <MInput help="gateGradeRise" label={mt(lang, "gateGradeRise")} value={gate.gradeRise}
-                  onChange={(v) => setGate((g) => void (g.gradeRise = v))} />
-                <MInput help="gateSurface" label={mt(lang, "gateSurface")} value={gate.surface}
-                  onChange={(v) => setGate((g) => void (g.surface = v))} />
-                <ChipRow help="gateSwingDir" label={mt(lang, "gateSwingDir")} value={gate.swingDir}
-                  options={[["in", mt(lang, "gateSwingIn")], ["out", mt(lang, "gateSwingOut")], ["both", mt(lang, "gateSwingBoth")]]}
-                  onChange={(v) => setGate((g) => void (g.swingDir = v as GateData["swingDir"]))} />
-                <ChipRow help="gateHingeSide" label={mt(lang, "gateHingeSide")} value={gate.hingeSide}
-                  options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
-                  onChange={(v) => setGate((g) => void (g.hingeSide = v as GateData["hingeSide"]))} />
-              </Grid>
-            </Card>
-
-            <Card stage="specs" title={`🔧 ${mt(lang, "gatePostsHardware")}`}>
-              <label className="mb-3 flex items-center gap-2 text-sm text-neutral-300">
-                <input type="checkbox" checked={gate.postsExisting}
-                  onChange={(e) => setGate((g) => void (g.postsExisting = e.target.checked))}
-                  className="h-5 w-5 accent-amber-500" />
-                {mt(lang, "gatePostsExisting")}
-              </label>
-              <Grid>
-                <MInput help="gatePostSize" label={mt(lang, "gatePostSize")} value={gate.postSize}
-                  onChange={(v) => setGate((g) => void (g.postSize = v))} />
-                <MInput help="gatePostMaterial" label={mt(lang, "gatePostMaterial")} placeholder="—" value={gate.postMaterial}
-                  onChange={(v) => setGate((g) => void (g.postMaterial = v))} />
-                <MInput help="gateFooting" label={mt(lang, "gateFooting")} value={gate.footingDepth}
-                  onChange={(v) => setGate((g) => void (g.footingDepth = v))} />
-                <MInput help="gateInfill" label={mt(lang, "gateInfill")} value={gate.infill}
-                  onChange={(v) => setGate((g) => void (g.infill = v))} />
-                <MInput help="gatePicketSpacing" label={mt(lang, "gatePicketSpacing")} placeholder="—" value={gate.picketSpacing}
-                  onChange={(v) => setGate((g) => void (g.picketSpacing = v))} />
-                <MInput help="gateHinges" label={mt(lang, "gateHinges")} value={gate.hinges}
-                  onChange={(v) => setGate((g) => void (g.hinges = v))} />
-                <MInput help="gateLatch" label={mt(lang, "gateLatch")} value={gate.latch}
-                  onChange={(v) => setGate((g) => void (g.latch = v))} />
-                <MInput help="gateDropRod" label={mt(lang, "gateDropRod")} placeholder="—" value={gate.dropRod}
-                  onChange={(v) => setGate((g) => void (g.dropRod = v))} />
-              </Grid>
-              <label className="mt-4 mb-3 flex items-center gap-2 text-sm text-neutral-300">
-                <input type="checkbox" checked={gate.automated}
-                  onChange={(e) => setGate((g) => void (g.automated = e.target.checked))}
-                  className="h-5 w-5 accent-amber-500" />
-                {mt(lang, "gateAutomated")}
-              </label>
-              {gate.automated && (
-                <Grid>
-                  <MInput help="gateOpener" label={mt(lang, "gateOpener")} value={gate.opener}
-                    onChange={(v) => setGate((g) => void (g.opener = v))} />
-                  <ChipRow help="gatePower" label={mt(lang, "gatePower")} value={gate.powerAtGate}
-                    options={[["yes", mt(lang, "fireOp_yes")], ["no", mt(lang, "gateNo")], ["unknown", mt(lang, "gateUnknown")]]}
-                    onChange={(v) => setGate((g) => void (g.powerAtGate = v as GateData["powerAtGate"]))} />
-                  <MInput help="gateSafety" label={mt(lang, "gateSafety")} value={gate.safetyDevices}
-                    onChange={(v) => setGate((g) => void (g.safetyDevices = v))} />
-                </Grid>
-              )}
-            </Card>
-          </>
+          <GateSections
+            lang={lang}
+            gate={gate}
+            setGate={setGate}
+          />
         )}
 
         {isFence && fence && (
-          <>
-            <Card stage="setup" title={`🚧 ${mt(lang, "fenceTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "fenceHint")}</p>
-              <Grid>
-                <MInput help="fenceTotalRun" label={mt(lang, "fenceTotalRun")} value={fence.totalRun}
-                  onChange={(v) => setFence((f) => void (f.totalRun = v))} />
-                <MInput help="fenceHeight" label={mt(lang, "fenceHeight")} value={fence.height}
-                  onChange={(v) => setFence((f) => void (f.height = v))} />
-                <MInput help="fencePanelWidth" label={mt(lang, "fencePanelWidth")} placeholder="—" value={fence.panelWidth}
-                  onChange={(v) => setFence((f) => void (f.panelWidth = v))} />
-                <MInput help="fencePostSpacing" label={mt(lang, "fencePostSpacing")} value={fence.postSpacing}
-                  onChange={(v) => setFence((f) => void (f.postSpacing = v))} />
-                <MInput help="fencePostSize" label={mt(lang, "fencePostSize")} value={fence.postSize}
-                  onChange={(v) => setFence((f) => void (f.postSize = v))} />
-                <MInput help="fenceFooting" label={mt(lang, "fenceFooting")} value={fence.footingDepth}
-                  onChange={(v) => setFence((f) => void (f.footingDepth = v))} />
-                <MInput help="fencePicketSpacing" label={mt(lang, "fencePicketSpacing")} placeholder="—" value={fence.picketSpacing}
-                  onChange={(v) => setFence((f) => void (f.picketSpacing = v))} />
-                <MInput help="fenceGates" label={mt(lang, "fenceGates")} placeholder="—" value={fence.gates}
-                  onChange={(v) => setFence((f) => void (f.gates = v))} />
-                <MInput help="fenceStartTerm" label={mt(lang, "fenceStartTerm")} value={fence.startTerm}
-                  onChange={(v) => setFence((f) => void (f.startTerm = v))} />
-                <MInput help="fenceEndTerm" label={mt(lang, "fenceEndTerm")} value={fence.endTerm}
-                  onChange={(v) => setFence((f) => void (f.endTerm = v))} />
-                <MInput help="fenceUtilities" label={mt(lang, "fenceUtilities")} value={fence.utilities}
-                  onChange={(v) => setFence((f) => void (f.utilities = v))} />
-              </Grid>
-            </Card>
-
-            {fence.segments.map((sg, i) => (
-              <Card key={sg.id} stage="steps" title={`${mt(lang, "fenceSegment")} ${sg.label || i + 1}`}>
-                <div className="mb-3 flex items-center gap-2">
-                  <input value={sg.label} onChange={(e) => setSeg(sg.id, (x) => void (x.label = e.target.value))}
-                    placeholder={mt(lang, "fenceSegLabel")}
-                    className="w-40 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-base" />
-                  {fence.segments.length > 1 && (
-                    <button type="button"
-                      onClick={() => setFence((f) => void (f.segments = f.segments.filter((x) => x.id !== sg.id)))}
-                      className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
-                      ✕ {mt(lang, "removePost")}
-                    </button>
-                  )}
-                </div>
-                <Grid>
-                  <MInput help="fenceSegLength" label={mt(lang, "fenceSegLength")} value={sg.length}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.length = v))} />
-                  <MInput help="fenceSegPanels" label={mt(lang, "fenceSegPanels")} placeholder="—" value={sg.panels}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.panels = v))} />
-                  <MInput help="fenceSegHeight" label={mt(lang, "fenceSegHeight")} placeholder="—" value={sg.height}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.height = v))} />
-                  <MInput help="fenceSegTurn" label={mt(lang, "fenceSegTurn")} placeholder="°" value={sg.turnDeg}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.turnDeg = v))} />
-                  <MInput help="fenceSegGrade" label={mt(lang, "fenceSegGrade")} placeholder="—" value={sg.gradeChange}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.gradeChange = v))} />
-                  <ChipRow help="fenceSegFollows" label={mt(lang, "fenceSegFollows")} value={sg.followsGrade}
-                    options={[["racked", mt(lang, "fenceRacked")], ["stepped", mt(lang, "fenceStepped")]]}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.followsGrade = v as FenceSegment["followsGrade"]))} />
-                  <MInput help="fenceSegObstruction" label={mt(lang, "fenceSegObstruction")} placeholder="—" value={sg.obstruction}
-                    onChange={(v) => setSeg(sg.id, (x) => void (x.obstruction = v))} />
-                </Grid>
-              </Card>
-            ))}
-
-            <Card stage="steps" title={mt(lang, "fenceMoreTitle")}>
-              <button type="button"
-                onClick={() => setFence((f) => void f.segments.push(newFenceSegment(String(f.segments.length + 1))))}
-                className="w-full rounded-xl border border-amber-600 bg-amber-500/10 py-3 font-bold text-amber-300">
-                + {mt(lang, "fenceAddSegment")}
-              </button>
-            </Card>
-          </>
+          <FenceSections
+            lang={lang}
+            fence={fence}
+            setFence={setFence}
+            setSeg={setSeg}
+          />
         )}
 
         {isBalcony && balcony && (
-          <>
-            <Card stage="setup" title={`🏗 ${mt(lang, "balTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balHint")}</p>
-              <Grid>
-                <MSelect help="balKind" label={mt(lang, "balKind")} value={balcony.kind} lang={lang}
-                  options={["balcony", "juliet", "deck_edge", "roof_edge"]}
-                  labels={Object.fromEntries(["balcony", "juliet", "deck_edge", "roof_edge"].map((k) => [k, mt(lang, `balK_${k}`)]))}
-                  onChange={(v) => setBalcony((b) => void (b.kind = v as BalconyData["kind"]))} />
-                <MSelect help="balMount" label={mt(lang, "balMount")} value={balcony.mount} lang={lang}
-                  options={["top", "fascia", "core_drill", "embedded"]}
-                  labels={Object.fromEntries(["top", "fascia", "core_drill", "embedded"].map((k) => [k, mt(lang, `balM_${k}`)]))}
-                  onChange={(v) => setBalcony((b) => void (b.mount = v as BalconyData["mount"]))} />
-                <MInput help="balEdgeLength" label={mt(lang, "balEdgeLength")} value={balcony.edgeLength}
-                  onChange={(v) => setBalcony((b) => void (b.edgeLength = v))} />
-                <MInput help="balProjection" label={mt(lang, "balProjection")} placeholder="—" value={balcony.projection}
-                  onChange={(v) => setBalcony((b) => void (b.projection = v))} />
-                <MInput help="balGuardHeight" label={mt(lang, "balGuardHeight")} value={balcony.guardHeight}
-                  onChange={(v) => setBalcony((b) => void (b.guardHeight = v))} />
-                <MInput help="balPicketSpacing" label={mt(lang, "balPicketSpacing")} placeholder="—" value={balcony.picketSpacing}
-                  onChange={(v) => setBalcony((b) => void (b.picketSpacing = v))} />
-                <MInput help="balReturns" label={mt(lang, "balReturns")} value={balcony.returns}
-                  onChange={(v) => setBalcony((b) => void (b.returns = v))} />
-                <MInput help="balCorners" label={mt(lang, "balCorners")} placeholder="—" value={balcony.corners}
-                  onChange={(v) => setBalcony((b) => void (b.corners = v))} />
-                <MInput help="balFinishedFloor" label={mt(lang, "balFinishedFloor")} value={balcony.finishedFloor}
-                  onChange={(v) => setBalcony((b) => void (b.finishedFloor = v))} />
-                <MInput help="balDrainage" label={mt(lang, "balDrainage")} placeholder="—" value={balcony.drainage}
-                  onChange={(v) => setBalcony((b) => void (b.drainage = v))} />
-                {balcony.kind === "juliet" && (
-                  <MInput help="balDoorOpening" label={mt(lang, "balDoorOpening")} value={balcony.doorOpening}
-                    onChange={(v) => setBalcony((b) => void (b.doorOpening = v))} />
-                )}
-              </Grid>
-            </Card>
-
-            <Card stage="locations" title={`⚙ ${mt(lang, "balAnchorTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balAnchorHint")}</p>
-              <Grid>
-                <MInput help="balSlabMaterial" label={mt(lang, "balSlabMaterial")} value={balcony.slabMaterial}
-                  onChange={(v) => setBalcony((b) => void (b.slabMaterial = v))} />
-                <MInput help="balSlabThickness" label={mt(lang, "balSlabThickness")} value={balcony.slabThickness}
-                  onChange={(v) => setBalcony((b) => void (b.slabThickness = v))} />
-                <MInput help="balAnchorType" label={mt(lang, "balAnchorType")} value={balcony.anchorType}
-                  onChange={(v) => setBalcony((b) => void (b.anchorType = v))} />
-                <MInput help="balEmbedment" label={mt(lang, "balEmbedment")} value={balcony.anchorEmbedment}
-                  onChange={(v) => setBalcony((b) => void (b.anchorEmbedment = v))} />
-                <MInput help="balEdgeDistance" label={mt(lang, "balEdgeDistance")} value={balcony.edgeDistance}
-                  onChange={(v) => setBalcony((b) => void (b.edgeDistance = v))} />
-                <MInput help="balMinCover" label={mt(lang, "balMinCover")} placeholder="—" value={balcony.minCover}
-                  onChange={(v) => setBalcony((b) => void (b.minCover = v))} />
-                <MInput help="balPlatePlan" label={mt(lang, "balPlatePlan")} placeholder="—" value={balcony.platePlan}
-                  onChange={(v) => setBalcony((b) => void (b.platePlan = v))} />
-                <MInput help="balEdgeCondition" label={mt(lang, "balEdgeCondition")} placeholder="—" value={balcony.edgeCondition}
-                  onChange={(v) => setBalcony((b) => void (b.edgeCondition = v))} />
-              </Grid>
-            </Card>
-          </>
+          <BalconySections
+            lang={lang}
+            balcony={balcony}
+            setBalcony={setBalcony}
+          />
         )}
 
         {isFire && fire && (
-          <>
-            <Card stage="setup" title={`🧯 ${mt(lang, "fireTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "fireHint")}</p>
-              <div className="mb-4">
-                <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "firePurpose")}</div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {FIRE_PURPOSES.map((k) => (
-                    <button key={k} type="button"
-                      onClick={() => setFire((f) => void (f.purpose = k))}
-                      className={`rounded-xl border p-3 text-left ${firePurpose === k ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
-                      <div className="text-sm font-bold">{mt(lang, `fireP_${k}`)}</div>
-                      <div className="mt-0.5 text-[11px] opacity-80">{mt(lang, `firePd_${k}`)}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <Grid>
-                <MInput help="fireStories" label={mt(lang, "fireStories")} value={fire.stories}
-                  onChange={(v) => setFire((f) => void (f.stories = v))} />
-                <MInput help="fireWallMaterial" label={mt(lang, "fireWallMaterial")} value={fire.wallMaterial}
-                  onChange={(v) => setFire((f) => void (f.wallMaterial = v))} />
-                <MInput help="fireTotalHeight" label={mt(lang, "fireTotalHeight")} value={fire.totalHeight}
-                  onChange={(v) => setFire((f) => void (f.totalHeight = v))} />
-                <MInput help="fireAccess" label={mt(lang, "fireAccess")} placeholder="—" value={fire.access}
-                  onChange={(v) => setFire((f) => void (f.access = v))} />
-              </Grid>
-              {fire.purpose === "repair" && (
-                <div className="mt-3">
-                  <MInput help="fireViolations" label={mt(lang, "fireViolations")} value={fire.violations}
-                    onChange={(v) => setFire((f) => void (f.violations = v))} />
-                </div>
-              )}
-            </Card>
-
-            {fire.levels.map((l, i) => {
-              const lowest = i === fire.levels.length - 1;
-              return (
-                <Card key={l.id} stage="steps" title={`${mt(lang, "fireLevel")} ${l.label || i + 1}`}>
-                  <div className="mb-3 flex items-center gap-2">
-                    <input value={l.label} onChange={(e) => setLevel(l.id, (x) => void (x.label = e.target.value))}
-                      placeholder={mt(lang, "fireLevelLabel")}
-                      className="w-40 rounded-lg border border-neutral-700 bg-neutral-800 px-2.5 py-2 text-base" />
-                    {fire.levels.length > 1 && (
-                      <button type="button"
-                        onClick={() => setFire((f) => void (f.levels = f.levels.filter((x) => x.id !== l.id)))}
-                        className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
-                        ✕ {mt(lang, "removePost")}
-                      </button>
-                    )}
-                  </div>
-                  <Grid>
-                    <MInput help="firePlatLength" label={mt(lang, "firePlatLength")} value={l.platLength}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.platLength = v))} />
-                    <MInput help="firePlatWidth" label={mt(lang, "firePlatWidth")} value={l.platWidth}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.platWidth = v))} />
-                    <MInput help="fireHeightGrade" label={mt(lang, "fireHeightGrade")} value={l.heightAboveGrade}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.heightAboveGrade = v))} />
-                    {!lowest && (
-                      <MInput help="fireFloorToFloor" label={mt(lang, "fireFloorToFloor")} value={l.floorToFloor}
-                        onChange={(v) => setLevel(l.id, (x) => void (x.floorToFloor = v))} />
-                    )}
-                    <MInput help="fireDeck" label={mt(lang, "fireDeck")} value={l.deck}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.deck = v))} />
-                    <ChipRow help="fireOpening" label={mt(lang, "fireOpening")} value={l.openingType}
-                      options={[["window", mt(lang, "feWindow")], ["door", mt(lang, "feDoor")]]}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.openingType = v as FireLevel["openingType"]))} />
-                    <MInput help="fireOpeningW" label={mt(lang, "fireOpeningW")} placeholder="—" value={l.openingW}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.openingW = v))} />
-                    <MInput help="fireSillToPlatform" label={mt(lang, "fireSillToPlatform")} placeholder="—" value={l.sillToPlatform}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.sillToPlatform = v))} />
-                    <MInput help="fireGuardHeight" label={mt(lang, "fireGuardHeight")} value={l.guardHeight}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.guardHeight = v))} />
-                    <MInput help="firePicketSpacing" label={mt(lang, "firePicketSpacing")} value={l.picketSpacing}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.picketSpacing = v))} />
-                  </Grid>
-
-                  {!lowest && (
-                    <>
-                      <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "fireStairDown")}</div>
-                      <Grid>
-                        <MInput help="fireStairRisers" label={mt(lang, "fireStairRisers")} value={l.stairRisers}
-                          onChange={(v) => setLevel(l.id, (x) => void (x.stairRisers = v))} />
-                        <MInput help="fireStairRise" label={mt(lang, "fireStairRise")} value={l.stairRise}
-                          onChange={(v) => setLevel(l.id, (x) => void (x.stairRise = v))} />
-                        <MInput help="fireStairRun" label={mt(lang, "fireStairRun")} value={l.stairRun}
-                          onChange={(v) => setLevel(l.id, (x) => void (x.stairRun = v))} />
-                        <MInput help="fireStairWidth" label={mt(lang, "fireStairWidth")} value={l.stairWidth}
-                          onChange={(v) => setLevel(l.id, (x) => void (x.stairWidth = v))} />
-                        <MInput help="fireStairAngle" label={mt(lang, "fireStairAngle")} placeholder="°" value={l.stairAngle}
-                          onChange={(v) => setLevel(l.id, (x) => void (x.stairAngle = v))} />
-                      </Grid>
-                    </>
-                  )}
-
-                  <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "fireAnchorage")}</div>
-                  <Grid>
-                    <MInput help="fireAnchorType" label={mt(lang, "fireAnchorType")} value={l.anchorType}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.anchorType = v))} />
-                    <MInput help="fireAnchorCount" label={mt(lang, "fireAnchorCount")} value={l.anchorCount}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.anchorCount = v))} />
-                    <MInput help="fireAnchorSpacing" label={mt(lang, "fireAnchorSpacing")} placeholder="—" value={l.anchorSpacing}
-                      onChange={(v) => setLevel(l.id, (x) => void (x.anchorSpacing = v))} />
-                  </Grid>
-
-                  {fireSurvey && (
-                    <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/60 p-3">
-                      <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "fireConditionTitle")}</div>
-                      <ConditionFields lang={lang} c={l.condition}
-                        onField={(k, v) => setLevel(l.id, (x) => void ((x.condition as unknown as Record<string, string>)[k] = v))} />
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
-
-            <Card stage="steps" title={mt(lang, "fireAddLevelTitle")}>
-              <button type="button"
-                onClick={() => setFire((f) => void f.levels.push(newFireLevel(String(f.levels.length + 1))))}
-                className="w-full rounded-xl border border-amber-600 bg-amber-500/10 py-3 font-bold text-amber-300">
-                + {mt(lang, "fireAddLevel")}
-              </button>
-            </Card>
-
-            <Card stage="specs" title={`🪜 ${mt(lang, "fireLadderTitle")}`}>
-              <label className="mb-3 flex items-center gap-2 text-sm text-neutral-300">
-                <input type="checkbox" checked={fire.ladder.present}
-                  onChange={(e) => setFire((f) => void (f.ladder.present = e.target.checked))}
-                  className="h-5 w-5 accent-amber-500" />
-                {mt(lang, "fireLadderPresent")}
-              </label>
-              {fire.ladder.present && (
-                <>
-                  <Grid>
-                    <MSelect help="fireLadderType" label={mt(lang, "fireLadderType")} value={fire.ladder.type} lang={lang}
-                      options={["drop", "swing", "counterbalance", "fixed"]}
-                      labels={Object.fromEntries(["drop", "swing", "counterbalance", "fixed"].map((k) => [k, mt(lang, `fireLT_${k}`)]))}
-                      onChange={(v) => setFire((f) => void (f.ladder.type = v as never))} />
-                    <MInput help="fireLadderLength" label={mt(lang, "fireLadderLength")} value={fire.ladder.length}
-                      onChange={(v) => setFire((f) => void (f.ladder.length = v))} />
-                    <MInput help="fireLadderWidth" label={mt(lang, "fireLadderWidth")} value={fire.ladder.width}
-                      onChange={(v) => setFire((f) => void (f.ladder.width = v))} />
-                    <MInput help="fireLadderRung" label={mt(lang, "fireLadderRung")} value={fire.ladder.rungSpacing}
-                      onChange={(v) => setFire((f) => void (f.ladder.rungSpacing = v))} />
-                    <MInput help="fireStowed" label={mt(lang, "fireStowed")} value={fire.ladder.stowedAboveGrade}
-                      onChange={(v) => setFire((f) => void (f.ladder.stowedAboveGrade = v))} />
-                    <MInput help="fireDeployed" label={mt(lang, "fireDeployed")} value={fire.ladder.deployedAboveGrade}
-                      onChange={(v) => setFire((f) => void (f.ladder.deployedAboveGrade = v))} />
-                    <MInput help="fireLandingSurface" label={mt(lang, "fireLandingSurface")} value={fire.ladder.landingSurface}
-                      onChange={(v) => setFire((f) => void (f.ladder.landingSurface = v))} />
-                    <MInput help="fireObstructions" label={mt(lang, "fireObstructions")} placeholder="—" value={fire.ladder.obstructions}
-                      onChange={(v) => setFire((f) => void (f.ladder.obstructions = v))} />
-                  </Grid>
-                  {fireSurvey && (
-                    <div className="mt-3">
-                      <ChipRow help="fireLadderOperates" label={mt(lang, "fireLadderOperates")} value={fire.ladder.operates}
-                        options={[["yes", mt(lang, "fireOp_yes")], ["stiff", mt(lang, "fireOp_stiff")], ["seized", mt(lang, "fireOp_seized")]]}
-                        onChange={(v) => setFire((f) => void (f.ladder.operates = v as never))} />
-                    </div>
-                  )}
-                </>
-              )}
-            </Card>
-
-            {fireSurvey && (
-              <Card stage="review" title={`📋 ${mt(lang, "fireOverallTitle")}`}>
-                <ConditionFields lang={lang} c={fire.overall}
-                  onField={(k, v) => setFire((f) => void ((f.overall as unknown as Record<string, string>)[k] = v))} />
-                <div className="mt-3">
-                  <Grid>
-                    <MInput help="fireLoadTest" label={mt(lang, "fireLoadTest")} value={fire.loadTest}
-                      onChange={(v) => setFire((f) => void (f.loadTest = v))} />
-                    <MInput help="firePaintSystem" label={mt(lang, "firePaintSystem")} placeholder="—" value={fire.paintSystem}
-                      onChange={(v) => setFire((f) => void (f.paintSystem = v))} />
-                  </Grid>
-                </div>
-              </Card>
-            )}
-          </>
+          <FireEscapeSections
+            lang={lang}
+            fire={fire}
+            firePurpose={firePurpose}
+            fireSurvey={fireSurvey}
+            setFire={setFire}
+            setLevel={setLevel}
+          />
         )}
 
         {isWell && well && (
-          <>
-            <Card stage="setup" title={`🪟 ${mt(lang, "wellTitle")}`}>
-              <p className="mb-3 text-xs text-neutral-400">{mt(lang, "wellHint")}</p>
-              <div className="mb-4">
-                <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellDeliverables")}</div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {WELL_DELIVERABLES.map((k) => {
-                    const on = well.deliverables.includes(k);
-                    return (
-                      <button key={k} type="button" onClick={() => toggleDeliverable(k)}
-                        className={`rounded-xl border p-3 text-sm font-bold ${on ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
-                        {on ? "✓ " : ""}{mt(lang, `wellD_${k}`)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <Grid>
-                <MSelect help="wellConstruction" label={mt(lang, "wellConstruction")} value={well.construction} lang={lang}
-                  options={["poured_concrete", "block", "corrugated", "stone", "timber"]}
-                  labels={Object.fromEntries(["poured_concrete", "block", "corrugated", "stone", "timber"].map((k) => [k, mt(lang, `wellC_${k}`)]))}
-                  onChange={(v) => setWell((w) => void (w.construction = v as WellData["construction"]))} />
-                <MInput help="wellLengthAtHouse" label={mt(lang, "wellLengthAtHouse")} value={well.lengthAtHouse}
-                  onChange={(v) => setWell((w) => void (w.lengthAtHouse = v))} />
-                <MInput help="wellProjection" label={mt(lang, "wellProjection")} value={well.projection}
-                  onChange={(v) => setWell((w) => void (w.projection = v))} />
-                <MInput help="wellWallThickness" label={mt(lang, "wellWallThickness")} value={well.wallThickness}
-                  onChange={(v) => setWell((w) => void (w.wallThickness = v))} />
-                <MInput help="wellInsideLength" label={mt(lang, "wellInsideLength")} value={well.insideLength}
-                  onChange={(v) => setWell((w) => void (w.insideLength = v))} />
-                <MInput help="wellInsideProjection" label={mt(lang, "wellInsideProjection")} value={well.insideProjection}
-                  onChange={(v) => setWell((w) => void (w.insideProjection = v))} />
-                <MInput help="wellDepth" label={mt(lang, "wellDepth")} value={well.depth}
-                  onChange={(v) => setWell((w) => void (w.depth = v))} />
-                <MInput help="wellTopToGrade" label={mt(lang, "wellTopToGrade")} placeholder="—" value={well.topToGrade}
-                  onChange={(v) => setWell((w) => void (w.topToGrade = v))} />
-                <MInput help="wellDiagA" label={mt(lang, "wellDiagA")} value={well.diagA}
-                  onChange={(v) => setWell((w) => void (w.diagA = v))} />
-                <MInput help="wellDiagB" label={mt(lang, "wellDiagB")} value={well.diagB}
-                  onChange={(v) => setWell((w) => void (w.diagB = v))} />
-              </Grid>
-              <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellWindowTitle")}</div>
-              <Grid>
-                <MInput help="wellWindowW" label={mt(lang, "wellWindowW")} value={well.windowW}
-                  onChange={(v) => setWell((w) => void (w.windowW = v))} />
-                <MInput help="wellWindowH" label={mt(lang, "wellWindowH")} value={well.windowH}
-                  onChange={(v) => setWell((w) => void (w.windowH = v))} />
-                <MInput help="wellSillToFloor" label={mt(lang, "wellSillToFloor")} value={well.sillToFloor}
-                  onChange={(v) => setWell((w) => void (w.sillToFloor = v))} />
-                <MSelect help="wellWindowSwing" label={mt(lang, "wellWindowSwing")} value={well.windowSwing} lang={lang}
-                  options={["in", "out", "slider", "fixed"]}
-                  labels={{ in: mt(lang, "wellSwingIn"), out: mt(lang, "wellSwingOut"), slider: mt(lang, "wellSlider"), fixed: mt(lang, "wellFixed") }}
-                  onChange={(v) => setWell((w) => void (w.windowSwing = v as WellData["windowSwing"]))} />
-              </Grid>
-            </Card>
-
-            {wellWants("guard") && (
-              <Card stage="locations" title={`📐 ${mt(lang, "wellWallTitle")}`}>
-                <p className="mb-3 text-xs text-neutral-400">{mt(lang, "wellWallHint")}</p>
-                <Grid>
-                  <MInput help="wellWallRef" label={mt(lang, "wellWallRef")} value={well.wallRef}
-                    onChange={(v) => setWell((w) => void (w.wallRef = v))} />
-                  <MInput help="wellMaxSphere" label={mt(lang, "wellMaxSphere")} value={well.maxSphere}
-                    onChange={(v) => setWell((w) => void (w.maxSphere = v))} />
-                </Grid>
-
-                <div className="mt-4 mb-2 flex items-center">
-                  <span className="text-sm font-bold text-neutral-300">{mt(lang, "wellBands")}</span>
-                  <button type="button"
-                    onClick={() => setWell((w) => void w.bands.push(newWallBand()))}
-                    className="ml-auto rounded-full border border-amber-600 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300">
-                    + {mt(lang, "wellAddBand")}
-                  </button>
-                </div>
-                {well.bands.length === 0 && (
-                  <p className="mb-3 text-sm text-neutral-500">{mt(lang, "wellNoBands")}</p>
-                )}
-                <div className="space-y-3">
-                  {well.bands.map((b, i) => (
-                    <div key={b.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
-                      <div className="mb-2 flex items-center">
-                        <span className="font-bold text-amber-400">{mt(lang, "wellBand")} {i + 1}</span>
-                        <button type="button"
-                          onClick={() => setWell((w) => void (w.bands = w.bands.filter((x) => x.id !== b.id)))}
-                          className="ml-auto rounded-full border border-red-900 px-2.5 py-1 text-xs text-red-400">
-                          ✕ {mt(lang, "removePost")}
-                        </button>
-                      </div>
-                      <Grid>
-                        <MInput help="wellBandLabel" label={mt(lang, "wellBandLabel")} value={b.label}
-                          onChange={(v) => setBand(b.id, "label", v)} />
-                        <MInput help="wellBandSetback" label={mt(lang, "wellBandSetback")} value={b.setback}
-                          onChange={(v) => setBand(b.id, "setback", v)} />
-                        <MInput help="wellBandFrom" label={mt(lang, "wellBandFrom")} placeholder="—" value={b.fromTop}
-                          onChange={(v) => setBand(b.id, "fromTop", v)} />
-                        <MInput help="wellBandTo" label={mt(lang, "wellBandTo")} placeholder="—" value={b.toTop}
-                          onChange={(v) => setBand(b.id, "toTop", v)} />
-                      </Grid>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4">
-                  <MInput help="wellPostToWall" label={mt(lang, "wellPostToWall")} value={well.postToWall}
-                    onChange={(v) => setWell((w) => void (w.postToWall = v))} />
-                </div>
-
-                {/* The answer: where the post is allowed to sit. */}
-                {clearance && (
-                  <div className={`mt-4 rounded-xl border p-4 ${clearance.impossible || (clearance.worst !== null && clearance.worst > clearance.sphere) ? "border-red-700 bg-red-950/40" : "border-green-700 bg-green-950/30"}`}>
-                    <div className="text-sm font-bold text-neutral-200">{mt(lang, "wellSolverTitle")}</div>
-                    {clearance.impossible ? (
-                      <p className="mt-2 text-sm text-red-300">{mt(lang, "wellSolverImpossible")}</p>
-                    ) : (
-                      <>
-                        <p className="mt-2 text-2xl font-black text-amber-300">
-                          {formatIn(clearance.allowed)}
-                        </p>
-                        <p className="text-xs text-neutral-400">
-                          {mt(lang, "wellSolverMax")} {well.wallRef || mt(lang, "wellProudFace")}
-                        </p>
-                        <p className="mt-2 text-xs text-neutral-400">
-                          {formatIn(clearance.sphere)} − {formatIn(clearance.maxSetback)} ({clearance.deepest || "—"})
-                        </p>
-                        {clearance.worst !== null && (
-                          <p className={`mt-2 text-sm font-bold ${clearance.worst > clearance.sphere ? "text-red-300" : "text-green-300"}`}>
-                            {clearance.worst > clearance.sphere ? "✗" : "✓"} {mt(lang, "wellSolverActual")} {formatIn(clearance.worst)} {mt(lang, "wellAt")} {clearance.deepest || "—"}
-                          </p>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-                <Grid>
-                  <MInput help="wellGuardHeight" label={mt(lang, "wellGuardHeight")} value={well.guardHeight}
-                    onChange={(v) => setWell((w) => void (w.guardHeight = v))} />
-                </Grid>
-              </Card>
-            )}
-
-            {(wellWants("gate") || wellWants("ladder") || wellWants("grate")) && (
-              <Card stage="specs" title={`🔧 ${mt(lang, "wellPartsTitle")}`}>
-                {wellWants("gate") && (
-                  <div className="mb-4">
-                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_gate")}</div>
-                    <Grid>
-                      <MInput help="wellGateWidth" label={mt(lang, "wellGateWidth")} value={well.gateWidth}
-                        onChange={(v) => setWell((w) => void (w.gateWidth = v))} />
-                      <ChipRow help="wellGateSwing" label={mt(lang, "wellGateSwing")} value={well.gateSwing}
-                        options={[["in", mt(lang, "wellSwingIn")], ["out", mt(lang, "wellSwingOut")]]}
-                        onChange={(v) => setWell((w) => void (w.gateSwing = v as WellData["gateSwing"]))} />
-                      <ChipRow help="wellGateHinge" label={mt(lang, "wellGateHinge")} value={well.gateHinge}
-                        options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
-                        onChange={(v) => setWell((w) => void (w.gateHinge = v as WellData["gateHinge"]))} />
-                      <MInput help="wellGateLatch" label={mt(lang, "wellGateLatch")} placeholder="—" value={well.gateLatch}
-                        onChange={(v) => setWell((w) => void (w.gateLatch = v))} />
-                    </Grid>
-                  </div>
-                )}
-                {wellWants("ladder") && (
-                  <div className="mb-4">
-                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_ladder")}</div>
-                    <Grid>
-                      <MInput help="wellLadderWidth" label={mt(lang, "wellLadderWidth")} value={well.ladderWidth}
-                        onChange={(v) => setWell((w) => void (w.ladderWidth = v))} />
-                      <MInput help="wellLadderRungs" label={mt(lang, "wellLadderRungs")} value={well.ladderRungs}
-                        onChange={(v) => setWell((w) => void (w.ladderRungs = v))} />
-                      <MInput help="wellLadderSpacing" label={mt(lang, "wellLadderSpacing")} value={well.ladderSpacing}
-                        onChange={(v) => setWell((w) => void (w.ladderSpacing = v))} />
-                      <MInput help="wellLadderStandoff" label={mt(lang, "wellLadderStandoff")} value={well.ladderStandoff}
-                        onChange={(v) => setWell((w) => void (w.ladderStandoff = v))} />
-                      <MInput help="wellLadderTopExt" label={mt(lang, "wellLadderTopExt")} placeholder="—" value={well.ladderTopExt}
-                        onChange={(v) => setWell((w) => void (w.ladderTopExt = v))} />
-                    </Grid>
-                  </div>
-                )}
-                {wellWants("grate") && (
-                  <div>
-                    <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_grate")}</div>
-                    <Grid>
-                      <MSelect help="wellGrateBearing" label={mt(lang, "wellGrateBearing")} value={well.grateBearing} lang={lang}
-                        options={["surface", "recessed", "angle_frame"]}
-                        labels={Object.fromEntries(["surface", "recessed", "angle_frame"].map((k) => [k, mt(lang, `wellGB_${k}`)]))}
-                        onChange={(v) => setWell((w) => void (w.grateBearing = v as WellData["grateBearing"]))} />
-                      <MInput help="wellGrateInfill" label={mt(lang, "wellGrateInfill")} value={well.grateInfill}
-                        onChange={(v) => setWell((w) => void (w.grateInfill = v))} />
-                      <MInput help="wellGrateLoad" label={mt(lang, "wellGrateLoad")} value={well.grateLoad}
-                        onChange={(v) => setWell((w) => void (w.grateLoad = v))} />
-                    </Grid>
-                    <label className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
-                      <input type="checkbox" checked={well.grateHinged}
-                        onChange={(e) => setWell((w) => void (w.grateHinged = e.target.checked))}
-                        className="h-5 w-5 accent-amber-500" />
-                      {mt(lang, "wellGrateHinged")}
-                    </label>
-                  </div>
-                )}
-              </Card>
-            )}
-          </>
+          <WellSections
+            lang={lang}
+            well={well}
+            clearance={clearance}
+            setWell={setWell}
+            toggleDeliverable={toggleDeliverable}
+            setBand={setBand}
+            wellWants={wellWants}
+          />
         )}
 
         {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
