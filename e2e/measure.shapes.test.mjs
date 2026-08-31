@@ -17,6 +17,17 @@ const cases = [
   ["builder", "bifurcated", 4, 5, 6],
   ["builder", "curved_helical", 4, 0, 0],
   ["builder", "irregular_stoop", 4, 0, 0],
+  // Every non-stair shape renders a sketch too, and each one has broken at
+  // least once by rendering nothing at all.
+  ["level_run", null, 1, 0, 0],
+  ["ramp", null, 1, 0, 0],
+  ["wall_rail", null, 4, 0, 0],
+  ["spiral", null, 8, 0, 0],
+  ["window_well", null, 1, 0, 0],
+  ["fire_escape", null, 3, 0, 0],
+  ["gate", null, 1, 0, 0],
+  ["fence", null, 3, 0, 0],
+  ["balcony", null, 1, 0, 0],
 ];
 
 const browser = await chromium.launch();
@@ -30,7 +41,7 @@ const created = [];
 
 try {
   await page.goto(`${BASE}/shop/job/${JOB}/measure`, { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: /new sheet/i }).click();
+  await page.getByRole("button", { name: /new measure sheet/i }).click();
   const pickerIcons = await page.locator("svg").count();
   if (pickerIcons < 10) throw new Error(`Shape picker rendered only ${pickerIcons} icons`);
 
@@ -42,13 +53,24 @@ try {
     if (!res.ok() || !body.id) throw new Error(`Create failed for ${preset || shape}: ${res.status()} ${JSON.stringify(body)}`);
     created.push(body.id);
     await page.goto(`${BASE}/shop/job/${JOB}/measure/${body.id}`, { waitUntil: "networkidle" });
-    const svg = page.locator("svg").first();
-    if (!(await svg.isVisible())) throw new Error(`No visible sketch for ${preset || shape}`);
-    const box = await svg.boundingBox();
-    if (!box || box.width < 150 || box.height < 40) throw new Error(`Bad sketch bounds for ${preset || shape}`);
+    // The sketch lives on the locations stage, and the page is full of small
+    // icon SVGs — so open that stage and judge the biggest drawing on it,
+    // rather than whichever <svg> happens to come first in the document.
+    await page.getByRole("button", { name: /angles|locations|ubicaciones|localiza/i }).first().click().catch(() => {});
+    await page.waitForTimeout(500);
+    const boxes = await page.locator("svg").evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return { w: r.width, h: r.height };
+      })
+    );
+    const biggest = boxes.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a), { w: 0, h: 0 });
+    if (biggest.w < 150 || biggest.h < 40) {
+      throw new Error(`No real sketch for ${preset || shape} — biggest svg was ${Math.round(biggest.w)}x${Math.round(biggest.h)}`);
+    }
   }
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(" | ")}`);
-  console.log(`ok  rendered ${cases.length} staircase layouts and the full icon picker`);
+  console.log(`ok  rendered ${cases.length} shapes and the full icon picker`);
 } finally {
   for (const id of created) {
     await ctx.request.post(`${BASE}/shop/api/measure`, { data: { type: "delete", id, jobId: JOB } });

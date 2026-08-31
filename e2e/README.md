@@ -39,6 +39,15 @@ node e2e/measure.ui.test.mjs
 Both exit non-zero on failure. Screenshots from the UI test land next to the
 script.
 
+- `measure.offline.test.mjs` — signal loss. Types with the browser offline and
+  proves the edit is durable in IndexedDB, that the editor says "saved on this
+  device" rather than "failed", that the queue drains itself when the network
+  returns, and that the value reaches the server. Needs Playwright.
+- `measure.well.test.mjs`, `measure.fire.test.mjs`, `measure.trio.test.mjs` —
+  the non-stair shapes. Plain `node`, no dependencies.
+- `measure.press.test.mjs` — tap and long-press on the sketch, driven with a
+  real touch pointer. Needs Playwright.
+
 ## Tenant isolation
 
 `tenant-isolation.test.mjs` proves cross-organization isolation. Run two app

@@ -65,6 +65,54 @@ values ('KIW-1044','Customer Name','Address','DTM Paint','EST-…','Scope…','A
 - Print a cut-tag sheet (one tag per `cut_item`).
 - Worker management screen (add/rename/PIN) instead of SQL.
 
+## Working without signal
+
+Field measuring happens in basement stairwells, steel buildings and rural
+driveways. Every edit is written to IndexedDB (`src/lib/shop/outbox.ts`)
+*before* it is sent, and only cleared once the server has taken it.
+
+What the measurer sees:
+
+- An amber bar across the top when the tablet has no signal.
+- "Saved on this device" instead of "Save failed" — because the work is not
+  lost, it is queued.
+- Anything queued is restored automatically on the next load of that sheet,
+  with a banner saying so.
+
+The queue flushes itself when the tablet comes back online, when the measurer
+returns to the tab, and on a 20-second backstop. Submit is disabled while
+anything is still queued, so a sheet can never be submitted from data the
+server has not got.
+
+**Sign-out clears the queue.** A shop tablet is shared; one worker's unsent
+measurements must not follow them into the next worker's session. If anything
+is still queued, sign-out asks for confirmation first.
+
+Note what this does *not* do: the sheet page itself is server-rendered, so
+loading a sheet you have never opened on that tablet still needs a connection.
+Caching authenticated pages for offline load was deliberately not done — on a
+shared tablet it would leave one worker's job data readable by the next.
+
+## Deploying
+
+```bash
+npm run deploy          # deploys HEAD (must already be pushed)
+npm run deploy <sha>    # deploys a specific commit
+```
+
+Railway builds from the GitHub repo `danieldefmartins/kings-ironworks`, so the
+commit has to be pushed first — the script refuses otherwise. `railway up`
+does not work here; `public/` is ~1.6 GB and exceeds the upload limit.
+
+Authentication, in order of preference:
+
+1. **`RAILWAY_TOKEN`** — a project token from the Railway dashboard
+   (Project → Settings → Tokens). These do not expire. Recommended: the CLI
+   login token dies after roughly three days and has interrupted every deploy
+   session so far.
+2. `~/.railway/config.json` — whatever `railway login` last wrote. Works, but
+   expect to re-run `railway login` regularly.
+
 ## Field Measure — shop tolerance policy
 
 The geometry cross-checks grade disagreement between redundant measurements

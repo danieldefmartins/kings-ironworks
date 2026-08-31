@@ -24,6 +24,7 @@ import {
   requiredPhotoSlots,
   OPTIONAL_PHOTO_SLOTS,
   sheetProgress,
+  normalizeMeasureData,
   type FlightSegment,
   type MeasureData,
   type FinishSpec,
@@ -65,6 +66,7 @@ import Sketch, { sketchViews, type SketchView } from "./Sketch";
 import PlanDraw from "./PlanDraw";
 import PhotoMarkup from "./PhotoMarkup";
 import PrintSheet from "./PrintSheet";
+import { queueEdit, clearEdit, getEdit } from "@/lib/shop/outbox";
 
 const FRACTIONS = [
   '1/16"', '1/8"', '3/16"', '1/4"', '5/16"', '3/8"', '7/16"', '1/2"',
@@ -142,8 +144,13 @@ export default function MeasureEditor({
     statusRef.current = status;
   }, [status]);
   const [saveState, setSaveState] = useState<
-    "idle" | "dirty" | "saving" | "saved" | "error" | "conflict"
+    "idle" | "dirty" | "saving" | "saved" | "error" | "conflict" | "queued"
   >("idle");
+  // True whenever this sheet has an edit sitting in the local queue that the
+  // server has not taken yet.
+  const [pendingLocal, setPendingLocal] = useState(false);
+  const [restored, setRestored] = useState(false);
+  const [online, setOnline] = useState(true);
   const [opErr, setOpErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
   // Custom sheets open directly on the drawing canvas; otherwise the user
@@ -161,11 +168,15 @@ export default function MeasureEditor({
   const conflictRef = useRef(false);
   const baseUpdatedAt = useRef(sheet.updated_at);
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const pendingRef = useRef(false);
   const saveQueuedRef = useRef(false);
 
   useEffect(() => {
     dataRef.current = data;
   }, [data]);
+  useEffect(() => {
+    pendingRef.current = pendingLocal;
+  }, [pendingLocal]);
 
   function enqueue<T>(fn: () => Promise<T>): Promise<T> {
     const p = queueRef.current.then(fn, fn);
@@ -179,6 +190,16 @@ export default function MeasureEditor({
   async function doSave(): Promise<void> {
     if (conflictRef.current) return;
     const payload = dataRef.current;
+    // Durable first. If the network call never lands — or the tab dies
+    // mid-flight — the measurements are already on the device.
+    await queueEdit({
+      sheetId: sheet.id,
+      jobId: job.id,
+      data: payload,
+      baseUpdatedAt: baseUpdatedAt.current,
+      queuedAt: Date.now(),
+    });
+    setPendingLocal(true);
     setSaveState("saving");
     try {
       const res = await fetch("/shop/api/measure", {
@@ -210,12 +231,23 @@ export default function MeasureEditor({
       }
       if (dataRef.current === payload) {
         dirtyRef.current = false;
+        // The server has it; the local copy is no longer needed.
+        await clearEdit(sheet.id);
+        setPendingLocal(false);
         setSaveState("saved");
       }
       // else: newer edits exist; their own debounce triggers the next save
     } catch {
-      setSaveState("error");
+      // The edit is safe on the device. Say so, rather than "save failed",
+      // which reads like the work is gone.
+      setSaveState(navigator.onLine === false ? "queued" : "error");
     }
+  }
+
+  // Retry whatever is sitting in the queue for this sheet.
+  function flushOutbox() {
+    if (conflictRef.current || !dirtyRef.current) return;
+    requestSave();
   }
 
   function requestSave() {
@@ -246,6 +278,60 @@ export default function MeasureEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
+  // Recover anything this device queued and never managed to send — after a
+  // reload, a crash, or a shift that ended out of signal. The queued payload
+  // is newer than the row the page just rendered, so it wins on screen; if the
+  // sheet also moved on the server the flush returns 409 and the existing
+  // conflict banner takes over. Nothing is overwritten silently.
+  useEffect(() => {
+    let cancelled = false;
+    getEdit(sheet.id).then((pending) => {
+      if (cancelled || !pending) return;
+      setPendingLocal(true);
+      setRestored(true);
+      setData(normalizeMeasureData(pending.data));
+      dirtyRef.current = true;
+      setSaveState("dirty");
+      // Try immediately: the reason for the reload is often that signal came back.
+      setTimeout(requestSave, 300);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // runs once for this sheet; requestSave reads only refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheet.id]);
+
+  // Connectivity: retry the moment the tablet is back, and whenever the
+  // measurer returns to the tab (walking out of a stairwell rarely fires an
+  // "online" event on its own).
+  useEffect(() => {
+    const sync = () => setOnline(navigator.onLine !== false);
+    sync();
+    const onOnline = () => {
+      sync();
+      flushOutbox();
+    };
+    const onVisible = () => {
+      sync();
+      if (document.visibilityState === "visible") flushOutbox();
+    };
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", sync);
+    document.addEventListener("visibilitychange", onVisible);
+    // Backstop for the case where neither event fires.
+    const t = setInterval(() => {
+      if (dirtyRef.current && !conflictRef.current) flushOutbox();
+    }, 20000);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", sync);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Protect measurements on the way out: warn before closing with unsaved
   // edits, and fire a keepalive save when the page or component goes away.
   useEffect(() => {
@@ -269,7 +355,7 @@ export default function MeasureEditor({
       }
     };
     const warn = (e: BeforeUnloadEvent) => {
-      if (dirtyRef.current) {
+      if (dirtyRef.current || pendingRef.current) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -741,6 +827,22 @@ export default function MeasureEditor({
   return (
     <PlaceholderCtx.Provider value={unitPh}>
       <div className="p-4 max-w-4xl mx-auto pb-32 print:hidden">
+        {!online && (
+          <div className="sticky top-0 z-30 -mx-4 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black">
+            {mt(lang, "offlineBanner")}
+          </div>
+        )}
+
+        {restored && (
+          <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-700 bg-amber-950/40 p-3">
+            <span className="flex-1 text-sm text-amber-200">⬇ {mt(lang, "restoredMsg")}</span>
+            <button onClick={() => setRestored(false)}
+              className="rounded-full border border-amber-700 px-2.5 py-1 text-xs text-amber-200">
+              {mt(lang, "dismiss")}
+            </button>
+          </div>
+        )}
+
         {saveState === "conflict" && (
           <div className="bg-red-950/50 border border-red-700 rounded-xl p-3 mb-4 flex items-center gap-3">
             <span className="text-sm text-red-200 flex-1">
@@ -839,12 +941,15 @@ export default function MeasureEditor({
               {saveState === "dirty" && (
                 <span className="text-amber-400">● {mt(lang, "unsaved")}</span>
               )}
+              {saveState === "queued" && (
+                <span className="text-amber-300">⬇ {mt(lang, "savedOnDevice")}</span>
+              )}
               {saveState === "error" && (
                 <button
                   onClick={requestSave}
-                  className="text-red-300 border border-red-800 bg-red-950/40 rounded-full px-2.5 py-1 font-bold"
+                  className="text-amber-300 border border-amber-700 bg-amber-950/40 rounded-full px-2.5 py-1 font-bold"
                 >
-                  ⚠ {mt(lang, "saveFailed")} — {mt(lang, "retry")}
+                  ⬇ {mt(lang, "savedOnDevice")} — {mt(lang, "retry")}
                 </button>
               )}
             </span>
@@ -2607,7 +2712,7 @@ export default function MeasureEditor({
               )}
               <button
                 onClick={submitSheet}
-                disabled={!canSubmit || saveState === "dirty" || saveState === "saving"}
+                disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"}
                 className="w-full bg-amber-500 text-black font-bold rounded-xl py-4 text-lg disabled:opacity-40"
               >
                 {mt(lang, "submitReview")}

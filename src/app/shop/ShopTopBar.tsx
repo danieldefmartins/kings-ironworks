@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
 import { t } from "@/lib/shop/i18n";
 
@@ -19,6 +20,14 @@ export default function ShopTopBar({
 }) {
   const router = useRouter();
   async function logout() {
+    // Anything still queued belongs to the worker signing out. A shop tablet
+    // is shared, so it must not follow them into the next worker's session.
+    const stuck = await allEdits();
+    if (stuck.length > 0) {
+      const ok = window.confirm(t(lang, "signOutPending"));
+      if (!ok) return;
+    }
+    await clearAllEdits();
     await fetch("/shop/api/logout", { method: "POST" });
     router.replace("/shop/login");
     router.refresh();
