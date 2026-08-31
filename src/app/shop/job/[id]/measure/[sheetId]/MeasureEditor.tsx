@@ -61,6 +61,7 @@ import {
   type CheckResult,
 } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
+import { helpText } from "@/lib/shop/measure-help";
 import { SPEC_OPTIONS, specValue } from "@/lib/shop/i18n";
 import Sketch, { sketchViews, type SketchView } from "./Sketch";
 import PlanDraw from "./PlanDraw";
@@ -77,6 +78,8 @@ const NOSPACE = new Set(["'", '"', "°"]);
 
 // Placeholder for measurement inputs, driven by the sheet's unit choice.
 const PlaceholderCtx = createContext<string>("—");
+// Leaf fields look up their own help text, so they need the language.
+const LangCtx = createContext<string>("en");
 
 type EditorStage = "setup" | "posts" | "level" | "steps" | "locations" | "specs" | "photos" | "review";
 const StageCtx = createContext<EditorStage>("setup");
@@ -825,6 +828,7 @@ export default function MeasureEditor({
   }
 
   return (
+    <LangCtx.Provider value={lang}>
     <PlaceholderCtx.Provider value={unitPh}>
       <div className="p-4 max-w-4xl mx-auto pb-32 print:hidden">
         {!online && (
@@ -1013,7 +1017,7 @@ export default function MeasureEditor({
             {mt(lang, "sketchOrientationHint")}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-            {needsPostReference && <ChipRow
+            {needsPostReference && <ChipRow help="postRefLbl"
               label={mt(lang, "postRefLbl")}
               value={data.datums.postRef}
               options={[
@@ -1030,41 +1034,41 @@ export default function MeasureEditor({
             <Card stage="setup" title={`🚪 ${mt(lang, "gateTitle")}`}>
               <p className="mb-3 text-xs text-neutral-400">{mt(lang, "gateHint")}</p>
               <Grid>
-                <MSelect label={mt(lang, "gateUse")} value={gate.use} lang={lang}
+                <MSelect help="gateUse" label={mt(lang, "gateUse")} value={gate.use} lang={lang}
                   options={["driveway", "walk", "service", "pool"]}
                   labels={Object.fromEntries(["driveway", "walk", "service", "pool"].map((k) => [k, mt(lang, `gateU_${k}`)]))}
                   onChange={(v) => setGate((g) => void (g.use = v as GateData["use"]))} />
-                <MSelect label={mt(lang, "gateOperation")} value={gate.operation} lang={lang}
+                <MSelect help="gateOperation" label={mt(lang, "gateOperation")} value={gate.operation} lang={lang}
                   options={["single_swing", "double_swing", "slide", "bifold"]}
                   labels={Object.fromEntries(["single_swing", "double_swing", "slide", "bifold"].map((k) => [k, mt(lang, `gateO_${k}`)]))}
                   onChange={(v) => setGate((g) => void (g.operation = v as GateData["operation"]))} />
-                <MInput label={mt(lang, "gateWidthTop")} value={gate.widthTop}
+                <MInput help="gateWidthTop" label={mt(lang, "gateWidthTop")} value={gate.widthTop}
                   onChange={(v) => setGate((g) => void (g.widthTop = v))} />
-                <MInput label={mt(lang, "gateWidthBottom")} value={gate.widthBottom}
+                <MInput help="gateWidthBottom" label={mt(lang, "gateWidthBottom")} value={gate.widthBottom}
                   onChange={(v) => setGate((g) => void (g.widthBottom = v))} />
-                <MInput label={mt(lang, "gateHeightHinge")} value={gate.heightHinge}
+                <MInput help="gateHeightHinge" label={mt(lang, "gateHeightHinge")} value={gate.heightHinge}
                   onChange={(v) => setGate((g) => void (g.heightHinge = v))} />
-                <MInput label={mt(lang, "gateHeightLatch")} placeholder="—" value={gate.heightLatch}
+                <MInput help="gateHeightLatch" label={mt(lang, "gateHeightLatch")} placeholder="—" value={gate.heightLatch}
                   onChange={(v) => setGate((g) => void (g.heightLatch = v))} />
-                <MInput label={mt(lang, "gateDiagA")} placeholder="—" value={gate.diagA}
+                <MInput help="gateDiagA" label={mt(lang, "gateDiagA")} placeholder="—" value={gate.diagA}
                   onChange={(v) => setGate((g) => void (g.diagA = v))} />
-                <MInput label={mt(lang, "gateDiagB")} placeholder="—" value={gate.diagB}
+                <MInput help="gateDiagB" label={mt(lang, "gateDiagB")} placeholder="—" value={gate.diagB}
                   onChange={(v) => setGate((g) => void (g.diagB = v))} />
               </Grid>
 
               <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "gateGroundTitle")}</div>
               <p className="mb-2 text-xs text-neutral-400">{mt(lang, "gateGroundHint")}</p>
               <Grid>
-                <MInput label={mt(lang, "gateGroundClearance")} value={gate.groundClearance}
+                <MInput help="gateGroundClearance" label={mt(lang, "gateGroundClearance")} value={gate.groundClearance}
                   onChange={(v) => setGate((g) => void (g.groundClearance = v))} />
-                <MInput label={mt(lang, "gateGradeRise")} value={gate.gradeRise}
+                <MInput help="gateGradeRise" label={mt(lang, "gateGradeRise")} value={gate.gradeRise}
                   onChange={(v) => setGate((g) => void (g.gradeRise = v))} />
-                <MInput label={mt(lang, "gateSurface")} value={gate.surface}
+                <MInput help="gateSurface" label={mt(lang, "gateSurface")} value={gate.surface}
                   onChange={(v) => setGate((g) => void (g.surface = v))} />
-                <ChipRow label={mt(lang, "gateSwingDir")} value={gate.swingDir}
+                <ChipRow help="gateSwingDir" label={mt(lang, "gateSwingDir")} value={gate.swingDir}
                   options={[["in", mt(lang, "gateSwingIn")], ["out", mt(lang, "gateSwingOut")], ["both", mt(lang, "gateSwingBoth")]]}
                   onChange={(v) => setGate((g) => void (g.swingDir = v as GateData["swingDir"]))} />
-                <ChipRow label={mt(lang, "gateHingeSide")} value={gate.hingeSide}
+                <ChipRow help="gateHingeSide" label={mt(lang, "gateHingeSide")} value={gate.hingeSide}
                   options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                   onChange={(v) => setGate((g) => void (g.hingeSide = v as GateData["hingeSide"]))} />
               </Grid>
@@ -1078,21 +1082,21 @@ export default function MeasureEditor({
                 {mt(lang, "gatePostsExisting")}
               </label>
               <Grid>
-                <MInput label={mt(lang, "gatePostSize")} value={gate.postSize}
+                <MInput help="gatePostSize" label={mt(lang, "gatePostSize")} value={gate.postSize}
                   onChange={(v) => setGate((g) => void (g.postSize = v))} />
-                <MInput label={mt(lang, "gatePostMaterial")} placeholder="—" value={gate.postMaterial}
+                <MInput help="gatePostMaterial" label={mt(lang, "gatePostMaterial")} placeholder="—" value={gate.postMaterial}
                   onChange={(v) => setGate((g) => void (g.postMaterial = v))} />
-                <MInput label={mt(lang, "gateFooting")} value={gate.footingDepth}
+                <MInput help="gateFooting" label={mt(lang, "gateFooting")} value={gate.footingDepth}
                   onChange={(v) => setGate((g) => void (g.footingDepth = v))} />
-                <MInput label={mt(lang, "gateInfill")} value={gate.infill}
+                <MInput help="gateInfill" label={mt(lang, "gateInfill")} value={gate.infill}
                   onChange={(v) => setGate((g) => void (g.infill = v))} />
-                <MInput label={mt(lang, "gatePicketSpacing")} placeholder="—" value={gate.picketSpacing}
+                <MInput help="gatePicketSpacing" label={mt(lang, "gatePicketSpacing")} placeholder="—" value={gate.picketSpacing}
                   onChange={(v) => setGate((g) => void (g.picketSpacing = v))} />
-                <MInput label={mt(lang, "gateHinges")} value={gate.hinges}
+                <MInput help="gateHinges" label={mt(lang, "gateHinges")} value={gate.hinges}
                   onChange={(v) => setGate((g) => void (g.hinges = v))} />
-                <MInput label={mt(lang, "gateLatch")} value={gate.latch}
+                <MInput help="gateLatch" label={mt(lang, "gateLatch")} value={gate.latch}
                   onChange={(v) => setGate((g) => void (g.latch = v))} />
-                <MInput label={mt(lang, "gateDropRod")} placeholder="—" value={gate.dropRod}
+                <MInput help="gateDropRod" label={mt(lang, "gateDropRod")} placeholder="—" value={gate.dropRod}
                   onChange={(v) => setGate((g) => void (g.dropRod = v))} />
               </Grid>
               <label className="mt-4 mb-3 flex items-center gap-2 text-sm text-neutral-300">
@@ -1103,12 +1107,12 @@ export default function MeasureEditor({
               </label>
               {gate.automated && (
                 <Grid>
-                  <MInput label={mt(lang, "gateOpener")} value={gate.opener}
+                  <MInput help="gateOpener" label={mt(lang, "gateOpener")} value={gate.opener}
                     onChange={(v) => setGate((g) => void (g.opener = v))} />
-                  <ChipRow label={mt(lang, "gatePower")} value={gate.powerAtGate}
+                  <ChipRow help="gatePower" label={mt(lang, "gatePower")} value={gate.powerAtGate}
                     options={[["yes", mt(lang, "fireOp_yes")], ["no", mt(lang, "gateNo")], ["unknown", mt(lang, "gateUnknown")]]}
                     onChange={(v) => setGate((g) => void (g.powerAtGate = v as GateData["powerAtGate"]))} />
-                  <MInput label={mt(lang, "gateSafety")} value={gate.safetyDevices}
+                  <MInput help="gateSafety" label={mt(lang, "gateSafety")} value={gate.safetyDevices}
                     onChange={(v) => setGate((g) => void (g.safetyDevices = v))} />
                 </Grid>
               )}
@@ -1121,27 +1125,27 @@ export default function MeasureEditor({
             <Card stage="setup" title={`🚧 ${mt(lang, "fenceTitle")}`}>
               <p className="mb-3 text-xs text-neutral-400">{mt(lang, "fenceHint")}</p>
               <Grid>
-                <MInput label={mt(lang, "fenceTotalRun")} value={fence.totalRun}
+                <MInput help="fenceTotalRun" label={mt(lang, "fenceTotalRun")} value={fence.totalRun}
                   onChange={(v) => setFence((f) => void (f.totalRun = v))} />
-                <MInput label={mt(lang, "fenceHeight")} value={fence.height}
+                <MInput help="fenceHeight" label={mt(lang, "fenceHeight")} value={fence.height}
                   onChange={(v) => setFence((f) => void (f.height = v))} />
-                <MInput label={mt(lang, "fencePanelWidth")} placeholder="—" value={fence.panelWidth}
+                <MInput help="fencePanelWidth" label={mt(lang, "fencePanelWidth")} placeholder="—" value={fence.panelWidth}
                   onChange={(v) => setFence((f) => void (f.panelWidth = v))} />
-                <MInput label={mt(lang, "fencePostSpacing")} value={fence.postSpacing}
+                <MInput help="fencePostSpacing" label={mt(lang, "fencePostSpacing")} value={fence.postSpacing}
                   onChange={(v) => setFence((f) => void (f.postSpacing = v))} />
-                <MInput label={mt(lang, "fencePostSize")} value={fence.postSize}
+                <MInput help="fencePostSize" label={mt(lang, "fencePostSize")} value={fence.postSize}
                   onChange={(v) => setFence((f) => void (f.postSize = v))} />
-                <MInput label={mt(lang, "fenceFooting")} value={fence.footingDepth}
+                <MInput help="fenceFooting" label={mt(lang, "fenceFooting")} value={fence.footingDepth}
                   onChange={(v) => setFence((f) => void (f.footingDepth = v))} />
-                <MInput label={mt(lang, "fencePicketSpacing")} placeholder="—" value={fence.picketSpacing}
+                <MInput help="fencePicketSpacing" label={mt(lang, "fencePicketSpacing")} placeholder="—" value={fence.picketSpacing}
                   onChange={(v) => setFence((f) => void (f.picketSpacing = v))} />
-                <MInput label={mt(lang, "fenceGates")} placeholder="—" value={fence.gates}
+                <MInput help="fenceGates" label={mt(lang, "fenceGates")} placeholder="—" value={fence.gates}
                   onChange={(v) => setFence((f) => void (f.gates = v))} />
-                <MInput label={mt(lang, "fenceStartTerm")} value={fence.startTerm}
+                <MInput help="fenceStartTerm" label={mt(lang, "fenceStartTerm")} value={fence.startTerm}
                   onChange={(v) => setFence((f) => void (f.startTerm = v))} />
-                <MInput label={mt(lang, "fenceEndTerm")} value={fence.endTerm}
+                <MInput help="fenceEndTerm" label={mt(lang, "fenceEndTerm")} value={fence.endTerm}
                   onChange={(v) => setFence((f) => void (f.endTerm = v))} />
-                <MInput label={mt(lang, "fenceUtilities")} value={fence.utilities}
+                <MInput help="fenceUtilities" label={mt(lang, "fenceUtilities")} value={fence.utilities}
                   onChange={(v) => setFence((f) => void (f.utilities = v))} />
               </Grid>
             </Card>
@@ -1161,20 +1165,20 @@ export default function MeasureEditor({
                   )}
                 </div>
                 <Grid>
-                  <MInput label={mt(lang, "fenceSegLength")} value={sg.length}
+                  <MInput help="fenceSegLength" label={mt(lang, "fenceSegLength")} value={sg.length}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.length = v))} />
-                  <MInput label={mt(lang, "fenceSegPanels")} placeholder="—" value={sg.panels}
+                  <MInput help="fenceSegPanels" label={mt(lang, "fenceSegPanels")} placeholder="—" value={sg.panels}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.panels = v))} />
-                  <MInput label={mt(lang, "fenceSegHeight")} placeholder="—" value={sg.height}
+                  <MInput help="fenceSegHeight" label={mt(lang, "fenceSegHeight")} placeholder="—" value={sg.height}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.height = v))} />
-                  <MInput label={mt(lang, "fenceSegTurn")} placeholder="°" value={sg.turnDeg}
+                  <MInput help="fenceSegTurn" label={mt(lang, "fenceSegTurn")} placeholder="°" value={sg.turnDeg}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.turnDeg = v))} />
-                  <MInput label={mt(lang, "fenceSegGrade")} placeholder="—" value={sg.gradeChange}
+                  <MInput help="fenceSegGrade" label={mt(lang, "fenceSegGrade")} placeholder="—" value={sg.gradeChange}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.gradeChange = v))} />
-                  <ChipRow label={mt(lang, "fenceSegFollows")} value={sg.followsGrade}
+                  <ChipRow help="fenceSegFollows" label={mt(lang, "fenceSegFollows")} value={sg.followsGrade}
                     options={[["racked", mt(lang, "fenceRacked")], ["stepped", mt(lang, "fenceStepped")]]}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.followsGrade = v as FenceSegment["followsGrade"]))} />
-                  <MInput label={mt(lang, "fenceSegObstruction")} placeholder="—" value={sg.obstruction}
+                  <MInput help="fenceSegObstruction" label={mt(lang, "fenceSegObstruction")} placeholder="—" value={sg.obstruction}
                     onChange={(v) => setSeg(sg.id, (x) => void (x.obstruction = v))} />
                 </Grid>
               </Card>
@@ -1195,32 +1199,32 @@ export default function MeasureEditor({
             <Card stage="setup" title={`🏗 ${mt(lang, "balTitle")}`}>
               <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balHint")}</p>
               <Grid>
-                <MSelect label={mt(lang, "balKind")} value={balcony.kind} lang={lang}
+                <MSelect help="balKind" label={mt(lang, "balKind")} value={balcony.kind} lang={lang}
                   options={["balcony", "juliet", "deck_edge", "roof_edge"]}
                   labels={Object.fromEntries(["balcony", "juliet", "deck_edge", "roof_edge"].map((k) => [k, mt(lang, `balK_${k}`)]))}
                   onChange={(v) => setBalcony((b) => void (b.kind = v as BalconyData["kind"]))} />
-                <MSelect label={mt(lang, "balMount")} value={balcony.mount} lang={lang}
+                <MSelect help="balMount" label={mt(lang, "balMount")} value={balcony.mount} lang={lang}
                   options={["top", "fascia", "core_drill", "embedded"]}
                   labels={Object.fromEntries(["top", "fascia", "core_drill", "embedded"].map((k) => [k, mt(lang, `balM_${k}`)]))}
                   onChange={(v) => setBalcony((b) => void (b.mount = v as BalconyData["mount"]))} />
-                <MInput label={mt(lang, "balEdgeLength")} value={balcony.edgeLength}
+                <MInput help="balEdgeLength" label={mt(lang, "balEdgeLength")} value={balcony.edgeLength}
                   onChange={(v) => setBalcony((b) => void (b.edgeLength = v))} />
-                <MInput label={mt(lang, "balProjection")} placeholder="—" value={balcony.projection}
+                <MInput help="balProjection" label={mt(lang, "balProjection")} placeholder="—" value={balcony.projection}
                   onChange={(v) => setBalcony((b) => void (b.projection = v))} />
-                <MInput label={mt(lang, "balGuardHeight")} value={balcony.guardHeight}
+                <MInput help="balGuardHeight" label={mt(lang, "balGuardHeight")} value={balcony.guardHeight}
                   onChange={(v) => setBalcony((b) => void (b.guardHeight = v))} />
-                <MInput label={mt(lang, "balPicketSpacing")} placeholder="—" value={balcony.picketSpacing}
+                <MInput help="balPicketSpacing" label={mt(lang, "balPicketSpacing")} placeholder="—" value={balcony.picketSpacing}
                   onChange={(v) => setBalcony((b) => void (b.picketSpacing = v))} />
-                <MInput label={mt(lang, "balReturns")} value={balcony.returns}
+                <MInput help="balReturns" label={mt(lang, "balReturns")} value={balcony.returns}
                   onChange={(v) => setBalcony((b) => void (b.returns = v))} />
-                <MInput label={mt(lang, "balCorners")} placeholder="—" value={balcony.corners}
+                <MInput help="balCorners" label={mt(lang, "balCorners")} placeholder="—" value={balcony.corners}
                   onChange={(v) => setBalcony((b) => void (b.corners = v))} />
-                <MInput label={mt(lang, "balFinishedFloor")} value={balcony.finishedFloor}
+                <MInput help="balFinishedFloor" label={mt(lang, "balFinishedFloor")} value={balcony.finishedFloor}
                   onChange={(v) => setBalcony((b) => void (b.finishedFloor = v))} />
-                <MInput label={mt(lang, "balDrainage")} placeholder="—" value={balcony.drainage}
+                <MInput help="balDrainage" label={mt(lang, "balDrainage")} placeholder="—" value={balcony.drainage}
                   onChange={(v) => setBalcony((b) => void (b.drainage = v))} />
                 {balcony.kind === "juliet" && (
-                  <MInput label={mt(lang, "balDoorOpening")} value={balcony.doorOpening}
+                  <MInput help="balDoorOpening" label={mt(lang, "balDoorOpening")} value={balcony.doorOpening}
                     onChange={(v) => setBalcony((b) => void (b.doorOpening = v))} />
                 )}
               </Grid>
@@ -1229,21 +1233,21 @@ export default function MeasureEditor({
             <Card stage="locations" title={`⚙ ${mt(lang, "balAnchorTitle")}`}>
               <p className="mb-3 text-xs text-neutral-400">{mt(lang, "balAnchorHint")}</p>
               <Grid>
-                <MInput label={mt(lang, "balSlabMaterial")} value={balcony.slabMaterial}
+                <MInput help="balSlabMaterial" label={mt(lang, "balSlabMaterial")} value={balcony.slabMaterial}
                   onChange={(v) => setBalcony((b) => void (b.slabMaterial = v))} />
-                <MInput label={mt(lang, "balSlabThickness")} value={balcony.slabThickness}
+                <MInput help="balSlabThickness" label={mt(lang, "balSlabThickness")} value={balcony.slabThickness}
                   onChange={(v) => setBalcony((b) => void (b.slabThickness = v))} />
-                <MInput label={mt(lang, "balAnchorType")} value={balcony.anchorType}
+                <MInput help="balAnchorType" label={mt(lang, "balAnchorType")} value={balcony.anchorType}
                   onChange={(v) => setBalcony((b) => void (b.anchorType = v))} />
-                <MInput label={mt(lang, "balEmbedment")} value={balcony.anchorEmbedment}
+                <MInput help="balEmbedment" label={mt(lang, "balEmbedment")} value={balcony.anchorEmbedment}
                   onChange={(v) => setBalcony((b) => void (b.anchorEmbedment = v))} />
-                <MInput label={mt(lang, "balEdgeDistance")} value={balcony.edgeDistance}
+                <MInput help="balEdgeDistance" label={mt(lang, "balEdgeDistance")} value={balcony.edgeDistance}
                   onChange={(v) => setBalcony((b) => void (b.edgeDistance = v))} />
-                <MInput label={mt(lang, "balMinCover")} placeholder="—" value={balcony.minCover}
+                <MInput help="balMinCover" label={mt(lang, "balMinCover")} placeholder="—" value={balcony.minCover}
                   onChange={(v) => setBalcony((b) => void (b.minCover = v))} />
-                <MInput label={mt(lang, "balPlatePlan")} placeholder="—" value={balcony.platePlan}
+                <MInput help="balPlatePlan" label={mt(lang, "balPlatePlan")} placeholder="—" value={balcony.platePlan}
                   onChange={(v) => setBalcony((b) => void (b.platePlan = v))} />
-                <MInput label={mt(lang, "balEdgeCondition")} placeholder="—" value={balcony.edgeCondition}
+                <MInput help="balEdgeCondition" label={mt(lang, "balEdgeCondition")} placeholder="—" value={balcony.edgeCondition}
                   onChange={(v) => setBalcony((b) => void (b.edgeCondition = v))} />
               </Grid>
             </Card>
@@ -1268,18 +1272,18 @@ export default function MeasureEditor({
                 </div>
               </div>
               <Grid>
-                <MInput label={mt(lang, "fireStories")} value={fire.stories}
+                <MInput help="fireStories" label={mt(lang, "fireStories")} value={fire.stories}
                   onChange={(v) => setFire((f) => void (f.stories = v))} />
-                <MInput label={mt(lang, "fireWallMaterial")} value={fire.wallMaterial}
+                <MInput help="fireWallMaterial" label={mt(lang, "fireWallMaterial")} value={fire.wallMaterial}
                   onChange={(v) => setFire((f) => void (f.wallMaterial = v))} />
-                <MInput label={mt(lang, "fireTotalHeight")} value={fire.totalHeight}
+                <MInput help="fireTotalHeight" label={mt(lang, "fireTotalHeight")} value={fire.totalHeight}
                   onChange={(v) => setFire((f) => void (f.totalHeight = v))} />
-                <MInput label={mt(lang, "fireAccess")} placeholder="—" value={fire.access}
+                <MInput help="fireAccess" label={mt(lang, "fireAccess")} placeholder="—" value={fire.access}
                   onChange={(v) => setFire((f) => void (f.access = v))} />
               </Grid>
               {fire.purpose === "repair" && (
                 <div className="mt-3">
-                  <MInput label={mt(lang, "fireViolations")} value={fire.violations}
+                  <MInput help="fireViolations" label={mt(lang, "fireViolations")} value={fire.violations}
                     onChange={(v) => setFire((f) => void (f.violations = v))} />
                 </div>
               )}
@@ -1302,28 +1306,28 @@ export default function MeasureEditor({
                     )}
                   </div>
                   <Grid>
-                    <MInput label={mt(lang, "firePlatLength")} value={l.platLength}
+                    <MInput help="firePlatLength" label={mt(lang, "firePlatLength")} value={l.platLength}
                       onChange={(v) => setLevel(l.id, (x) => void (x.platLength = v))} />
-                    <MInput label={mt(lang, "firePlatWidth")} value={l.platWidth}
+                    <MInput help="firePlatWidth" label={mt(lang, "firePlatWidth")} value={l.platWidth}
                       onChange={(v) => setLevel(l.id, (x) => void (x.platWidth = v))} />
-                    <MInput label={mt(lang, "fireHeightGrade")} value={l.heightAboveGrade}
+                    <MInput help="fireHeightGrade" label={mt(lang, "fireHeightGrade")} value={l.heightAboveGrade}
                       onChange={(v) => setLevel(l.id, (x) => void (x.heightAboveGrade = v))} />
                     {!lowest && (
-                      <MInput label={mt(lang, "fireFloorToFloor")} value={l.floorToFloor}
+                      <MInput help="fireFloorToFloor" label={mt(lang, "fireFloorToFloor")} value={l.floorToFloor}
                         onChange={(v) => setLevel(l.id, (x) => void (x.floorToFloor = v))} />
                     )}
-                    <MInput label={mt(lang, "fireDeck")} value={l.deck}
+                    <MInput help="fireDeck" label={mt(lang, "fireDeck")} value={l.deck}
                       onChange={(v) => setLevel(l.id, (x) => void (x.deck = v))} />
-                    <ChipRow label={mt(lang, "fireOpening")} value={l.openingType}
+                    <ChipRow help="fireOpening" label={mt(lang, "fireOpening")} value={l.openingType}
                       options={[["window", mt(lang, "feWindow")], ["door", mt(lang, "feDoor")]]}
                       onChange={(v) => setLevel(l.id, (x) => void (x.openingType = v as FireLevel["openingType"]))} />
-                    <MInput label={mt(lang, "fireOpeningW")} placeholder="—" value={l.openingW}
+                    <MInput help="fireOpeningW" label={mt(lang, "fireOpeningW")} placeholder="—" value={l.openingW}
                       onChange={(v) => setLevel(l.id, (x) => void (x.openingW = v))} />
-                    <MInput label={mt(lang, "fireSillToPlatform")} placeholder="—" value={l.sillToPlatform}
+                    <MInput help="fireSillToPlatform" label={mt(lang, "fireSillToPlatform")} placeholder="—" value={l.sillToPlatform}
                       onChange={(v) => setLevel(l.id, (x) => void (x.sillToPlatform = v))} />
-                    <MInput label={mt(lang, "fireGuardHeight")} value={l.guardHeight}
+                    <MInput help="fireGuardHeight" label={mt(lang, "fireGuardHeight")} value={l.guardHeight}
                       onChange={(v) => setLevel(l.id, (x) => void (x.guardHeight = v))} />
-                    <MInput label={mt(lang, "firePicketSpacing")} value={l.picketSpacing}
+                    <MInput help="firePicketSpacing" label={mt(lang, "firePicketSpacing")} value={l.picketSpacing}
                       onChange={(v) => setLevel(l.id, (x) => void (x.picketSpacing = v))} />
                   </Grid>
 
@@ -1331,15 +1335,15 @@ export default function MeasureEditor({
                     <>
                       <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "fireStairDown")}</div>
                       <Grid>
-                        <MInput label={mt(lang, "fireStairRisers")} value={l.stairRisers}
+                        <MInput help="fireStairRisers" label={mt(lang, "fireStairRisers")} value={l.stairRisers}
                           onChange={(v) => setLevel(l.id, (x) => void (x.stairRisers = v))} />
-                        <MInput label={mt(lang, "fireStairRise")} value={l.stairRise}
+                        <MInput help="fireStairRise" label={mt(lang, "fireStairRise")} value={l.stairRise}
                           onChange={(v) => setLevel(l.id, (x) => void (x.stairRise = v))} />
-                        <MInput label={mt(lang, "fireStairRun")} value={l.stairRun}
+                        <MInput help="fireStairRun" label={mt(lang, "fireStairRun")} value={l.stairRun}
                           onChange={(v) => setLevel(l.id, (x) => void (x.stairRun = v))} />
-                        <MInput label={mt(lang, "fireStairWidth")} value={l.stairWidth}
+                        <MInput help="fireStairWidth" label={mt(lang, "fireStairWidth")} value={l.stairWidth}
                           onChange={(v) => setLevel(l.id, (x) => void (x.stairWidth = v))} />
-                        <MInput label={mt(lang, "fireStairAngle")} placeholder="°" value={l.stairAngle}
+                        <MInput help="fireStairAngle" label={mt(lang, "fireStairAngle")} placeholder="°" value={l.stairAngle}
                           onChange={(v) => setLevel(l.id, (x) => void (x.stairAngle = v))} />
                       </Grid>
                     </>
@@ -1347,11 +1351,11 @@ export default function MeasureEditor({
 
                   <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "fireAnchorage")}</div>
                   <Grid>
-                    <MInput label={mt(lang, "fireAnchorType")} value={l.anchorType}
+                    <MInput help="fireAnchorType" label={mt(lang, "fireAnchorType")} value={l.anchorType}
                       onChange={(v) => setLevel(l.id, (x) => void (x.anchorType = v))} />
-                    <MInput label={mt(lang, "fireAnchorCount")} value={l.anchorCount}
+                    <MInput help="fireAnchorCount" label={mt(lang, "fireAnchorCount")} value={l.anchorCount}
                       onChange={(v) => setLevel(l.id, (x) => void (x.anchorCount = v))} />
-                    <MInput label={mt(lang, "fireAnchorSpacing")} placeholder="—" value={l.anchorSpacing}
+                    <MInput help="fireAnchorSpacing" label={mt(lang, "fireAnchorSpacing")} placeholder="—" value={l.anchorSpacing}
                       onChange={(v) => setLevel(l.id, (x) => void (x.anchorSpacing = v))} />
                   </Grid>
 
@@ -1384,28 +1388,28 @@ export default function MeasureEditor({
               {fire.ladder.present && (
                 <>
                   <Grid>
-                    <MSelect label={mt(lang, "fireLadderType")} value={fire.ladder.type} lang={lang}
+                    <MSelect help="fireLadderType" label={mt(lang, "fireLadderType")} value={fire.ladder.type} lang={lang}
                       options={["drop", "swing", "counterbalance", "fixed"]}
                       labels={Object.fromEntries(["drop", "swing", "counterbalance", "fixed"].map((k) => [k, mt(lang, `fireLT_${k}`)]))}
                       onChange={(v) => setFire((f) => void (f.ladder.type = v as never))} />
-                    <MInput label={mt(lang, "fireLadderLength")} value={fire.ladder.length}
+                    <MInput help="fireLadderLength" label={mt(lang, "fireLadderLength")} value={fire.ladder.length}
                       onChange={(v) => setFire((f) => void (f.ladder.length = v))} />
-                    <MInput label={mt(lang, "fireLadderWidth")} value={fire.ladder.width}
+                    <MInput help="fireLadderWidth" label={mt(lang, "fireLadderWidth")} value={fire.ladder.width}
                       onChange={(v) => setFire((f) => void (f.ladder.width = v))} />
-                    <MInput label={mt(lang, "fireLadderRung")} value={fire.ladder.rungSpacing}
+                    <MInput help="fireLadderRung" label={mt(lang, "fireLadderRung")} value={fire.ladder.rungSpacing}
                       onChange={(v) => setFire((f) => void (f.ladder.rungSpacing = v))} />
-                    <MInput label={mt(lang, "fireStowed")} value={fire.ladder.stowedAboveGrade}
+                    <MInput help="fireStowed" label={mt(lang, "fireStowed")} value={fire.ladder.stowedAboveGrade}
                       onChange={(v) => setFire((f) => void (f.ladder.stowedAboveGrade = v))} />
-                    <MInput label={mt(lang, "fireDeployed")} value={fire.ladder.deployedAboveGrade}
+                    <MInput help="fireDeployed" label={mt(lang, "fireDeployed")} value={fire.ladder.deployedAboveGrade}
                       onChange={(v) => setFire((f) => void (f.ladder.deployedAboveGrade = v))} />
-                    <MInput label={mt(lang, "fireLandingSurface")} value={fire.ladder.landingSurface}
+                    <MInput help="fireLandingSurface" label={mt(lang, "fireLandingSurface")} value={fire.ladder.landingSurface}
                       onChange={(v) => setFire((f) => void (f.ladder.landingSurface = v))} />
-                    <MInput label={mt(lang, "fireObstructions")} placeholder="—" value={fire.ladder.obstructions}
+                    <MInput help="fireObstructions" label={mt(lang, "fireObstructions")} placeholder="—" value={fire.ladder.obstructions}
                       onChange={(v) => setFire((f) => void (f.ladder.obstructions = v))} />
                   </Grid>
                   {fireSurvey && (
                     <div className="mt-3">
-                      <ChipRow label={mt(lang, "fireLadderOperates")} value={fire.ladder.operates}
+                      <ChipRow help="fireLadderOperates" label={mt(lang, "fireLadderOperates")} value={fire.ladder.operates}
                         options={[["yes", mt(lang, "fireOp_yes")], ["stiff", mt(lang, "fireOp_stiff")], ["seized", mt(lang, "fireOp_seized")]]}
                         onChange={(v) => setFire((f) => void (f.ladder.operates = v as never))} />
                     </div>
@@ -1420,9 +1424,9 @@ export default function MeasureEditor({
                   onField={(k, v) => setFire((f) => void ((f.overall as unknown as Record<string, string>)[k] = v))} />
                 <div className="mt-3">
                   <Grid>
-                    <MInput label={mt(lang, "fireLoadTest")} value={fire.loadTest}
+                    <MInput help="fireLoadTest" label={mt(lang, "fireLoadTest")} value={fire.loadTest}
                       onChange={(v) => setFire((f) => void (f.loadTest = v))} />
-                    <MInput label={mt(lang, "firePaintSystem")} placeholder="—" value={fire.paintSystem}
+                    <MInput help="firePaintSystem" label={mt(lang, "firePaintSystem")} placeholder="—" value={fire.paintSystem}
                       onChange={(v) => setFire((f) => void (f.paintSystem = v))} />
                   </Grid>
                 </div>
@@ -1450,38 +1454,38 @@ export default function MeasureEditor({
                 </div>
               </div>
               <Grid>
-                <MSelect label={mt(lang, "wellConstruction")} value={well.construction} lang={lang}
+                <MSelect help="wellConstruction" label={mt(lang, "wellConstruction")} value={well.construction} lang={lang}
                   options={["poured_concrete", "block", "corrugated", "stone", "timber"]}
                   labels={Object.fromEntries(["poured_concrete", "block", "corrugated", "stone", "timber"].map((k) => [k, mt(lang, `wellC_${k}`)]))}
                   onChange={(v) => setWell((w) => void (w.construction = v as WellData["construction"]))} />
-                <MInput label={mt(lang, "wellLengthAtHouse")} value={well.lengthAtHouse}
+                <MInput help="wellLengthAtHouse" label={mt(lang, "wellLengthAtHouse")} value={well.lengthAtHouse}
                   onChange={(v) => setWell((w) => void (w.lengthAtHouse = v))} />
-                <MInput label={mt(lang, "wellProjection")} value={well.projection}
+                <MInput help="wellProjection" label={mt(lang, "wellProjection")} value={well.projection}
                   onChange={(v) => setWell((w) => void (w.projection = v))} />
-                <MInput label={mt(lang, "wellWallThickness")} value={well.wallThickness}
+                <MInput help="wellWallThickness" label={mt(lang, "wellWallThickness")} value={well.wallThickness}
                   onChange={(v) => setWell((w) => void (w.wallThickness = v))} />
-                <MInput label={mt(lang, "wellInsideLength")} value={well.insideLength}
+                <MInput help="wellInsideLength" label={mt(lang, "wellInsideLength")} value={well.insideLength}
                   onChange={(v) => setWell((w) => void (w.insideLength = v))} />
-                <MInput label={mt(lang, "wellInsideProjection")} value={well.insideProjection}
+                <MInput help="wellInsideProjection" label={mt(lang, "wellInsideProjection")} value={well.insideProjection}
                   onChange={(v) => setWell((w) => void (w.insideProjection = v))} />
-                <MInput label={mt(lang, "wellDepth")} value={well.depth}
+                <MInput help="wellDepth" label={mt(lang, "wellDepth")} value={well.depth}
                   onChange={(v) => setWell((w) => void (w.depth = v))} />
-                <MInput label={mt(lang, "wellTopToGrade")} placeholder="—" value={well.topToGrade}
+                <MInput help="wellTopToGrade" label={mt(lang, "wellTopToGrade")} placeholder="—" value={well.topToGrade}
                   onChange={(v) => setWell((w) => void (w.topToGrade = v))} />
-                <MInput label={mt(lang, "wellDiagA")} value={well.diagA}
+                <MInput help="wellDiagA" label={mt(lang, "wellDiagA")} value={well.diagA}
                   onChange={(v) => setWell((w) => void (w.diagA = v))} />
-                <MInput label={mt(lang, "wellDiagB")} value={well.diagB}
+                <MInput help="wellDiagB" label={mt(lang, "wellDiagB")} value={well.diagB}
                   onChange={(v) => setWell((w) => void (w.diagB = v))} />
               </Grid>
               <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellWindowTitle")}</div>
               <Grid>
-                <MInput label={mt(lang, "wellWindowW")} value={well.windowW}
+                <MInput help="wellWindowW" label={mt(lang, "wellWindowW")} value={well.windowW}
                   onChange={(v) => setWell((w) => void (w.windowW = v))} />
-                <MInput label={mt(lang, "wellWindowH")} value={well.windowH}
+                <MInput help="wellWindowH" label={mt(lang, "wellWindowH")} value={well.windowH}
                   onChange={(v) => setWell((w) => void (w.windowH = v))} />
-                <MInput label={mt(lang, "wellSillToFloor")} value={well.sillToFloor}
+                <MInput help="wellSillToFloor" label={mt(lang, "wellSillToFloor")} value={well.sillToFloor}
                   onChange={(v) => setWell((w) => void (w.sillToFloor = v))} />
-                <MSelect label={mt(lang, "wellWindowSwing")} value={well.windowSwing} lang={lang}
+                <MSelect help="wellWindowSwing" label={mt(lang, "wellWindowSwing")} value={well.windowSwing} lang={lang}
                   options={["in", "out", "slider", "fixed"]}
                   labels={{ in: mt(lang, "wellSwingIn"), out: mt(lang, "wellSwingOut"), slider: mt(lang, "wellSlider"), fixed: mt(lang, "wellFixed") }}
                   onChange={(v) => setWell((w) => void (w.windowSwing = v as WellData["windowSwing"]))} />
@@ -1492,9 +1496,9 @@ export default function MeasureEditor({
               <Card stage="locations" title={`📐 ${mt(lang, "wellWallTitle")}`}>
                 <p className="mb-3 text-xs text-neutral-400">{mt(lang, "wellWallHint")}</p>
                 <Grid>
-                  <MInput label={mt(lang, "wellWallRef")} value={well.wallRef}
+                  <MInput help="wellWallRef" label={mt(lang, "wellWallRef")} value={well.wallRef}
                     onChange={(v) => setWell((w) => void (w.wallRef = v))} />
-                  <MInput label={mt(lang, "wellMaxSphere")} value={well.maxSphere}
+                  <MInput help="wellMaxSphere" label={mt(lang, "wellMaxSphere")} value={well.maxSphere}
                     onChange={(v) => setWell((w) => void (w.maxSphere = v))} />
                 </Grid>
 
@@ -1521,13 +1525,13 @@ export default function MeasureEditor({
                         </button>
                       </div>
                       <Grid>
-                        <MInput label={mt(lang, "wellBandLabel")} value={b.label}
+                        <MInput help="wellBandLabel" label={mt(lang, "wellBandLabel")} value={b.label}
                           onChange={(v) => setBand(b.id, "label", v)} />
-                        <MInput label={mt(lang, "wellBandSetback")} value={b.setback}
+                        <MInput help="wellBandSetback" label={mt(lang, "wellBandSetback")} value={b.setback}
                           onChange={(v) => setBand(b.id, "setback", v)} />
-                        <MInput label={mt(lang, "wellBandFrom")} placeholder="—" value={b.fromTop}
+                        <MInput help="wellBandFrom" label={mt(lang, "wellBandFrom")} placeholder="—" value={b.fromTop}
                           onChange={(v) => setBand(b.id, "fromTop", v)} />
-                        <MInput label={mt(lang, "wellBandTo")} placeholder="—" value={b.toTop}
+                        <MInput help="wellBandTo" label={mt(lang, "wellBandTo")} placeholder="—" value={b.toTop}
                           onChange={(v) => setBand(b.id, "toTop", v)} />
                       </Grid>
                     </div>
@@ -1535,7 +1539,7 @@ export default function MeasureEditor({
                 </div>
 
                 <div className="mt-4">
-                  <MInput label={mt(lang, "wellPostToWall")} value={well.postToWall}
+                  <MInput help="wellPostToWall" label={mt(lang, "wellPostToWall")} value={well.postToWall}
                     onChange={(v) => setWell((w) => void (w.postToWall = v))} />
                 </div>
 
@@ -1566,7 +1570,7 @@ export default function MeasureEditor({
                   </div>
                 )}
                 <Grid>
-                  <MInput label={mt(lang, "wellGuardHeight")} value={well.guardHeight}
+                  <MInput help="wellGuardHeight" label={mt(lang, "wellGuardHeight")} value={well.guardHeight}
                     onChange={(v) => setWell((w) => void (w.guardHeight = v))} />
                 </Grid>
               </Card>
@@ -1578,15 +1582,15 @@ export default function MeasureEditor({
                   <div className="mb-4">
                     <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_gate")}</div>
                     <Grid>
-                      <MInput label={mt(lang, "wellGateWidth")} value={well.gateWidth}
+                      <MInput help="wellGateWidth" label={mt(lang, "wellGateWidth")} value={well.gateWidth}
                         onChange={(v) => setWell((w) => void (w.gateWidth = v))} />
-                      <ChipRow label={mt(lang, "wellGateSwing")} value={well.gateSwing}
+                      <ChipRow help="wellGateSwing" label={mt(lang, "wellGateSwing")} value={well.gateSwing}
                         options={[["in", mt(lang, "wellSwingIn")], ["out", mt(lang, "wellSwingOut")]]}
                         onChange={(v) => setWell((w) => void (w.gateSwing = v as WellData["gateSwing"]))} />
-                      <ChipRow label={mt(lang, "wellGateHinge")} value={well.gateHinge}
+                      <ChipRow help="wellGateHinge" label={mt(lang, "wellGateHinge")} value={well.gateHinge}
                         options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                         onChange={(v) => setWell((w) => void (w.gateHinge = v as WellData["gateHinge"]))} />
-                      <MInput label={mt(lang, "wellGateLatch")} placeholder="—" value={well.gateLatch}
+                      <MInput help="wellGateLatch" label={mt(lang, "wellGateLatch")} placeholder="—" value={well.gateLatch}
                         onChange={(v) => setWell((w) => void (w.gateLatch = v))} />
                     </Grid>
                   </div>
@@ -1595,15 +1599,15 @@ export default function MeasureEditor({
                   <div className="mb-4">
                     <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_ladder")}</div>
                     <Grid>
-                      <MInput label={mt(lang, "wellLadderWidth")} value={well.ladderWidth}
+                      <MInput help="wellLadderWidth" label={mt(lang, "wellLadderWidth")} value={well.ladderWidth}
                         onChange={(v) => setWell((w) => void (w.ladderWidth = v))} />
-                      <MInput label={mt(lang, "wellLadderRungs")} value={well.ladderRungs}
+                      <MInput help="wellLadderRungs" label={mt(lang, "wellLadderRungs")} value={well.ladderRungs}
                         onChange={(v) => setWell((w) => void (w.ladderRungs = v))} />
-                      <MInput label={mt(lang, "wellLadderSpacing")} value={well.ladderSpacing}
+                      <MInput help="wellLadderSpacing" label={mt(lang, "wellLadderSpacing")} value={well.ladderSpacing}
                         onChange={(v) => setWell((w) => void (w.ladderSpacing = v))} />
-                      <MInput label={mt(lang, "wellLadderStandoff")} value={well.ladderStandoff}
+                      <MInput help="wellLadderStandoff" label={mt(lang, "wellLadderStandoff")} value={well.ladderStandoff}
                         onChange={(v) => setWell((w) => void (w.ladderStandoff = v))} />
-                      <MInput label={mt(lang, "wellLadderTopExt")} placeholder="—" value={well.ladderTopExt}
+                      <MInput help="wellLadderTopExt" label={mt(lang, "wellLadderTopExt")} placeholder="—" value={well.ladderTopExt}
                         onChange={(v) => setWell((w) => void (w.ladderTopExt = v))} />
                     </Grid>
                   </div>
@@ -1612,13 +1616,13 @@ export default function MeasureEditor({
                   <div>
                     <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_grate")}</div>
                     <Grid>
-                      <MSelect label={mt(lang, "wellGrateBearing")} value={well.grateBearing} lang={lang}
+                      <MSelect help="wellGrateBearing" label={mt(lang, "wellGrateBearing")} value={well.grateBearing} lang={lang}
                         options={["surface", "recessed", "angle_frame"]}
                         labels={Object.fromEntries(["surface", "recessed", "angle_frame"].map((k) => [k, mt(lang, `wellGB_${k}`)]))}
                         onChange={(v) => setWell((w) => void (w.grateBearing = v as WellData["grateBearing"]))} />
-                      <MInput label={mt(lang, "wellGrateInfill")} value={well.grateInfill}
+                      <MInput help="wellGrateInfill" label={mt(lang, "wellGrateInfill")} value={well.grateInfill}
                         onChange={(v) => setWell((w) => void (w.grateInfill = v))} />
-                      <MInput label={mt(lang, "wellGrateLoad")} value={well.grateLoad}
+                      <MInput help="wellGrateLoad" label={mt(lang, "wellGrateLoad")} value={well.grateLoad}
                         onChange={(v) => setWell((w) => void (w.grateLoad = v))} />
                     </Grid>
                     <label className="mt-3 flex items-center gap-2 text-sm text-neutral-300">
@@ -1679,23 +1683,23 @@ export default function MeasureEditor({
                     </button>
                   </div>
                   <Grid>
-                    <ChipRow label={mt(lang, "stairSideLookingUp")} value={po.side}
+                    <ChipRow help="stairSideLookingUp" label={mt(lang, "stairSideLookingUp")} value={po.side}
                       options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                       onChange={(v) => setPost(set, po.id, "side", v)} />
-                    <MSelect label={mt(lang, "existingMaterial")} value={po.anchor} options={anchorOptions} lang={lang}
+                    <MSelect help="existingMaterial" label={mt(lang, "existingMaterial")} value={po.anchor} options={anchorOptions} lang={lang}
                       onChange={(v) => setPost(set, po.id, "anchor", v)} />
-                    <MInput label={mt(lang, "existingPostWidth")} value={po.existingW}
+                    <MInput help="existingPostWidth" label={mt(lang, "existingPostWidth")} value={po.existingW}
                       onChange={(v) => setPost(set, po.id, "existingW", v)} />
-                    <MInput label={mt(lang, "existingPostDepth")} value={po.existingD}
+                    <MInput help="existingPostDepth" label={mt(lang, "existingPostDepth")} value={po.existingD}
                       onChange={(v) => setPost(set, po.id, "existingD", v)} />
-                    <MInput label={mt(lang, "columnToWall")} value={po.columnToWall}
+                    <MInput help="columnToWall" label={mt(lang, "columnToWall")} value={po.columnToWall}
                       onChange={(v) => setPost(set, po.id, "columnToWall", v)} />
-                    <MInput label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
+                    <MInput help="columnToPlatformEdge" label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
                       onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
                     {po.pointType === "existing_post" && <>
                       <ChoiceMInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
                         choices={commonThicknessChoices(lang)} onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
-                      <MInput label={mt(lang, "skirtHeight")} value={po.skirtHeight}
+                      <MInput help="skirtHeight" label={mt(lang, "skirtHeight")} value={po.skirtHeight}
                         onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
                     </>}
                   </Grid>
@@ -1853,17 +1857,17 @@ export default function MeasureEditor({
         {isSpiral && data.spiral && (
           <Card stage="steps" title={mt(lang, "spiralTitle")}>
             <Grid>
-              <MInput label={mt(lang, "floorToFloor")} value={data.spiral.floorToFloor}
+              <MInput help="floorToFloor" label={mt(lang, "floorToFloor")} value={data.spiral.floorToFloor}
                 onChange={(v) => set((d) => void (d.spiral!.floorToFloor = v))} />
-              <MInput label={mt(lang, "treadsCount")} placeholder="—" value={data.spiral.treads}
+              <MInput help="treadsCount" label={mt(lang, "treadsCount")} placeholder="—" value={data.spiral.treads}
                 onChange={(v) => set((d) => void (d.spiral!.treads = v))} />
-              <MInput label={mt(lang, "rotation")} placeholder="°" value={data.spiral.rotationDeg}
+              <MInput help="rotation" label={mt(lang, "rotation")} placeholder="°" value={data.spiral.rotationDeg}
                 onChange={(v) => set((d) => void (d.spiral!.rotationDeg = v))} />
-              <MInput label={mt(lang, "diameter")} value={data.spiral.diameter}
+              <MInput help="diameter" label={mt(lang, "diameter")} value={data.spiral.diameter}
                 onChange={(v) => set((d) => void (d.spiral!.diameter = v))} />
-              <MInput label={mt(lang, "columnSize")} value={data.spiral.columnSize}
+              <MInput help="columnSize" label={mt(lang, "columnSize")} value={data.spiral.columnSize}
                 onChange={(v) => set((d) => void (d.spiral!.columnSize = v))} />
-              <MInput label={mt(lang, "clearWidth")} value={data.spiral.clearWidth}
+              <MInput help="clearWidth" label={mt(lang, "clearWidth")} value={data.spiral.clearWidth}
                 onChange={(v) => set((d) => void (d.spiral!.clearWidth = v))} />
             </Grid>
             <div className="mt-3">
@@ -1883,7 +1887,7 @@ export default function MeasureEditor({
               </div>
             </div>
             <div className="mt-3">
-              <MInput label={mt(lang, "landingNote")} placeholder="—" value={data.spiral.landingNote}
+              <MInput help="landingNote" label={mt(lang, "landingNote")} placeholder="—" value={data.spiral.landingNote}
                 onChange={(v) => set((d) => void (d.spiral!.landingNote = v))} />
             </div>
           </Card>
@@ -1907,7 +1911,7 @@ export default function MeasureEditor({
           <Card stage="locations" key={`angle-${i}`} title={`📐 ${mt(lang, "stairAngle")}${flights.length > 1 ? ` ${fi + 1}` : ""}`}>
             <p className="mb-3 text-xs text-neutral-400">{mt(lang, "angleFinderHint")}</p>
             <Grid>
-              <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
+              <MInput help="stairAngle" label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleDeg = v))} />
               <ChoiceMInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
                 choices={[["No change", mt(lang, "choiceNoChange")]]} placeholder="—" value={seg.angleBreak}
@@ -1952,9 +1956,20 @@ export default function MeasureEditor({
             {/* header row only where the compact grid shows (sm+) */}
             <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr_3rem] gap-2 items-end mb-1 text-[11px] text-neutral-400">
               <span>#</span>
-              <span>{mt(lang, "rise")}</span>
-              <span>{mt(lang, "run")}</span>
-              <span>{mt(lang, "nosing")}</span>
+              {/* On tablets the per-field labels are hidden and this row is
+                  what the measurer reads, so the explanations live here too. */}
+              <span className="flex items-center">
+                {mt(lang, "rise")}
+                <InfoHint text={helpText(lang, "rise")!} />
+              </span>
+              <span className="flex items-center">
+                {mt(lang, "run")}
+                <InfoHint text={helpText(lang, "run")!} />
+              </span>
+              <span className="flex items-center">
+                {mt(lang, "nosing")}
+                <InfoHint text={helpText(lang, "nosing")!} />
+              </span>
               <span>◺</span>
             </div>
             {seg.steps.map((st, si) => (
@@ -1969,11 +1984,11 @@ export default function MeasureEditor({
                   {stepNumber(flights, fi, si)}
                 </span>
                 <div className="grid grid-cols-1 gap-2 sm:contents">
-                  <MInput label={mt(lang, "rise")} labelClass="sm:hidden" value={st.rise}
+                  <MInput help="rise" label={mt(lang, "rise")} labelClass="sm:hidden" value={st.rise}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].rise = v))} />
-                  <MInput label={mt(lang, "run")} labelClass="sm:hidden" value={st.run}
+                  <MInput help="run" label={mt(lang, "run")} labelClass="sm:hidden" value={st.run}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].run = v))} />
-                  <MInput label={mt(lang, "nosing")} labelClass="sm:hidden" value={st.nosing}
+                  <MInput help="nosing" label={mt(lang, "nosing")} labelClass="sm:hidden" value={st.nosing}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].nosing = v))} />
                 </div>
                 {/* winder toggle — triangular tread that turns the stair */}
@@ -1995,11 +2010,11 @@ export default function MeasureEditor({
                 </button>
                 {st.winder && (
                   <div className="mt-2 sm:col-span-5 grid grid-cols-1 sm:grid-cols-3 gap-2 border border-amber-900/50 rounded-lg p-2 bg-amber-500/5">
-                    <MInput label={mt(lang, "winderRunIn")} value={st.runIn || ""}
+                    <MInput help="winderRunIn" label={mt(lang, "winderRunIn")} value={st.runIn || ""}
                       onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runIn = v))} />
-                    <MInput label={mt(lang, "winderRunOut")} value={st.runOut || ""}
+                    <MInput help="winderRunOut" label={mt(lang, "winderRunOut")} value={st.runOut || ""}
                       onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runOut = v))} />
-                    <MInput label={mt(lang, "winderTurn")} placeholder="°" value={st.turnDeg || ""}
+                    <MInput help="winderTurn" label={mt(lang, "winderTurn")} placeholder="°" value={st.turnDeg || ""}
                       onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].turnDeg = v))} />
                   </div>
                 )}
@@ -2048,18 +2063,18 @@ export default function MeasureEditor({
               </SmallBtn>
             </div>
             <Grid>
-              <MInput label={mt(lang, "width")} value={seg.width}
+              <MInput help="width" label={mt(lang, "width")} value={seg.width}
                 onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).width = v))} />
             </Grid>
             {multiFlight && (
               <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
                 <div className="text-xs text-neutral-500 mb-2">{mt(lang, "flightCtrlHint")}</div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <MInput label={mt(lang, "flightRake")} value={seg.rake}
+                  <MInput help="flightRake" label={mt(lang, "flightRake")} value={seg.rake}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).rake = v))} />
-                  <MInput label={mt(lang, "flightCtrlRise")} value={seg.ctrlRise}
+                  <MInput help="flightCtrlRise" label={mt(lang, "flightCtrlRise")} value={seg.ctrlRise}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRise = v))} />
-                  <MInput label={mt(lang, "flightCtrlRun")} value={seg.ctrlRun}
+                  <MInput help="flightCtrlRun" label={mt(lang, "flightCtrlRun")} value={seg.ctrlRun}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRun = v))} />
                 </div>
               </div>
@@ -2071,11 +2086,11 @@ export default function MeasureEditor({
         {platforms.map(({ seg, i }) => (
           <Card stage="level" key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
             <Grid>
-              <MInput label={mt(lang, "length")} value={seg.length}
+              <MInput help="length" label={mt(lang, "length")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
-              <MInput label={mt(lang, "depth")} value={seg.depth}
+              <MInput help="depth" label={mt(lang, "depth")} value={seg.depth}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
-              <MInput label={mt(lang, "landingDiag")} value={seg.diag}
+              <MInput help="landingDiag" label={mt(lang, "landingDiag")} value={seg.diag}
                 onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
               <ChoiceMInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
                 choices={[["0", mt(lang, "choiceLevel")]]}
@@ -2110,15 +2125,15 @@ export default function MeasureEditor({
         {ramps.map(({ seg, i }) => (
           <Card stage="steps" key={i} title={`${mt(lang, "shape_ramp")}${ramps.length > 1 || isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
-              <MInput label={mt(lang, "rampSlopeLen")} value={seg.length}
+              <MInput help="rampSlopeLen" label={mt(lang, "rampSlopeLen")} value={seg.length}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).length = v))} />
-              <MInput label={mt(lang, "rampRunH")} value={seg.runH}
+              <MInput help="rampRunH" label={mt(lang, "rampRunH")} value={seg.runH}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).runH = v))} />
-              <MInput label={mt(lang, "totalRise")} value={seg.rise}
+              <MInput help="totalRise" label={mt(lang, "totalRise")} value={seg.rise}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).rise = v))} />
-              <MInput label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
+              <MInput help="stairAngle" label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).angleDeg = v))} />
-              <MInput label={mt(lang, "width")} value={seg.width}
+              <MInput help="width" label={mt(lang, "width")} value={seg.width}
                 onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).width = v))} />
             </Grid>
           </Card>
@@ -2128,21 +2143,21 @@ export default function MeasureEditor({
         {curves.map(({ seg, i }) => (
           <Card stage="steps" key={i} title={`⌒ ${mt(lang, "curveTitle")}${isBuilder ? ` #${i + 1}` : ""}`}>
             <Grid>
-              <MInput label={mt(lang, "curveRadius")} value={seg.radius}
+              <MInput help="curveRadius" label={mt(lang, "curveRadius")} value={seg.radius}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).radius = v))} />
-              <MInput label={mt(lang, "curveChord")} value={seg.chord}
+              <MInput help="curveChord" label={mt(lang, "curveChord")} value={seg.chord}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).chord = v))} />
-              <MInput label={mt(lang, "curveArc")} value={seg.arc}
+              <MInput help="curveArc" label={mt(lang, "curveArc")} value={seg.arc}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).arc = v))} />
-              <MInput label={mt(lang, "curveSweep")} placeholder="°" value={seg.sweepDeg}
+              <MInput help="curveSweep" label={mt(lang, "curveSweep")} placeholder="°" value={seg.sweepDeg}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).sweepDeg = v))} />
-              <MInput label={mt(lang, "curveRise")} value={seg.rise}
+              <MInput help="curveRise" label={mt(lang, "curveRise")} value={seg.rise}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).rise = v))} />
-              <MInput label={mt(lang, "width")} value={seg.width}
+              <MInput help="width" label={mt(lang, "width")} value={seg.width}
                 onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).width = v))} />
             </Grid>
             <div className="mt-3">
-              <ChipRow
+              <ChipRow help="turn"
                 label={mt(lang, "turn")}
                 value={seg.direction}
                 options={[
@@ -2180,7 +2195,7 @@ export default function MeasureEditor({
                       ✕ {mt(lang, "removePost")}
                     </button>
                   </div>
-                  <ChipRow
+                  <ChipRow help="pointType"
                     label={mt(lang, "pointType")}
                     value={po.pointType}
                     options={([
@@ -2191,43 +2206,43 @@ export default function MeasureEditor({
                     ] as [string, string][])}
                     onChange={(v) => setPost(set, po.id, "pointType", v || "railing_post")}
                   />
-                  <ChipRow label={mt(lang, "stairSideLookingUp")} value={po.side}
+                  <ChipRow help="stairSideLookingUp" label={mt(lang, "stairSideLookingUp")} value={po.side}
                     options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                     onChange={(v) => setPost(set, po.id, "side", v)} />
                   <Grid>
                     {po.stepIdx !== null ? (
                       <>
-                        <MInput label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
+                        <MInput help="distanceFromFirst" label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
                           onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />
-                        <MInput label={mt(lang, "postSetback")} value={po.fromNosing}
+                        <MInput help="postSetback" label={mt(lang, "postSetback")} value={po.fromNosing}
                           onChange={(v) => setPost(set, po.id, "fromNosing", v)} />
                       </>
                     ) : (
-                      <MInput label={mt(lang, "alongPlatform")} value={po.pos}
+                      <MInput help="alongPlatform" label={mt(lang, "alongPlatform")} value={po.pos}
                         onChange={(v) => setPost(set, po.id, "pos", v)} />
                     )}
-                    <MInput label={mt(lang, "fromEdge")} value={po.fromEdge}
+                    <MInput help="fromEdge" label={mt(lang, "fromEdge")} value={po.fromEdge}
                       onChange={(v) => setPost(set, po.id, "fromEdge", v)} />
                     {po.pointType === "railing_post" && (
                       <>
-                        <MSelect label={mt(lang, "mountType")} value={po.mount}
+                        <MSelect help="mountType" label={mt(lang, "mountType")} value={po.mount}
                           options={[...MOUNT_OPTIONS]} lang={lang}
                           onChange={(v) => setPost(set, po.id, "mount", v)} />
-                        <MSelect label={mt(lang, "anchorInto")} value={po.anchor}
+                        <MSelect help="anchorInto" label={mt(lang, "anchorInto")} value={po.anchor}
                           options={anchorOptions} lang={lang}
                           onChange={(v) => setPost(set, po.id, "anchor", v)} />
                       </>
                     )}
                     {po.pointType !== "railing_post" && (
-                      <MSelect label={mt(lang, "existingMaterial")} value={po.anchor}
+                      <MSelect help="existingMaterial" label={mt(lang, "existingMaterial")} value={po.anchor}
                         options={anchorOptions} lang={lang}
                         onChange={(v) => setPost(set, po.id, "anchor", v)} />
                     )}
                     {(po.pointType === "existing_post" || po.pointType === "concrete_wall") && (
                       <>
-                        <MInput label={mt(lang, "existingPostWidth")} value={po.existingW}
+                        <MInput help="existingPostWidth" label={mt(lang, "existingPostWidth")} value={po.existingW}
                           onChange={(v) => setPost(set, po.id, "existingW", v)} />
-                        <MInput label={mt(lang, "existingPostDepth")} value={po.existingD}
+                        <MInput help="existingPostDepth" label={mt(lang, "existingPostDepth")} value={po.existingD}
                           onChange={(v) => setPost(set, po.id, "existingD", v)} />
                       </>
                     )}
@@ -2235,16 +2250,16 @@ export default function MeasureEditor({
                       <>
                         <ChoiceMInput label={mt(lang, "skirtProjection")} placeholder={mt(lang, "noneOrZero")} value={po.skirtProjection}
                           choices={commonThicknessChoices(lang)} onChange={(v) => setPost(set, po.id, "skirtProjection", v)} />
-                        <MInput label={mt(lang, "skirtHeight")} placeholder="—" value={po.skirtHeight}
+                        <MInput help="skirtHeight" label={mt(lang, "skirtHeight")} placeholder="—" value={po.skirtHeight}
                           onChange={(v) => setPost(set, po.id, "skirtHeight", v)} />
-                        <MInput label={mt(lang, "columnToWall")} value={po.columnToWall}
+                        <MInput help="columnToWall" label={mt(lang, "columnToWall")} value={po.columnToWall}
                           onChange={(v) => setPost(set, po.id, "columnToWall", v)} />
-                        <MInput label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
+                        <MInput help="columnToPlatformEdge" label={mt(lang, "columnToPlatformEdge")} value={po.columnToPlatformEdge}
                           onChange={(v) => setPost(set, po.id, "columnToPlatformEdge", v)} />
                       </>
                     )}
                     {po.pointType === "clip" && (
-                      <MInput label={mt(lang, "clipDetail")} placeholder="—" value={po.clipDetail}
+                      <MInput help="clipDetail" label={mt(lang, "clipDetail")} placeholder="—" value={po.clipDetail}
                         onChange={(v) => setPost(set, po.id, "clipDetail", v)} />
                     )}
                   </Grid>
@@ -2253,13 +2268,13 @@ export default function MeasureEditor({
                       + {mt(lang, "postMore")}
                     </summary>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                      <MInput label={mt(lang, "postPlate")} placeholder="—" value={po.plate}
+                      <MInput help="postPlate" label={mt(lang, "postPlate")} placeholder="—" value={po.plate}
                         onChange={(v) => setPost(set, po.id, "plate", v)} />
-                      <MInput label={mt(lang, "postAnchors")} placeholder="—" value={po.anchors}
+                      <MInput help="postAnchors" label={mt(lang, "postAnchors")} placeholder="—" value={po.anchors}
                         onChange={(v) => setPost(set, po.id, "anchors", v)} />
-                      <MInput label={mt(lang, "postSubstrate")} placeholder="—" value={po.substrate}
+                      <MInput help="postSubstrate" label={mt(lang, "postSubstrate")} placeholder="—" value={po.substrate}
                         onChange={(v) => setPost(set, po.id, "substrate", v)} />
-                      <MInput label={mt(lang, "postEdgeDist")} value={po.edgeDist}
+                      <MInput help="postEdgeDist" label={mt(lang, "postEdgeDist")} value={po.edgeDist}
                         onChange={(v) => setPost(set, po.id, "edgeDist", v)} />
                       <ChoiceMInput label={mt(lang, "postObstruction")} placeholder="—" value={po.obstruction}
                         choices={obstructionChoices(lang)} onChange={(v) => setPost(set, po.id, "obstruction", v)} />
@@ -2287,24 +2302,24 @@ export default function MeasureEditor({
         {(!isWell || wellWants("guard")) && (!isFire || fireNew) && (
         <Card stage="posts" title={mt(lang, "railSection")}>
           <Grid>
-            <MSelect label={mt(lang, "railKind")} value={data.rail.kind}
+            <MSelect help="railKind" label={mt(lang, "railKind")} value={data.rail.kind}
               options={[...RAIL_KIND_OPTIONS]} lang={lang}
               onChange={(v) => set((d) => void (d.rail.kind = v))} />
-            <MInput label={mt(lang, "railHeight")} value={data.rail.height}
+            <MInput help="railHeight" label={mt(lang, "railHeight")} value={data.rail.height}
               onChange={(v) => set((d) => void (d.rail.height = v))} />
             {!isWallRail && (
-              <MSelect label={mt(lang, "railSide")} value={data.rail.side}
+              <MSelect help="railSide" label={mt(lang, "railSide")} value={data.rail.side}
                 options={[...RAIL_SIDE_OPTIONS]} lang={lang}
                 onChange={(v) => set((d) => void (d.rail.side = v))} />
             )}
             {hasHandrail && (
-              <MInput label={mt(lang, "extensions")} value={data.rail.extensions}
+              <MInput help="extensions" label={mt(lang, "extensions")} value={data.rail.extensions}
                 onChange={(v) => set((d) => void (d.rail.extensions = v))} />
             )}
-            <MInput label={mt(lang, "returnsLabel")} placeholder="—" value={data.rail.returns}
+            <MInput help="returnsLabel" label={mt(lang, "returnsLabel")} placeholder="—" value={data.rail.returns}
               onChange={(v) => set((d) => void (d.rail.returns = v))} />
             {isWallRail && (
-              <MInput label={mt(lang, "brackets")} placeholder="—" value={data.rail.brackets}
+              <MInput help="brackets" label={mt(lang, "brackets")} placeholder="—" value={data.rail.brackets}
                 onChange={(v) => set((d) => void (d.rail.brackets = v))} />
             )}
           </Grid>
@@ -2331,10 +2346,10 @@ export default function MeasureEditor({
                     </button>
                   )}
                 </div>
-                <MInput label={mt(lang, "spanName")} placeholder="—" value={sp.label}
+                <MInput help="spanName" label={mt(lang, "spanName")} placeholder="—" value={sp.label}
                   onChange={(v) => setSpan(si, "label", v)} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                  <MInput label={mt(lang, "topSpanLbl")} value={sp.topSpan}
+                  <MInput help="topSpanLbl" label={mt(lang, "topSpanLbl")} value={sp.topSpan}
                     onChange={(v) => setSpan(si, "topSpan", v)} />
                   {(sp.start.molding.trim() !== "" || sp.end.molding.trim() !== "") && (
                     <MInput label={`${mt(lang, "lowerSpanLbl")} — ${mt(lang, "lowerSpanHint")}`}
@@ -2365,7 +2380,7 @@ export default function MeasureEditor({
                   />
                 ))}
                 <div className="mt-3">
-                  <MInput label={mt(lang, "notes")} placeholder="—" value={sp.note}
+                  <MInput help="notes" label={mt(lang, "notes")} placeholder="—" value={sp.note}
                     onChange={(v) => setSpan(si, "note", v)} />
                 </div>
               </div>
@@ -2394,27 +2409,27 @@ export default function MeasureEditor({
               onChange={(v) => set((d) => void (d.materials.picket = v))} />}
             <Grid>
               {hasGuardrail && <>
-                <MInput label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
+                <MInput help="matPicketSpacing" label={mt(lang, "matPicketSpacing")} value={data.materials.picketSpacing}
                   onChange={(v) => set((d) => void (d.materials.picketSpacing = v))} />
-                <MSelect label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
+                <MSelect help="matBottomRail" label={mt(lang, "matBottomRail")} value={data.materials.bottomRail}
                   options={presets.bottomRail} lang={lang}
                   onChange={(v) => set((d) => void (d.materials.bottomRail = v))} />
               </>}
-              <MSelect label={mt(lang, "finish")} value={data.materials.finish}
+              <MSelect help="finish" label={mt(lang, "finish")} value={data.materials.finish}
                 options={finishOptions} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.finish = v))} />
-              <MSelect label={mt(lang, "color")} value={data.materials.color}
+              <MSelect help="color" label={mt(lang, "color")} value={data.materials.color}
                 options={colorOptions} lang={lang} spec
                 onChange={(v) => set((d) => void (d.materials.color = v))} />
             </Grid>
-            <MInput label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
+            <MInput help="matNotes" label={mt(lang, "matNotes")} placeholder="—" value={data.materials.notes}
               onChange={(v) => set((d) => void (d.materials.notes = v))} />
           </div>
         </Card>
 
         {/* Site & finish conditions — what surface existed when measured */}
         <Card stage="setup" title={`🧱 ${mt(lang, "finishTitle")}`}>
-          <ChipRow
+          <ChipRow help="floorChangeQuestion"
             label={mt(lang, "floorChangeQuestion")}
             value={data.finish.floorChange}
             options={[
@@ -2427,19 +2442,19 @@ export default function MeasureEditor({
           />
           <Grid>
             {(data.finish.floorChange === "bottom" || data.finish.floorChange === "both") && (
-              <MInput label={mt(lang, "bottomAdjustment")} placeholder='+ 3/4"' value={data.finish.bottomAdjustment}
+              <MInput help="bottomAdjustment" label={mt(lang, "bottomAdjustment")} placeholder='+ 3/4"' value={data.finish.bottomAdjustment}
                 onChange={(v) => set((d) => void (d.finish.bottomAdjustment = v))} />
             )}
             {(data.finish.floorChange === "top" || data.finish.floorChange === "both") && (
-              <MInput label={mt(lang, "topAdjustment")} placeholder='+ 3/4"' value={data.finish.topAdjustment}
+              <MInput help="topAdjustment" label={mt(lang, "topAdjustment")} placeholder='+ 3/4"' value={data.finish.topAdjustment}
                 onChange={(v) => set((d) => void (d.finish.topAdjustment = v))} />
             )}
             {(hasFlights || isSpiral) && (
-              <MInput label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
+              <MInput help="treadCovering" label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
                 onChange={(v) => set((d) => void (d.finish.treadCovering = v))} />
             )}
             {(isWallRail || data.datums.orientation.includes("wall")) && (
-              <MInput label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
+              <MInput help="wallFinish" label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
                 onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
             )}
             <ChoiceMInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
@@ -2481,24 +2496,24 @@ export default function MeasureEditor({
           <div className="text-xs text-neutral-500 mb-3">{mt(lang, "controlsHint")}</div>
           <Grid>
             {!isSpiral && sheet.shape !== "level_run" && sheet.shape !== "ramp" && (
-              <MInput label={mt(lang, "floorToFloor")} value={data.overall.floorToFloor}
+              <MInput help="floorToFloor" label={mt(lang, "floorToFloor")} value={data.overall.floorToFloor}
                 onChange={(v) => set((d) => void (d.overall.floorToFloor = v))} />
             )}
             {!multiFlight && (
-              <MInput label={mt(lang, "totalRun")} value={data.overall.totalRun}
+              <MInput help="totalRun" label={mt(lang, "totalRun")} value={data.overall.totalRun}
                 onChange={(v) => set((d) => void (d.overall.totalRun = v))} />
             )}
             {!isSpiral && !multiFlight && (
-              <MInput label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
+              <MInput help="rakeLength" label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
                 onChange={(v) => set((d) => void (d.overall.rakeLength = v))} />
             )}
             {!isSpiral && sheet.shape !== "level_run" && (
               <>
-                <MInput label={mt(lang, "widthBottom")} value={data.overall.widthBottom}
+                <MInput help="widthBottom" label={mt(lang, "widthBottom")} value={data.overall.widthBottom}
                   onChange={(v) => set((d) => void (d.overall.widthBottom = v))} />
-                <MInput label={mt(lang, "widthMid")} value={data.overall.widthMid}
+                <MInput help="widthMid" label={mt(lang, "widthMid")} value={data.overall.widthMid}
                   onChange={(v) => set((d) => void (d.overall.widthMid = v))} />
-                <MInput label={mt(lang, "widthTop")} value={data.overall.widthTop}
+                <MInput help="widthTop" label={mt(lang, "widthTop")} value={data.overall.widthTop}
                   onChange={(v) => set((d) => void (d.overall.widthTop = v))} />
               </>
             )}
@@ -2530,16 +2545,16 @@ export default function MeasureEditor({
                   {data.plan.segs.map((sg, i) => (
                     <div key={i} className="rounded-xl border border-neutral-800 bg-neutral-950/50 p-3">
                       <div className="mb-2 font-bold text-amber-400">{mt(lang, "segment")} {i + 1}</div>
-                      <ChipRow label={mt(lang, "segmentType")} value={sg.kind || ""}
+                      <ChipRow help="segmentType" label={mt(lang, "segmentType")} value={sg.kind || ""}
                         options={(["flight", "landing", "level", "ramp", "curve"] as const).map((kind) => [kind, mt(lang, `segment_${kind}`)])}
                         onChange={(v) => set((d) => void (d.plan!.segs[i].kind = v as typeof sg.kind))} />
                       <div className="mt-3"><Grid>
-                        <MInput label={mt(lang, "length")} value={sg.len}
+                        <MInput help="length" label={mt(lang, "length")} value={sg.len}
                           onChange={(v) => set((d) => void (d.plan!.segs[i].len = v))} />
-                        <MInput label={mt(lang, "width")} value={sg.width || ""}
+                        <MInput help="width" label={mt(lang, "width")} value={sg.width || ""}
                           onChange={(v) => set((d) => void (d.plan!.segs[i].width = v))} />
                         {sg.kind === "flight" && <>
-                          <MInput label={mt(lang, "stepsThisFlight")} placeholder="0" value={sg.steps || ""}
+                          <MInput help="stepsThisFlight" label={mt(lang, "stepsThisFlight")} placeholder="0" value={sg.steps || ""}
                             onChange={(v) => set((d) => {
                               const ps = d.plan!.segs[i];
                               ps.steps = v;
@@ -2548,13 +2563,13 @@ export default function MeasureEditor({
                                 ps.stepMeasures?.[si] || { rise: "", run: "", nosing: "", levelGap: "" }
                               );
                             })} />
-                          <MInput label={mt(lang, "typicalRise")} value={sg.rise || ""}
+                          <MInput help="typicalRise" label={mt(lang, "typicalRise")} value={sg.rise || ""}
                             onChange={(v) => set((d) => void (d.plan!.segs[i].rise = v))} />
-                          <MInput label={mt(lang, "typicalRun")} value={sg.run || ""}
+                          <MInput help="typicalRun" label={mt(lang, "typicalRun")} value={sg.run || ""}
                             onChange={(v) => set((d) => void (d.plan!.segs[i].run = v))} />
                         </>}
                         {(sg.kind === "ramp" || sg.kind === "curve") && (
-                          <MInput label={mt(lang, "segmentRise")} value={sg.rise || ""}
+                          <MInput help="segmentRise" label={mt(lang, "segmentRise")} value={sg.rise || ""}
                             onChange={(v) => set((d) => void (d.plan!.segs[i].rise = v))} />
                         )}
                       </Grid></div>
@@ -2570,9 +2585,9 @@ export default function MeasureEditor({
                               {sg.stepMeasures.map((st, si) => (
                                 <div key={si} className="grid grid-cols-[2rem_1fr_1fr] items-end gap-2">
                                   <span className="pb-3 text-center text-sm font-bold text-neutral-400">{si + 1}</span>
-                                  <MInput label={mt(lang, "rise")} value={st.rise}
+                                  <MInput help="rise" label={mt(lang, "rise")} value={st.rise}
                                     onChange={(v) => set((d) => void (d.plan!.segs[i].stepMeasures[si].rise = v))} />
-                                  <MInput label={mt(lang, "run")} value={st.run}
+                                  <MInput help="run" label={mt(lang, "run")} value={st.run}
                                     onChange={(v) => set((d) => void (d.plan!.segs[i].stepMeasures[si].run = v))} />
                                 </div>
                               ))}
@@ -2581,7 +2596,7 @@ export default function MeasureEditor({
                         </details>
                       )}
                       <div className="mt-3">
-                        <MInput label={mt(lang, "notes")} placeholder="—" value={sg.note}
+                        <MInput help="notes" label={mt(lang, "notes")} placeholder="—" value={sg.note}
                           onChange={(v) => set((d) => void (d.plan!.segs[i].note = v))} />
                       </div>
                     </div>
@@ -2921,6 +2936,7 @@ export default function MeasureEditor({
         branding={orgSettings?.branding}
       />
     </PlaceholderCtx.Provider>
+    </LangCtx.Provider>
   );
 }
 
@@ -2971,21 +2987,21 @@ function ConditionFields({
 }) {
   return (
     <>
-      <ChipRow label={mt(lang, "fireRating")} value={c.rating}
+      <ChipRow help="fireRating" label={mt(lang, "fireRating")} value={c.rating}
         options={CONDITION_RATINGS.map((r) => [r, mt(lang, `fireR_${r}`)] as [string, string])}
         onChange={(v) => onField("rating", v)} />
       <div className="mt-3">
         <Grid>
-          <MInput label={mt(lang, "fireRust")} placeholder="—" value={c.rust} onChange={(v) => onField("rust", v)} />
-          <MInput label={mt(lang, "fireSectionLoss")} placeholder="—" value={c.sectionLoss} onChange={(v) => onField("sectionLoss", v)} />
-          <MInput label={mt(lang, "fireCracks")} placeholder="—" value={c.cracks} onChange={(v) => onField("cracks", v)} />
-          <MInput label={mt(lang, "fireDeckCondition")} placeholder="—" value={c.deck} onChange={(v) => onField("deck", v)} />
-          <MInput label={mt(lang, "fireGuardCondition")} placeholder="—" value={c.guards} onChange={(v) => onField("guards", v)} />
-          <MInput label={mt(lang, "fireAnchorCondition")} value={c.anchors} onChange={(v) => onField("anchors", v)} />
+          <MInput help="fireRust" label={mt(lang, "fireRust")} placeholder="—" value={c.rust} onChange={(v) => onField("rust", v)} />
+          <MInput help="fireSectionLoss" label={mt(lang, "fireSectionLoss")} placeholder="—" value={c.sectionLoss} onChange={(v) => onField("sectionLoss", v)} />
+          <MInput help="fireCracks" label={mt(lang, "fireCracks")} placeholder="—" value={c.cracks} onChange={(v) => onField("cracks", v)} />
+          <MInput help="fireDeckCondition" label={mt(lang, "fireDeckCondition")} placeholder="—" value={c.deck} onChange={(v) => onField("deck", v)} />
+          <MInput help="fireGuardCondition" label={mt(lang, "fireGuardCondition")} placeholder="—" value={c.guards} onChange={(v) => onField("guards", v)} />
+          <MInput help="fireAnchorCondition" label={mt(lang, "fireAnchorCondition")} value={c.anchors} onChange={(v) => onField("anchors", v)} />
         </Grid>
       </div>
       <div className="mt-3">
-        <MInput label={mt(lang, "fireCondNotes")} placeholder="—" value={c.notes} onChange={(v) => onField("notes", v)} />
+        <MInput help="fireCondNotes" label={mt(lang, "fireCondNotes")} placeholder="—" value={c.notes} onChange={(v) => onField("notes", v)} />
       </div>
     </>
   );
@@ -3029,6 +3045,7 @@ function MInput({
   labelClass = "",
   hint,
   hintDiagram,
+  help,
   value,
   onChange,
   placeholder,
@@ -3037,17 +3054,21 @@ function MInput({
   labelClass?: string;
   hint?: string;
   hintDiagram?: "bottom" | "top" | "nosing" | "walkline";
+  /** i18n key of this field, used to find its plain-language explanation */
+  help?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
 }) {
   const unitPh = useContext(PlaceholderCtx);
+  const lang = useContext(LangCtx);
+  const explain = hint || (help ? helpText(lang, help) : null);
   return (
     <div className="block min-w-0">
       {label && (
         <div className={`text-[11px] text-neutral-400 flex items-center mb-1 ${labelClass}`}>
           {label}
-          {hint && <InfoHint text={hint} diagram={hintDiagram} />}
+          {explain && <InfoHint text={explain} diagram={hintDiagram} />}
         </div>
       )}
       <input
@@ -3065,8 +3086,29 @@ function MInput({
 
 function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" | "nosing" | "walkline" }) {
   const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLSpanElement | null>(null);
+
+  // Tapping anywhere else closes it — a measurer with gloves on should not
+  // have to find a small × to get back to the form.
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: Event) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    // Capture phase, so it fires even when the thing tapped stops propagation.
+    document.addEventListener("pointerdown", away, true);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", away, true);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
   return (
-    <span className="relative ml-1 inline-block align-middle">
+    <span ref={wrap} className="relative ml-1 inline-block align-middle">
       <button
         type="button"
         aria-label={text}
@@ -3080,13 +3122,15 @@ function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" 
       >
         i
       </button>
-      {open && <span role="tooltip" className="absolute left-0 top-7 z-50 block w-64 rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl">
-        {diagram && <MeasurementHintDiagram kind={diagram} />}
-        {text}
-        <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(false); }} className="mt-2 block w-full rounded border border-neutral-600 py-1.5 text-center text-xs font-bold text-neutral-200">
-          ×
-        </button>
-      </span>}
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-0 top-7 z-50 block w-72 max-w-[80vw] rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl"
+        >
+          {diagram && <MeasurementHintDiagram kind={diagram} />}
+          {text}
+        </span>
+      )}
     </span>
   );
 }
@@ -3195,6 +3239,7 @@ function MSelect({
   options,
   onChange,
   lang,
+  help,
   spec = false,
   labels,
 }: {
@@ -3203,13 +3248,18 @@ function MSelect({
   options: string[];
   onChange: (v: string) => void;
   lang: string;
+  help?: string;
   spec?: boolean;
   labels?: Record<string, string>;
 }) {
   return (
-    <label className="block min-w-0">
-      <span className="text-[11px] text-neutral-400 block mb-1">{label}</span>
+    <div className="block min-w-0">
+      <div className="mb-1 flex items-center text-[11px] text-neutral-400">
+        {label}
+        {help && helpText(lang, help) && <InfoHint text={helpText(lang, help)!} />}
+      </div>
       <select
+        aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base appearance-none"
@@ -3221,7 +3271,7 @@ function MSelect({
           </option>
         ))}
       </select>
-    </label>
+    </div>
   );
 }
 
@@ -3260,15 +3310,22 @@ function ChipRow({
   value,
   options,
   onChange,
+  help,
 }: {
   label: string;
   value: string;
   options: [string, string][];
   onChange: (v: string) => void;
+  help?: string;
 }) {
+  const lang = useContext(LangCtx);
+  const explain = help ? helpText(lang, help) : null;
   return (
     <div>
-      <div className="text-[11px] text-neutral-400 mb-1">{label}</div>
+      <div className="mb-1 flex items-center text-[11px] text-neutral-400">
+        {label}
+        {explain && <InfoHint text={explain} />}
+      </div>
       <div className="flex flex-wrap gap-2">
         {options.map(([val, lbl]) => (
           <button
@@ -3304,8 +3361,8 @@ function NominalFill({
         <span className="font-normal text-neutral-500"> — {mt(lang, "fillHint")}</span>
       </div>
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-        <MInput label={mt(lang, "nominalRise")} value={nr} onChange={setNr} />
-        <MInput label={mt(lang, "nominalRun")} value={nu} onChange={setNu} />
+        <MInput help="nominalRise" label={mt(lang, "nominalRise")} value={nr} onChange={setNr} />
+        <MInput help="nominalRun" label={mt(lang, "nominalRun")} value={nu} onChange={setNu} />
         <button
           onClick={() => (nr || nu) && onFill(nr, nu)}
           className="px-3 py-2.5 rounded-lg bg-amber-500/90 text-black text-sm font-bold"
@@ -3465,7 +3522,7 @@ function TermEditor({
   return (
     <div className="mt-3 border border-neutral-800 rounded-lg p-3">
       <div className="text-xs font-bold text-neutral-300 mb-2">⚓ {title}</div>
-      <ChipRow
+      <ChipRow help="connAttachTo"
         label={mt(lang, "connAttachTo")}
         value={t.attachTo}
         options={ATTACH_TARGETS.map((o) => [o, mt(lang, `attach_${o}`)] as [string, string])}
@@ -3493,7 +3550,7 @@ function TermEditor({
       )}
       {allowed.length > 0 && (
         <div className="mt-3">
-          <ChipRow
+          <ChipRow help="connMethod"
             label={mt(lang, "connMethod")}
             value={t.method}
             options={allowed.map((o) => [o, mt(lang, `method_${o}`)] as [string, string])}
@@ -3503,7 +3560,7 @@ function TermEditor({
       )}
       {(isWall || isColumn || t.attachTo === "floor") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-          <MSelect label={mt(lang, "connMaterial")} value={t.material}
+          <MSelect help="connMaterial" label={mt(lang, "connMaterial")} value={t.material}
             options={anchorOptions} lang={lang}
             onChange={(v) => onField("material", v)} />
           {(isWall || isWoodFloor) && (
@@ -3514,9 +3571,9 @@ function TermEditor({
           )}
           {isColumn && (
             <>
-              <MInput label={mt(lang, "columnWLbl")} value={t.columnW}
+              <MInput help="columnWLbl" label={mt(lang, "columnWLbl")} value={t.columnW}
                 onChange={(v) => onField("columnW", v)} />
-              <MInput label={mt(lang, "columnDLbl")} value={t.columnD}
+              <MInput help="columnDLbl" label={mt(lang, "columnDLbl")} value={t.columnD}
                 onChange={(v) => onField("columnD", v)} />
             </>
           )}
@@ -3524,13 +3581,13 @@ function TermEditor({
       )}
       {isColumn && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-          <MInput label={mt(lang, "moldingLbl")} placeholder="—" value={t.molding}
+          <MInput help="moldingLbl" label={mt(lang, "moldingLbl")} placeholder="—" value={t.molding}
             onChange={(v) => onField("molding", v)} />
           {t.molding.trim() !== "" && (
-            <MInput label={mt(lang, "moldingHeightLbl")} value={t.moldingHeight}
+            <MInput help="moldingHeightLbl" label={mt(lang, "moldingHeightLbl")} value={t.moldingHeight}
               onChange={(v) => onField("moldingHeight", v)} />
           )}
-          <MInput label={mt(lang, "plumbLbl")} placeholder="—" value={t.plumb}
+          <MInput help="plumbLbl" label={mt(lang, "plumbLbl")} placeholder="—" value={t.plumb}
             onChange={(v) => onField("plumb", v)} />
         </div>
       )}
