@@ -30,6 +30,12 @@ export default async function ShopHome() {
       hint: mt(lang, "tileNewMeasureHint"),
     },
     {
+      href: "/shop/inventory",
+      icon: "📦",
+      title: mt(lang, "tileInventory"),
+      hint: mt(lang, "tileInventoryHint"),
+    },
+    {
       href: "/shop/leads",
       icon: "🧲",
       title: mt(lang, "tileLeads"),

@@ -152,6 +152,27 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Counting stock. Every change also lands in kiw_inventory_moves so a
+      // count can always be explained later.
+      case "inv_set": {
+        const { id, onHand } = body;
+        const n = Number(onHand);
+        if (!Number.isFinite(n) || n < 0 || n > 1000000) break;
+        const prior = await sbSelect<{ on_hand: number; catalog_id: string }[]>(
+          "kiw_inventory", `select=on_hand,catalog_id&org_id=eq.${ORG_ID}&id=eq.${id}`);
+        const before = prior?.[0];
+        await sbUpdate("kiw_inventory", `org_id=eq.${ORG_ID}&id=eq.${id}`,
+          { on_hand: n, updated_at: now });
+        if (before) {
+          await sbInsert("kiw_inventory_moves", {
+            org_id: ORG_ID, catalog_id: before.catalog_id,
+            delta: n - Number(before.on_hand), reason: "adjust",
+            worker_id: worker.id,
+          });
+        }
+        break;
+      }
+
       case "cut_delete": {
         await sbDelete("kiw_shop_cut_items", `org_id=eq.${ORG_ID}&id=eq.${body.id}`);
         break;
