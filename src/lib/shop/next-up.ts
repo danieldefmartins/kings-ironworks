@@ -30,6 +30,12 @@ export interface NextUp {
   items: NextItem[];
 }
 
+// "1 lines listed" is the kind of thing that makes a tool feel unfinished.
+function lines(n: number): string {
+  if (n === 0) return "No materials listed yet";
+  return n === 1 ? "1 line listed" : `${n} lines listed`;
+}
+
 export function nextUp(
   job: Job,
   cut: CutItem[],
@@ -58,14 +64,14 @@ export function nextUp(
       // Before anything is ordered: know what it is made of and how it is finished.
       push("specs", specsSet ? `${job.finish_type} · ${job.color}` : "Finish and color not set",
         specsSet, { kind: "open", row: "specs" }, "Set specs");
-      push("materials", hasMaterials ? `${cut.length + materials.length} lines listed` : "No materials listed yet",
-        hasMaterials, { kind: "open", row: "materials" }, "Add materials");
+      push("materials", lines(cut.length + materials.length), hasMaterials,
+        { kind: "open", row: "materials" }, "Add materials");
       break;
 
     case "Shop Drawings":
       push("measure", "Field measurements", false, { kind: "measure" }, "Open field measure");
-      push("materials", hasMaterials ? `${cut.length + materials.length} lines listed` : "No materials listed yet",
-        hasMaterials, { kind: "open", row: "materials" }, "Add materials");
+      push("materials", lines(cut.length + materials.length), hasMaterials,
+        { kind: "open", row: "materials" }, "Add materials");
       break;
 
     case "Material":

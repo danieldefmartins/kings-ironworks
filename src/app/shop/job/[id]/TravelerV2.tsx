@@ -50,7 +50,6 @@ export default function TravelerV2({
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState<string | null>(null);   // which drawer is open
   const [stagePicker, setStagePicker] = useState(false);
-  const [more, setMore] = useState(false);
 
   async function act(payload: Record<string, unknown>) {
     setBusy(true);
@@ -91,23 +90,12 @@ export default function TravelerV2({
 
       {/* ── Identity. Before anything else, you know what job this is. ── */}
       <header className="pt-4 pb-3">
-        <div className="flex items-start gap-3">
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[26px] font-display font-bold leading-tight tracking-tight">
-              {job.customer_name}
-            </h1>
-            <p className="mt-0.5 truncate text-[15px] text-neutral-400">
-              {job.address || job.job_number}
-            </p>
-          </div>
-          <button
-            onClick={() => setMore((v) => !v)}
-            className="h-11 w-11 shrink-0 rounded-full border border-neutral-800 text-lg text-neutral-400"
-            aria-label={t(lang, "more")}
-          >
-            ⋯
-          </button>
-        </div>
+        <h1 className="truncate text-[26px] font-display font-bold leading-tight tracking-tight">
+          {job.customer_name}
+        </h1>
+        <p className="mt-0.5 truncate text-[15px] text-neutral-400">
+          {job.address || job.job_number}
+        </p>
 
         <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[13px]">
           {job.project_type && (
@@ -139,28 +127,13 @@ export default function TravelerV2({
         </button>
       </header>
 
-      {more && (
-        <div className="mb-4 space-y-2 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-3">
-          <button
-            onClick={() => router.push(`/shop/job/${job.id}/measure`)}
-            className="flex min-h-[52px] w-full items-center gap-3 rounded-xl px-3 text-left active:bg-neutral-800"
-          >
-            <span className="text-xl">📐</span>
-            <span className="flex-1 font-semibold">{mt(lang, "fieldMeasure")}</span>
-            <span className="text-neutral-500">›</span>
-          </button>
-          {isAdmin && (
-            <button
-              onClick={() => act({ type: "job_archive", jobId: job.id, archived: !job.archived })}
-              disabled={busy}
-              className="flex min-h-[52px] w-full items-center gap-3 rounded-xl px-3 text-left text-neutral-400 active:bg-neutral-800 disabled:opacity-50"
-            >
-              <span className="text-xl">📦</span>
-              <span className="flex-1">{job.archived ? t(lang, "restoreJob") : t(lang, "archiveJob")}</span>
-            </button>
-          )}
-        </div>
-      )}
+      <ClockButton
+        lang={lang}
+        jobId={job.id}
+        myStartedAt={myStartedAt}
+        activeWorkers={activeWorkers}
+        totalHours={totalHours}
+      />
 
       {/* ── What this job needs now, at the stage it is actually at. ── */}
       <section className="rounded-2xl border border-amber-700/40 bg-neutral-900/70 p-4">
@@ -209,13 +182,6 @@ export default function TravelerV2({
 
       {/* ── The work. Each row states what is in it; tap to open. ── */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/60">
-        <ClockRow
-          lang={lang}
-          jobId={job.id}
-          myStartedAt={myStartedAt}
-          activeWorkers={activeWorkers}
-          totalHours={totalHours}
-        />
 
         <Row
           icon={<Icon name="photo" />}
@@ -326,6 +292,15 @@ export default function TravelerV2({
           )}
         </Row>
 
+        <button
+          onClick={() => router.push(`/shop/job/${job.id}/measure`)}
+          className="flex min-h-[60px] w-full items-center gap-3 border-b border-neutral-800 px-4 text-left active:bg-neutral-800/60"
+        >
+          <Icon name="rule" />
+          <span className="flex-1 text-[17px] font-semibold">{mt(lang, "fieldMeasure")}</span>
+          <span className="text-neutral-600">›</span>
+        </button>
+
         <Row
           icon={<Icon name="spec" />}
           label={t(lang, "specs")}
@@ -341,6 +316,16 @@ export default function TravelerV2({
           )}
         </Row>
       </div>
+
+      {isAdmin && (
+        <button
+          onClick={() => act({ type: "job_archive", jobId: job.id, archived: !job.archived })}
+          disabled={busy}
+          className="mt-6 min-h-[48px] w-full rounded-xl border border-neutral-800 text-[15px] text-neutral-500 active:bg-neutral-900 disabled:opacity-50"
+        >
+          {job.archived ? t(lang, "restoreJob") : t(lang, "archiveJob")}
+        </button>
+      )}
 
       {/* stage picker: the full list, but only when asked for */}
       {stagePicker && (
@@ -404,7 +389,14 @@ function Row({
 // it shows green with the elapsed time; stopped it is one quiet tap. The
 // "press START every time you begin" coaching lives in the old screen and in
 // training, not permanently on every job for the rest of the shop's life.
-function ClockRow({
+// The clock is a real button again. Burying it in a list cost the habit, and
+// every labour cost in the business is computed from these presses — but it
+// keeps the compact shape: no instruction paragraph, and once it is running it
+// becomes a calm green strip with the elapsed time rather than a billboard.
+//
+// If nobody has started after ten seconds on the screen, it asks once. People
+// walk up to a job and start working; the clock is the thing they forget.
+function ClockButton({
   lang, jobId, myStartedAt, activeWorkers, totalHours,
 }: {
   lang: string; jobId: string; myStartedAt: string | null;
@@ -414,6 +406,7 @@ function ClockRow({
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const [nudge, setNudge] = useState(false);
   const running = !!myStartedAt;
 
   useEffect(() => {
@@ -422,10 +415,20 @@ function ClockRow({
     return () => clearInterval(id);
   }, [running]);
 
+  // Ten seconds on the job without clocking in: ask, once, and never again
+  // this visit. Long enough that reading a spec is not interrupted.
+  useEffect(() => {
+    // No setState on the running branch: the banner is already gated on
+    // !running when it renders, so there is nothing to clear here.
+    if (running) return;
+    const id = setTimeout(() => setNudge(true), 10000);
+    return () => clearTimeout(id);
+  }, [running]);
+
   async function toggle() {
     setBusy(true);
+    setNudge(false);
     try {
-      // Same GPS stamp the full clock takes, and it never blocks the press.
       const loc = await new Promise<{ lat: number; lng: number } | null>((res) => {
         if (typeof navigator === "undefined" || !navigator.geolocation) return res(null);
         const done = setTimeout(() => res(null), 6000);
@@ -450,29 +453,43 @@ function ClockRow({
   const elapsed = `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`;
 
   return (
-    <div className="border-b border-neutral-800">
+    <div className="mb-3">
+      {nudge && !running && (
+        <button
+          onClick={() => setNudge(false)}
+          className="mb-2 flex w-full items-center gap-2 rounded-xl border border-amber-700/60 bg-amber-500/10 px-3 py-2.5 text-left text-[14px] text-amber-300"
+        >
+          <span className="flex-1">{t(lang, "clockNudge")}</span>
+          <span className="text-amber-500/60">✕</span>
+        </button>
+      )}
+
       <button
         onClick={toggle}
         disabled={busy}
-        className={`flex min-h-[60px] w-full items-center gap-3 px-4 text-left active:bg-neutral-800/60 disabled:opacity-50 ${
-          running ? "bg-emerald-950/40" : ""
+        className={`flex min-h-[68px] w-full items-center justify-center gap-3 rounded-2xl text-[19px] font-bold active:scale-[0.99] disabled:opacity-60 ${
+          running
+            ? "border-2 border-emerald-600 bg-emerald-950/50 text-emerald-300"
+            : `bg-emerald-600 text-white ${nudge ? "ring-4 ring-emerald-500/30" : ""}`
         }`}
       >
-        <span className={`text-xl ${running ? "text-emerald-400" : "text-neutral-400"}`} aria-hidden>
-          {running ? "■" : "▶"}
-        </span>
-        <span className="flex-1 text-[17px] font-semibold">
-          {running ? t(lang, "clockOut") : t(lang, "clockIn")}
-        </span>
-        <span className={`text-[15px] ${running ? "font-bold text-emerald-400" : "text-neutral-500"}`}>
-          {running ? elapsed : `${totalHours.toFixed(1)} h`}
-        </span>
+        <span aria-hidden className="text-[22px] leading-none">{running ? "■" : "▶"}</span>
+        {running ? (
+          <>
+            {t(lang, "clockOut")}
+            <span className="font-mono text-[17px] font-bold">{elapsed}</span>
+          </>
+        ) : (
+          t(lang, "clockIn")
+        )}
       </button>
-      {activeWorkers.length > 0 && (
-        <p className="px-4 pb-2 text-[13px] text-emerald-400/80">
-          ● {activeWorkers.join(", ")}
-        </p>
-      )}
+
+      <p className="mt-1.5 px-1 text-[13px] text-neutral-500">
+        {activeWorkers.length > 0 && (
+          <span className="text-emerald-400">● {activeWorkers.join(", ")} · </span>
+        )}
+        {totalHours.toFixed(1)} h {t(lang, "logged")}
+      </p>
     </div>
   );
 }
@@ -480,12 +497,13 @@ function ClockRow({
 // One weight, one size, consistent across every device — unlike emoji, which
 // are a different typeface on Android, iPadOS and Chrome and read as
 // placeholder art in a tool people use all day.
-function Icon({ name }: { name: "photo" | "steel" | "check" | "spec" }) {
+function Icon({ name }: { name: "photo" | "steel" | "check" | "spec" | "rule" }) {
   const d = {
     photo: "M3 8.5A1.5 1.5 0 0 1 4.5 7h2L8 5h4l1.5 2h2A1.5 1.5 0 0 1 17 8.5v6A1.5 1.5 0 0 1 15.5 16h-11A1.5 1.5 0 0 1 3 14.5v-6Z M10 13.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
     steel: "M3 6h14 M3 10h14 M3 14h14 M6 6v8 M14 6v8",
     check: "M4 10.5 8 14.5 16 6",
     spec: "M6 3h8a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M8 7h4 M8 10h4 M8 13h2",
+    rule: "M3 12.5 12.5 3l4.5 4.5L7.5 17 3 12.5Z M6 9.5l1.5 1.5 M8.5 7l1.5 1.5 M11 4.5 12.5 6",
   }[name];
   return (
     <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0" fill="none"
