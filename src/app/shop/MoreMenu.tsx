@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Secondary controls — print, units, admin, sign out, delete — behind one
 // button, so the primary screen can be about the work instead of the system.
@@ -30,6 +31,36 @@ export default function MoreMenu({
     return () => window.removeEventListener("keydown", esc);
   }, [open]);
 
+  // The sheet MUST be portalled to <body>. This menu sits inside the sticky top
+  // bar, and that bar uses backdrop-blur — a backdrop-filter makes an element a
+  // containing block for fixed-position descendants, so `fixed inset-0` would
+  // resolve against the 66px-tall bar instead of the viewport. On a phone that
+  // put the whole sheet off-screen except its last button. Reported from the
+  // floor: "I only see the close button all the way on top."
+  const sheet = (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
+      onClick={close}
+    >
+      <div
+        role="dialog"
+        aria-label={label}
+        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 text-lg font-bold">{label}</div>
+        <div className="space-y-2">{children(close)}</div>
+        <button
+          type="button"
+          onClick={close}
+          className="mt-3 min-h-[48px] w-full rounded-xl border border-neutral-700 font-bold text-neutral-300"
+        >
+          {closeLabel}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <button
@@ -47,29 +78,7 @@ export default function MoreMenu({
         <span className="sr-only">{label}</span>
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
-          onClick={close}
-        >
-          <div
-            role="dialog"
-            aria-label={label}
-            className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 text-lg font-bold">{label}</div>
-            <div className="space-y-2">{children(close)}</div>
-            <button
-              type="button"
-              onClick={close}
-              className="mt-3 min-h-[48px] w-full rounded-xl border border-neutral-700 font-bold text-neutral-300"
-            >
-              {closeLabel}
-            </button>
-          </div>
-        </div>
-      )}
+      {open && typeof document !== "undefined" && createPortal(sheet, document.body)}
     </>
   );
 }

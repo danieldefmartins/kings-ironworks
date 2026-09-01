@@ -1,15 +1,21 @@
 "use client";
 
-// A classic inventory: pick a category, see a list, each line with a picture
-// of the actual thing.
+// The shelf, not the spreadsheet.
 //
-// A worker hunting a "3/8 x 4 wedge anchor" recognises the box before they
-// read the label, so the picture is the point — and until one is taken the row
-// says so plainly rather than pretending with a placeholder graphic. Tapping
-// the frame opens the camera; the photo is the item's from then on.
+// Daniel: "I rather see images than list, an easy to scroll horizontal list
+// and an easy order button that will send me a message to order the materials.
+// I think this list is too crowded, I need simpler, image view page."
 //
-// Categories are the ones a person uses standing in the shop — Screws,
-// Anchors, Bolts, Discs, Drill bits — not the ones a database would pick.
+// So: every category is a row you swipe sideways, and every item is a big
+// centred picture with its name under it. A worker recognises the box before
+// they read a label, which is exactly the order this screen puts them in —
+// picture first, name second, count third. Nothing else is on the card.
+//
+// Ordering is the point of the screen, so it is one tap: + on a card puts it
+// in the order, the bar at the bottom counts it, and Send delivers the whole
+// list to Daniel on Telegram. Editing stock and taking a photo still exist,
+// but they live in the sheet you get by tapping a card — off the main view,
+// because they are not why anyone opens this page.
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -36,8 +42,15 @@ const GROUPS: { key: string; cats: string[] }[] = [
   { key: "safety", cats: ["ppe", "ppe_glove", "safety"] },
   { key: "tools", cats: ["tool_power", "tool_hand", "cord"] },
   { key: "shop", cats: ["supply", "masonry"] },
+  { key: "breakroom", cats: ["breakroom"] },
+  { key: "janitorial", cats: ["janitorial"] },
   { key: "steel", cats: ["steel_stock"] },
 ];
+
+const isShort = (r: Joined) => r.min_qty != null && Number(r.on_hand) < Number(r.min_qty);
+// How many to buy: enough to clear the minimum, or one if we keep no minimum.
+const shortfall = (r: Joined) =>
+  r.min_qty != null ? Math.max(1, Math.ceil(Number(r.min_qty) - Number(r.on_hand))) : 1;
 
 export default function InventoryClient({
   rows,
@@ -50,149 +63,320 @@ export default function InventoryClient({
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
-  const [busy, setBusy] = useState<string | null>(null);
-  const [group, setGroup] = useState<string | null>(null);
-  const [q, setQ] = useState("");
   const refresh = () => startTransition(() => router.refresh());
 
-  const low = useMemo(
-    () => rows.filter((r) => r.min_qty != null && Number(r.on_hand) < Number(r.min_qty)),
-    [rows],
-  );
-  const countIn = (g: (typeof GROUPS)[number]) =>
-    rows.filter((r) => g.cats.includes(r.item.category)).length;
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState<Joined | null>(null);   // item sheet
+  const [order, setOrder] = useState<Record<string, number>>({});
+  const [reviewing, setReviewing] = useState(false);
 
-  async function setQty(row: Joined, next: number) {
-    if (next < 0) return;
-    setBusy(row.id);
-    try {
-      const res = await fetch("/shop/api/action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "inv_set", id: row.id, onHand: next }),
-      });
-      if (res.ok) refresh();
-    } finally {
-      setBusy(null);
-    }
-  }
+  const low = useMemo(() => rows.filter(isShort), [rows]);
 
   const searching = q.trim().length > 0;
-  const visible = useMemo(() => {
+  const found = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (needle) return rows.filter((r) => r.item.display.toLowerCase().includes(needle));
-    if (group === "low") return low;
-    const g = GROUPS.find((x) => x.key === group);
-    return g ? rows.filter((r) => g.cats.includes(r.item.category)) : [];
-  }, [rows, low, group, q]);
+    if (!needle) return [];
+    return rows.filter(
+      (r) =>
+        r.item.display.toLowerCase().includes(needle) ||
+        r.item.sku.toLowerCase().includes(needle),
+    );
+  }, [rows, q]);
 
-  const shopping = low
-    .map((r) => {
-      const need = Math.ceil(Number(r.min_qty) - Number(r.on_hand));
-      return `${need} × ${r.item.display}${r.buy?.url ? `\n   ${r.buy.url}` : ""}`;
-    })
-    .join("\n");
+  const shelves = useMemo(
+    () =>
+      GROUPS.map((g) => ({
+        key: g.key,
+        items: rows.filter((r) => g.cats.includes(r.item.category)),
+      })).filter((s) => s.items.length > 0),
+    [rows],
+  );
+
+  const orderCount = Object.keys(order).length;
+  const addToOrder = (r: Joined, qty = shortfall(r)) =>
+    setOrder((o) => ({ ...o, [r.catalog_id]: qty }));
+  const removeFromOrder = (catalogId: string) =>
+    setOrder((o) => {
+      const next = { ...o };
+      delete next[catalogId];
+      return next;
+    });
 
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-28">
-      <div className="flex items-center gap-3 pt-4">
-        {(group || searching) && (
-          <button
-            onClick={() => { setGroup(null); setQ(""); }}
-            className="h-11 rounded-lg border border-neutral-700 px-3 text-neutral-300"
-          >
-            ‹
-          </button>
-        )}
-        <h1 className="flex-1 truncate text-[26px] font-display font-bold">
-          {searching ? t(lang, "invSearch") : group ? t(lang, `invg_${group}`) : t(lang, "tileInventory")}
-        </h1>
-        {low.length > 0 && !group && !searching && (
-          <button
-            onClick={() => setGroup("low")}
-            className="rounded-full bg-red-500/15 px-3 py-1.5 text-[15px] font-bold text-red-400"
-          >
-            {low.length} {t(lang, "invLow")}
-          </button>
-        )}
+    <div className="pb-32">
+      <div className="mx-auto max-w-3xl px-4">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t(lang, "invSearch")}
+          className="mt-4 min-h-[52px] w-full rounded-xl border border-neutral-700 bg-neutral-900 px-4 text-[16px] text-neutral-100 outline-none focus:border-amber-500"
+        />
       </div>
 
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder={t(lang, "invSearch")}
-        className="mt-3 min-h-[52px] w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-[16px] text-neutral-100 outline-none focus:border-amber-500"
-      />
-
-      {/* ── the shelf: pick where you are looking ── */}
-      {!group && !searching && (
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {low.length > 0 && (
-            <button
-              onClick={() => setGroup("low")}
-              className="col-span-2 flex min-h-[68px] items-center gap-3 rounded-2xl border border-red-900/60 bg-red-950/30 px-4 text-left"
-            >
-              <span className="flex-1 text-[17px] font-bold text-red-300">{t(lang, "invg_low")}</span>
-              <span className="text-[20px] font-bold text-red-400">{low.length}</span>
-            </button>
+      {searching ? (
+        <div className="mx-auto max-w-3xl px-4">
+          {found.length === 0 ? (
+            <p className="px-4 py-10 text-center text-[15px] text-neutral-500">
+              {t(lang, "invNone")}
+            </p>
+          ) : (
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {found.map((r) => (
+                <Card
+                  key={r.id}
+                  r={r}
+                  lang={lang}
+                  inOrder={order[r.catalog_id] != null}
+                  onOpen={() => setOpen(r)}
+                  onAdd={() => addToOrder(r)}
+                  grid
+                />
+              ))}
+            </div>
           )}
-          {GROUPS.map((g) => (
-            <button
-              key={g.key}
-              onClick={() => setGroup(g.key)}
-              className="flex min-h-[68px] items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/60 px-4 text-left active:bg-neutral-800"
-            >
-              <span className="flex-1 text-[16px] font-semibold">{t(lang, `invg_${g.key}`)}</span>
-              <span className="text-[15px] text-neutral-500">{countIn(g)}</span>
-            </button>
+        </div>
+      ) : (
+        <>
+          {low.length > 0 && (
+            <Shelf
+              title={t(lang, "invg_low")}
+              tone="low"
+              lang={lang}
+              items={low}
+              order={order}
+              onOpen={setOpen}
+              onAdd={addToOrder}
+              action={{
+                label: t(lang, "invOrderAllLow"),
+                onClick: () =>
+                  setOrder((o) => {
+                    const next = { ...o };
+                    for (const r of low) next[r.catalog_id] = shortfall(r);
+                    return next;
+                  }),
+              }}
+            />
+          )}
+
+          {shelves.map((s) => (
+            <Shelf
+              key={s.key}
+              title={t(lang, `invg_${s.key}`)}
+              lang={lang}
+              items={s.items}
+              order={order}
+              onOpen={setOpen}
+              onAdd={addToOrder}
+            />
           ))}
+        </>
+      )}
+
+      {/* ── the order bar: always the same place, always says how many ── */}
+      {orderCount > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          <button
+            onClick={() => setReviewing(true)}
+            className="mx-auto flex min-h-[60px] w-full max-w-3xl items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[19px] font-bold text-black active:bg-amber-400"
+          >
+            {orderCount === 1
+              ? t(lang, "invOrderOne")
+              : t(lang, "invOrderMany", { n: orderCount })}
+          </button>
         </div>
       )}
 
-      {(group || searching) && (
-        <>
-          {group === "low" && low.length > 0 && (
-            <button
-              onClick={() => navigator.clipboard?.writeText(shopping)}
-              className="mt-3 min-h-[52px] w-full rounded-xl border border-neutral-700 bg-neutral-900 text-[15px] font-semibold text-neutral-200"
-            >
-              {t(lang, "invCopyList")}
-            </button>
-          )}
+      {open && (
+        <ItemSheet
+          r={open}
+          lang={lang}
+          canEdit={canEdit}
+          inOrder={order[open.catalog_id] ?? null}
+          onAdd={(qty) => { addToOrder(open, qty); setOpen(null); }}
+          onRemove={() => { removeFromOrder(open.catalog_id); setOpen(null); }}
+          onClose={() => setOpen(null)}
+          refresh={refresh}
+        />
+      )}
 
-          <div className="mt-3 overflow-hidden rounded-2xl border border-neutral-800">
-            {visible.length === 0 && (
-              <p className="px-4 py-8 text-center text-[15px] text-neutral-500">
-                {t(lang, "invNone")}
-              </p>
-            )}
-            {visible.map((r) => (
-              <ItemRow
-                key={r.id}
-                r={r}
-                lang={lang}
-                canEdit={canEdit}
-                busy={busy === r.id}
-                onQty={setQty}
-                refresh={refresh}
-              />
-            ))}
-          </div>
-        </>
+      {reviewing && (
+        <OrderSheet
+          lang={lang}
+          rows={rows}
+          order={order}
+          setOrder={setOrder}
+          onRemove={removeFromOrder}
+          onClose={() => setReviewing(false)}
+          onSent={() => { setOrder({}); setReviewing(false); }}
+        />
       )}
     </div>
   );
 }
 
-function ItemRow({
-  r, lang, canEdit, busy, onQty, refresh,
+/* ───────────────────────── the swipeable row ───────────────────────── */
+
+function Shelf({
+  title, items, lang, order, onOpen, onAdd, tone, action,
 }: {
-  r: Joined; lang: string; canEdit: boolean; busy: boolean;
-  onQty: (row: Joined, n: number) => void; refresh: () => void;
+  title: string;
+  items: Joined[];
+  lang: string;
+  order: Record<string, number>;
+  onOpen: (r: Joined) => void;
+  onAdd: (r: Joined) => void;
+  tone?: "low";
+  action?: { label: string; onClick: () => void };
+}) {
+  return (
+    <section className="mt-7">
+      <div className="mx-auto flex max-w-3xl items-center gap-3 px-4">
+        <h2
+          className={`flex-1 text-[19px] font-display font-bold ${
+            tone === "low" ? "text-red-400" : "text-neutral-100"
+          }`}
+        >
+          {title}
+          <span className="ml-2 text-[15px] font-normal text-neutral-500">{items.length}</span>
+        </h2>
+        {action && (
+          <button
+            onClick={action.onClick}
+            className="rounded-full border border-amber-500/50 px-3 py-1.5 text-[14px] font-semibold text-amber-400 active:bg-amber-500/10"
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
+
+      {/* Horizontal and snapping. scroll-pl-4 matters: a mandatory snap
+          container aligns the first card to its own start edge, which
+          swallows the left padding and clips the card against the screen —
+          scroll-padding is what makes the snap respect it. */}
+      <div className="mx-auto mt-3 flex max-w-3xl snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {items.map((r) => (
+          <Card
+            key={r.id}
+            r={r}
+            lang={lang}
+            inOrder={order[r.catalog_id] != null}
+            onOpen={() => onOpen(r)}
+            onAdd={() => onAdd(r)}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ───────────────────────── the card ─────────────────────────
+   Picture on top, centred and as big as the card. Name under it, then the
+   count. Nothing else — a card that tries to say six things says none of
+   them at a glance. */
+
+function Card({
+  r, lang, inOrder, onOpen, onAdd, grid,
+}: {
+  r: Joined;
+  lang: string;
+  inOrder: boolean;
+  onOpen: () => void;
+  onAdd: () => void;
+  grid?: boolean;
+}) {
+  const short = isShort(r);
+  return (
+    <div
+      className={`relative ${grid ? "w-full" : "w-[168px] shrink-0 snap-start"}`}
+    >
+      <button
+        onClick={onOpen}
+        className="w-full text-left"
+      >
+        {/* White tile: these are product photos shot on white, so a white
+            ground and object-contain shows the whole item instead of cropping
+            into it the way a cover crop would. */}
+        <div
+          className={`grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border bg-white ${
+            short ? "border-red-500/60" : "border-neutral-800"
+          }`}
+        >
+          {r.imageUrl ? (
+            <Image
+              src={r.imageUrl}
+              alt={r.item.display}
+              width={336}
+              height={336}
+              className="h-full w-full object-contain p-2"
+              unoptimized
+            />
+          ) : (
+            <span className="px-2 text-center text-[13px] leading-tight text-neutral-400">
+              {t(lang, "invAddPhoto")}
+            </span>
+          )}
+        </div>
+
+        <p className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug text-neutral-100">
+          {r.item.display}
+        </p>
+        <p className={`mt-0.5 text-[13px] ${short ? "font-semibold text-red-400" : "text-neutral-500"}`}>
+          {short
+            ? t(lang, "invBuyN", { n: shortfall(r) })
+            : t(lang, "invHaveN", { n: Number(r.on_hand) })}
+        </p>
+      </button>
+
+      {/* One tap to order. Sits on the picture so the thumb never has to find
+          a different control on a different card. */}
+      <button
+        onClick={onAdd}
+        aria-label={t(lang, "invAddToOrder")}
+        className={`absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full text-[22px] font-bold shadow-lg transition ${
+          inOrder ? "bg-green-500 text-black" : "bg-black/70 text-white active:bg-black"
+        }`}
+      >
+        {inOrder ? "✓" : "+"}
+      </button>
+    </div>
+  );
+}
+
+/* ───────────────────── one item, opened ───────────────────── */
+
+function ItemSheet({
+  r, lang, canEdit, inOrder, onAdd, onRemove, onClose, refresh,
+}: {
+  r: Joined;
+  lang: string;
+  canEdit: boolean;
+  inOrder: number | null;
+  onAdd: (qty: number) => void;
+  onRemove: () => void;
+  onClose: () => void;
+  refresh: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const short = r.min_qty != null && Number(r.on_hand) < Number(r.min_qty);
+  const [busy, setBusy] = useState(false);
+  const [qty, setQty] = useState(inOrder ?? shortfall(r));
+  const [onHand, setOnHand] = useState(Number(r.on_hand));
+
+  async function setStock(next: number) {
+    if (next < 0) return;
+    setOnHand(next);
+    setBusy(true);
+    try {
+      await fetch("/shop/api/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "inv_set", id: r.id, onHand: next }),
+      });
+      refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -204,7 +388,7 @@ function ItemRow({
       fd.append("catalogId", r.item.id);
       fd.append("sku", r.item.sku);
       const res = await fetch("/shop/api/item-photo", { method: "POST", body: fd });
-      if (res.ok) refresh();
+      if (res.ok) { refresh(); onClose(); }
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -212,54 +396,200 @@ function ItemRow({
   }
 
   return (
-    <div className={`flex items-center gap-3 border-b border-neutral-800 p-2.5 last:border-b-0 ${short ? "bg-red-950/20" : ""}`}>
-      {/* the picture. Until there is one the frame says so — an invented
-          graphic would be worse than an honest gap. */}
-      <label className="relative grid h-14 w-14 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl border border-neutral-800 bg-neutral-950">
+    <Sheet onClose={onClose}>
+      <div className="mx-auto grid aspect-square w-full max-w-[300px] place-items-center overflow-hidden rounded-2xl border border-neutral-800 bg-white">
         {r.imageUrl ? (
-          <Image src={r.imageUrl} alt={r.item.display} width={112} height={112}
-            className="h-full w-full object-cover" unoptimized />
+          <Image src={r.imageUrl} alt={r.item.display} width={600} height={600}
+            className="h-full w-full object-contain p-3" unoptimized />
         ) : (
-          <span className="text-[10px] leading-tight text-neutral-600">
-            {uploading ? "…" : t(lang, "invAddPhoto")}
-          </span>
+          <span className="text-[15px] text-neutral-400">{t(lang, "invAddPhoto")}</span>
         )}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment"
-          onChange={onFile} disabled={uploading} className="hidden" />
-      </label>
-
-      <div className="min-w-0 flex-1">
-        <p className="text-[15px] leading-snug text-neutral-100">{r.item.display}</p>
-        <p className="truncate text-[12px] text-neutral-500">
-          {t(lang, "invMin")} {r.min_qty ?? "—"} {r.item.unit}
-          {short && (
-            <span className="ml-1 font-semibold text-red-400">
-              · {t(lang, "invBuy")} {Math.ceil(Number(r.min_qty) - Number(r.on_hand))}
-            </span>
-          )}
-          {r.buy?.pack_qty && <span className="ml-1 text-neutral-600">· {r.buy.pack_qty}/pack</span>}
-        </p>
       </div>
 
-      {r.buy?.url && (
-        <a href={r.buy.url} target="_blank" rel="noopener noreferrer"
-          className="grid h-11 w-9 shrink-0 place-items-center rounded-lg text-[15px] font-bold text-amber-400"
-          title={r.buy.supplier}>
-          ↗
-        </a>
+      <h3 className="mt-4 text-center text-[21px] font-display font-bold leading-tight">
+        {r.item.display}
+      </h3>
+      <p className="mt-1 text-center text-[14px] text-neutral-500">
+        {t(lang, "invHaveN", { n: onHand })}
+        {r.min_qty != null && ` · ${t(lang, "invMin")} ${r.min_qty}`}
+        {r.buy?.pack_qty ? ` · ${r.buy.pack_qty}/pack` : ""}
+      </p>
+
+      {/* how many to order */}
+      <div className="mt-5 flex items-center justify-center gap-4">
+        <button onClick={() => setQty((n) => Math.max(1, n - 1))}
+          className="h-14 w-14 rounded-2xl border border-neutral-700 text-[24px] text-neutral-200">−</button>
+        <span className="w-16 text-center text-[30px] font-bold tabular-nums">{qty}</span>
+        <button onClick={() => setQty((n) => Math.min(9999, n + 1))}
+          className="h-14 w-14 rounded-2xl border border-neutral-700 text-[24px] text-neutral-200">+</button>
+      </div>
+
+      <button
+        onClick={() => onAdd(qty)}
+        className="mt-4 min-h-[60px] w-full rounded-2xl bg-amber-500 text-[18px] font-bold text-black active:bg-amber-400"
+      >
+        {inOrder != null ? t(lang, "invUpdateOrder") : t(lang, "invAddToOrder")}
+      </button>
+      {inOrder != null && (
+        <button onClick={onRemove}
+          className="mt-2 min-h-[48px] w-full rounded-2xl text-[15px] font-semibold text-neutral-400">
+          {t(lang, "invRemove")}
+        </button>
       )}
 
-      {canEdit ? (
-        <div className="flex shrink-0 items-center gap-1">
-          <button onClick={() => onQty(r, Number(r.on_hand) - 1)} disabled={busy}
-            className="h-11 w-10 rounded-lg border border-neutral-700 text-[19px] text-neutral-300 disabled:opacity-40">−</button>
-          <span className="w-9 text-center text-[17px] font-bold tabular-nums">{Number(r.on_hand)}</span>
-          <button onClick={() => onQty(r, Number(r.on_hand) + 1)} disabled={busy}
-            className="h-11 w-10 rounded-lg border border-neutral-700 text-[19px] text-neutral-300 disabled:opacity-40">+</button>
+      {/* everything that is not ordering, kept out of the way */}
+      <div className="mt-6 space-y-2 border-t border-neutral-800 pt-4">
+        {canEdit && (
+          <div className="flex items-center gap-3">
+            <span className="flex-1 text-[15px] text-neutral-400">{t(lang, "invCount")}</span>
+            <button onClick={() => setStock(onHand - 1)} disabled={busy}
+              className="h-11 w-11 rounded-lg border border-neutral-700 text-[19px] text-neutral-300 disabled:opacity-40">−</button>
+            <span className="w-10 text-center text-[17px] font-bold tabular-nums">{onHand}</span>
+            <button onClick={() => setStock(onHand + 1)} disabled={busy}
+              className="h-11 w-11 rounded-lg border border-neutral-700 text-[19px] text-neutral-300 disabled:opacity-40">+</button>
+          </div>
+        )}
+        <label className="flex min-h-[48px] cursor-pointer items-center text-[15px] text-neutral-400">
+          <span className="flex-1">{uploading ? "…" : t(lang, "invTakePhoto")}</span>
+          <span className="text-[19px]">📷</span>
+          <input ref={fileRef} type="file" accept="image/*" capture="environment"
+            onChange={onFile} disabled={uploading} className="hidden" />
+        </label>
+        {r.buy?.url && (
+          <a href={r.buy.url} target="_blank" rel="noopener noreferrer"
+            className="flex min-h-[48px] items-center text-[15px] text-neutral-400">
+            <span className="flex-1">{r.buy.supplier}</span>
+            <span className="text-amber-400">↗</span>
+          </a>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+/* ───────────────────── the order, before it is sent ───────────────────── */
+
+function OrderSheet({
+  lang, rows, order, setOrder, onRemove, onClose, onSent,
+}: {
+  lang: string;
+  rows: Joined[];
+  order: Record<string, number>;
+  setOrder: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  onRemove: (catalogId: string) => void;
+  onClose: () => void;
+  onSent: () => void;
+}) {
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  const byCatalog = useMemo(() => new Map(rows.map((r) => [r.catalog_id, r])), [rows]);
+  const lines = Object.entries(order)
+    .map(([catalogId, qty]) => ({ r: byCatalog.get(catalogId), qty, catalogId }))
+    .filter((l) => l.r);
+
+  async function send() {
+    setSending(true);
+    setError(null);
+    try {
+      const res = await fetch("/shop/api/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lines: lines.map((l) => ({ catalogId: l.catalogId, qty: l.qty })),
+        }),
+      });
+      if (!res.ok) {
+        setError(t(lang, "invOrderFailed"));
+        return;
+      }
+      setDone(true);
+      setTimeout(onSent, 1400);
+    } catch {
+      setError(t(lang, "invOrderFailed"));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <Sheet onClose={onSent}>
+        <div className="py-10 text-center">
+          <p className="text-[46px]">✅</p>
+          <p className="mt-3 text-[20px] font-display font-bold">{t(lang, "invOrderSent")}</p>
+          <p className="mt-1 text-[15px] text-neutral-500">{t(lang, "invOrderSentHint")}</p>
         </div>
-      ) : (
-        <span className="w-9 text-center text-[17px] font-bold tabular-nums">{Number(r.on_hand)}</span>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Sheet onClose={onClose}>
+      <h3 className="text-[21px] font-display font-bold">{t(lang, "invOrderTitle")}</h3>
+      <p className="mt-1 text-[14px] text-neutral-500">{t(lang, "invOrderHint")}</p>
+
+      <div className="mt-4 divide-y divide-neutral-800">
+        {lines.map(({ r, qty, catalogId }) => (
+          <div key={catalogId} className="flex items-center gap-3 py-2.5">
+            <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-neutral-800 bg-white">
+              {r!.imageUrl ? (
+                <Image src={r!.imageUrl} alt="" width={112} height={112}
+                  className="h-full w-full object-contain p-1" unoptimized />
+              ) : null}
+            </div>
+            <p className="min-w-0 flex-1 text-[15px] leading-snug">{r!.item.display}</p>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                onClick={() =>
+                  setOrder((o) => ({ ...o, [catalogId]: Math.max(1, (o[catalogId] ?? 1) - 1) }))
+                }
+                className="h-11 w-10 rounded-lg border border-neutral-700 text-[19px] text-neutral-300">−</button>
+              <span className="w-8 text-center text-[17px] font-bold tabular-nums">{qty}</span>
+              <button
+                onClick={() =>
+                  setOrder((o) => ({ ...o, [catalogId]: Math.min(9999, (o[catalogId] ?? 1) + 1) }))
+                }
+                className="h-11 w-10 rounded-lg border border-neutral-700 text-[19px] text-neutral-300">+</button>
+            </div>
+            <button onClick={() => onRemove(catalogId)}
+              className="h-11 w-9 shrink-0 text-[17px] text-neutral-600">✕</button>
+          </div>
+        ))}
+      </div>
+
+      {error && (
+        <p className="mt-3 rounded-xl bg-red-950/40 px-3 py-2 text-center text-[15px] text-red-300">
+          {error}
+        </p>
       )}
+
+      <button
+        onClick={send}
+        disabled={sending || lines.length === 0}
+        className="mt-5 min-h-[60px] w-full rounded-2xl bg-amber-500 text-[19px] font-bold text-black disabled:opacity-50 active:bg-amber-400"
+      >
+        {sending ? "…" : t(lang, "invSendOrder")}
+      </button>
+    </Sheet>
+  );
+}
+
+/* ───────────────────── bottom sheet shell ───────────────────── */
+
+function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
+      <button
+        aria-label="close"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/70"
+      />
+      <div className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-neutral-800 bg-neutral-950 px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:rounded-3xl sm:border">
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-700 sm:hidden" />
+        {children}
+      </div>
     </div>
   );
 }
