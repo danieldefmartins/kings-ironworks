@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { listCatalog, listInventory, listSupplierPrices } from "@/lib/shop/db";
+import { listCatalog, listInventory, listSupplierPrices, signPhotoUrl } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import InventoryClient from "./InventoryClient";
 import { t } from "@/lib/shop/i18n";
@@ -25,7 +25,7 @@ export default async function InventoryPage() {
   // Only rows whose catalog item still exists and is active — a retired SKU
   // should drop off the count rather than linger as a mystery line.
   const rows = inventory
-    .map((r) => ({ ...r, item: byId.get(r.catalog_id)!, buy: bestBy.get(r.catalog_id) || null }))
+    .map((r) => ({ ...r, item: byId.get(r.catalog_id)!, buy: bestBy.get(r.catalog_id) || null, imageUrl: null as string | null }))
     .filter((r) => r.item)
     .sort((a, b) => {
       const aShort = a.min_qty != null && Number(a.on_hand) < Number(a.min_qty);
@@ -33,6 +33,14 @@ export default async function InventoryPage() {
       if (aShort !== bShort) return aShort ? -1 : 1;
       return a.item.display.localeCompare(b.item.display);
     });
+
+  // Sign only the images that exist, in parallel — a signed URL per row on a
+  // 200-row list would otherwise be 200 sequential round trips.
+  await Promise.all(
+    rows.map(async (r) => {
+      if (r.item.image_url) r.imageUrl = await signPhotoUrl(r.item.image_url);
+    }),
+  );
 
   return (
     <div>

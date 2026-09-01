@@ -604,3 +604,11 @@ export async function listSupplierPrices(): Promise<SupplierPrice[]> {
     `select=*&org_id=eq.${ORG_ID}&order=unit_price.asc.nullslast`
   );
 }
+
+// The stored path of an item's picture. Kept as a path, not a URL, so it is
+// signed fresh on every render like every other photo in the app.
+export async function setCatalogImage(catalogId: string, path: string): Promise<void> {
+  await sbUpdate("kiw_materials_catalog", `org_id=eq.${ORG_ID}&id=eq.${catalogId}`, {
+    image_url: path,
+  });
+}

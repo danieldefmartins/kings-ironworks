@@ -185,6 +185,17 @@ export interface CatalogItem {
   weight_per_ft: number | null;
   unit: string;          // ft | ea | sqft | job
   active: boolean;
+  // Supplies and tools carry facts steel does not.
+  brand?: string | null;
+  supplier?: string | null;
+  supplier_sku?: string | null;
+  reorder_url?: string | null;
+  image_url?: string | null;   // storage PATH, signed at render time
+  pack_qty?: number | null;
+  unit_cost?: number | null;
+  is_tool?: boolean;
+  service_interval_days?: number | null;
+  notes?: string | null;
 }
 
 export interface InventoryRow {
