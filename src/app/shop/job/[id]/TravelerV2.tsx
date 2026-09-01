@@ -230,9 +230,6 @@ export default function TravelerV2({
                 catalogId: item.id,
               })
             }
-            onRequest={(description, role) =>
-              act({ type: "catalog_request", jobId: job.id, description, roleKey: role.key })
-            }
           />
           {cut.length > 0 && (
             <ul className="mt-3 divide-y divide-neutral-800">
