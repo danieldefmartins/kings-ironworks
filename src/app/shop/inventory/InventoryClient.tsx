@@ -62,7 +62,7 @@ function steelCatalogImage(row: Joined): string | null {
   const name = row.item.display.toLowerCase();
   if (name.includes("diamond") || name.includes("tread")) return "/images/shop/materials/diamond-plate.webp";
   if (name.includes("rebar")) return "/images/shop/materials/rebar.webp";
-  if (name.includes("molding") || name.includes("molded cap") || name.includes("scroll") || name.includes("collar")) return "/images/shop/materials/molded-cap-rail.png";
+  if (name.includes("molding") || name.includes("molded cap") || name.includes("scroll") || name.includes("collar")) return "/images/shop/materials/molding.webp";
   if (name.includes("plate")) return "/images/shop/materials/plate.webp";
   if (name.includes("angle") || name.includes("l iron")) return "/images/shop/materials/angle.webp";
   if (name.includes("channel") || name.includes("c-channel")) return "/images/shop/materials/channel.webp";
@@ -233,7 +233,7 @@ export default function InventoryClient({
       // The chosen product, or — if it has been retired from the catalog —
       // whatever else in the department has a picture, so a tile is never blank.
       const cover =
-        all.flatMap((f) => f.items).find((i) => i.row.item.sku === d.cover)?.row.imageUrl ??
+        (() => { const coverRow = all.flatMap((f) => f.items).find((i) => i.row.item.sku === d.cover)?.row; return coverRow ? steelCatalogImage(coverRow) : null; })() ??
         all.find((f) => f.imageUrl)?.imageUrl ??
         null;
       // Count PRODUCTS running low, not rows. Counting rows reads as nonsense
