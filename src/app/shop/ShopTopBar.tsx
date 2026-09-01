@@ -52,7 +52,7 @@ export default function ShopTopBar({
           aria-label="King Iron Works"
           className="flex h-10 w-[66px] shrink-0 items-center justify-center"
         >
-          <Image src="/logo.png" alt="King Iron Works" width={400} height={266} className="h-auto w-full brightness-0 invert" priority />
+          <Image src="/images/logo-white-transparent.png" alt="King Iron Works" width={1536} height={1024} className="h-auto w-full" priority />
         </Link>
         <span aria-hidden className="h-6 w-px shrink-0 bg-white/10" />
         <h1 className="truncate text-xl font-semibold tracking-tight text-neutral-100">{title}</h1>

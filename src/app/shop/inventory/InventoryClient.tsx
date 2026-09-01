@@ -65,6 +65,12 @@ function steelCatalogImage(row: Joined): string | null {
   if (name.includes("rebar")) return "/images/shop/materials/rebar.webp";
   if (name.includes("molding") || name.includes("scroll") || name.includes("collar")) return "/images/shop/materials/molding.webp";
   if (name.includes("plate")) return "/images/shop/materials/plate.webp";
+  if (name.includes("angle") || name.includes("l iron")) return "/images/shop/materials/angle.webp";
+  if (name.includes("channel") || name.includes("c-channel")) return "/images/shop/materials/channel.webp";
+  if (name.includes("beam") || name.includes("w6") || name.includes("w8") || name.includes("w10") || name.includes("w12")) return "/images/shop/materials/beam.webp";
+  if (name.includes("tube") || name.includes("hss") || name.includes("square")) return "/images/shop/materials/tube.webp";
+  if (name.includes("pipe") || name.includes("round")) return "/images/shop/materials/pipe.webp";
+  if (name.includes("flat")) return "/images/shop/materials/flat-bar.webp";
   return null;
 }
 
@@ -222,6 +228,7 @@ export default function InventoryClient({
   const lowFamilies = useMemo(() => buildFamilies(low), [low]);
 
   const orderCount = Object.keys(order).length;
+  const orderUnits = Object.values(order).reduce((sum, n) => sum + n, 0);
   const addRow = (r: Joined, qty = shortfall(r)) =>
     setOrder((o) => ({ ...o, [r.catalog_id]: qty }));
   const dropRow = (catalogId: string) =>
@@ -235,7 +242,7 @@ export default function InventoryClient({
   // to ask which — guessing a size on someone's behalf is how the wrong anchor
   // ends up on the truck.
   const onCardAdd = (f: Family) => {
-    if (f.items.length === 1) addRow(f.items[0].row);
+    if (f.items.length === 1) setOpenItem(f.items[0].row);
     else setOpenFamily(f);
   };
   const onCardOpen = (f: Family) => {
@@ -370,9 +377,7 @@ export default function InventoryClient({
             onClick={() => setReviewing(true)}
             className="mx-auto flex min-h-[60px] w-full max-w-3xl items-center justify-center gap-2 rounded-2xl bg-amber-500 text-[19px] font-bold text-black active:bg-amber-400"
           >
-            {orderCount === 1
-              ? t(lang, "invOrderOne")
-              : t(lang, "invOrderMany", { n: orderCount })}
+            {t(lang, "invReviewOrder")} · {orderUnits} {t(lang, "invItems")}
           </button>
         </div>
       )}
