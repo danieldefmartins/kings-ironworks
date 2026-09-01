@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { BriefcaseBusiness, Clock3, House, MoreHorizontal, PackageSearch, Ruler, X } from "lucide-react";
+import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { shiftHours } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
@@ -79,9 +78,9 @@ export default function ShopShell({
   const tabs = [
     { href: "/shop", label: t(lang, "navToday"), icon: House, exact: true },
     { href: "/shop/jobs", label: t(lang, "jobs"), icon: BriefcaseBusiness },
+    { clock: true, label: shift ? (onBreak ? t(lang, "clockBreak") : t(lang, "clockWorking")) : t(lang, "clockInLabel"), icon: Clock3 },
     { href: "/shop/leads", label: t(lang, "navMeasure"), icon: Ruler },
     { href: "/shop/inventory", label: t(lang, "tileInventory"), icon: PackageSearch },
-    { href: "/shop/more", label: t(lang, "navMore"), icon: MoreHorizontal },
   ];
   const hours = shift ? shiftHours(shift, breaks, now) : 0;
   const regularHours = Math.min(hours, Math.max(0, 40 - weekHoursBeforeShift));
@@ -92,24 +91,25 @@ export default function ShopShell({
     <div className="min-h-screen pb-[calc(82px+env(safe-area-inset-bottom))]">
       {children}
 
-      <button
-        onClick={() => setOpen(true)}
-        className={`fixed bottom-[calc(76px+env(safe-area-inset-bottom))] right-4 z-30 flex min-h-12 items-center gap-2 rounded-full border px-4 shadow-2xl backdrop-blur-xl ${
-          shift ? "border-emerald-500/50 bg-emerald-950/90 text-emerald-200" : "border-white/10 bg-neutral-800/95 text-neutral-100"
-        }`}
-      >
-        <Clock3 className="h-4 w-4" />
-        <span className="text-sm font-semibold">{shift ? `${onBreak ? t(lang, "clockBreak") : t(lang, "clockWorking")} · ${hours.toFixed(1)}h${earnings == null ? "" : ` · $${earnings.toFixed(2)}`}` : t(lang, "clockInLabel")}</span>
-      </button>
-
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">
-        <div className="mx-auto grid h-[68px] max-w-2xl grid-cols-5">
-          {tabs.map(({ href, label, icon: Icon, exact }) => {
+        <div className="mx-auto grid h-[72px] max-w-2xl grid-cols-5">
+          {tabs.map((tab) => {
+            const { label, icon: Icon } = tab;
+            if ("clock" in tab) return (
+              <button key="clock" onClick={() => setOpen(true)} className="relative flex flex-col items-center justify-end gap-0.5 pb-1.5 text-[10px] font-semibold text-neutral-200">
+                <span className={`absolute -top-5 grid h-14 w-14 place-items-center rounded-full border-4 border-neutral-950 shadow-xl ${shift ? "bg-emerald-500 text-black" : "bg-amber-500 text-black"}`}>
+                  <Clock3 className="h-6 w-6" strokeWidth={2.4} />
+                </span>
+                <span>{label}</span>
+                {shift && <span className="max-w-[74px] truncate text-[9px] font-normal text-emerald-400">{hours.toFixed(1)}h{earnings == null ? "" : ` · $${earnings.toFixed(0)}`}</span>}
+              </button>
+            );
+            const { href, exact } = tab;
             const active = exact ? path === href : path.startsWith(href);
-            return <Link key={label} href={href} className={`flex flex-col items-center justify-center gap-1 text-[11px] ${active ? "text-amber-400" : "text-neutral-500"}`}>
+            return <button type="button" key={label} onClick={() => router.push(href)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-1 text-[11px] ${active ? "text-amber-400" : "text-neutral-500"}`}>
               <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 1.8} />
               <span className={active ? "font-semibold" : ""}>{label}</span>
-            </Link>;
+            </button>;
           })}
         </div>
       </nav>

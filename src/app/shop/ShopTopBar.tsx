@@ -5,6 +5,7 @@ import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
 import { t } from "@/lib/shop/i18n";
 import MoreMenu, { MoreItem } from "./MoreMenu";
+import { ChevronLeft, UserRound } from "lucide-react";
 
 export default function ShopTopBar({
   workerName,
@@ -34,31 +35,18 @@ export default function ShopTopBar({
     router.refresh();
   }
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-neutral-900/95 backdrop-blur border-b border-neutral-800 px-4 py-3">
-      <div className="flex items-center gap-3 min-w-0">
+    <div className="sticky top-0 z-10 flex min-h-[64px] items-center justify-between gap-3 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
+      <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link
             href={back}
-            className="flex min-h-[48px] shrink-0 items-center rounded-lg border border-neutral-700 px-3 text-sm hover:bg-neutral-800"
+            aria-label={t(lang, "back")}
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-neutral-300 active:bg-neutral-800"
           >
-            ← {t(lang, "jobs")}
+            <ChevronLeft className="h-6 w-6" />
           </Link>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src="/images/logo-white-transparent.png"
-            alt="King Iron Works"
-            className="h-9 w-auto shrink-0"
-          />
-        )}
-        <div className="truncate">
-          <div className="text-amber-500 font-display font-bold leading-tight truncate">
-            {title}
-          </div>
-          <div className="text-[11px] text-neutral-500 uppercase tracking-widest">
-            King Iron Works · {t(lang, "shopFloor")}
-          </div>
-        </div>
+        ) : null}
+        <h1 className="truncate text-xl font-semibold tracking-tight text-neutral-100">{title}</h1>
       </div>
       {/* Language, admin and sign-out are housekeeping. They live behind one
           button so the bar can be the job the worker is standing in front of. */}
@@ -94,6 +82,7 @@ export default function ShopTopBar({
                   </button>
                 ))}
               </div>
+              <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {t(lang, "navMore")}</MoreItem>
               {adminLink && <MoreItem href="/shop/admin">⚙ Admin</MoreItem>}
               <MoreItem
                 onClick={() => {
