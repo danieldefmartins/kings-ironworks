@@ -13,6 +13,8 @@ import {
 import { t, stageLabel } from "@/lib/shop/i18n";
 import ShopTopBar from "../ShopTopBar";
 import MotivationBanner from "../MotivationBanner";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import JobsList from "./JobsList";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +49,7 @@ export default async function ShopBoard() {
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
   // Money is admin-only (Daniel + Kayky).
-  const canSeeMoney = !!worker.is_admin;
+  const canSeeMoney = canViewOwnerFinancials(worker);
 
   let jobs: Job[] = [];
   let error: string | null = null;
@@ -65,9 +67,10 @@ export default async function ShopBoard() {
   // Sales leads live on /shop/leads — the board shows fabrication work only.
   jobs = jobs.filter((j) => j.current_stage !== "Lead");
 
-  const withDeposit = jobs.filter((j) => depositValue(j) > 0);
-  const depositTotal = withDeposit.reduce((s, j) => s + depositValue(j), 0);
-  const depositCount = withDeposit.length;
+  const pendingProjects = jobs.filter((j) => j.current_stage !== "Done");
+  const projectTotal = pendingProjects.reduce((s, j) => s + Math.max(0, contractValue(j)), 0);
+  const receivedTotal = pendingProjects.reduce((s, j) => s + Math.max(0, depositValue(j)), 0);
+  const balanceTotal = Math.max(0, projectTotal - receivedTotal);
 
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
@@ -91,20 +94,16 @@ export default async function ShopBoard() {
         <div className="mb-4">
           <MotivationBanner lang={lang} seed={randomSeed()} />
         </div>
-        {canSeeMoney && depositTotal > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-800 bg-emerald-950/40 px-4 py-3">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wide text-emerald-500">
-                {t(lang, "depositsHeld")}
-              </div>
-              <div className="text-xs text-neutral-400">
-                {depositCount} {t(lang, "depositJobs")}
-              </div>
+        {canSeeMoney && (projectTotal > 0 || receivedTotal > 0) && (
+          <section className="mb-4 rounded-2xl border border-emerald-800/70 bg-emerald-950/30 p-4">
+            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-400">{t(lang, "projectMoney")}</div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-neutral-950/40 p-3"><div className="text-lg font-bold text-neutral-100">{money(projectTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "activeProjectTotal")}</div></div>
+              <div className="rounded-xl bg-neutral-950/40 p-3"><div className="text-lg font-bold text-emerald-300">{money(receivedTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "depositReceived")}</div></div>
+              <div className="rounded-xl bg-amber-500/10 p-3"><div className="text-lg font-bold text-amber-300">{money(balanceTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "balanceToReceive")}</div></div>
             </div>
-            <div className="text-2xl font-bold text-emerald-300">
-              {money(depositTotal)}
-            </div>
-          </div>
+            <div className="mt-3 text-xs text-neutral-500">{pendingProjects.length} {t(lang, "pendingProjects")}</div>
+          </section>
         )}
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
@@ -116,7 +115,9 @@ export default async function ShopBoard() {
         {jobs.length === 0 && !error && (
           <p className="text-neutral-500 text-center py-16">{t(lang, "noJobs")}</p>
         )}
-        <div className="grid gap-3 sm:grid-cols-2">
+        <JobsList jobs={jobs} lang={lang} canSeeMoney={canSeeMoney} workingCount={workingCount} progress={progress} />
+        {/* legacy card rendering removed; JobsList owns filtering and sorting */}
+        {false && <div className="grid gap-3 sm:grid-cols-2">
           {jobs.map((j) => {
             const p = progress[j.id] || { done: 0, total: 0 };
             const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
@@ -193,7 +194,7 @@ export default async function ShopBoard() {
               </Link>
             );
           })}
-        </div>
+        </div>}
       </div>
     </div>
   );

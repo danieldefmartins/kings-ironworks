@@ -8,6 +8,7 @@ import {
   STAGES,
   clockIn,
   clockOut,
+  recordShiftLocation,
   startBreak,
   endBreak,
   transferJob,
@@ -252,6 +253,12 @@ export async function POST(req: NextRequest) {
         const loc = punchLocation(body);
         await clockOut(worker.id, loc);
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
+        break;
+      }
+
+      case "shift_location": {
+        const loc = punchLocation(body);
+        await recordShiftLocation(worker.id, loc, body.workState === "break" ? "break" : "working");
         break;
       }
 

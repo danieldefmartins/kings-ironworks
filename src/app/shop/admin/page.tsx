@@ -14,13 +14,14 @@ import {
 } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import AdminClient from "./AdminClient";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
 
 export default async function ShopAdminPage() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
-  if (!worker.is_admin) redirect("/shop");
+  if (!canViewOwnerFinancials(worker)) redirect("/shop");
 
   const [workers, entries, jobs, depositJobs, archivedJobs] = await Promise.all([
     listWorkersWithRates(),

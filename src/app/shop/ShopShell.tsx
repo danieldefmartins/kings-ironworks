@@ -54,6 +54,26 @@ export default function ShopShell({
     return () => clearInterval(id);
   }, [shift]);
 
+  // Keep a lightweight breadcrumb trail during an open payroll shift. The
+  // page layout persists across shop navigation, so this continues while the
+  // worker uses jobs, inventory, or measuring screens. Unpaid breaks are marked
+  // separately and no location is collected until the break ends.
+  useEffect(() => {
+    if (!shift || onBreak) return;
+    let cancelled = false;
+    const ping = async () => {
+      const loc = await gps();
+      if (cancelled || loc.locationStatus === "unavailable") return;
+      await fetch("/shop/api/action", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "shift_location", workState: "working", ...loc }),
+      }).catch(() => undefined);
+    };
+    void ping();
+    const id = window.setInterval(() => void ping(), 5 * 60 * 1000);
+    return () => { cancelled = true; window.clearInterval(id); };
+  }, [shift, onBreak]);
+
   useEffect(() => {
     ["/shop", "/shop/jobs", "/shop/leads", "/shop/inventory"].forEach((href) => router.prefetch(href));
   }, [router]);
@@ -89,7 +109,7 @@ export default function ShopShell({
   const earnings = hourlyRate == null ? null : regularHours * hourlyRate + overtimeHours * hourlyRate * 1.5;
 
   return (
-    <div className="min-h-screen pb-[calc(82px+env(safe-area-inset-bottom))]">
+    <div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">

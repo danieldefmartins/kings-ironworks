@@ -16,6 +16,10 @@ export const STAGES = [
 ] as const;
 export type Stage = (typeof STAGES)[number];
 
+export function canViewOwnerFinancials(worker: { is_admin?: boolean | null; name?: string | null }): boolean {
+  return !!worker.is_admin && /^(daniel|kayky)\b/i.test((worker.name || "").trim());
+}
+
 // Photo categories the shop can pin an image to. "Installation — Location N"
 // covers up to 5 railings out of the box; workers can add a custom one.
 export const PRICE_CATEGORY = "Approved Estimate";
@@ -87,6 +91,18 @@ export interface TimeShift {
   approved_at: string | null;
   employee_note: string | null;
   manager_note: string | null;
+}
+
+export interface ShiftLocation {
+  id: string;
+  shift_id: string;
+  worker_id: string;
+  recorded_at: string;
+  lat: number;
+  lng: number;
+  accuracy_m: number | null;
+  location_status: string;
+  work_state: "working" | "break";
 }
 
 export interface TimeBreak {

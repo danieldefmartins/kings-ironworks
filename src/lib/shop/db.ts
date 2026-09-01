@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
+import { type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -299,6 +299,36 @@ export async function clockOut(workerId: string, loc?: PunchLocation | null): Pr
     status: "submitted",
     updated_at: now,
   });
+}
+
+// Periodic breadcrumb while a payroll shift is open. Location is supporting
+// attendance evidence; it never changes payable hours or geofence eligibility.
+export async function recordShiftLocation(
+  workerId: string,
+  loc: PunchLocation | null,
+  state: "working" | "break" = "working",
+): Promise<void> {
+  if (!loc?.lat || !loc?.lng) return;
+  const shift = await getOpenShift(workerId);
+  if (!shift) return;
+  await sbInsert("kiw_shop_shift_locations", {
+    org_id: ORG_ID,
+    shift_id: shift.id,
+    worker_id: workerId,
+    recorded_at: new Date().toISOString(),
+    lat: loc.lat,
+    lng: loc.lng,
+    accuracy_m: loc.accuracy ?? null,
+    location_status: loc.status ?? "unknown",
+    work_state: state,
+  });
+}
+
+export async function listShiftLocations(limit = 3000): Promise<ShiftLocation[]> {
+  return sbSelect<ShiftLocation[]>(
+    "kiw_shop_shift_locations",
+    `select=*&org_id=eq.${ORG_ID}&order=recorded_at.desc&limit=${Math.min(10000, Math.max(1, limit))}`
+  );
 }
 
 export async function startBreak(workerId: string): Promise<void> {
