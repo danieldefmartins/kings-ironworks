@@ -36,7 +36,7 @@ export default function ShopTopBar({
     router.refresh();
   }
   return (
-    <div className="sticky top-0 z-10 flex min-h-[64px] items-center justify-between gap-3 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
+    <div className="sticky top-0 z-10 relative grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link
@@ -55,11 +55,11 @@ export default function ShopTopBar({
           <Image src="/images/logo-white-transparent.png" alt="King Iron Works" width={1536} height={1024} className="h-auto w-full" priority />
         </Link>
         <span aria-hidden className="h-6 w-px shrink-0 bg-white/10" />
-        <h1 className="truncate text-xl font-semibold tracking-tight text-neutral-100">{title}</h1>
+        <h1 className="pointer-events-none absolute left-1/2 max-w-[44%] -translate-x-1/2 truncate text-center text-lg font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>
       </div>
       {/* Language, admin and sign-out are housekeeping. They live behind one
           button so the bar can be the job the worker is standing in front of. */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="col-start-3 flex items-center justify-end gap-3">
         <span className="hidden text-sm text-neutral-300 sm:inline">{workerName}</span>
         <MoreMenu label={t(lang, "more")} closeLabel={t(lang, "close")}>
           {(close) => (

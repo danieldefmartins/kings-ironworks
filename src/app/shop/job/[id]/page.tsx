@@ -18,6 +18,7 @@ import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import TimeClock from "./TimeClock";
 import TravelerV2 from "./TravelerV2";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export default async function JobTravelerPage({
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   // Money is admin-only (Daniel + Kayky).
-  const canSeePrices = !!worker.is_admin;
+  const canSeePrices = canViewOwnerFinancials(worker);
   const lang = worker.lang || "en";
 
   const { id } = await params;

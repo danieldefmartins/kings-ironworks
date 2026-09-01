@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { Menu } from "lucide-react";
 
 // Secondary controls — print, units, admin, sign out, delete — behind one
 // button, so the primary screen can be about the work instead of the system.
@@ -72,9 +73,7 @@ export default function MoreMenu({
           align === "left" ? "mr-auto" : ""
         }`}
       >
-        <span aria-hidden className="text-lg leading-none">
-          ⋯
-        </span>
+        <Menu aria-hidden className="h-6 w-6" />
         <span className="sr-only">{label}</span>
       </button>
 

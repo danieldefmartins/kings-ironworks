@@ -56,7 +56,6 @@ const STEEL_IMAGE_BY_CATEGORY: Record<string, string> = {
 };
 
 function steelCatalogImage(row: Joined): string | null {
-  if (row.imageUrl) return row.imageUrl;
   const direct = STEEL_IMAGE_BY_CATEGORY[row.item.category];
   if (direct) return direct;
   if (row.item.category !== "steel_stock") return null;
@@ -71,7 +70,25 @@ function steelCatalogImage(row: Joined): string | null {
   if (name.includes("tube") || name.includes("hss") || name.includes("square")) return "/images/shop/materials/tube.webp";
   if (name.includes("pipe") || name.includes("round")) return "/images/shop/materials/pipe.webp";
   if (name.includes("flat")) return "/images/shop/materials/flat-bar.webp";
-  return null;
+  return row.imageUrl;
+}
+
+/** Turn a catalog row into a product family. Variants (colour, pack size,
+ * spray vs liquid) stay inside the family sheet instead of becoming a wall of
+ * near-duplicate cards. */
+function familyParts(row: Joined) {
+  const raw = row.item.display.trim();
+  if (row.item.category === "paint" || row.item.category === "paint_spray") {
+    let name = raw
+      .replace(/\s*[-–]\s*(black|white|gray|grey|blue|yellow|red|green|galvanized primer)\b/gi, "")
+      .replace(/\s*\((?:quart|gallon|pint|spray)\)\s*$/i, "")
+      .replace(/\s+\d+(?:\.\d+)?\s*(?:oz|ounce|qt|quart|gal|gallon|l|liter)\b/gi, "")
+      .replace(/\s+/g, " ").trim();
+    if (/^spray paint/i.test(name)) name = "Spray paint";
+    return { key: `paint:${name.toLowerCase()}`, name, variant: raw.slice(name.length).replace(/^\s*[-–:]?\s*/, "") || raw };
+  }
+  const s = splitSize(raw);
+  return s;
 }
 
 // Worker-facing groups. The fine categories underneath exist so the app can
@@ -144,7 +161,7 @@ const shortfall = (r: Joined) =>
 function buildFamilies(rows: Joined[]): Family[] {
   const byKey = new Map<string, Family>();
   for (const row of rows) {
-    const s = splitSize(row.item.display);
+    const s = familyParts(row);
     let f = byKey.get(s.key);
     if (!f) {
       f = { key: s.key, name: s.name, items: [], imageUrl: null };
@@ -158,10 +175,12 @@ function buildFamilies(rows: Joined[]): Family[] {
 
 export default function InventoryClient({
   rows,
+  allRows,
   lang,
   canEdit,
 }: {
   rows: Joined[];
+  allRows?: Joined[];
   lang: string;
   canEdit: boolean;
 }) {
@@ -170,34 +189,36 @@ export default function InventoryClient({
   const refresh = () => startTransition(() => router.refresh());
 
   const [q, setQ] = useState("");
+  const [view, setView] = useState<"inventory" | "order">("inventory");
   const [dept, setDept] = useState<string | null>(null); // null = the department list
   const [openItem, setOpenItem] = useState<Joined | null>(null);
   const [openFamily, setOpenFamily] = useState<Family | null>(null);
   const [order, setOrder] = useState<Record<string, number>>({});
   const [reviewing, setReviewing] = useState(false);
+  const sourceRows = view === "order" ? (allRows ?? rows) : rows;
 
-  const low = useMemo(() => rows.filter(isShort), [rows]);
+  const low = useMemo(() => sourceRows.filter(isShort), [sourceRows]);
 
   const searching = q.trim().length > 0;
   const found = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return [];
     return buildFamilies(
-      rows.filter(
+      sourceRows.filter(
         (r) =>
           r.item.display.toLowerCase().includes(needle) ||
           r.item.sku.toLowerCase().includes(needle),
       ),
     );
-  }, [rows, q]);
+  }, [sourceRows, q]);
 
   const shelves = useMemo(
     () =>
       GROUPS.map((g) => ({
         key: g.key,
-        families: buildFamilies(rows.filter((r) => g.cats.includes(r.item.category))),
+        families: buildFamilies(sourceRows.filter((r) => g.cats.includes(r.item.category))),
       })).filter((s) => s.families.length > 0),
-    [rows],
+    [sourceRows],
   );
 
   // A department is worth showing only if something is actually in it. Its
@@ -255,6 +276,14 @@ export default function InventoryClient({
   return (
     <div className="pb-32">
       <div className="mx-auto max-w-3xl px-4">
+        <div className="mt-4 grid grid-cols-2 rounded-xl border border-neutral-700 bg-neutral-900 p-1">
+          {([['inventory', t(lang, "invInventory")], ['order', t(lang, "invOrderMaterial")]] as const).map(([key, label]) => (
+            <button key={key} type="button" onClick={() => { setView(key); setDept(null); }}
+              className={`min-h-[44px] rounded-lg text-sm font-semibold ${view === key ? "bg-amber-500 text-black" : "text-neutral-400"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -410,7 +439,7 @@ export default function InventoryClient({
       {reviewing && (
         <OrderSheet
           lang={lang}
-          rows={rows}
+          rows={sourceRows}
           order={order}
           setOrder={setOrder}
           onRemove={dropRow}
