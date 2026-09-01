@@ -90,7 +90,7 @@ export default async function ShopBoard() {
   return (
     <div>
       <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} back="/shop" lang={lang} adminLink={!!worker.is_admin} />
-      <div className="p-4 max-w-5xl mx-auto">
+      <div className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden p-4">
         <div className="mb-4">
           <MotivationBanner lang={lang} seed={randomSeed()} />
         </div>
