@@ -6,8 +6,10 @@ import {
   sbInsert,
   sbDelete,
   STAGES,
-  startTimeEntry,
-  stopTimeEntry,
+  clockOut,
+  startBreak,
+  endBreak,
+  transferJob,
   deletePhotoObject,
   ORG_ID,
   audit,
@@ -17,6 +19,23 @@ import {
 } from "@/lib/shop/db";
 
 export const runtime = "nodejs";
+
+function punchLocation(body: Record<string, unknown>) {
+  if (typeof body.lat !== "number" || typeof body.lng !== "number") return null;
+  const targetLat = Number(process.env.SHOP_GEOFENCE_LAT);
+  const targetLng = Number(process.env.SHOP_GEOFENCE_LNG);
+  const radius = Number(process.env.SHOP_GEOFENCE_RADIUS_M || 250);
+  let status: "verified" | "outside" | "unknown" = "unknown";
+  if (Number.isFinite(targetLat) && Number.isFinite(targetLng) && Number.isFinite(radius)) {
+    const rad = Math.PI / 180;
+    const a = Math.sin(((body.lat - targetLat) * rad) / 2) ** 2 +
+      Math.cos(targetLat * rad) * Math.cos(body.lat * rad) *
+      Math.sin(((body.lng - targetLng) * rad) / 2) ** 2;
+    const distance = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    status = distance <= radius ? "verified" : "outside";
+  }
+  return { lat: body.lat, lng: body.lng, accuracy: Number(body.accuracy) || null, status };
+}
 
 export async function POST(req: NextRequest) {
   const worker = await getSessionWorker();
@@ -201,23 +220,76 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Job time clock — START (auto-closes any running timer for this worker)
+      case "profile_update": {
+        const clean = (value: unknown, max: number) =>
+          typeof value === "string" ? value.trim().slice(0, max) || null : null;
+        const name = clean(body.name, 100);
+        const lang = clean(body.lang, 2);
+        if (!name || !lang || !["en", "pt", "es"].includes(lang)) {
+          return NextResponse.json({ error: "Name and language are required" }, { status: 400 });
+        }
+        await sbUpdate("kiw_shop_workers", `org_id=eq.${ORG_ID}&id=eq.${worker.id}`, {
+          name, lang, phone: clean(body.phone, 40), email: clean(body.email, 160),
+          emergency_contact_name: clean(body.emergencyContactName, 100),
+          emergency_contact_phone: clean(body.emergencyContactPhone, 40),
+        });
+        await audit("worker_profile_update", { workerId: worker.id, entity: "worker", entityId: worker.id });
+        break;
+      }
+
+      // Payroll shift + job allocation. GPS is supporting punch metadata only;
+      // a missing/outside location never discards payable time.
       case "time_start": {
-        const loc =
-          typeof body.lat === "number" && typeof body.lng === "number"
-            ? { lat: body.lat, lng: body.lng }
-            : null;
-        await startTimeEntry(worker.id, String(body.jobId), loc);
+        const loc = punchLocation(body);
+        if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
+        await transferJob(worker.id, String(body.jobId), loc);
+        await audit("shift_clock_in", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId, locationStatus: loc?.status || "unavailable" } });
         break;
       }
 
       // Job time clock — DONE
       case "time_stop": {
-        const loc =
-          typeof body.lat === "number" && typeof body.lng === "number"
-            ? { lat: body.lat, lng: body.lng }
-            : null;
-        await stopTimeEntry(worker.id, String(body.jobId), loc);
+        const loc = punchLocation(body);
+        await clockOut(worker.id, loc);
+        await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
+        break;
+      }
+
+      case "time_break_start": {
+        await startBreak(worker.id);
+        await audit("shift_break_start", { workerId: worker.id, entity: "shift" });
+        break;
+      }
+
+      case "time_break_end": {
+        if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
+        await endBreak(worker.id, String(body.jobId));
+        await audit("shift_break_end", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId } });
+        break;
+      }
+
+      case "time_transfer": {
+        if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
+        const loc = punchLocation(body);
+        await transferJob(worker.id, String(body.jobId), loc);
+        await audit("shift_job_transfer", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId } });
+        break;
+      }
+
+      case "time_correction_request": {
+        const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+        if (!body.shiftId || reason.length < 3) {
+          return NextResponse.json({ error: "Explain the correction" }, { status: 400 });
+        }
+        const own = await sbSelect<{ id: string }[]>("kiw_shop_shifts",
+          `select=id&org_id=eq.${ORG_ID}&id=eq.${body.shiftId}&worker_id=eq.${worker.id}&limit=1`);
+        if (!own[0]) return NextResponse.json({ error: "Shift not found" }, { status: 404 });
+        await sbInsert("kiw_shop_time_corrections", {
+          org_id: ORG_ID, shift_id: body.shiftId, worker_id: worker.id,
+          requested_started_at: body.startedAt || null, requested_ended_at: body.endedAt || null,
+          reason, status: "pending",
+        });
+        await audit("time_correction_requested", { workerId: worker.id, entity: "shift", entityId: body.shiftId, detail: { reason } });
         break;
       }
 
@@ -332,6 +404,43 @@ export async function POST(req: NextRequest) {
         await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&id=eq.${body.id}`, {
           ended_at: new Date().toISOString(),
         });
+        break;
+      }
+
+      case "shift_review": {
+        if (!worker.is_admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!body.shiftId || !["approved", "rejected"].includes(body.status)) {
+          return NextResponse.json({ error: "Bad review" }, { status: 400 });
+        }
+        await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${body.shiftId}&ended_at=not.is.null`, {
+          status: body.status, approved_by: worker.id, approved_at: now,
+          manager_note: typeof body.note === "string" ? body.note.slice(0, 500) : null,
+          updated_at: now,
+        });
+        await audit("shift_review", { workerId: worker.id, entity: "shift", entityId: body.shiftId, detail: { status: body.status } });
+        break;
+      }
+
+      case "correction_review": {
+        if (!worker.is_admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!body.id || !["approved", "rejected"].includes(body.status)) {
+          return NextResponse.json({ error: "Bad review" }, { status: 400 });
+        }
+        const rows = await sbSelect<{ id: string; shift_id: string; requested_started_at: string | null; requested_ended_at: string | null }[]>(
+          "kiw_shop_time_corrections", `select=*&org_id=eq.${ORG_ID}&id=eq.${body.id}&status=eq.pending&limit=1`);
+        const correction = rows[0];
+        if (!correction) return NextResponse.json({ error: "Request not found" }, { status: 404 });
+        if (body.status === "approved") {
+          const patch: Record<string, unknown> = { updated_at: now, status: "submitted" };
+          if (correction.requested_started_at) patch.started_at = correction.requested_started_at;
+          if (correction.requested_ended_at) patch.ended_at = correction.requested_ended_at;
+          await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${correction.shift_id}`, patch);
+        }
+        await sbUpdate("kiw_shop_time_corrections", `org_id=eq.${ORG_ID}&id=eq.${body.id}`, {
+          status: body.status, reviewed_by: worker.id, reviewed_at: now,
+          review_note: typeof body.note === "string" ? body.note.slice(0, 500) : null,
+        });
+        await audit("time_correction_review", { workerId: worker.id, entity: "shift", entityId: correction.shift_id, detail: { status: body.status } });
         break;
       }
 

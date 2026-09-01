@@ -120,6 +120,7 @@ export default async function ShopAdminPage() {
     <div>
       <ShopTopBar workerName={worker.name} title="Admin — Labor & Costs" back="/shop" />
       <div className="px-4 pt-4 max-w-5xl mx-auto">
+        <a href="/shop/admin/time" className="mr-2 inline-block rounded-lg border border-emerald-600/50 text-emerald-400 px-3 py-2 text-sm hover:bg-neutral-800">⏱ Team Timesheets</a>
         <a
           href="/shop/admin/settings"
           className="inline-block rounded-lg border border-amber-600/50 text-amber-400 px-3 py-2 text-sm hover:bg-neutral-800"

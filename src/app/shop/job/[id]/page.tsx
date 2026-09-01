@@ -26,8 +26,6 @@ export default async function JobTravelerPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  // ?ui=v2 previews the reworked screen against real data without changing
-  // anything for the crew. Remove once it is the default.
   searchParams?: Promise<{ ui?: string }>;
 }) {
   const worker = await getSessionWorker();
@@ -37,7 +35,8 @@ export default async function JobTravelerPage({
   const lang = worker.lang || "en";
 
   const { id } = await params;
-  const v2 = ((await searchParams)?.ui || "") === "v2";
+  // Simplified traveler is the default. ?ui=legacy is a temporary rollback.
+  const v2 = ((await searchParams)?.ui || "") !== "legacy";
   const catalog = v2 ? await listCatalog() : [];
   const job = await getJob(id);
   if (!job) notFound();

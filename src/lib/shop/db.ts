@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { type TimeEntry, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
+import { type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -207,6 +207,142 @@ export async function getWorkerById(id: string): Promise<Worker | null> {
 
 // ---- Time tracking (job clock) --------------------------------------------
 
+export type PunchLocation = {
+  lat: number;
+  lng: number;
+  accuracy?: number | null;
+  status?: TimeShift["start_location_status"];
+};
+
+export async function getOpenShift(workerId: string): Promise<TimeShift | null> {
+  const rows = await sbSelect<TimeShift[]>(
+    "kiw_shop_shifts",
+    `select=*&org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null&limit=1`
+  );
+  return rows[0] || null;
+}
+
+export async function getShiftBreaks(shiftId: string): Promise<TimeBreak[]> {
+  return sbSelect<TimeBreak[]>(
+    "kiw_shop_breaks",
+    `select=*&org_id=eq.${ORG_ID}&shift_id=eq.${shiftId}&order=started_at.asc`
+  );
+}
+
+export async function listShifts(since?: string): Promise<TimeShift[]> {
+  const after = since ? `&started_at=gte.${encodeURIComponent(since)}` : "";
+  return sbSelect<TimeShift[]>(
+    "kiw_shop_shifts",
+    `select=*&org_id=eq.${ORG_ID}${after}&order=started_at.desc&limit=1000`
+  );
+}
+
+export async function listBreaks(since?: string): Promise<TimeBreak[]> {
+  const after = since ? `&started_at=gte.${encodeURIComponent(since)}` : "";
+  return sbSelect<TimeBreak[]>(
+    "kiw_shop_breaks",
+    `select=*&org_id=eq.${ORG_ID}${after}&order=started_at.desc&limit=2000`
+  );
+}
+
+export async function listCorrections(): Promise<TimeCorrection[]> {
+  return sbSelect<TimeCorrection[]>(
+    "kiw_shop_time_corrections",
+    `select=*&org_id=eq.${ORG_ID}&order=created_at.desc&limit=300`
+  );
+}
+
+export async function clockIn(
+  workerId: string,
+  jobId: string,
+  loc?: PunchLocation | null
+): Promise<TimeShift> {
+  const current = await getOpenShift(workerId);
+  if (current) return current;
+  const now = new Date().toISOString();
+  const payRate = await getWorkerRate(workerId);
+  const rows = await sbInsert<TimeShift[]>("kiw_shop_shifts", {
+    org_id: ORG_ID,
+    worker_id: workerId,
+    pay_rate: payRate,
+    started_at: now,
+    start_lat: loc?.lat ?? null,
+    start_lng: loc?.lng ?? null,
+    start_accuracy_m: loc?.accuracy ?? null,
+    start_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
+  });
+  const shift = rows[0];
+  // Close a pre-migration/abandoned allocation before opening the first
+  // allocation under the new payroll shift.
+  await sbUpdate(
+    "kiw_shop_time_entries",
+    `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null`,
+    { ended_at: now }
+  );
+  await sbInsert("kiw_shop_time_entries", {
+    org_id: ORG_ID,
+    shift_id: shift.id,
+    worker_id: workerId,
+    job_id: jobId,
+    started_at: now,
+    start_lat: loc?.lat ?? null,
+    start_lng: loc?.lng ?? null,
+    start_accuracy_m: loc?.accuracy ?? null,
+  });
+  return shift;
+}
+
+export async function clockOut(workerId: string, loc?: PunchLocation | null): Promise<void> {
+  const shift = await getOpenShift(workerId);
+  if (!shift) return;
+  const now = new Date().toISOString();
+  await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, {
+    ended_at: now, end_lat: loc?.lat ?? null, end_lng: loc?.lng ?? null,
+    end_accuracy_m: loc?.accuracy ?? null,
+  });
+  await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shift.id}`, {
+    ended_at: now,
+    end_lat: loc?.lat ?? null,
+    end_lng: loc?.lng ?? null,
+    end_accuracy_m: loc?.accuracy ?? null,
+    end_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
+    status: "submitted",
+    updated_at: now,
+  });
+}
+
+export async function startBreak(workerId: string): Promise<void> {
+  const shift = await getOpenShift(workerId);
+  if (!shift) throw new Error("Clock in before starting a break");
+  const open = (await getShiftBreaks(shift.id)).find((b) => !b.ended_at);
+  if (open) return;
+  const now = new Date().toISOString();
+  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  await sbInsert("kiw_shop_breaks", { org_id: ORG_ID, shift_id: shift.id, started_at: now, paid: false });
+}
+
+export async function endBreak(workerId: string, jobId: string): Promise<void> {
+  const shift = await getOpenShift(workerId);
+  if (!shift) throw new Error("No open shift");
+  const now = new Date().toISOString();
+  await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  await sbInsert("kiw_shop_time_entries", {
+    org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
+  });
+}
+
+export async function transferJob(workerId: string, jobId: string, loc?: PunchLocation | null): Promise<void> {
+  const shift = await getOpenShift(workerId);
+  if (!shift) { await clockIn(workerId, jobId, loc); return; }
+  const now = new Date().toISOString();
+  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  await sbInsert("kiw_shop_time_entries", {
+    org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
+    start_lat: loc?.lat ?? null, start_lng: loc?.lng ?? null, start_accuracy_m: loc?.accuracy ?? null,
+  });
+}
+
 // The worker's currently running entry, if any (one at a time per worker).
 export async function getRunningEntry(workerId: string): Promise<TimeEntry | null> {
   const rows = await sbSelect<TimeEntry[]>(
@@ -282,6 +418,23 @@ export async function listWorkersWithRates(): Promise<Worker[]> {
     "kiw_shop_workers",
     `select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
   );
+}
+
+export async function getWorkerRate(workerId: string): Promise<number | null> {
+  const rows = await sbSelect<{ hourly_rate: number | string | null }[]>(
+    "kiw_shop_workers",
+    `select=hourly_rate&org_id=eq.${ORG_ID}&id=eq.${workerId}&limit=1`
+  );
+  const rate = rows[0]?.hourly_rate;
+  return rate == null || !Number.isFinite(Number(rate)) ? null : Number(rate);
+}
+
+export async function getWorkerProfile(workerId: string): Promise<Worker | null> {
+  const rows = await sbSelect<Worker[]>(
+    "kiw_shop_workers",
+    `select=id,name,role,active,lang,phone,email,emergency_contact_name,emergency_contact_phone&org_id=eq.${ORG_ID}&id=eq.${workerId}&limit=1`
+  );
+  return rows[0] || null;
 }
 
 // Archiving is how a finished job leaves the shop floor without leaving the

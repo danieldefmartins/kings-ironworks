@@ -44,6 +44,10 @@ export interface Worker {
   lang?: string;
   hourly_rate?: number | null;
   is_admin?: boolean;
+  phone?: string | null;
+  email?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
 }
 
 export interface TimeEntry {
@@ -57,8 +61,54 @@ export interface TimeEntry {
   start_lng: number | null;
   end_lat: number | null;
   end_lng: number | null;
+  shift_id?: string | null;
+  start_accuracy_m?: number | null;
+  end_accuracy_m?: number | null;
   workerName?: string;
   jobLabel?: string;
+}
+
+export interface TimeShift {
+  id: string;
+  worker_id: string;
+  pay_rate?: number | string | null;
+  started_at: string;
+  ended_at: string | null;
+  start_lat: number | null;
+  start_lng: number | null;
+  start_accuracy_m: number | null;
+  end_lat: number | null;
+  end_lng: number | null;
+  end_accuracy_m: number | null;
+  start_location_status: "verified" | "outside" | "unavailable" | "unknown";
+  end_location_status: "verified" | "outside" | "unavailable" | "unknown";
+  status: "open" | "submitted" | "approved" | "rejected";
+  approved_by: string | null;
+  approved_at: string | null;
+  employee_note: string | null;
+  manager_note: string | null;
+}
+
+export interface TimeBreak {
+  id: string;
+  shift_id: string;
+  started_at: string;
+  ended_at: string | null;
+  paid: boolean;
+}
+
+export interface TimeCorrection {
+  id: string;
+  shift_id: string;
+  worker_id: string;
+  requested_started_at: string | null;
+  requested_ended_at: string | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  created_at: string;
 }
 
 export interface Photo {
@@ -166,6 +216,26 @@ export function entryHours(e: TimeEntry, now = Date.now()): number {
   const start = new Date(e.started_at).getTime();
   const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
   return Math.max(0, (end - start) / 3600000);
+}
+
+export function shiftHours(
+  shift: Pick<TimeShift, "started_at" | "ended_at">,
+  breaks: TimeBreak[] = [],
+  now = Date.now()
+): number {
+  const gross = Math.max(
+    0,
+    ((shift.ended_at ? new Date(shift.ended_at).getTime() : now) -
+      new Date(shift.started_at).getTime()) /
+      3600000
+  );
+  const unpaid = breaks
+    .filter((b) => !b.paid)
+    .reduce((sum, b) => {
+      const end = b.ended_at ? new Date(b.ended_at).getTime() : now;
+      return sum + Math.max(0, end - new Date(b.started_at).getTime()) / 3600000;
+    }, 0);
+  return Math.max(0, gross - unpaid);
 }
 
 // ---- Material catalog ------------------------------------------------------

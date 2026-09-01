@@ -12,7 +12,7 @@ export default async function ShopLoginPage() {
   let workers: { id: string; name: string; role: string }[] = [];
   let error: string | null = null;
   try {
-    workers = await listWorkers();
+    workers = (await listWorkers()).map(({ id, name, role }) => ({ id, name, role }));
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not load workers";
   }
