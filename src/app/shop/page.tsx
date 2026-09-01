@@ -43,7 +43,7 @@ export default async function ShopToday() {
           </div>
         </section>
         <section className="grid grid-cols-2 gap-3">
-          <Link href="/shop/jobs" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><BriefcaseBusiness className="mb-6 h-6 w-6 text-blue-400" /><div className="text-2xl font-semibold">{active.length}</div><div className="text-sm text-neutral-500">{t(lang, "activeJobsCount", { n: running.length })}</div></Link>
+          <Link href="/shop/jobs" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><BriefcaseBusiness className="mb-6 h-6 w-6 text-blue-400" /><div className="text-2xl font-semibold">{active.length}</div><div className="text-sm text-neutral-500">{t(lang, "underFabrication", { n: active.length })}</div></Link>
           <Link href="/shop/leads" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><Ruler className="mb-6 h-6 w-6 text-amber-400" /><div className="text-2xl font-semibold">{leads.length}</div><div className="text-sm text-neutral-500">{t(lang, "measuresLeads")}</div></Link>
         </section>
       </main>

@@ -165,6 +165,8 @@ export interface Job {
   scope: string | null;
   notes: string | null;
   archived: boolean;
+  assigned_worker_id?: string | null;
+  fabrication_order?: number | null;
   created_at: string;
 }
 

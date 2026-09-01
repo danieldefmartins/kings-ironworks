@@ -20,6 +20,7 @@ import {
   getOrgSettings,
   setJobArchived,
 } from "@/lib/shop/db";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 
 export const runtime = "nodejs";
 
@@ -114,6 +115,17 @@ export async function POST(req: NextRequest) {
           worker_id: worker.id,
           entered_at: now,
         });
+        break;
+      }
+
+      case "job_fabrication_set": {
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner access required" }, { status: 403 });
+        const { jobId, assignedWorkerId, fabricationOrder } = body;
+        await sbUpdate("kiw_shop_jobs", `org_id=eq.${ORG_ID}&id=eq.${jobId}`, {
+          assigned_worker_id: assignedWorkerId || null,
+          fabrication_order: Number.isFinite(Number(fabricationOrder)) ? Number(fabricationOrder) : null,
+        });
+        await audit("job_fabrication_set", { workerId: worker.id, entity: "job", entityId: jobId, detail: { assignedWorkerId, fabricationOrder } });
         break;
       }
 
