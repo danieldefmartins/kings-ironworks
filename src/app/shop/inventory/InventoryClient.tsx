@@ -69,6 +69,28 @@ const GROUPS: { key: string; cats: string[] }[] = [
   { key: "st_grating", cats: ["grating"] },
 ];
 
+// Departments — the first screen.
+//
+// Daniel: "materials inventory needs to be separated, cleaning, steel, tools
+// etc... are completely different stuff, make it in a way that makes sense,
+// probably a sub category before opening all products."
+//
+// Steel and toilet paper have nothing to do with each other and nobody is ever
+// looking for both. So the screen opens on a short list of departments — the
+// areas of the shop — and the shelves only appear once you have picked one.
+// A worker after a flap disc no longer scrolls past 121 beams to reach it.
+const DEPARTMENTS: { key: string; groups: string[] }[] = [
+  { key: "d_steel", groups: ["steel", "st_angle", "st_channel", "st_beam", "st_flat", "st_bar", "st_tube", "st_pipe", "st_plate", "st_grating"] },
+  { key: "d_fasteners", groups: ["screws", "anchors", "bolts"] },
+  { key: "d_abrasives", groups: ["discs", "bits"] },
+  { key: "d_welding", groups: ["welding"] },
+  { key: "d_tools", groups: ["tools"] },
+  { key: "d_paint", groups: ["paint"] },
+  { key: "d_safety", groups: ["safety"] },
+  { key: "d_shop", groups: ["shop"] },
+  { key: "d_break", groups: ["breakroom", "janitorial"] },
+];
+
 const isShort = (r: Joined) => r.min_qty != null && Number(r.on_hand) < Number(r.min_qty);
 // How many to buy: enough to clear the minimum, or one if we keep no minimum.
 const shortfall = (r: Joined) =>
@@ -105,6 +127,7 @@ export default function InventoryClient({
   const refresh = () => startTransition(() => router.refresh());
 
   const [q, setQ] = useState("");
+  const [dept, setDept] = useState<string | null>(null); // null = the department list
   const [openItem, setOpenItem] = useState<Joined | null>(null);
   const [openFamily, setOpenFamily] = useState<Family | null>(null);
   const [order, setOrder] = useState<Record<string, number>>({});
@@ -133,6 +156,25 @@ export default function InventoryClient({
       })).filter((s) => s.families.length > 0),
     [rows],
   );
+
+  // A department is worth showing only if something is actually in it. Its
+  // picture is borrowed from the first product inside, so the tile looks like
+  // the part of the shop it stands for instead of an invented icon.
+  const departments = useMemo(() => {
+    const byGroup = new Map(shelves.map((s) => [s.key, s]));
+    return DEPARTMENTS.map((d) => {
+      const mine = d.groups.map((g) => byGroup.get(g)).filter(Boolean) as typeof shelves;
+      const products = mine.reduce((n, s) => n + s.families.length, 0);
+      const cover = mine.flatMap((s) => s.families).find((f) => f.imageUrl)?.imageUrl ?? null;
+      // Count PRODUCTS running low, not rows. Counting rows reads as nonsense
+      // next to the product count — "14 products · 41 low" — because one
+      // product holds many sizes.
+      const short = mine
+        .flatMap((s) => s.families)
+        .filter((f) => f.items.some((i) => isShort(i.row))).length;
+      return { key: d.key, shelves: mine, products, cover, short };
+    }).filter((d) => d.products > 0);
+  }, [shelves]);
 
   const lowFamilies = useMemo(() => buildFamilies(low), [low]);
 
@@ -193,30 +235,78 @@ export default function InventoryClient({
             </div>
           )}
         </div>
-      ) : (
-        <>
+      ) : dept === null ? (
+        /* ── the department list: where in the shop are you standing? ── */
+        <div className="mx-auto max-w-3xl px-4">
           {lowFamilies.length > 0 && (
-            <Shelf
-              title={t(lang, "invg_low")}
-              tone="low"
-              lang={lang}
-              families={lowFamilies}
-              inOrderOf={familyInOrder}
-              onOpen={onCardOpen}
-              onAdd={onCardAdd}
-              action={{
-                label: t(lang, "invOrderAllLow"),
-                onClick: () =>
-                  setOrder((o) => {
-                    const next = { ...o };
-                    for (const r of low) next[r.catalog_id] = shortfall(r);
-                    return next;
-                  }),
-              }}
-            />
+            <button
+              onClick={() => setDept("low")}
+              className="mt-4 flex min-h-[64px] w-full items-center gap-3 rounded-2xl border border-red-900/60 bg-red-950/30 px-4 text-left active:bg-red-950/50"
+            >
+              <span className="flex-1 text-[17px] font-bold text-red-300">
+                {t(lang, "invg_low")}
+              </span>
+              <span className="text-[20px] font-bold text-red-400">{low.length}</span>
+              <span className="text-[20px] text-red-500">›</span>
+            </button>
           )}
 
-          {shelves.map((s) => (
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            {departments.map((d) => (
+              <button
+                key={d.key}
+                onClick={() => setDept(d.key)}
+                className="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/60 text-left active:bg-neutral-800"
+              >
+                <div className="grid aspect-[4/3] w-full place-items-center overflow-hidden bg-white">
+                  {d.cover ? (
+                    <Image src={d.cover} alt="" width={400} height={300}
+                      className="h-full w-full object-contain p-3" unoptimized />
+                  ) : null}
+                </div>
+                <div className="px-3 py-2.5">
+                  <p className="text-[16px] font-semibold leading-snug text-neutral-100">
+                    {t(lang, d.key)}
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-neutral-500">
+                    {t(lang, "invNProducts", { n: d.products })}
+                    {d.short > 0 && (
+                      <span className="ml-1 font-semibold text-red-400">
+                        · {d.short} {t(lang, "invLow")}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : dept === "low" ? (
+        <>
+          <DeptHeader lang={lang} title={t(lang, "invg_low")} onBack={() => setDept(null)} />
+          <Shelf
+            title={t(lang, "invg_low")}
+            tone="low"
+            lang={lang}
+            families={lowFamilies}
+            inOrderOf={familyInOrder}
+            onOpen={onCardOpen}
+            onAdd={onCardAdd}
+            action={{
+              label: t(lang, "invOrderAllLow"),
+              onClick: () =>
+                setOrder((o) => {
+                  const next = { ...o };
+                  for (const r of low) next[r.catalog_id] = shortfall(r);
+                  return next;
+                }),
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <DeptHeader lang={lang} title={t(lang, dept)} onBack={() => setDept(null)} />
+          {(departments.find((d) => d.key === dept)?.shelves ?? []).map((s) => (
             <Shelf
               key={s.key}
               title={t(lang, `invg_${s.key}`)}
@@ -280,6 +370,28 @@ export default function InventoryClient({
           onSent={() => { setOrder({}); setReviewing(false); }}
         />
       )}
+    </div>
+  );
+}
+
+/* ── where you are, and the way back out ── */
+
+function DeptHeader({
+  title, onBack, lang,
+}: {
+  title: string;
+  onBack: () => void;
+  lang: string;
+}) {
+  return (
+    <div className="mx-auto mt-4 flex max-w-3xl items-center gap-3 px-4">
+      <button
+        onClick={onBack}
+        className="flex min-h-[44px] items-center gap-1 rounded-xl border border-neutral-700 px-3 text-[15px] text-neutral-300 active:bg-neutral-800"
+      >
+        ‹ {t(lang, "invAllDepts")}
+      </button>
+      <h1 className="flex-1 truncate text-[22px] font-display font-bold">{title}</h1>
     </div>
   );
 }
