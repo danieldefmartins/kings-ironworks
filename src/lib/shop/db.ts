@@ -578,6 +578,43 @@ export async function signPhotoUrl(
   return data.signedURL ? `${SUPABASE_URL}/storage/v1${data.signedURL}` : null;
 }
 
+// Sign many photos at once, for screens that show hundreds of rows.
+//
+// Two things make this cheap where signing row-by-row is not. Most rows SHARE a
+// path — every size of a steel angle is one photo — so we sign unique paths,
+// not rows: the inventory screen has 617 rows and about 230 distinct pictures.
+// And a signature is good for an hour, so it is cached until shortly before it
+// expires; the second person to open the screen signs nothing at all. Signing
+// 617 URLs on every load cost ~6s of server time before this existed.
+const signCache = new Map<string, { url: string; expires: number }>();
+const SIGN_TTL_MS = 50 * 60 * 1000; // signed for 60 min; retire at 50
+
+export async function signPhotoUrls(
+  paths: (string | null | undefined)[]
+): Promise<Map<string, string>> {
+  const now = Date.now();
+  const out = new Map<string, string>();
+  const needed: string[] = [];
+
+  for (const p of paths) {
+    if (!p || out.has(p) || needed.includes(p)) continue;
+    const hit = signCache.get(p);
+    if (hit && hit.expires > now) out.set(p, hit.url);
+    else needed.push(p);
+  }
+
+  await Promise.all(
+    needed.map(async (p) => {
+      const url = await signPhotoUrl(p);
+      if (url) {
+        signCache.set(p, { url, expires: now + SIGN_TTL_MS });
+        out.set(p, url);
+      }
+    })
+  );
+  return out;
+}
+
 // ---- Material catalog & inventory ------------------------------------------
 //
 // Jobs consume catalog items, never a sentence somebody typed. Free text goes

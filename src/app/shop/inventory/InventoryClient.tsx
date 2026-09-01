@@ -55,7 +55,18 @@ const GROUPS: { key: string; cats: string[] }[] = [
   { key: "shop", cats: ["supply", "masonry"] },
   { key: "breakroom", cats: ["breakroom"] },
   { key: "janitorial", cats: ["janitorial"] },
+  // Steel gets a shelf per form, the way Central Steel Supply sells it and
+  // the way a fabricator asks for it. One shelf of 395 would be a wall.
   { key: "steel", cats: ["steel_stock"] },
+  { key: "st_angle", cats: ["angle"] },
+  { key: "st_channel", cats: ["channel"] },
+  { key: "st_beam", cats: ["beam"] },
+  { key: "st_flat", cats: ["flat_bar"] },
+  { key: "st_bar", cats: ["solid_round", "solid_square"] },
+  { key: "st_tube", cats: ["tube_square", "tube_rect"] },
+  { key: "st_pipe", cats: ["pipe_round", "tube_round"] },
+  { key: "st_plate", cats: ["plate"] },
+  { key: "st_grating", cats: ["grating"] },
 ];
 
 const isShort = (r: Joined) => r.min_qty != null && Number(r.on_hand) < Number(r.min_qty);

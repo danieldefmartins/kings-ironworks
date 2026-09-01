@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { listCatalog, listInventory, listSupplierPrices, signPhotoUrl } from "@/lib/shop/db";
+import { listCatalog, listInventory, listSupplierPrices, signPhotoUrls } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import InventoryClient from "./InventoryClient";
 import { t } from "@/lib/shop/i18n";
@@ -34,13 +34,13 @@ export default async function InventoryPage() {
       return a.item.display.localeCompare(b.item.display);
     });
 
-  // Sign only the images that exist, in parallel — a signed URL per row on a
-  // 200-row list would otherwise be 200 sequential round trips.
-  await Promise.all(
-    rows.map(async (r) => {
-      if (r.item.image_url) r.imageUrl = await signPhotoUrl(r.item.image_url);
-    }),
-  );
+  // One signature per distinct picture, cached across requests. Rows share
+  // photos (every size of an angle is the same picture), so signing per row
+  // would be ~617 round trips for ~230 images.
+  const signed = await signPhotoUrls(rows.map((r) => r.item.image_url));
+  for (const r of rows) {
+    if (r.item.image_url) r.imageUrl = signed.get(r.item.image_url) ?? null;
+  }
 
   return (
     <div>
