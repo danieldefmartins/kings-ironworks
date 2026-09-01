@@ -4,30 +4,41 @@
 //
 // Daniel: "I rather see images than list, an easy to scroll horizontal list
 // and an easy order button that will send me a message to order the materials.
-// I think this list is too crowded, I need simpler, image view page."
+// I think this list is too crowded, I need simpler, image view page." Then:
+// "image on top and centered, bigger, and information under. name on top."
+// Then: "we can gave the same product page with different sizes instead of a
+// huge list that has the same product and just different sizes, always keep in
+// mind to simplify while keeping the same features and products."
 //
-// So: every category is a row you swipe sideways, and every item is a big
-// centred picture with its name under it. A worker recognises the box before
-// they read a label, which is exactly the order this screen puts them in —
-// picture first, name second, count third. Nothing else is on the card.
+// So: every category is a row you swipe sideways; every card is a PRODUCT, not
+// a size. Eleven wedge anchors are one card that says "11 sizes" — the sizes
+// live inside it, still counted and still ordered individually. Picture on top,
+// centred and card-width; name under it; count under that. Nothing else.
 //
-// Ordering is the point of the screen, so it is one tap: + on a card puts it
-// in the order, the bar at the bottom counts it, and Send delivers the whole
-// list to Daniel on Telegram. Editing stock and taking a photo still exist,
-// but they live in the sheet you get by tapping a card — off the main view,
-// because they are not why anyone opens this page.
+// Ordering is one tap. Counting stock and taking a photo still exist, in the
+// sheet you reach by tapping a size, because they are not why anyone opens
+// this page.
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { CatalogItem, InventoryRow, SupplierPrice } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
+import { splitSize } from "@/lib/shop/families";
 
 type Joined = InventoryRow & {
   item: CatalogItem;
   buy: SupplierPrice | null;
   imageUrl: string | null;
 };
+
+// One product, with every size of it that the shop carries.
+interface Family {
+  key: string;
+  name: string;
+  items: { row: Joined; variant: string }[];
+  imageUrl: string | null;
+}
 
 // Worker-facing groups. The fine categories underneath exist so the app can
 // tell a flap disc from a cut-off wheel; these are what a person browses.
@@ -52,6 +63,23 @@ const isShort = (r: Joined) => r.min_qty != null && Number(r.on_hand) < Number(r
 const shortfall = (r: Joined) =>
   r.min_qty != null ? Math.max(1, Math.ceil(Number(r.min_qty) - Number(r.on_hand))) : 1;
 
+// Sizes of one product collapse into one card. Grouping happens per shelf, so
+// a product can never straddle two categories.
+function buildFamilies(rows: Joined[]): Family[] {
+  const byKey = new Map<string, Family>();
+  for (const row of rows) {
+    const s = splitSize(row.item.display);
+    let f = byKey.get(s.key);
+    if (!f) {
+      f = { key: s.key, name: s.name, items: [], imageUrl: null };
+      byKey.set(s.key, f);
+    }
+    f.items.push({ row, variant: s.variant });
+    if (!f.imageUrl) f.imageUrl = row.imageUrl;
+  }
+  return [...byKey.values()];
+}
+
 export default function InventoryClient({
   rows,
   lang,
@@ -66,7 +94,8 @@ export default function InventoryClient({
   const refresh = () => startTransition(() => router.refresh());
 
   const [q, setQ] = useState("");
-  const [open, setOpen] = useState<Joined | null>(null);   // item sheet
+  const [openItem, setOpenItem] = useState<Joined | null>(null);
+  const [openFamily, setOpenFamily] = useState<Family | null>(null);
   const [order, setOrder] = useState<Record<string, number>>({});
   const [reviewing, setReviewing] = useState(false);
 
@@ -76,10 +105,12 @@ export default function InventoryClient({
   const found = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return [];
-    return rows.filter(
-      (r) =>
-        r.item.display.toLowerCase().includes(needle) ||
-        r.item.sku.toLowerCase().includes(needle),
+    return buildFamilies(
+      rows.filter(
+        (r) =>
+          r.item.display.toLowerCase().includes(needle) ||
+          r.item.sku.toLowerCase().includes(needle),
+      ),
     );
   }, [rows, q]);
 
@@ -87,20 +118,36 @@ export default function InventoryClient({
     () =>
       GROUPS.map((g) => ({
         key: g.key,
-        items: rows.filter((r) => g.cats.includes(r.item.category)),
-      })).filter((s) => s.items.length > 0),
+        families: buildFamilies(rows.filter((r) => g.cats.includes(r.item.category))),
+      })).filter((s) => s.families.length > 0),
     [rows],
   );
 
+  const lowFamilies = useMemo(() => buildFamilies(low), [low]);
+
   const orderCount = Object.keys(order).length;
-  const addToOrder = (r: Joined, qty = shortfall(r)) =>
+  const addRow = (r: Joined, qty = shortfall(r)) =>
     setOrder((o) => ({ ...o, [r.catalog_id]: qty }));
-  const removeFromOrder = (catalogId: string) =>
+  const dropRow = (catalogId: string) =>
     setOrder((o) => {
       const next = { ...o };
       delete next[catalogId];
       return next;
     });
+
+  // A card with one size adds straight to the order. A card with several has
+  // to ask which — guessing a size on someone's behalf is how the wrong anchor
+  // ends up on the truck.
+  const onCardAdd = (f: Family) => {
+    if (f.items.length === 1) addRow(f.items[0].row);
+    else setOpenFamily(f);
+  };
+  const onCardOpen = (f: Family) => {
+    if (f.items.length === 1) setOpenItem(f.items[0].row);
+    else setOpenFamily(f);
+  };
+  const familyInOrder = (f: Family) =>
+    f.items.filter((i) => order[i.row.catalog_id] != null).length;
 
   return (
     <div className="pb-32">
@@ -121,14 +168,14 @@ export default function InventoryClient({
             </p>
           ) : (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {found.map((r) => (
+              {found.map((f) => (
                 <Card
-                  key={r.id}
-                  r={r}
+                  key={f.key}
+                  f={f}
                   lang={lang}
-                  inOrder={order[r.catalog_id] != null}
-                  onOpen={() => setOpen(r)}
-                  onAdd={() => addToOrder(r)}
+                  inOrder={familyInOrder(f)}
+                  onOpen={() => onCardOpen(f)}
+                  onAdd={() => onCardAdd(f)}
                   grid
                 />
               ))}
@@ -137,15 +184,15 @@ export default function InventoryClient({
         </div>
       ) : (
         <>
-          {low.length > 0 && (
+          {lowFamilies.length > 0 && (
             <Shelf
               title={t(lang, "invg_low")}
               tone="low"
               lang={lang}
-              items={low}
-              order={order}
-              onOpen={setOpen}
-              onAdd={addToOrder}
+              families={lowFamilies}
+              inOrderOf={familyInOrder}
+              onOpen={onCardOpen}
+              onAdd={onCardAdd}
               action={{
                 label: t(lang, "invOrderAllLow"),
                 onClick: () =>
@@ -163,10 +210,10 @@ export default function InventoryClient({
               key={s.key}
               title={t(lang, `invg_${s.key}`)}
               lang={lang}
-              items={s.items}
-              order={order}
-              onOpen={setOpen}
-              onAdd={addToOrder}
+              families={s.families}
+              inOrderOf={familyInOrder}
+              onOpen={onCardOpen}
+              onAdd={onCardAdd}
             />
           ))}
         </>
@@ -186,15 +233,27 @@ export default function InventoryClient({
         </div>
       )}
 
-      {open && (
+      {openFamily && (
+        <FamilySheet
+          f={openFamily}
+          lang={lang}
+          order={order}
+          onAdd={addRow}
+          onRemove={dropRow}
+          onCount={(r) => { setOpenFamily(null); setOpenItem(r); }}
+          onClose={() => setOpenFamily(null)}
+        />
+      )}
+
+      {openItem && (
         <ItemSheet
-          r={open}
+          r={openItem}
           lang={lang}
           canEdit={canEdit}
-          inOrder={order[open.catalog_id] ?? null}
-          onAdd={(qty) => { addToOrder(open, qty); setOpen(null); }}
-          onRemove={() => { removeFromOrder(open.catalog_id); setOpen(null); }}
-          onClose={() => setOpen(null)}
+          inOrder={order[openItem.catalog_id] ?? null}
+          onAdd={(qty) => { addRow(openItem, qty); setOpenItem(null); }}
+          onRemove={() => { dropRow(openItem.catalog_id); setOpenItem(null); }}
+          onClose={() => setOpenItem(null)}
           refresh={refresh}
         />
       )}
@@ -205,7 +264,7 @@ export default function InventoryClient({
           rows={rows}
           order={order}
           setOrder={setOrder}
-          onRemove={removeFromOrder}
+          onRemove={dropRow}
           onClose={() => setReviewing(false)}
           onSent={() => { setOrder({}); setReviewing(false); }}
         />
@@ -217,14 +276,14 @@ export default function InventoryClient({
 /* ───────────────────────── the swipeable row ───────────────────────── */
 
 function Shelf({
-  title, items, lang, order, onOpen, onAdd, tone, action,
+  title, families, lang, inOrderOf, onOpen, onAdd, tone, action,
 }: {
   title: string;
-  items: Joined[];
+  families: Family[];
   lang: string;
-  order: Record<string, number>;
-  onOpen: (r: Joined) => void;
-  onAdd: (r: Joined) => void;
+  inOrderOf: (f: Family) => number;
+  onOpen: (f: Family) => void;
+  onAdd: (f: Family) => void;
   tone?: "low";
   action?: { label: string; onClick: () => void };
 }) {
@@ -237,7 +296,7 @@ function Shelf({
           }`}
         >
           {title}
-          <span className="ml-2 text-[15px] font-normal text-neutral-500">{items.length}</span>
+          <span className="ml-2 text-[15px] font-normal text-neutral-500">{families.length}</span>
         </h2>
         {action && (
           <button
@@ -254,14 +313,14 @@ function Shelf({
           swallows the left padding and clips the card against the screen —
           scroll-padding is what makes the snap respect it. */}
       <div className="mx-auto mt-3 flex max-w-3xl snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {items.map((r) => (
+        {families.map((f) => (
           <Card
-            key={r.id}
-            r={r}
+            key={f.key}
+            f={f}
             lang={lang}
-            inOrder={order[r.catalog_id] != null}
-            onOpen={() => onOpen(r)}
-            onAdd={() => onAdd(r)}
+            inOrder={inOrderOf(f)}
+            onOpen={() => onOpen(f)}
+            onAdd={() => onAdd(f)}
           />
         ))}
       </div>
@@ -275,36 +334,34 @@ function Shelf({
    them at a glance. */
 
 function Card({
-  r, lang, inOrder, onOpen, onAdd, grid,
+  f, lang, inOrder, onOpen, onAdd, grid,
 }: {
-  r: Joined;
+  f: Family;
   lang: string;
-  inOrder: boolean;
+  inOrder: number;
   onOpen: () => void;
   onAdd: () => void;
   grid?: boolean;
 }) {
-  const short = isShort(r);
+  const many = f.items.length > 1;
+  const shortCount = f.items.filter((i) => isShort(i.row)).length;
+  const single = f.items[0].row;
+
   return (
-    <div
-      className={`relative ${grid ? "w-full" : "w-[168px] shrink-0 snap-start"}`}
-    >
-      <button
-        onClick={onOpen}
-        className="w-full text-left"
-      >
+    <div className={`relative ${grid ? "w-full" : "w-[168px] shrink-0 snap-start"}`}>
+      <button onClick={onOpen} className="w-full text-left">
         {/* White tile: these are product photos shot on white, so a white
             ground and object-contain shows the whole item instead of cropping
             into it the way a cover crop would. */}
         <div
           className={`grid aspect-square w-full place-items-center overflow-hidden rounded-2xl border bg-white ${
-            short ? "border-red-500/60" : "border-neutral-800"
+            shortCount > 0 ? "border-red-500/60" : "border-neutral-800"
           }`}
         >
-          {r.imageUrl ? (
+          {f.imageUrl ? (
             <Image
-              src={r.imageUrl}
-              alt={r.item.display}
+              src={f.imageUrl}
+              alt={f.name}
               width={336}
               height={336}
               className="h-full w-full object-contain p-2"
@@ -318,12 +375,18 @@ function Card({
         </div>
 
         <p className="mt-2 line-clamp-2 text-[15px] font-semibold leading-snug text-neutral-100">
-          {r.item.display}
+          {f.name}
         </p>
-        <p className={`mt-0.5 text-[13px] ${short ? "font-semibold text-red-400" : "text-neutral-500"}`}>
-          {short
-            ? t(lang, "invBuyN", { n: shortfall(r) })
-            : t(lang, "invHaveN", { n: Number(r.on_hand) })}
+        <p
+          className={`mt-0.5 text-[13px] ${
+            shortCount > 0 && !many ? "font-semibold text-red-400" : "text-neutral-500"
+          }`}
+        >
+          {many
+            ? t(lang, "invNSizes", { n: f.items.length })
+            : isShort(single)
+              ? t(lang, "invBuyN", { n: shortfall(single) })
+              : t(lang, "invHaveN", { n: Number(single.on_hand) })}
         </p>
       </button>
 
@@ -332,17 +395,79 @@ function Card({
       <button
         onClick={onAdd}
         aria-label={t(lang, "invAddToOrder")}
-        className={`absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full text-[22px] font-bold shadow-lg transition ${
-          inOrder ? "bg-green-500 text-black" : "bg-black/70 text-white active:bg-black"
+        className={`absolute right-2 top-2 grid h-11 w-11 place-items-center rounded-full text-[20px] font-bold shadow-lg transition ${
+          inOrder > 0 ? "bg-green-500 text-black" : "bg-black/70 text-white active:bg-black"
         }`}
       >
-        {inOrder ? "✓" : "+"}
+        {inOrder > 0 ? (many ? inOrder : "✓") : "+"}
       </button>
     </div>
   );
 }
 
-/* ───────────────────── one item, opened ───────────────────── */
+/* ───────────── one product, its sizes ───────────── */
+
+function FamilySheet({
+  f, lang, order, onAdd, onRemove, onCount, onClose,
+}: {
+  f: Family;
+  lang: string;
+  order: Record<string, number>;
+  onAdd: (r: Joined, qty?: number) => void;
+  onRemove: (catalogId: string) => void;
+  onCount: (r: Joined) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Sheet onClose={onClose}>
+      <div className="mx-auto grid aspect-square w-full max-w-[220px] place-items-center overflow-hidden rounded-2xl border border-neutral-800 bg-white">
+        {f.imageUrl ? (
+          <Image src={f.imageUrl} alt={f.name} width={440} height={440}
+            className="h-full w-full object-contain p-3" unoptimized />
+        ) : (
+          <span className="text-[15px] text-neutral-400">{t(lang, "invAddPhoto")}</span>
+        )}
+      </div>
+
+      <h3 className="mt-4 text-center text-[21px] font-display font-bold leading-tight">
+        {f.name}
+      </h3>
+      <p className="mt-1 text-center text-[14px] text-neutral-500">
+        {t(lang, "invPickSize")}
+      </p>
+
+      <div className="mt-4 divide-y divide-neutral-800">
+        {f.items.map(({ row, variant }) => {
+          const inOrder = order[row.catalog_id] != null;
+          const short = isShort(row);
+          return (
+            <div key={row.id} className="flex items-center gap-3 py-1">
+              <button onClick={() => onCount(row)} className="min-w-0 flex-1 py-2 text-left">
+                <p className="text-[16px] font-semibold text-neutral-100">{variant}</p>
+                <p className={`text-[13px] ${short ? "text-red-400" : "text-neutral-500"}`}>
+                  {short
+                    ? t(lang, "invBuyN", { n: shortfall(row) })
+                    : t(lang, "invHaveN", { n: Number(row.on_hand) })}
+                </p>
+              </button>
+              <button
+                onClick={() => (inOrder ? onRemove(row.catalog_id) : onAdd(row))}
+                aria-label={t(lang, "invAddToOrder")}
+                className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-[20px] font-bold ${
+                  inOrder ? "bg-green-500 text-black" : "border border-neutral-700 text-neutral-200"
+                }`}
+              >
+                {inOrder ? "✓" : "+"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+}
+
+/* ───────────────────── one size, opened ───────────────────── */
 
 function ItemSheet({
   r, lang, canEdit, inOrder, onAdd, onRemove, onClose, refresh,
@@ -397,9 +522,9 @@ function ItemSheet({
 
   return (
     <Sheet onClose={onClose}>
-      <div className="mx-auto grid aspect-square w-full max-w-[300px] place-items-center overflow-hidden rounded-2xl border border-neutral-800 bg-white">
+      <div className="mx-auto grid aspect-square w-full max-w-[260px] place-items-center overflow-hidden rounded-2xl border border-neutral-800 bg-white">
         {r.imageUrl ? (
-          <Image src={r.imageUrl} alt={r.item.display} width={600} height={600}
+          <Image src={r.imageUrl} alt={r.item.display} width={520} height={520}
             className="h-full w-full object-contain p-3" unoptimized />
         ) : (
           <span className="text-[15px] text-neutral-400">{t(lang, "invAddPhoto")}</span>
@@ -581,11 +706,7 @@ function OrderSheet({
 function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
-      <button
-        aria-label="close"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/70"
-      />
+      <button aria-label="close" onClick={onClose} className="absolute inset-0 bg-black/70" />
       <div className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-neutral-800 bg-neutral-950 px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:rounded-3xl sm:border">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-700 sm:hidden" />
         {children}
