@@ -385,17 +385,24 @@ export default function InventoryClient({
       ) : (
         <>
           <DeptHeader lang={lang} title={t(lang, dept)} onBack={() => setDept(null)} />
-          {(departments.find((d) => d.key === dept)?.shelves ?? []).map((s) => (
-            <Shelf
-              key={s.key}
-              title={t(lang, `invg_${s.key}`)}
-              lang={lang}
-              families={s.families}
-              inOrderOf={familyInOrder}
-              onOpen={onCardOpen}
-              onAdd={onCardAdd}
-            />
-          ))}
+          {(departments.find((d) => d.key === dept)?.shelves ?? []).map((s) =>
+            view === "order" ? (
+              <section key={s.key} className="mx-auto max-w-3xl px-4 pb-5">
+                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-neutral-500">{t(lang, `invg_${s.key}`)}</h2>
+                <div className="space-y-2">
+                  {s.families.map((f) => (
+                    <button key={f.key} type="button" onClick={() => onCardOpen(f)} className="flex min-h-[64px] w-full items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-900/70 px-4 text-left active:bg-neutral-800">
+                      <span className="min-w-0 flex-1 truncate text-[17px] font-semibold text-neutral-100">{f.name}</span>
+                      <span className="text-sm text-neutral-500">{f.items.length} {t(lang, "invSizes")}</span>
+                      <span className="text-xl text-amber-400">›</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : (
+              <Shelf key={s.key} title={t(lang, `invg_${s.key}`)} lang={lang} families={s.families} inOrderOf={familyInOrder} onOpen={onCardOpen} onAdd={onCardAdd} />
+            ),
+          )}
         </>
       )}
 
