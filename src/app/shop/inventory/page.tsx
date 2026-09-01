@@ -45,7 +45,7 @@ export default async function InventoryPage() {
       : { id: `catalog-${item.id}`, catalog_id: item.id, location: "", on_hand: 0, min_qty: null, updated_at: new Date(0).toISOString(), item, buy: bestBy.get(item.id) || null, imageUrl: null as string | null };
   });
   const signed = await signPhotoUrls(catalog.map((c) => c.image_url));
-  for (const r of allRows) {
+  for (const r of [...allRows, ...inventoryRows]) {
     if (r.item.image_url) r.imageUrl = signed.get(r.item.image_url) ?? null;
   }
 
