@@ -6,10 +6,12 @@ import {
   sbInsert,
   sbDelete,
   STAGES,
+  clockIn,
   clockOut,
   startBreak,
   endBreak,
   transferJob,
+  stopTimeEntry,
   deletePhotoObject,
   ORG_ID,
   audit,
@@ -237,21 +239,37 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Payroll shift + job allocation. GPS is supporting punch metadata only;
-      // a missing/outside location never discards payable time.
-      case "time_start": {
+      // Payroll shift. It deliberately has no project: paid presence and job
+      // costing are separate clocks.
+      case "shift_start": {
         const loc = punchLocation(body);
-        if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
-        await transferJob(worker.id, String(body.jobId), loc);
-        await audit("shift_clock_in", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId, locationStatus: loc?.status || "unavailable" } });
+        await clockIn(worker.id, loc);
+        await audit("shift_clock_in", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
         break;
       }
 
-      // Job time clock — DONE
-      case "time_stop": {
+      case "shift_stop": {
         const loc = punchLocation(body);
         await clockOut(worker.id, loc);
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
+        break;
+      }
+
+      // Project-cost clock. It only allocates part of an already-open payroll
+      // shift to a project and never clocks the employee in or out of payroll.
+      case "time_start": {
+        if (!body.jobId) return NextResponse.json({ error: "Choose a project" }, { status: 400 });
+        const loc = punchLocation(body);
+        await transferJob(worker.id, String(body.jobId), loc);
+        await audit("project_clock_start", { workerId: worker.id, entity: "job", entityId: body.jobId });
+        break;
+      }
+
+      case "time_stop": {
+        if (!body.jobId) return NextResponse.json({ error: "Choose a project" }, { status: 400 });
+        const loc = punchLocation(body);
+        await stopTimeEntry(worker.id, String(body.jobId), loc);
+        await audit("project_clock_stop", { workerId: worker.id, entity: "job", entityId: body.jobId });
         break;
       }
 
@@ -262,9 +280,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "time_break_end": {
-        if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
-        await endBreak(worker.id, String(body.jobId));
-        await audit("shift_break_end", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId } });
+        await endBreak(worker.id, body.jobId ? String(body.jobId) : null);
+        await audit("shift_break_end", { workerId: worker.id, entity: "shift", detail: { resumedJobId: body.jobId || null } });
         break;
       }
 

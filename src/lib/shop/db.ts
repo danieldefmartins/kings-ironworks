@@ -254,7 +254,6 @@ export async function listCorrections(): Promise<TimeCorrection[]> {
 
 export async function clockIn(
   workerId: string,
-  jobId: string,
   loc?: PunchLocation | null
 ): Promise<TimeShift> {
   const current = await getOpenShift(workerId);
@@ -279,16 +278,6 @@ export async function clockIn(
     `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null`,
     { ended_at: now }
   );
-  await sbInsert("kiw_shop_time_entries", {
-    org_id: ORG_ID,
-    shift_id: shift.id,
-    worker_id: workerId,
-    job_id: jobId,
-    started_at: now,
-    start_lat: loc?.lat ?? null,
-    start_lng: loc?.lng ?? null,
-    start_accuracy_m: loc?.accuracy ?? null,
-  });
   return shift;
 }
 
@@ -322,19 +311,21 @@ export async function startBreak(workerId: string): Promise<void> {
   await sbInsert("kiw_shop_breaks", { org_id: ORG_ID, shift_id: shift.id, started_at: now, paid: false });
 }
 
-export async function endBreak(workerId: string, jobId: string): Promise<void> {
+export async function endBreak(workerId: string, jobId?: string | null): Promise<void> {
   const shift = await getOpenShift(workerId);
   if (!shift) throw new Error("No open shift");
   const now = new Date().toISOString();
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
-  await sbInsert("kiw_shop_time_entries", {
-    org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
-  });
+  if (jobId) {
+    await sbInsert("kiw_shop_time_entries", {
+      org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
+    });
+  }
 }
 
 export async function transferJob(workerId: string, jobId: string, loc?: PunchLocation | null): Promise<void> {
   const shift = await getOpenShift(workerId);
-  if (!shift) { await clockIn(workerId, jobId, loc); return; }
+  if (!shift) throw new Error("Clock in for payroll before starting a project");
   const now = new Date().toISOString();
   await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
   await sbInsert("kiw_shop_time_entries", {

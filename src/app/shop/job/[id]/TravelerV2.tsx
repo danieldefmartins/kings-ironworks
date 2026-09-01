@@ -473,11 +473,11 @@ function ClockButton({
         <span aria-hidden className="text-[22px] leading-none">{running ? "■" : "▶"}</span>
         {running ? (
           <>
-            {t(lang, "clockOut")}
+            {t(lang, "projectStop")}
             <span className="font-mono text-[17px] font-bold">{elapsed}</span>
           </>
         ) : (
-          t(lang, "clockIn")
+          t(lang, "projectStart")
         )}
       </button>
 

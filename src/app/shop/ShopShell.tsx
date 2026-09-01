@@ -25,7 +25,7 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 }
 
 export default function ShopShell({
-  children, workerName, lang, shift, breaks, currentJobId, jobs, hourlyRate, weekHoursBeforeShift,
+  children, workerName, lang, shift, breaks, hourlyRate, weekHoursBeforeShift,
 }: {
   children: React.ReactNode;
   workerName: string | null;
@@ -42,7 +42,6 @@ export default function ShopShell({
   const [, transition] = useTransition();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [jobId, setJobId] = useState(currentJobId || jobs[0]?.id || "");
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
   const onBreak = breaks.some((b) => !b.ended_at);
@@ -54,16 +53,12 @@ export default function ShopShell({
   }, [shift]);
 
   async function act(type: string, withGps = false) {
-    if ((type === "time_start" || type === "time_transfer" || type === "time_break_end") && !jobId) {
-      setError(t(lang, "clockChooseFirst"));
-      return;
-    }
     setBusy(true); setError("");
     try {
       const loc = withGps ? await gps() : {};
       const res = await fetch("/shop/api/action", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, jobId, ...loc }),
+        body: JSON.stringify({ type, ...loc }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not update the clock");
@@ -118,26 +113,21 @@ export default function ShopShell({
         <div className="fixed inset-0 z-50 flex items-end bg-black/65 sm:items-center sm:justify-center" onClick={() => setOpen(false)}>
           <section className="w-full rounded-t-[28px] border border-white/10 bg-neutral-900 p-5 pb-[max(24px,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-[28px]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
-              <div><div className="text-xl font-semibold">{t(lang, "timeClock")}</div><div className="text-sm text-neutral-500">{workerName}</div></div>
+              <div><div className="text-xl font-semibold">{t(lang, "payrollClock")}</div><div className="text-sm text-neutral-500">{workerName}</div></div>
               <button onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-full bg-neutral-800"><X className="h-5 w-5" /></button>
             </div>
             {shift && <div className="mb-5 grid grid-cols-2 gap-3 text-center"><div className="rounded-2xl bg-neutral-800 p-4"><div className="text-3xl font-semibold tabular-nums">{hours.toFixed(2)}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockPaidHours")}</div></div><div className="rounded-2xl bg-emerald-950/50 p-4"><div className="text-3xl font-semibold tabular-nums text-emerald-300">{earnings == null ? "—" : `$${earnings.toFixed(2)}`}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockGrossEarnings")}</div></div></div>}
             {shift && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
-            <label className="mb-2 block text-sm text-neutral-400">{t(lang, "jobLabel")}</label>
-            <select value={jobId} onChange={(e) => setJobId(e.target.value)} className="mb-4 min-h-14 w-full rounded-2xl border border-white/10 bg-neutral-800 px-4 text-base outline-none focus:border-amber-500">
-              <option value="">{t(lang, "clockChooseJob")}</option>
-              {jobs.map((j) => <option key={j.id} value={j.id}>{j.label}</option>)}
-            </select>
+            <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {error && <p className="mb-3 rounded-xl bg-red-950/60 p-3 text-sm text-red-300">{error}</p>}
             {!shift ? (
-              <button disabled={busy} onClick={() => act("time_start", true)} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "clockGettingLocation") : t(lang, "clockInLabel")}</button>
+              <button disabled={busy} onClick={() => act("shift_start", true)} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "clockGettingLocation") : t(lang, "clockInLabel")}</button>
             ) : onBreak ? (
               <button disabled={busy} onClick={() => act("time_break_end")} className="min-h-16 w-full rounded-2xl bg-amber-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockEndBreak")}</button>
             ) : (
               <div className="space-y-2">
-                {jobId && jobId !== currentJobId && <button disabled={busy} onClick={() => act("time_transfer", true)} className="min-h-14 w-full rounded-2xl bg-amber-500 font-bold text-black">{t(lang, "clockSwitchJob")}</button>}
                 <button disabled={busy} onClick={() => act("time_break_start")} className="min-h-14 w-full rounded-2xl bg-neutral-800 font-semibold">{t(lang, "clockStartBreak")}</button>
-                <button disabled={busy} onClick={() => act("time_stop", true)} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
+                <button disabled={busy} onClick={() => act("shift_stop", true)} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
               </div>
             )}
             <p className="mt-4 text-center text-xs leading-relaxed text-neutral-600">{t(lang, "clockLocationNote")}</p>

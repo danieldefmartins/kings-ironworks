@@ -91,7 +91,7 @@ export default function TimeClock({
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="text-[11px] uppercase tracking-[0.15em] font-bold text-amber-500">
-          ⏱ {t(lang, "timeClock")}
+          ⏱ {t(lang, "projectClock")}
         </div>
         <div className="text-xs text-neutral-400">
           {t(lang, "timeLogged")}:{" "}
@@ -123,7 +123,7 @@ export default function TimeClock({
           onClick={() => act("time_stop")}
           className="w-full rounded-2xl bg-red-600 hover:bg-red-500 text-white font-extrabold text-3xl py-8 active:scale-[0.98] transition disabled:opacity-60 shadow-xl shadow-red-950/60 border-b-4 border-red-800"
         >
-          {busy ? "…" : `⏹ ${t(lang, "doneWork")}`}
+          {busy ? "…" : `⏹ ${t(lang, "projectStop")}`}
         </button>
       ) : (
         <button
@@ -131,7 +131,7 @@ export default function TimeClock({
           onClick={() => act("time_start")}
           className="w-full rounded-2xl bg-green-600 hover:bg-green-500 text-white font-extrabold text-3xl py-8 active:scale-[0.98] transition disabled:opacity-60 shadow-xl shadow-green-950/60 border-b-4 border-green-800"
         >
-          {busy ? "…" : `▶ ${t(lang, "startWork")}`}
+          {busy ? "…" : `▶ ${t(lang, "projectStart")}`}
         </button>
       )}
 
