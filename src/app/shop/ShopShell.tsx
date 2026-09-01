@@ -92,13 +92,13 @@ export default function ShopShell({
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">
-        <div className="mx-auto grid h-[72px] max-w-2xl grid-cols-5">
+        <div className="mx-auto grid h-[76px] max-w-2xl grid-cols-5">
           {tabs.map((tab) => {
             const { label, icon: Icon } = tab;
             if ("clock" in tab) return (
-              <button key="clock" onClick={() => setOpen(true)} className="relative flex flex-col items-center justify-end gap-0.5 pb-1.5 text-[10px] font-semibold text-neutral-200">
-                <span className={`absolute -top-5 grid h-14 w-14 place-items-center rounded-full border-4 border-neutral-950 shadow-xl ${shift ? "bg-emerald-500 text-black" : "bg-amber-500 text-black"}`}>
-                  <Clock3 className="h-6 w-6" strokeWidth={2.4} />
+              <button key="clock" onClick={() => setOpen(true)} className="relative z-20 flex h-full touch-manipulation flex-col items-center justify-end gap-0.5 pb-1.5 text-[11px] font-semibold text-neutral-200">
+                <span className={`absolute -top-2 grid h-14 w-14 place-items-center rounded-full border-4 border-neutral-950 shadow-xl ${shift ? "bg-emerald-500 text-black" : "bg-amber-500 text-black"}`}>
+                  <Clock3 className="h-7 w-7" strokeWidth={2.4} />
                 </span>
                 <span>{label}</span>
                 {shift && <span className="max-w-[74px] truncate text-[9px] font-normal text-emerald-400">{hours.toFixed(1)}h{earnings == null ? "" : ` · $${earnings.toFixed(0)}`}</span>}
@@ -107,7 +107,7 @@ export default function ShopShell({
             const { href, exact } = tab;
             const active = exact ? path === href : path.startsWith(href);
             return <button type="button" key={label} onClick={() => router.push(href)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-1 text-[11px] ${active ? "text-amber-400" : "text-neutral-500"}`}>
-              <Icon className="h-[21px] w-[21px]" strokeWidth={active ? 2.4 : 1.8} />
+              <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.4 : 1.9} />
               <span className={active ? "font-semibold" : ""}>{label}</span>
             </button>;
           })}
