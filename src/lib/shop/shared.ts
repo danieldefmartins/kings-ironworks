@@ -195,3 +195,20 @@ export interface InventoryRow {
   min_qty: number | null;
   updated_at: string;
 }
+
+// One place to buy one item. unit_price is generated in the database
+// (pack_price / pack_qty) because that is the only number that compares
+// across suppliers selling different pack sizes.
+export interface SupplierPrice {
+  id: string;
+  catalog_id: string;
+  supplier: string;
+  supplier_sku: string | null;
+  url: string | null;
+  pack_qty: number | null;
+  pack_price: number | null;
+  unit_price: number | null;
+  preferred: boolean;
+  last_checked: string | null;
+  notes: string | null;
+}

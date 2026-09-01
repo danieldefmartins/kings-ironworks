@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { listCatalog, listInventory } from "@/lib/shop/db";
+import { listCatalog, listInventory, listSupplierPrices } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import InventoryClient from "./InventoryClient";
 import { t } from "@/lib/shop/i18n";
@@ -12,12 +12,20 @@ export default async function InventoryPage() {
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
 
-  const [catalog, inventory] = await Promise.all([listCatalog(), listInventory()]);
+  const [catalog, inventory, prices] = await Promise.all([
+    listCatalog(), listInventory(), listSupplierPrices(),
+  ]);
+  // Cheapest per unit first, so the row shows the best price we know of.
+  const bestBy = new Map<string, (typeof prices)[number]>();
+  for (const p of prices) {
+    const cur = bestBy.get(p.catalog_id);
+    if (!cur || (p.preferred && !cur.preferred)) bestBy.set(p.catalog_id, p);
+  }
   const byId = new Map(catalog.map((c) => [c.id, c]));
   // Only rows whose catalog item still exists and is active — a retired SKU
   // should drop off the count rather than linger as a mystery line.
   const rows = inventory
-    .map((r) => ({ ...r, item: byId.get(r.catalog_id)! }))
+    .map((r) => ({ ...r, item: byId.get(r.catalog_id)!, buy: bestBy.get(r.catalog_id) || null }))
     .filter((r) => r.item)
     .sort((a, b) => {
       const aShort = a.min_qty != null && Number(a.on_hand) < Number(a.min_qty);

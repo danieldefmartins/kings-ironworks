@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { type TimeEntry, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow } from "./shared";
+import { type TimeEntry, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -595,5 +595,12 @@ export async function listInventory(): Promise<InventoryRow[]> {
   return sbSelect<InventoryRow[]>(
     "kiw_inventory",
     `select=*&org_id=eq.${ORG_ID}`
+  );
+}
+
+export async function listSupplierPrices(): Promise<SupplierPrice[]> {
+  return sbSelect<SupplierPrice[]>(
+    "kiw_supplier_prices",
+    `select=*&org_id=eq.${ORG_ID}&order=unit_price.asc.nullslast`
   );
 }

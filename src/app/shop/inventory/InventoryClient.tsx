@@ -11,11 +11,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { CatalogItem, InventoryRow } from "@/lib/shop/shared";
+import type { CatalogItem, InventoryRow, SupplierPrice } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 import ProfileIcon from "../job/[id]/ProfileIcon";
 
-type Joined = InventoryRow & { item: CatalogItem };
+type Joined = InventoryRow & { item: CatalogItem; buy: SupplierPrice | null };
 
 const GROUPS: { key: string; cats: string[] }[] = [
   { key: "abrasive", cats: ["abrasive"] },
@@ -76,7 +76,10 @@ export default function InventoryClient({
 
   // The whole point: what to buy this week, worked out rather than eyeballed.
   const shopping = low
-    .map((r) => `${Math.ceil(Number(r.min_qty) - Number(r.on_hand))} × ${r.item.display}`)
+    .map((r) => {
+      const need = Math.ceil(Number(r.min_qty) - Number(r.on_hand));
+      return `${need} × ${r.item.display}${r.buy?.url ? `\n   ${r.buy.url}` : ""}`;
+    })
     .join("\n");
 
   return (
@@ -147,8 +150,22 @@ export default function InventoryClient({
                       · {t(lang, "invBuy")} {Math.ceil(Number(r.min_qty) - Number(r.on_hand))}
                     </span>
                   )}
+                  {r.buy?.pack_qty && (
+                    <span className="ml-1 text-neutral-600">· {r.buy.pack_qty}/pack</span>
+                  )}
                 </p>
               </div>
+              {r.buy?.url && (
+                <a
+                  href={r.buy.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-neutral-700 text-[13px] font-bold text-amber-400"
+                  title={`${r.buy.supplier}${r.buy.unit_price ? ` · $${r.buy.unit_price.toFixed(2)}/${r.item.unit}` : ""}`}
+                >
+                  ↗
+                </a>
+              )}
               {canEdit ? (
                 <div className="flex shrink-0 items-center gap-1">
                   <button
