@@ -50,9 +50,9 @@ export default function ShopTopBar({
         <Link
           href="/shop"
           aria-label="King Iron Works"
-          className="flex h-10 w-[60px] shrink-0 items-center justify-center rounded-xl bg-white px-1.5 shadow-sm shadow-black/30"
+          className="flex h-10 w-[66px] shrink-0 items-center justify-center"
         >
-          <Image src="/logo.png" alt="King Iron Works" width={400} height={266} className="h-auto w-full" priority />
+          <Image src="/logo.png" alt="King Iron Works" width={400} height={266} className="h-auto w-full brightness-0 invert" priority />
         </Link>
         <span aria-hidden className="h-6 w-px shrink-0 bg-white/10" />
         <h1 className="truncate text-xl font-semibold tracking-tight text-neutral-100">{title}</h1>

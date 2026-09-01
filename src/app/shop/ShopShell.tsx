@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { shiftHours } from "@/lib/shop/shared";
@@ -44,6 +45,7 @@ export default function ShopShell({
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const onBreak = breaks.some((b) => !b.ended_at);
 
   useEffect(() => {
@@ -51,6 +53,10 @@ export default function ShopShell({
     const id = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(id);
   }, [shift]);
+
+  useEffect(() => {
+    ["/shop", "/shop/jobs", "/shop/leads", "/shop/inventory"].forEach((href) => router.prefetch(href));
+  }, [router]);
 
   async function act(type: string, withGps = false) {
     setBusy(true); setError("");
@@ -91,20 +97,20 @@ export default function ShopShell({
           {tabs.map((tab) => {
             const { label, icon: Icon } = tab;
             if ("clock" in tab) return (
-              <button key="clock" onClick={() => setOpen(true)} className="relative z-20 flex h-full touch-manipulation flex-col items-center justify-end gap-0.5 pb-1.5 text-[11px] font-semibold text-neutral-200">
-                <span className={`absolute -top-2 grid h-14 w-14 place-items-center rounded-full border-4 border-neutral-950 shadow-xl ${shift ? "bg-emerald-500 text-black" : "bg-amber-500 text-black"}`}>
-                  <Clock3 className="h-7 w-7" strokeWidth={2.4} />
+              <button key="clock" onClick={() => setOpen(true)} className="relative z-20 flex h-full touch-manipulation flex-col items-center justify-end pb-2 text-[11px] font-bold text-neutral-100">
+                <span className={`absolute -top-2.5 grid h-[62px] w-[62px] place-items-center rounded-full border-4 border-neutral-950 shadow-xl shadow-black/50 ${shift ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>
+                  <Clock3 className="h-8 w-8" strokeWidth={2.5} />
                 </span>
                 <span>{label}</span>
-                {shift && <span className="max-w-[74px] truncate text-[9px] font-normal text-emerald-400">{hours.toFixed(1)}h{earnings == null ? "" : ` · $${earnings.toFixed(0)}`}</span>}
               </button>
             );
             const { href, exact } = tab;
-            const active = exact ? path === href : path.startsWith(href);
-            return <button type="button" key={label} onClick={() => router.push(href)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-1 text-[11px] ${active ? "text-amber-400" : "text-neutral-500"}`}>
-              <Icon className="h-[26px] w-[26px]" strokeWidth={active ? 2.4 : 1.9} />
+            const shownPath = pendingPath || path;
+            const active = exact ? shownPath === href : shownPath.startsWith(href);
+            return <Link prefetch href={href} key={label} onPointerDown={() => setPendingPath(href)} onClick={() => window.setTimeout(() => setPendingPath(null), 800)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-amber-300" : "text-neutral-500"}`}>
+              <span className={`grid h-10 w-12 place-items-center rounded-2xl ${active ? "bg-amber-400/15" : ""}`}><Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.4 : 1.9} /></span>
               <span className={active ? "font-semibold" : ""}>{label}</span>
-            </button>;
+            </Link>;
           })}
         </div>
       </nav>

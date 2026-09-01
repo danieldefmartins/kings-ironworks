@@ -19,7 +19,7 @@
 // sheet you reach by tapping a size, because they are not why anyone opens
 // this page.
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { CatalogItem, InventoryRow, SupplierPrice } from "@/lib/shop/shared";
@@ -38,6 +38,34 @@ interface Family {
   name: string;
   items: { row: Joined; variant: string }[];
   imageUrl: string | null;
+}
+
+const STEEL_IMAGE_BY_CATEGORY: Record<string, string> = {
+  angle: "/images/shop/materials/angle.webp",
+  channel: "/images/shop/materials/channel.webp",
+  beam: "/images/shop/materials/beam.webp",
+  flat_bar: "/images/shop/materials/flat-bar.webp",
+  solid_round: "/images/shop/materials/solid-round.webp",
+  solid_square: "/images/shop/materials/solid-square.webp",
+  tube_square: "/images/shop/materials/tube.webp",
+  tube_rect: "/images/shop/materials/tube.webp",
+  pipe_round: "/images/shop/materials/pipe.webp",
+  tube_round: "/images/shop/materials/pipe.webp",
+  plate: "/images/shop/materials/plate.webp",
+  grating: "/images/shop/materials/grating.webp",
+};
+
+function steelCatalogImage(row: Joined): string | null {
+  if (row.imageUrl) return row.imageUrl;
+  const direct = STEEL_IMAGE_BY_CATEGORY[row.item.category];
+  if (direct) return direct;
+  if (row.item.category !== "steel_stock") return null;
+  const name = row.item.display.toLowerCase();
+  if (name.includes("diamond") || name.includes("tread")) return "/images/shop/materials/diamond-plate.webp";
+  if (name.includes("rebar")) return "/images/shop/materials/rebar.webp";
+  if (name.includes("molding") || name.includes("scroll") || name.includes("collar")) return "/images/shop/materials/molding.webp";
+  if (name.includes("plate")) return "/images/shop/materials/plate.webp";
+  return null;
 }
 
 // Worker-facing groups. The fine categories underneath exist so the app can
@@ -117,7 +145,7 @@ function buildFamilies(rows: Joined[]): Family[] {
       byKey.set(s.key, f);
     }
     f.items.push({ row, variant: s.variant });
-    if (!f.imageUrl) f.imageUrl = row.imageUrl;
+    if (!f.imageUrl) f.imageUrl = steelCatalogImage(row);
   }
   return [...byKey.values()];
 }
@@ -661,8 +689,8 @@ function ItemSheet({
   return (
     <Sheet onClose={onClose}>
       <div className="mx-auto grid aspect-square w-full max-w-[260px] place-items-center overflow-hidden rounded-2xl border border-neutral-800 bg-white">
-        {r.imageUrl ? (
-          <Image src={r.imageUrl} alt={r.item.display} width={520} height={520}
+        {steelCatalogImage(r) ? (
+          <Image src={steelCatalogImage(r)!} alt={r.item.display} width={520} height={520}
             className="h-full w-full object-contain p-3" unoptimized />
         ) : (
           <span className="text-[15px] text-neutral-400">{t(lang, "invAddPhoto")}</span>
@@ -797,8 +825,8 @@ function OrderSheet({
         {lines.map(({ r, qty, catalogId }) => (
           <div key={catalogId} className="flex items-center gap-3 py-2.5">
             <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-neutral-800 bg-white">
-              {r!.imageUrl ? (
-                <Image src={r!.imageUrl} alt="" width={112} height={112}
+              {steelCatalogImage(r!) ? (
+                <Image src={steelCatalogImage(r!)!} alt="" width={112} height={112}
                   className="h-full w-full object-contain p-1" unoptimized />
               ) : null}
             </div>
@@ -842,11 +870,37 @@ function OrderSheet({
 /* ───────────────────── bottom sheet shell ───────────────────── */
 
 function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  useEffect(() => {
+    const y = window.scrollY;
+    const previous = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      top: document.body.style.top,
+      width: document.body.style.width,
+    };
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${y}px`;
+    document.body.style.width = "100%";
+    return () => {
+      document.body.style.overflow = previous.overflow;
+      document.body.style.position = previous.position;
+      document.body.style.top = previous.top;
+      document.body.style.width = previous.width;
+      window.scrollTo(0, y);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
       <button aria-label="close" onClick={onClose} className="absolute inset-0 bg-black/70" />
-      <div className="relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border-t border-neutral-800 bg-neutral-950 px-5 pb-[max(24px,env(safe-area-inset-bottom))] pt-3 sm:rounded-3xl sm:border">
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-700 sm:hidden" />
+      <div className="relative max-h-[88vh] w-full max-w-lg overscroll-contain overflow-y-auto rounded-t-3xl border-t border-neutral-800 bg-neutral-950 px-5 pb-[max(24px,env(safe-area-inset-bottom))] sm:rounded-3xl sm:border">
+        <div className="sticky top-0 z-20 -mx-2 mb-2 flex h-14 items-center justify-center bg-neutral-950/95 backdrop-blur-xl">
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-20 place-items-center sm:hidden">
+            <span className="h-1.5 w-11 rounded-full bg-neutral-600" />
+          </button>
+          <button type="button" onClick={onClose} aria-label="Close" className="absolute right-1 grid h-10 w-10 place-items-center rounded-full bg-neutral-800 text-xl text-neutral-200 active:bg-neutral-700">✕</button>
+        </div>
         {children}
       </div>
     </div>
