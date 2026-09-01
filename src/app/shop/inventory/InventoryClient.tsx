@@ -79,16 +79,25 @@ const GROUPS: { key: string; cats: string[] }[] = [
 // looking for both. So the screen opens on a short list of departments — the
 // areas of the shop — and the shelves only appear once you have picked one.
 // A worker after a flap disc no longer scrolls past 121 beams to reach it.
-const DEPARTMENTS: { key: string; groups: string[] }[] = [
-  { key: "d_steel", groups: ["steel", "st_angle", "st_channel", "st_beam", "st_flat", "st_bar", "st_tube", "st_pipe", "st_plate", "st_grating"] },
-  { key: "d_fasteners", groups: ["screws", "anchors", "bolts"] },
-  { key: "d_abrasives", groups: ["discs", "bits"] },
-  { key: "d_welding", groups: ["welding"] },
-  { key: "d_tools", groups: ["tools"] },
-  { key: "d_paint", groups: ["paint"] },
-  { key: "d_safety", groups: ["safety"] },
-  { key: "d_shop", groups: ["shop"] },
-  { key: "d_break", groups: ["breakroom", "janitorial"] },
+//
+// `cover` is the product whose photo fronts the department — chosen, not
+// whichever row happened to sort first. Left to itself the Welding tile showed
+// a can of anti-spatter and Tools showed a random hand tool. These are real
+// photos of things on the shelf, not drawn icons: Daniel's standing rule is
+// "don't draw anything". Each one is picked to be readable at tile size and to
+// sit on a white ground like the rest — which is why Paint is a brush and not
+// a can, since every paint can Home Depot photographs sits on a coloured
+// backdrop that renders as a slab of colour.
+const DEPARTMENTS: { key: string; groups: string[]; cover: string }[] = [
+  { key: "d_steel", cover: "TRK-ANGLE-IRON-2-X-2-X-1-4-X-10", groups: ["steel", "st_angle", "st_channel", "st_beam", "st_flat", "st_bar", "st_tube", "st_pipe", "st_plate", "st_grating"] },
+  { key: "d_fasteners", cover: "TRK-WEDGE-ANCHORS-1-2-X-3", groups: ["screws", "anchors", "bolts"] },
+  { key: "d_abrasives", cover: "TRK-4-1-2-FLAP-DISCS-40-GRIT", groups: ["discs", "bits"] },
+  { key: "d_welding", cover: "TRK-WELDING-HELMET-AUTO-DARK", groups: ["welding"] },
+  { key: "d_tools", cover: "TRK-CORDLESS-DRILL-DRIVER", groups: ["tools"] },
+  { key: "d_paint", cover: "TRK-PAINT-BRUSHES-3", groups: ["paint"] },
+  { key: "d_safety", cover: "TRK-HARD-HAT", groups: ["safety"] },
+  { key: "d_shop", cover: "TRK-WD-40", groups: ["shop"] },
+  { key: "d_break", cover: "BRK-COFFEE", groups: ["breakroom", "janitorial"] },
 ];
 
 const isShort = (r: Joined) => r.min_qty != null && Number(r.on_hand) < Number(r.min_qty);
@@ -165,7 +174,13 @@ export default function InventoryClient({
     return DEPARTMENTS.map((d) => {
       const mine = d.groups.map((g) => byGroup.get(g)).filter(Boolean) as typeof shelves;
       const products = mine.reduce((n, s) => n + s.families.length, 0);
-      const cover = mine.flatMap((s) => s.families).find((f) => f.imageUrl)?.imageUrl ?? null;
+      const all = mine.flatMap((s) => s.families);
+      // The chosen product, or — if it has been retired from the catalog —
+      // whatever else in the department has a picture, so a tile is never blank.
+      const cover =
+        all.flatMap((f) => f.items).find((i) => i.row.item.sku === d.cover)?.row.imageUrl ??
+        all.find((f) => f.imageUrl)?.imageUrl ??
+        null;
       // Count PRODUCTS running low, not rows. Counting rows reads as nonsense
       // next to the product count — "14 products · 41 low" — because one
       // product holds many sizes.
