@@ -246,6 +246,41 @@ export async function listBreaks(since?: string): Promise<TimeBreak[]> {
   );
 }
 
+// Who is on the payroll clock right now.
+//
+// Deliberately its own narrow query rather than filtering listShifts(): the
+// owners' home screen polls this every half minute, and pulling a thousand
+// historical shifts to find the three open ones would make the cheapest screen
+// in the app the most expensive one.
+export async function listOpenShifts(): Promise<TimeShift[]> {
+  return sbSelect<TimeShift[]>(
+    "kiw_shop_shifts",
+    `select=*&org_id=eq.${ORG_ID}&ended_at=is.null&order=started_at.asc`
+  );
+}
+
+// Breaks belonging to the shifts above — the open ones tell you who is on
+// break, the closed ones are unpaid time already taken and come off the
+// running total.
+export async function listBreaksForShifts(shiftIds: string[]): Promise<TimeBreak[]> {
+  if (shiftIds.length === 0) return [];
+  const list = shiftIds.map((id) => `"${id}"`).join(",");
+  return sbSelect<TimeBreak[]>(
+    "kiw_shop_breaks",
+    `select=*&org_id=eq.${ORG_ID}&shift_id=in.(${encodeURIComponent(list)})&order=started_at.asc`
+  );
+}
+
+// Every job clock currently running, for anyone. Reading both clocks side by
+// side is fine — it is *writing* across them that was the bug. See the note
+// above startProjectEntry.
+export async function listRunningEntries(): Promise<TimeEntry[]> {
+  return sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    `select=*&org_id=eq.${ORG_ID}&ended_at=is.null&order=started_at.desc`
+  );
+}
+
 export async function listCorrections(): Promise<TimeCorrection[]> {
   return sbSelect<TimeCorrection[]>(
     "kiw_shop_time_corrections",

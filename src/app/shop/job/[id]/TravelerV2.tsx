@@ -28,6 +28,7 @@ import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import MaterialKit from "./MaterialKit";
 import PhotosV2 from "./PhotosV2";
+import AddressLink from "../../AddressLink";
 import { nextUp } from "@/lib/shop/next-up";
 import {
   SpecsPanel,
@@ -93,9 +94,13 @@ export default function TravelerV2({
         <h1 className="truncate text-[26px] font-display font-bold leading-tight tracking-tight">
           {job.customer_name}
         </h1>
-        <p className="mt-0.5 truncate text-[15px] text-neutral-400">
-          {job.address || job.job_number}
-        </p>
+        <div className="mt-0.5 text-[15px] text-neutral-400">
+          {job.address ? (
+            <AddressLink address={job.address} lang={lang} />
+          ) : (
+            <p className="truncate">{job.job_number}</p>
+          )}
+        </div>
 
         <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[13px]">
           {job.project_type && (

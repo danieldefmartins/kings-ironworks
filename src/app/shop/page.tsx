@@ -3,8 +3,16 @@ import { redirect } from "next/navigation";
 import { AlertCircle, ArrowRight, BriefcaseBusiness, MapPin, Ruler } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials, isInFabrication } from "@/lib/shop/shared";
-import { getRunningEntry, listJobs } from "@/lib/shop/db";
+import {
+  getRunningEntry,
+  listBreaksForShifts,
+  listJobs,
+  listOpenShifts,
+  listRunningEntries,
+  listWorkersWithRates,
+} from "@/lib/shop/db";
 import ShopTopBar from "./ShopTopBar";
+import OnTheClock, { type OnClockRow } from "./OnTheClock";
 import { stageLabel, t } from "@/lib/shop/i18n";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +20,37 @@ export const dynamic = "force-dynamic";
 function dayDistance(date: string | null) {
   if (!date) return 9999;
   return Math.ceil((new Date(`${date}T00:00:00`).getTime() - Date.now()) / 86400000);
+}
+
+// One row per open payroll shift. The job name comes from the OTHER clock and
+// is context only — a shift with no job clock running is normal, not an error.
+async function buildOnClockRows(jobs: Awaited<ReturnType<typeof listJobs>>): Promise<OnClockRow[]> {
+  const [shifts, workers, entries] = await Promise.all([
+    listOpenShifts(),
+    listWorkersWithRates(),
+    listRunningEntries(),
+  ]);
+  if (shifts.length === 0) return [];
+  const breaks = await listBreaksForShifts(shifts.map((s) => s.id));
+  const names = new Map(workers.map((w) => [w.id, w.name]));
+  const jobLabel = new Map(jobs.map((j) => [j.id, j.customer_name || j.job_number]));
+  return shifts.map((s) => {
+    const mine = breaks.filter((b) => b.shift_id === s.id);
+    const entry = entries.find((e) => e.worker_id === s.worker_id);
+    return {
+      workerId: s.worker_id,
+      // A shift can outlive a deactivated worker row; say so rather than
+      // dropping the row and under-reporting who is on the clock.
+      name: names.get(s.worker_id) || "Unknown",
+      startedAt: s.started_at,
+      breaks: mine,
+      onBreak: mine.some((b) => !b.ended_at),
+      locationStatus: s.start_location_status || "unknown",
+      lat: s.start_lat,
+      lng: s.start_lng,
+      job: entry ? jobLabel.get(entry.job_id) || null : null,
+    };
+  });
 }
 
 export default async function ShopToday() {
@@ -38,11 +77,17 @@ export default async function ShopToday() {
     .slice(0, 6);
   const lang = worker.lang || "en";
 
+  // Who is on the payroll clock right now — owners only, and only queried for
+  // them, so the crew's home screen costs exactly what it did before.
+  const isOwner = canViewOwnerFinancials(worker);
+  const onClock = isOwner ? await buildOnClockRows(jobs) : [];
+
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title={t(lang, "navToday")} lang={lang} adminLink={canViewOwnerFinancials(worker)} />
+      <ShopTopBar workerName={worker.name} title={t(lang, "navToday")} lang={lang} adminLink={isOwner} />
       <main className="mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5">
         <header><p className="text-sm text-neutral-500">{t(lang, "welcomeBack", { name: worker.name.split(" ")[0] })}</p><h1 className="mt-0.5 text-3xl font-semibold tracking-tight">{t(lang, "attention")}</h1></header>
+        {isOwner && <OnTheClock rows={onClock} lang={lang} />}
         {current ? (
           <Link href={`/shop/job/${current.id}`} className="block rounded-[24px] border border-emerald-500/30 bg-gradient-to-br from-emerald-950/70 to-neutral-900 p-5 shadow-xl">
             <div className="mb-5 flex items-center gap-2 text-sm font-semibold text-emerald-300"><span className="h-2 w-2 rounded-full bg-emerald-400" /> {t(lang, "workingNowShort")}</div>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
+import AddressLink from "../../AddressLink";
 import {
   STAGES,
   PHOTO_CATEGORIES,
@@ -133,9 +134,8 @@ export default function TravelerClient({
           {job.customer_name}
         </h1>
         {job.address && (
-          <div className="text-sm text-neutral-300 mt-2 flex items-start gap-2">
-            <span aria-hidden>📍</span>
-            <span>{job.address}</span>
+          <div className="text-sm text-neutral-300 mt-2">
+            <AddressLink address={job.address} lang={lang} />
           </div>
         )}
         <div className={`text-sm mt-1.5 flex items-center gap-2 ${due.cls}`}>
