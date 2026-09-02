@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { MapPin } from "lucide-react";
+import { Copy, MapPin } from "lucide-react";
 import { t } from "@/lib/shop/i18n";
+import { AppleMapsIcon, GoogleMapsIcon, WazeIcon } from "./MapAppIcons";
 
 // Driving directions to a job.
 //
@@ -74,17 +75,15 @@ export function DirectionsSheet({
         <div className="text-lg font-bold">{t(lang, "directionsTo")}</div>
         <div className="mt-0.5 mb-3 text-sm text-neutral-400">{address}</div>
         <div className="space-y-2">
-          <DirRow href={urls.apple} emoji="🍎" label={t(lang, "appleMaps")} />
-          <DirRow href={urls.google} emoji="🗺️" label={t(lang, "googleMaps")} />
-          <DirRow href={urls.waze} emoji="🚗" label={t(lang, "waze")} />
+          <DirRow href={urls.apple} icon={<AppleMapsIcon className="h-7 w-7" />} label={t(lang, "appleMaps")} />
+          <DirRow href={urls.google} icon={<GoogleMapsIcon className="h-7 w-7" />} label={t(lang, "googleMaps")} />
+          <DirRow href={urls.waze} icon={<WazeIcon className="h-7 w-7" />} label={t(lang, "waze")} />
           <button
             type="button"
             onClick={copy}
             className="flex min-h-[56px] w-full items-center gap-3 rounded-xl border border-neutral-700 bg-neutral-800 px-4 text-left font-bold text-neutral-200 active:bg-neutral-700"
           >
-            <span aria-hidden className="text-xl">
-              📋
-            </span>
+            <Copy aria-hidden className="h-6 w-6 shrink-0 text-neutral-400" />
             {copied ? t(lang, "addressCopied") : t(lang, "copyAddress")}
           </button>
         </div>
@@ -134,7 +133,7 @@ export default function AddressLink({
   );
 }
 
-function DirRow({ href, emoji, label }: { href: string; emoji: string; label: string }) {
+function DirRow({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
   return (
     <a
       href={href}
@@ -142,8 +141,8 @@ function DirRow({ href, emoji, label }: { href: string; emoji: string; label: st
       rel="noopener noreferrer"
       className="flex min-h-[56px] w-full items-center gap-3 rounded-xl border border-neutral-700 bg-neutral-800 px-4 text-left font-bold text-neutral-200 active:bg-neutral-700"
     >
-      <span aria-hidden className="text-xl">
-        {emoji}
+      <span aria-hidden className="shrink-0">
+        {icon}
       </span>
       {label}
     </a>

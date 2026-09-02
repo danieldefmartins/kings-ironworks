@@ -105,6 +105,15 @@ export default function JobsMap({
           L.tileLayer(TILES, { attribution: ATTRIB, maxZoom: 19 }).addTo(map.current);
         }
         const m = map.current;
+
+        // On a one-job map the whole thing means that job, so tapping anywhere
+        // asks for directions — aiming at an 18px dot on a moving truck seat is
+        // not a reasonable thing to ask of anyone. With several jobs a tap on
+        // open water has no answer, so only the pins respond.
+        m.off("click");
+        if (jobs.length === 1) {
+          m.on("click", () => setDirections(jobs[0].address));
+        }
         m.eachLayer((l: any) => {
           if (l instanceof L.Marker) m.removeLayer(l);
         });
@@ -121,7 +130,10 @@ export default function JobsMap({
           });
           L.marker([j.lat, j.lng], { icon, title: j.customer })
             .addTo(m)
-            .on("click", () => setSelected(j));
+            .on("click", () => {
+              if (jobs.length === 1) setDirections(j.address);
+              else setSelected(j);
+            });
         }
 
         if (pts.length === 1) {
@@ -163,6 +175,11 @@ export default function JobsMap({
   return (
     <div className={`relative overflow-hidden rounded-[22px] border border-white/10 ${className}`}>
       <div ref={el} style={{ height }} className="w-full bg-neutral-200" />
+      {jobs.length === 1 && !directions && (
+        <span className="pointer-events-none absolute left-1/2 top-2 z-[1000] -translate-x-1/2 rounded-full bg-neutral-900/85 px-3 py-1 text-[11px] font-medium text-neutral-200 backdrop-blur">
+          {t(lang, "tapForDirections")}
+        </span>
+      )}
 
       {selected && (
         <div className="absolute inset-x-0 bottom-0 z-[1000] border-t border-white/10 bg-neutral-900/95 p-3 backdrop-blur">
