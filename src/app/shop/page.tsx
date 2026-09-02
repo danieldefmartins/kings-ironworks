@@ -9,7 +9,7 @@ import {
   listJobs,
   listOpenShifts,
   listRunningEntries,
-  listWorkersWithRates,
+  listWorkers,
 } from "@/lib/shop/db";
 import ShopTopBar from "./ShopTopBar";
 import OnTheClock, { type OnClockRow } from "./OnTheClock";
@@ -27,7 +27,7 @@ function dayDistance(date: string | null) {
 async function buildOnClockRows(jobs: Awaited<ReturnType<typeof listJobs>>): Promise<OnClockRow[]> {
   const [shifts, workers, entries] = await Promise.all([
     listOpenShifts(),
-    listWorkersWithRates(),
+    listWorkers(),
     listRunningEntries(),
   ]);
   if (shifts.length === 0) return [];

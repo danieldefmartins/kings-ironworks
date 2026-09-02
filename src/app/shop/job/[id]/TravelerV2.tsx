@@ -29,6 +29,7 @@ import { mt } from "@/lib/shop/measure-i18n";
 import MaterialKit from "./MaterialKit";
 import PhotosV2 from "./PhotosV2";
 import AddressLink from "../../AddressLink";
+import JobsMap from "../../JobsMap";
 import { nextUp } from "@/lib/shop/next-up";
 import {
   SpecsPanel,
@@ -101,6 +102,16 @@ export default function TravelerV2({
             <p className="truncate">{job.job_number}</p>
           )}
         </div>
+        {job.address && job.lat != null && job.lng != null && job.geocoded_address === job.address && (
+          <div className="mt-3">
+            <JobsMap
+              jobs={[{ id: job.id, jobNumber: job.job_number, customer: job.customer_name, address: job.address, stage: job.current_stage, lat: job.lat, lng: job.lng }]}
+              lang={lang}
+              height={180}
+              zoom={16}
+            />
+          </div>
+        )}
 
         <div className="mt-2.5 flex flex-wrap items-center gap-2 text-[13px]">
           {job.project_type && (

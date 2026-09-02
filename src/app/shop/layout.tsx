@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { getSessionWorker } from "@/lib/shop/session";
-import { getOpenShift, getShiftBreaks, getWorkerRate, listBreaks, listShifts, shiftHours } from "@/lib/shop/db";
+import { getOpenShift, getShiftBreaks, getWorkerRate, listWorkerBreaks, listWorkerShifts, shiftHours } from "@/lib/shop/db";
+import { shopWeekStartIso } from "@/lib/shop/shared";
 import ShopShell from "./ShopShell";
 
 export const metadata: Metadata = {
@@ -24,20 +25,21 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   let weekHoursBeforeShift = 0;
   if (worker) {
     try {
-      const week = new Date();
-      const day = (week.getDay() + 6) % 7;
-      week.setHours(0, 0, 0, 0); week.setDate(week.getDate() - day);
-      const weekIso = week.toISOString();
+      // Monday of the current week in SHOP time. Deriving it from the server's
+      // own calendar put the boundary in UTC, which starts the week five hours
+      // early and moves Sunday-evening work into the wrong one.
+      const weekIso = shopWeekStartIso();
       // The payroll shell asks for payroll facts only. It used to also load the
       // running project entry and the whole job list to feed a job picker that
       // no longer exists — the shell has no business knowing which job anyone
       // is on.
       const [openShift, rate, weekShifts, weekBreaks] = await Promise.all([
-        getOpenShift(worker.id), getWorkerRate(worker.id), listShifts(weekIso), listBreaks(weekIso),
+        getOpenShift(worker.id), getWorkerRate(worker.id),
+        listWorkerShifts(worker.id, weekIso), listWorkerBreaks(worker.id, weekIso),
       ]);
       shift = openShift;
       hourlyRate = openShift?.pay_rate == null ? rate : Number(openShift.pay_rate);
-      weekHoursBeforeShift = weekShifts.filter((s) => s.worker_id === worker.id && s.id !== openShift?.id).reduce((sum, s) => sum + shiftHours(s, weekBreaks.filter((b) => b.shift_id === s.id)), 0);
+      weekHoursBeforeShift = weekShifts.filter((s) => s.id !== openShift?.id).reduce((sum, s) => sum + shiftHours(s, weekBreaks.filter((b) => b.shift_id === s.id)), 0);
       if (shift) breaks = await getShiftBreaks(shift.id);
     } catch {
       // During a rolling deploy the UI remains usable until the clock migration lands.

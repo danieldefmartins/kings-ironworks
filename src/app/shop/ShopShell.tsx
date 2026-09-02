@@ -111,9 +111,14 @@ export default function ShopShell({
     { href: "/shop/inventory", label: t(lang, "tileInventory"), icon: PackageSearch },
   ];
   const hours = shift ? shiftHours(shift, breaks, now) : 0;
-  const regularHours = Math.min(hours, Math.max(0, 40 - weekHoursBeforeShift));
-  const overtimeHours = Math.max(0, hours - regularHours);
-  const earnings = hourlyRate == null ? null : regularHours * hourlyRate + overtimeHours * hourlyRate * 1.5;
+  // The crew are contractors, so pay is straight time at their own rate — no
+  // 40-hour split, no multiplier.
+  const earnings = hourlyRate == null ? null : hours * hourlyRate;
+  // Week-to-date, ticking: everything already closed this week plus whatever
+  // the open shift has accrued as of this render. Shown clocked in or out,
+  // because "what have I earned this week" is asked most often on the way home.
+  const weekHours = weekHoursBeforeShift + hours;
+  const weekEarnings = hourlyRate == null ? null : weekHours * hourlyRate;
 
   return (
     <div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">
@@ -149,7 +154,23 @@ export default function ShopShell({
               <div><div className="text-xl font-semibold">{t(lang, "payrollClock")}</div><div className="text-sm text-neutral-500">{workerName}</div></div>
               <button onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-full bg-neutral-800"><X className="h-5 w-5" /></button>
             </div>
-            {shift && <div className="mb-5 grid grid-cols-2 gap-3 text-center"><div className="rounded-2xl bg-neutral-800 p-4"><div className="text-3xl font-semibold tabular-nums">{hoursToHm(hours)}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockPaidHours")}</div></div><div className="rounded-2xl bg-emerald-950/50 p-4"><div className="text-3xl font-semibold tabular-nums text-emerald-300">{earnings == null ? "—" : `$${earnings.toFixed(2)}`}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockGrossEarnings")}</div></div></div>}
+            {shift && <div className="mb-3 grid grid-cols-2 gap-3 text-center"><div className="rounded-2xl bg-neutral-800 p-4"><div className="text-3xl font-semibold tabular-nums">{hoursToHm(hours)}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockPaidHours")}</div></div><div className="rounded-2xl bg-emerald-950/50 p-4"><div className="text-3xl font-semibold tabular-nums text-emerald-300">{earnings == null ? "—" : `$${earnings.toFixed(2)}`}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockGrossEarnings")}</div></div></div>}
+            <div className="mb-5 rounded-2xl border border-white/10 bg-neutral-800/50 p-4">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">{t(lang, "weekToDate")}</span>
+                <span className="text-xs text-neutral-600">{t(lang, "sinceMonday")}</span>
+              </div>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div>
+                  <div className="text-2xl font-semibold tabular-nums">{hoursToHm(weekHours)}</div>
+                  <div className="text-xs text-neutral-500">{t(lang, "clockPaidHours")}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-semibold tabular-nums text-emerald-300">{weekEarnings == null ? "—" : `$${weekEarnings.toFixed(2)}`}</div>
+                  <div className="text-xs text-neutral-500">{hourlyRate == null ? t(lang, "noRateSet") : t(lang, "atRate", { rate: `$${hourlyRate.toFixed(2)}` })}</div>
+                </div>
+              </div>
+            </div>
             {shift && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {error && <p className="mb-3 rounded-xl bg-red-950/60 p-3 text-sm text-red-300">{error}</p>}

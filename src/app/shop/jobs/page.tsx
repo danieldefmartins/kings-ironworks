@@ -14,6 +14,7 @@ import ShopTopBar from "../ShopTopBar";
 import MotivationBanner from "../MotivationBanner";
 import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
 import JobsList from "./JobsList";
+import JobsBoardMap from "./JobsBoardMap";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,22 @@ export default async function ShopBoard() {
   // be readable in the RSC payload. Strip the fields before they cross over.
   const clientJobs = jobs.map((j) => redactJobMoney(j, canSeeMoney));
 
+  // Pins for the board map. Only jobs whose cached geocode still matches the
+  // address they carry — an address edited after geocoding would otherwise put
+  // a pin on the previous house, which is worse than no pin at all.
+  const mapJobs = jobs
+    .filter((j) => j.lat != null && j.lng != null && j.address && j.geocoded_address === j.address)
+    .map((j) => ({
+      id: j.id,
+      jobNumber: j.job_number,
+      customer: j.customer_name,
+      address: j.address as string,
+      stage: j.current_stage,
+      lat: j.lat as number,
+      lng: j.lng as number,
+      working: (workingCount[j.id] || 0) > 0,
+    }));
+
   return (
     <div>
       <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} back="/shop" lang={lang} adminLink={canSeeMoney} />
@@ -103,6 +120,9 @@ export default async function ShopBoard() {
         )}
         {jobs.length === 0 && !error && (
           <p className="text-neutral-500 text-center py-16">{t(lang, "noJobs")}</p>
+        )}
+        {mapJobs.length > 0 && (
+          <JobsBoardMap jobs={mapJobs} lang={lang} total={jobs.length} />
         )}
         <JobsList
           jobs={clientJobs}

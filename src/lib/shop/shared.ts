@@ -182,6 +182,12 @@ export interface Job {
   customer_name: string;
   project_type: string | null;
   address: string | null;
+  // Cached geocode of `address`, so the map does not hit Nominatim per render.
+  // geocoded_address is what they were derived from: when it drifts from
+  // address the pin is stale and belongs to the previous house.
+  lat: number | null;
+  lng: number | null;
+  geocoded_address: string | null;
   phone: string | null;
   email: string | null;
   // Money fields — only ever rendered for workers with can_see_prices/is_admin.
@@ -450,4 +456,11 @@ export function fromShopInput(value: string): string {
 export function hoursToHm(h: number): string {
   const total = Math.max(0, Math.round(h * 60));
   return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, "0")}m`;
+}
+
+/** Monday 00:00 shop time for the week containing `iso`, as a UTC ISO string. */
+export function shopWeekStartIso(iso: string | number | Date = Date.now()): string {
+  // Via fromShopInput so the offset is derived for that actual date — a
+  // hardcoded -05:00 is EST and silently wrong for the eight months of EDT.
+  return fromShopInput(`${shopWeekKey(iso)}T00:00`);
 }

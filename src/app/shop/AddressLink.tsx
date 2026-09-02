@@ -13,7 +13,7 @@ import { t } from "@/lib/shop/i18n";
 // Brazilian crew navigates in Waze. All three take an https deep link, which
 // hands off to the installed app on a phone and falls back to the website on
 // the shop tablet — no app-scheme URL that dead-ends when the app is missing.
-function mapUrls(address: string) {
+export function mapUrls(address: string) {
   const q = encodeURIComponent(address);
   return {
     apple: `https://maps.apple.com/?daddr=${q}&dirflg=d`,
@@ -22,31 +22,28 @@ function mapUrls(address: string) {
   };
 }
 
-export default function AddressLink({
+// The directions chooser, shared by the tappable address and by a pin on the
+// map. Rendering it in one place keeps the three apps, the copy fallback and
+// the portal behaviour identical wherever an address is tapped.
+export function DirectionsSheet({
   address,
   lang = "en",
-  className = "",
-  showPin = true,
+  onClose,
 }: {
   address: string;
   lang?: string;
-  /** Applied to the tappable address itself, so each screen keeps its own type. */
-  className?: string;
-  showPin?: boolean;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const close = () => setOpen(false);
   const urls = mapUrls(address);
 
   useEffect(() => {
-    if (!open) return;
     const esc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", esc);
     return () => window.removeEventListener("keydown", esc);
-  }, [open]);
+  }, [onClose]);
 
   async function copy() {
     try {
@@ -65,8 +62,8 @@ export default function AddressLink({
   // fixed descendants — see the comment in MoreMenu.tsx.
   const sheet = (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
-      onClick={close}
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 p-4 sm:items-center"
+      onClick={onClose}
     >
       <div
         role="dialog"
@@ -93,7 +90,7 @@ export default function AddressLink({
         </div>
         <button
           type="button"
-          onClick={close}
+          onClick={onClose}
           className="mt-3 min-h-[48px] w-full rounded-xl border border-neutral-700 font-bold text-neutral-300"
         >
           {t(lang, "close")}
@@ -102,14 +99,29 @@ export default function AddressLink({
     </div>
   );
 
+  if (typeof document === "undefined") return null;
+  return createPortal(sheet, document.body);
+}
+
+export default function AddressLink({
+  address,
+  lang = "en",
+  className = "",
+  showPin = true,
+}: {
+  address: string;
+  lang?: string;
+  /** Applied to the tappable address itself, so each screen keeps its own type. */
+  className?: string;
+  showPin?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+
   return (
     <>
       <button
         type="button"
-        onClick={() => {
-          setCopied(false);
-          setOpen(true);
-        }}
+        onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
         className={`inline-flex max-w-full items-start gap-1.5 text-left underline decoration-neutral-600 underline-offset-4 active:opacity-70 ${className}`}
@@ -117,7 +129,7 @@ export default function AddressLink({
         {showPin && <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />}
         <span className="min-w-0 break-words">{address}</span>
       </button>
-      {open && typeof document !== "undefined" && createPortal(sheet, document.body)}
+      {open && <DirectionsSheet address={address} lang={lang} onClose={() => setOpen(false)} />}
     </>
   );
 }

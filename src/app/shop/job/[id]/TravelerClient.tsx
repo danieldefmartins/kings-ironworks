@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AddressLink from "../../AddressLink";
+import JobsMap from "../../JobsMap";
 import {
   STAGES,
   PHOTO_CATEGORIES,
@@ -136,6 +137,16 @@ export default function TravelerClient({
         {job.address && (
           <div className="text-sm text-neutral-300 mt-2">
             <AddressLink address={job.address} lang={lang} />
+          </div>
+        )}
+        {job.address && job.lat != null && job.lng != null && job.geocoded_address === job.address && (
+          <div className="mt-3">
+            <JobsMap
+              jobs={[{ id: job.id, jobNumber: job.job_number, customer: job.customer_name, address: job.address, stage: job.current_stage, lat: job.lat, lng: job.lng }]}
+              lang={lang}
+              height={180}
+              zoom={16}
+            />
           </div>
         )}
         <div className={`text-sm mt-1.5 flex items-center gap-2 ${due.cls}`}>

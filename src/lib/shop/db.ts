@@ -238,6 +238,24 @@ export async function listShifts(since?: string): Promise<TimeShift[]> {
   );
 }
 
+// One worker's shifts. Everyone sees their own hours and their own pay and
+// nobody else's, so the scoping belongs in the query rather than in a filter
+// applied after the fact: the crew shell used to pull the whole shop's shifts
+// and then narrow them in memory, which is the right answer exactly until
+// someone refactors the filter away.
+export async function listWorkerShifts(workerId: string, since?: string): Promise<TimeShift[]> {
+  const after = since ? `&started_at=gte.${encodeURIComponent(since)}` : "";
+  return sbSelect<TimeShift[]>(
+    "kiw_shop_shifts",
+    `select=*&org_id=eq.${ORG_ID}&worker_id=eq.${workerId}${after}&order=started_at.desc&limit=500`
+  );
+}
+
+export async function listWorkerBreaks(workerId: string, since?: string): Promise<TimeBreak[]> {
+  const shifts = await listWorkerShifts(workerId, since);
+  return listBreaksForShifts(shifts.map((s) => s.id));
+}
+
 export async function listBreaks(since?: string): Promise<TimeBreak[]> {
   const after = since ? `&started_at=gte.${encodeURIComponent(since)}` : "";
   return sbSelect<TimeBreak[]>(
