@@ -475,14 +475,23 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "Admin only" }, { status: 403 });
         }
         const rate = body.rate === null || body.rate === "" ? null : Number(body.rate);
-        await sbUpdate("kiw_shop_workers", `org_id=eq.${ORG_ID}&id=eq.${body.workerId}`, {
-          hourly_rate: rate,
-        });
+        const patch: Record<string, unknown> = { hourly_rate: rate };
+        // Address rides along with the rate because they are edited on the same
+        // employee card. Only touch it when the client actually sent the field —
+        // otherwise a caller that only knows about rates would blank it.
+        const hasAddress = Object.prototype.hasOwnProperty.call(body, "address");
+        if (hasAddress) {
+          const addr = typeof body.address === "string" ? body.address.trim() : "";
+          patch.address = addr === "" ? null : addr;
+        }
+        await sbUpdate("kiw_shop_workers", `org_id=eq.${ORG_ID}&id=eq.${body.workerId}`, patch);
         await audit("worker_rate_change", {
           workerId: worker.id,
           entity: "worker",
           entityId: body.workerId,
-          detail: { rate },
+          // The address itself stays out of the immutable audit log — record
+          // that it changed, not the employee's home address forever.
+          detail: { rate, addressSet: hasAddress ? patch.address !== null : undefined },
         });
         break;
       }

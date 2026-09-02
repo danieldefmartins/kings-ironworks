@@ -10,6 +10,7 @@ interface WorkerRow {
   name: string;
   role: string;
   hourly_rate: number | null;
+  address: string | null;
 }
 interface JobRow {
   jobId: string;
@@ -89,6 +90,9 @@ export default function AdminClient({
   const [busy, setBusy] = useState(false);
   const [rates, setRates] = useState<Record<string, string>>(
     Object.fromEntries(workers.map((w) => [w.id, w.hourly_rate?.toString() ?? ""]))
+  );
+  const [addresses, setAddresses] = useState<Record<string, string>>(
+    Object.fromEntries(workers.map((w) => [w.id, w.address ?? ""]))
   );
   const [open, setOpen] = useState<string | null>(null);
   const [openDep, setOpenDep] = useState<string | null>(null);
@@ -260,39 +264,54 @@ export default function AdminClient({
         </div>
       </section>
 
-      {/* Pay rates */}
+      {/* Employee records — pay rate and the payroll mailing address */}
       <section>
         <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-          Worker Pay Rates <span className="text-neutral-500 normal-case font-normal">(only you see this)</span>
+          Employees <span className="text-neutral-500 normal-case font-normal">(only you see this)</span>
         </h2>
         <div className="space-y-2">
           {workers.map((w) => (
             <div
               key={w.id}
-              className="flex items-center gap-3 bg-neutral-900 border border-neutral-800 rounded-lg p-3"
+              className="bg-neutral-900 border border-neutral-800 rounded-lg p-3 space-y-2"
             >
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold">{w.name}</div>
-                <div className="text-xs text-neutral-500">{w.role}</div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">{w.name}</div>
+                  <div className="text-xs text-neutral-500">{w.role}</div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-neutral-400">$</span>
+                  <input
+                    value={rates[w.id] ?? ""}
+                    onChange={(ev) => setRates({ ...rates, [w.id]: ev.target.value })}
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="w-24 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-right focus:border-amber-500 outline-none"
+                  />
+                  <span className="text-neutral-500 text-xs">/hr</span>
+                </div>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    act({
+                      type: "rate_set",
+                      workerId: w.id,
+                      rate: rates[w.id],
+                      address: addresses[w.id],
+                    })
+                  }
+                  className="rounded-lg bg-amber-500 text-black font-semibold px-4 py-2 text-sm active:scale-95 disabled:opacity-50"
+                >
+                  Save
+                </button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-neutral-400">$</span>
-                <input
-                  value={rates[w.id] ?? ""}
-                  onChange={(ev) => setRates({ ...rates, [w.id]: ev.target.value })}
-                  inputMode="decimal"
-                  placeholder="0.00"
-                  className="w-24 bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-right focus:border-amber-500 outline-none"
-                />
-                <span className="text-neutral-500 text-xs">/hr</span>
-              </div>
-              <button
-                disabled={busy}
-                onClick={() => act({ type: "rate_set", workerId: w.id, rate: rates[w.id] })}
-                className="rounded-lg bg-amber-500 text-black font-semibold px-4 py-2 text-sm active:scale-95 disabled:opacity-50"
-              >
-                Save
-              </button>
+              <input
+                value={addresses[w.id] ?? ""}
+                onChange={(ev) => setAddresses({ ...addresses, [w.id]: ev.target.value })}
+                placeholder="Home address (payroll)"
+                className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-sm focus:border-amber-500 outline-none"
+              />
             </div>
           ))}
         </div>

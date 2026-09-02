@@ -84,6 +84,7 @@ export interface Worker {
   is_admin?: boolean;
   phone?: string | null;
   email?: string | null;
+  address?: string | null;
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
 }

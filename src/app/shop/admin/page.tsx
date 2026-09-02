@@ -135,6 +135,7 @@ export default async function ShopAdminPage() {
           name: w.name,
           role: w.role,
           hourly_rate: w.hourly_rate ?? null,
+          address: w.address ?? null,
         }))}
         jobs={[...rollup.values()].sort((a, b) => b.totalHours - a.totalHours)}
         entries={entryRows}
