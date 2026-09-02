@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { t } from "@/lib/shop/i18n";
+import { SHOP_TZ } from "@/lib/shop/shared";
 
 interface WorkerRow {
   id: string;
@@ -59,6 +60,7 @@ function money(n: number) {
 }
 function fmtDT(iso: string) {
   return new Date(iso).toLocaleString("en-US", {
+    timeZone: SHOP_TZ,
     month: "short",
     day: "numeric",
     hour: "numeric",

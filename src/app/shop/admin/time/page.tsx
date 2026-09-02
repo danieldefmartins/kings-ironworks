@@ -12,15 +12,9 @@ import {
 import ShopTopBar from "../../ShopTopBar";
 import TimesheetClient, { type ShiftRow } from "../../time/TimesheetClient";
 import { t } from "@/lib/shop/i18n";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, fmtDateTime, shopWeekKey } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
-
-function weekKey(iso: string) {
-  const d = new Date(iso);
-  const day = (d.getDay() + 6) % 7;
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - day).toISOString().slice(0, 10);
-}
 
 export default async function TeamTimePage() {
   const worker = await getSessionWorker();
@@ -41,7 +35,7 @@ export default async function TeamTimePage() {
     .sort((a, b) => a.started_at.localeCompare(b.started_at))
     .map((s) => {
       const hours = shiftHours(s, breaks.filter((b) => b.shift_id === s.id));
-      const key = `${s.worker_id}|${weekKey(s.started_at)}`;
+      const key = `${s.worker_id}|${shopWeekKey(s.started_at)}`;
       const before = used.get(key) || 0;
       used.set(key, before + hours);
       const regular = Math.min(hours, Math.max(0, 40 - before));
@@ -104,7 +98,7 @@ export default async function TeamTimePage() {
                       {names.get(p.worker_id) || "Unknown"} · {t(lang, p.work_state === "break" ? "locBreak" : "locWorking")}
                     </span>
                     <span className="text-neutral-500">
-                      {new Date(p.recorded_at).toLocaleString()} · ±{p.accuracy_m ? Math.round(p.accuracy_m) : "?"}m
+                      {fmtDateTime(p.recorded_at, lang)} · ±{p.accuracy_m ? Math.round(p.accuracy_m) : "?"}m
                     </span>
                   </span>
                   <span className="text-amber-400">↗</span>

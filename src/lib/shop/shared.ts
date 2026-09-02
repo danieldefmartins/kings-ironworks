@@ -353,3 +353,87 @@ export interface SupplierPrice {
   last_checked: string | null;
   notes: string | null;
 }
+
+// King Iron Works runs on Eastern time. Everything is stored as timestamptz —
+// absolute instants, which is correct — but "what time did Tiago clock in" has
+// exactly one right answer for this shop, and it is not "whatever timezone the
+// renderer happened to be in."
+//
+// That distinction bit us: the timesheet's location history is a SERVER
+// component, the Railway container sets no TZ so Node defaults to UTC, and a
+// 8:12am punch rendered as "12:12 PM". Client components looked fine only
+// because the tablets happen to sit in Massachusetts — correct by accident,
+// and wrong the moment a device has the wrong zone or somebody reviews hours
+// from another state.
+//
+// So pin the zone rather than inheriting it. Payroll is the consumer here and
+// payroll does not get to be ambiguous.
+export const SHOP_TZ = "America/New_York";
+
+const LOCALES: Record<string, string> = { pt: "pt-BR", es: "es-US", en: "en-US" };
+
+/** Clock time only — "7:14 AM". */
+export function fmtTime(iso: string | number | Date, lang = "en"): string {
+  return new Date(iso).toLocaleTimeString(LOCALES[lang] || "en-US", {
+    timeZone: SHOP_TZ,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** Date and clock time — "Sep 2, 7:14 AM". */
+export function fmtDateTime(iso: string | number | Date, lang = "en"): string {
+  return new Date(iso).toLocaleString(LOCALES[lang] || "en-US", {
+    timeZone: SHOP_TZ,
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/** The calendar date in shop time, as YYYY-MM-DD. */
+export function shopDateKey(iso: string | number | Date): string {
+  // en-CA formats as YYYY-MM-DD, which saves hand-assembling the parts.
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: SHOP_TZ });
+}
+
+/** Monday of the shop-time week containing `iso`, as YYYY-MM-DD. */
+export function shopWeekKey(iso: string | number | Date): string {
+  const key = shopDateKey(iso);
+  // Anchor at noon UTC so adding/subtracting whole days can never trip over a
+  // DST transition and land on the previous evening.
+  const noon = new Date(`${key}T12:00:00Z`);
+  const dow = (noon.getUTCDay() + 6) % 7; // Monday = 0
+  noon.setUTCDate(noon.getUTCDate() - dow);
+  return noon.toISOString().slice(0, 10);
+}
+
+// The correction editor round-trips a timestamp through an <input
+// type="datetime-local">, which speaks naive wall-clock strings with no zone.
+// The old pair read and wrote that string in the DEVICE's zone, so it only
+// round-tripped correctly on a phone set to Eastern. Much of the crew is
+// Brazilian; a handset left on São Paulo time would have silently filed a
+// correction several hours off — against payroll.
+//
+// These two are exact inverses in shop time, so a value that is displayed,
+// left untouched, and saved comes back as the same instant.
+export function toShopInput(iso: string | number | Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: SHOP_TZ,
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
+}
+
+export function fromShopInput(value: string): string {
+  // Read the wall-clock string as if it were UTC, then measure how far that
+  // instant's shop-time rendering sits from its UTC rendering and undo it.
+  // Deriving the offset per instant is what keeps DST correct.
+  const asIfUtc = new Date(`${value}:00Z`).getTime();
+  const shopWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone: SHOP_TZ })).getTime();
+  const utcWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone: "UTC" })).getTime();
+  return new Date(asIfUtc - (shopWall - utcWall)).toISOString();
+}

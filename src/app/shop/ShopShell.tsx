@@ -5,7 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
-import { shiftHours } from "@/lib/shop/shared";
+import { fmtTime, shiftHours } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
@@ -171,7 +171,7 @@ export default function ShopShell({
                   : lastPing == null
                     ? t(lang, "clockLocationWaitingBadge")
                     : t(lang, "clockLocationOnBadge", {
-                        time: new Date(lastPing).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                        time: fmtTime(lastPing, lang),
                       })}
               </p>
             )}
