@@ -11,36 +11,75 @@ import {
 } from "lucide-react";
 
 const IMG = "/images/portfolio-organized/Staircases/Exterior-Entry/king-iron-works-staircase-exterior";
+const FIN = "/images/finishes/king-iron-works-floating-staircase";
+const HERO_MOBILE =
+  "/images/portfolio-organized/Staircases/Exterior-Entry/sm/king-iron-works-staircase-exterior-porcelain-treads-twin-run.jpg";
+
+// Every photo on this page ships at two widths: the full file and a ~2x-smaller
+// copy beside it in sm/. Handing the browser both plus an honest `sizes` is the
+// difference between a phone pulling 5 MB of desktop JPEGs over LTE and pulling
+// 1 MB. `sizes` has to describe the slot the image actually occupies, not the
+// viewport, or the browser picks the big one anyway.
+function Shot({
+  src, alt, sizes, className, priority, smWidth = 760, fullWidth = 1600,
+}: {
+  src: string;
+  alt: string;
+  sizes: string;
+  className?: string;
+  priority?: boolean;
+  smWidth?: number;
+  fullWidth?: number;
+}) {
+  const small = src.replace(/\/([^/]+)$/, "/sm/$1");
+  return (
+    /* eslint-disable-next-line @next/next/no-img-element */
+    <img
+      src={src}
+      srcSet={`${small} ${smWidth}w, ${src} ${fullWidth}w`}
+      sizes={sizes}
+      alt={alt}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      className={className}
+    />
+  );
+}
 
 // The tread is the decision the whole stair is built around, so it leads. Each
 // one is a real option we fabricate the pan for — the frame is identical, the
 // pan depth changes to suit what drops into it.
 const TREADS = [
   {
+    image: `${IMG}-porcelain-treads-head-on.jpg`,
     name: "Porcelain",
     tagline: "The one in these photos",
     body: "Large-format porcelain pavers set into a steel pan. Doesn't fade, doesn't stain, doesn't absorb water — so it can't spall when it freezes. Matches the patio you already have.",
     best: "Best for: modern builds that continue the terrace material up the steps",
   },
   {
+    image: `${FIN}-tread-wood-ipe.jpg`,
     name: "Wood",
     tagline: "Warmth against the steel",
     body: "Ipe, mahogany, or cedar, screwed down from below so nothing shows on top. The steel does the structural work, so the wood is only a surface — it can be replaced in an afternoon, decades from now.",
     best: "Best for: shingle, cedar, and craftsman homes",
   },
   {
+    image: `${FIN}-tread-concrete.jpg`,
     name: "Concrete",
     tagline: "Quiet and monolithic",
     body: "Precast or poured-in-place concrete treads in the pan. Heavy underfoot in the way people read as solid, and it takes an integral color or a broom finish for grip.",
     best: "Best for: contemporary and industrial exteriors",
   },
   {
+    image: `${FIN}-tread-bar-grating.jpg`,
     name: "Bar Grating",
     tagline: "Nothing to shovel",
     body: "Snow and rain fall straight through. No standing water, no ice sheet on the tread, no sweeping. The most maintenance-free tread we build, and the one fire departments and inspectors like best.",
     best: "Best for: north-facing entries, roof decks, and anywhere ice collects",
   },
   {
+    image: `${FIN}-tread-composite.jpg`,
     name: "Composite",
     tagline: "The deck-board match",
     body: "Trex, Azek, and the rest — the same board as your deck, carried onto the stair so the two read as one structure. No sealing, no splinters, no annual coat of anything.",
@@ -72,6 +111,17 @@ const FINISHES = [
   },
 ];
 
+// The same stair, recoloured, so a homeowner can see the choice instead of
+// reading an adjective. Renderings from our own photograph of the real stair —
+// labelled as such on the page, because passing a render off as a finished job
+// is how a customer ends up disappointed on install day.
+const COLORS = [
+  { name: "Satin Black", image: `${FIN}-color-satin-black.jpg`, note: "The one we build most. Disappears against dark windows and lets the treads read." },
+  { name: "Hot-Dip Galvanized", image: `${FIN}-color-galvanized.jpg`, note: "Bare zinc, matte silver-grey. The longest-lasting finish, left uncoated." },
+  { name: "Dark Bronze", image: `${FIN}-color-dark-bronze.jpg`, note: "Warmer than black. Sits well with cedar, mahogany, and brick." },
+  { name: "Warm White", image: `${FIN}-color-warm-white.jpg`, note: "For shingle and clapboard homes where black reads too heavy." },
+];
+
 const FAQS = [
   {
     q: "How long does hot-dip galvanizing actually last before it rusts?",
@@ -99,20 +149,26 @@ const FAQS = [
   },
 ];
 
-export default function ExteriorStaircaseClient() {
+export default function FloatingExteriorStaircaseClient() {
   const phone = useLocalPhone();
 
   return (
     <div className="min-h-screen">
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section className="relative min-h-[88vh] flex items-center bg-sidebar text-sidebar-foreground overflow-hidden pt-4">
+        {/* A 16:9 crop dropped into an 88vh phone screen shows a narrow vertical
+            slice of itself. Phones get the portrait frame instead. */}
         <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/images/carousel/exterior-staircase-16x9.jpg"
-            alt="Custom exterior steel staircase with porcelain treads and horizontal bar railing"
-            className="w-full h-full object-cover opacity-45"
-          />
+          <picture>
+            <source media="(min-width: 1024px)" srcSet="/images/carousel/exterior-staircase-16x9.jpg" />
+            <source media="(min-width: 640px)" srcSet={`${IMG}-porcelain-treads-twin-run.jpg`} />
+            <img
+              src={HERO_MOBILE}
+              alt="Floating exterior steel staircase with porcelain treads and horizontal bar railing"
+              fetchPriority="high"
+              className="w-full h-full object-cover opacity-45"
+            />
+          </picture>
         </div>
         <div className="container relative z-10">
           <div className="max-w-4xl">
@@ -120,7 +176,7 @@ export default function ExteriorStaircaseClient() {
               ONE OF ONE · BUILT IN EVERETT, MA
             </div>
             <h1 className="text-display text-3xl md:text-7xl lg:text-8xl mb-4 md:mb-6 leading-tight">
-              THE EXTERIOR STAIRCASE THAT MAKES THE HOUSE
+              THE FLOATING EXTERIOR STAIRCASE
             </h1>
             <p className="text-base md:text-2xl text-sidebar-foreground/90 mb-6 md:mb-8 max-w-3xl leading-relaxed">
               Sculpted steel stringers, open risers, and a tread you choose — porcelain, wood,
@@ -156,7 +212,7 @@ export default function ExteriorStaircaseClient() {
           <div className="max-w-3xl mb-16">
             <div className="text-accent font-display font-bold tracking-wider mb-3">THE DESIGN</div>
             <h2 className="text-display text-4xl md:text-5xl mb-6">
-              MOST EXTERIOR STAIRS ARE A WAY UP. THIS ONE IS ARCHITECTURE.
+              MOST EXTERIOR STAIRS ARE A WAY UP. THIS ONE FLOATS.
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
               The difference is in three details you can see from the street — and one you can&apos;t.
@@ -164,11 +220,11 @@ export default function ExteriorStaircaseClient() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center mb-20">
-            <div className="h-[420px] md:h-[560px] overflow-hidden bg-black">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="h-[320px] sm:h-[440px] md:h-[560px] overflow-hidden bg-black">
+              <Shot
                 src={`${IMG}-frame-open-riser-underside.jpg`}
                 alt="Sculpted steel stringer flaring out at the base of the staircase"
+                sizes="(min-width: 768px) 50vw, 100vw"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -232,11 +288,23 @@ export default function ExteriorStaircaseClient() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {TREADS.map((t) => (
-              <Card key={t.name} className="p-8 bg-card border border-border hover:border-accent transition-colors flex flex-col">
+              <Card key={t.name} className="bg-card border border-border hover:border-accent transition-colors flex flex-col overflow-hidden">
+                <div className="aspect-[4/3] bg-black overflow-hidden">
+                  <Shot
+                    src={t.image}
+                    alt={`Floating exterior staircase with ${t.name.toLowerCase()} treads`}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    smWidth={620}
+                    fullWidth={1100}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-8 flex flex-col flex-1">
                 <div className="text-accent font-display font-bold text-sm tracking-wider mb-2">{t.tagline.toUpperCase()}</div>
                 <h3 className="text-heading text-3xl mb-4">{t.name}</h3>
                 <p className="text-muted-foreground leading-relaxed mb-5 flex-1">{t.body}</p>
                 <p className="text-sm text-foreground/70 border-t border-border pt-4">{t.best}</p>
+                </div>
               </Card>
             ))}
             <Card className="p-8 bg-accent text-accent-foreground flex flex-col justify-center">
@@ -325,13 +393,50 @@ export default function ExteriorStaircaseClient() {
         </div>
       </section>
 
-      {/* ── Gallery ──────────────────────────────────────────────────────── */}
+      {/* ── Colors ───────────────────────────────────────────────────────── */}
       <section className="bg-sidebar text-sidebar-foreground py-24">
+        <div className="container">
+          <div className="max-w-3xl mb-12">
+            <div className="text-accent font-display font-bold tracking-wider mb-3">SEE IT IN YOUR COLOR</div>
+            <h2 className="text-display text-4xl md:text-5xl mb-6">THE SAME STAIR, FOUR FINISHES</h2>
+            <p className="text-lg text-sidebar-foreground/80 leading-relaxed">
+              Powder coat comes in any RAL color, so this is a sample rather than a menu. Tell us
+              your siding and trim and we will tell you which two actually work.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {COLORS.map((c) => (
+              <div key={c.name}>
+                <div className="aspect-[3/4] bg-black overflow-hidden">
+                  <Shot
+                    src={c.image}
+                    alt={`Floating exterior staircase in a ${c.name.toLowerCase()} finish`}
+                    sizes="(min-width: 1024px) 25vw, 50vw"
+                    smWidth={620}
+                    fullWidth={1100}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h3 className="text-heading text-lg mt-3">{c.name}</h3>
+                <p className="text-sm text-sidebar-foreground/70 leading-snug mt-1">{c.note}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-8 text-xs text-sidebar-foreground/50 max-w-3xl">
+            Color and tread visualisations are renderings made from our photograph of this
+            staircase, shown so you can compare options. The porcelain build in the gallery below
+            is the finished job as installed.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Gallery ──────────────────────────────────────────────────────── */}
+      <section className="bg-card py-24">
         <div className="container">
           <div className="max-w-3xl mb-12">
             <div className="text-accent font-display font-bold tracking-wider mb-3">THIS PROJECT</div>
             <h2 className="text-display text-4xl md:text-5xl mb-6">FROM BARE STEEL TO FINISHED ENTRY</h2>
-            <p className="text-lg text-sidebar-foreground/80 leading-relaxed">
+            <p className="text-lg text-muted-foreground leading-relaxed">
               The same staircase, photographed through fabrication and after the porcelain went in.
               The frame is the product; the tread is the finish.
             </p>
@@ -345,15 +450,19 @@ export default function ExteriorStaircaseClient() {
               ["frame-installed-landing", "Steel frame and railing installed before treads"],
               ["frame-open-riser-underside", "Sculpted stringer flaring to the ground"],
             ].map(([slug, alt]) => (
-              <div key={slug} className="overflow-hidden bg-black">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`${IMG}-${slug}.jpg`} alt={alt} loading="lazy" className="w-full h-full object-cover aspect-[3/4] hover:scale-105 transition-transform duration-500" />
+              <div key={slug} className="overflow-hidden bg-black aspect-[3/4]">
+                <Shot
+                  src={`${IMG}-${slug}.jpg`}
+                  alt={alt}
+                  sizes="(min-width: 768px) 33vw, 50vw"
+                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                />
               </div>
             ))}
           </div>
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <video
-              className="w-full bg-black"
+              className="w-full max-h-[70vh] md:max-h-[560px] object-contain bg-black"
               src={`${IMG}-walkaround.mp4`}
               poster={`${IMG}-porcelain-sunlit-entry.jpg`}
               controls
@@ -363,12 +472,12 @@ export default function ExteriorStaircaseClient() {
             />
             <div>
               <h3 className="text-heading text-2xl mb-4">Walk around it</h3>
-              <p className="text-sidebar-foreground/80 leading-relaxed mb-6">
+              <p className="text-muted-foreground leading-relaxed mb-6">
                 Twelve seconds, no narration. Watch how the stringer carries the line of the stair
                 down and out, and how much light still reaches the planting underneath.
               </p>
-              <Link href="/portfolio/exterior-entry-staircases">
-                <Button variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10">
+              <Link href="/portfolio/floating-exterior-staircases">
+                <Button variant="outline">
                   SEE THE FULL GALLERY <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
@@ -401,7 +510,7 @@ export default function ExteriorStaircaseClient() {
               We come out, measure the opening, and show you the stair in your own doorway before
               anything is cut. On-site measurement, design consultation, and a detailed quote — no cost.
             </p>
-            <div className="max-w-2xl mx-auto mt-8"><GHLFormPlaceholder service="Exterior Staircase" /></div>
+            <div className="max-w-2xl mx-auto mt-8"><GHLFormPlaceholder service="Floating Exterior Staircase" /></div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
               <Link href="/contact"><Button size="lg" className="bg-accent hover:bg-accent/90 text-lg px-8 py-6">REQUEST FREE CONSULTATION<ArrowRight className="ml-2 w-5 h-5" /></Button></Link>
               <PhoneLink tel={phone.tel}><Button size="lg" variant="outline" className="border-sidebar-foreground/30 text-sidebar-foreground hover:bg-sidebar-foreground/10 text-lg px-8 py-6"><Phone className="mr-2 w-5 h-5" />{phone.display}</Button></PhoneLink>

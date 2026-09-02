@@ -35,12 +35,12 @@ export const heroSlides = [
   },
   {
     desktop: "/images/carousel/exterior-staircase-16x9.jpg",
-    mobile: "/images/portfolio-organized/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-treads-twin-run.jpg",
-    alt: "Modern exterior steel entry staircase with porcelain treads and horizontal bar railing",
-    title: "Exterior Entry Staircases",
+    mobile: "/images/portfolio-organized/Staircases/Exterior-Entry/sm/king-iron-works-staircase-exterior-porcelain-treads-twin-run.jpg",
+    alt: "Floating exterior steel staircase with porcelain treads and horizontal bar railing",
+    title: "Floating Exterior Staircases",
     subtitle: "Porcelain · Wood · Concrete · Grating",
-    description: "A steel entry stair built around the tread you choose. Sculpted stringers, open risers, and a horizontal bar rail — finished in epoxy, hot-dip galvanizing, or powder coat in any color. One of one, engineered for New England winters.",
-    link: "/exterior-staircase",
+    description: "Open risers and a sculpted stringer that flares to the ground — built around the tread you choose: porcelain, wood, concrete, grating or composite. Finished in epoxy, hot-dip galvanizing, or powder coat in any color.",
+    link: "/floating-exterior-staircase",
   },
   {
     desktop: "/images/carousel/structural-steel-16x9.jpg",

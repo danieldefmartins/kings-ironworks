@@ -39,7 +39,7 @@ const parentCategories: ParentCategory[] = [
     children: [
       "curved-staircases", "curved-project-1", "curved-project-2",
       "floating-full", "floating-mono-stringer", "floating-dual-stringer",
-      "exterior-entry-staircases", "spiral-interior", "spiral-exterior",
+      "floating-exterior-staircases", "spiral-interior", "spiral-exterior",
       "grand-ornamental",
     ],
   },
@@ -102,10 +102,10 @@ const ctaMessages: {
   { headline: "Love what you see?", body: "Every piece is custom-built to your exact vision.", cta: "Free Consultation", href: "/contact", icon: Calendar },
   {
     eyebrow: "NEW DESIGN",
-    headline: "The exterior staircase that makes the house",
+    headline: "The Floating Exterior Staircase",
     body: "Sculpted stringers, open risers, and your choice of tread — porcelain, wood, concrete, grating or composite.",
     cta: "See the Design",
-    href: "/exterior-staircase",
+    href: "/floating-exterior-staircase",
     icon: Sparkles,
     image: "/images/portfolio-organized/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-sunlit-entry.jpg",
   },

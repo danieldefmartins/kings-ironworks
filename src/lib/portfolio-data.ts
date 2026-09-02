@@ -406,7 +406,7 @@ export const categories: PortfolioCategory[] = [
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-staircases-modern-project-4.jpg`,
       `${IMG}/Staircases/Floating/Dual Stringer/king-iron-works-staircases-modern-project-5.jpg`,
     ],  },
-  { id: "exterior-entry-staircases", label: "Exterior Entry Staircases", photos: [
+  { id: "floating-exterior-staircases", label: "Floating Exterior Staircases", photos: [
       `${IMG}/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-treads-twin-run.jpg`,
       `${IMG}/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-sunlit-entry.jpg`,
       `${IMG}/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-treads-head-on.jpg`,
