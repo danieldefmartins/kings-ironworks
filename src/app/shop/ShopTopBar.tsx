@@ -5,6 +5,7 @@ import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
 import Image from "next/image";
 import { t } from "@/lib/shop/i18n";
+import AdminMenu from "./AdminMenu";
 import MoreMenu, { MoreItem } from "./MoreMenu";
 import { ChevronLeft, UserRound } from "lucide-react";
 
@@ -60,9 +61,13 @@ export default function ShopTopBar({
         <span aria-hidden className="h-6 w-px shrink-0 bg-white/10" />
         <h1 className="pointer-events-none absolute left-1/2 max-w-[44%] -translate-x-1/2 truncate text-center text-lg font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>
       </div>
-      {/* Language, admin and sign-out are housekeeping. They live behind one
-          button so the bar can be the job the worker is standing in front of. */}
-      <div className="col-start-3 flex items-center justify-end gap-3">
+      {/* Language and sign-out are housekeeping and stay behind one button, so
+          the bar can be the job the worker is standing in front of. Admin is
+          the exception: the owners reach for it constantly and it was two taps
+          deep, so it gets its own control — icon-only on a phone, where the
+          centred title has already claimed the middle 44%. */}
+      <div className="col-start-3 flex items-center justify-end gap-2">
+        {adminLink && <AdminMenu lang={lang} />}
         <span className="hidden text-sm text-neutral-300 sm:inline">{workerName}</span>
         <MoreMenu label={t(lang, "more")} closeLabel={t(lang, "close")}>
           {(close) => (
@@ -95,7 +100,6 @@ export default function ShopTopBar({
                 ))}
               </div>
               <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {t(lang, "navMore")}</MoreItem>
-              {adminLink && <MoreItem href="/shop/admin">⚙ Admin</MoreItem>}
               <MoreItem
                 onClick={() => {
                   close();

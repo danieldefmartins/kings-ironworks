@@ -21,7 +21,7 @@ export default async function MorePage() {
     { href: "/shop/time", label: t(lang, "myTimesheet"), detail: t(lang, "myTimesheetHint"), icon: ClipboardClock },
     ...(owner ? [
       { href: "/shop/admin/time", label: t(lang, "teamTimesheets"), detail: t(lang, "teamTimesheetsHint"), icon: ShieldCheck },
-      { href: "/shop/admin", label: t(lang, "businessAdmin"), detail: t(lang, "businessAdminHint"), icon: Settings },
+      { href: "/shop/admin", label: t(lang, "admHubTitle"), detail: t(lang, "admHubHint"), icon: Settings },
     ] : []),
   ];
   return <div><ShopTopBar workerName={worker.name} title={t(lang, "navMore")} lang={lang} />

@@ -1,153 +1,59 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
-import {
-  listWorkersWithRates,
-  getAllTimeEntries,
-  listJobsWithDeposits,
-  listArchivedJobs,
-  depositValue,
-  contractValue,
-  entryHours,
-  sbSelect,
-  ORG_ID,
-  type Job,
-} from "@/lib/shop/db";
-import ShopTopBar from "../ShopTopBar";
-import AdminClient from "./AdminClient";
 import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { t } from "@/lib/shop/i18n";
+import ShopTopBar from "../ShopTopBar";
+import { ADMIN_DESTS } from "../adminNav";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopAdminPage() {
+// The admin landing page: every owner-level tool as a labelled tile.
+//
+// This used to drop straight into labour and job costs with two small text
+// links wedged above it, so the rest of admin was effectively undiscoverable —
+// you had to already know it was there. Tiles say what exists. The dropdown in
+// the top bar is the fast path for when you already do.
+export default async function AdminHub() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   if (!canViewOwnerFinancials(worker)) redirect("/shop");
-
-  const [workers, entries, jobs, depositJobs, archivedJobs] = await Promise.all([
-    listWorkersWithRates(),
-    getAllTimeEntries(),
-    sbSelect<Job[]>(
-      "kiw_shop_jobs",
-      `select=id,job_number,customer_name,project_type,archived&org_id=eq.${ORG_ID}&order=job_number.asc`
-    ),
-    listJobsWithDeposits(),
-    listArchivedJobs(),
-  ]);
-
-  const workerById = new Map(workers.map((w) => [w.id, w]));
-  const jobById = new Map(jobs.map((j) => [j.id, j]));
-
-  // Per-job rollup: hours & cost per worker
-  interface JobRow {
-    jobId: string;
-    label: string;
-    totalHours: number;
-    totalCost: number;
-    missingRate: boolean;
-    byWorker: Record<string, { hours: number; cost: number | null }>;
-  }
-  const rollup = new Map<string, JobRow>();
-  for (const e of entries) {
-    const j = jobById.get(e.job_id);
-    if (!j) continue;
-    let row = rollup.get(e.job_id);
-    if (!row) {
-      row = {
-        jobId: e.job_id,
-        label: `${j.job_number} — ${j.customer_name}`,
-        totalHours: 0,
-        totalCost: 0,
-        missingRate: false,
-        byWorker: {},
-      };
-      rollup.set(e.job_id, row);
-    }
-    const w = workerById.get(e.worker_id);
-    const name = w?.name || "?";
-    const hrs = entryHours(e);
-    const rate = w?.hourly_rate ?? null;
-    if (!row.byWorker[name]) row.byWorker[name] = { hours: 0, cost: rate === null ? null : 0 };
-    row.byWorker[name].hours += hrs;
-    row.totalHours += hrs;
-    if (rate === null) {
-      row.missingRate = true;
-      row.byWorker[name].cost = null;
-    } else {
-      row.byWorker[name].cost = (row.byWorker[name].cost ?? 0) + hrs * Number(rate);
-      row.totalCost += hrs * Number(rate);
-    }
-  }
-
-  // Serialize entries with names for the client table
-  const entryRows = entries.slice(0, 100).map((e) => ({
-    id: e.id,
-    worker: workerById.get(e.worker_id)?.name || "?",
-    job: jobById.get(e.job_id)
-      ? `${jobById.get(e.job_id)!.job_number} — ${jobById.get(e.job_id)!.customer_name}`
-      : "?",
-    started_at: e.started_at,
-    ended_at: e.ended_at,
-    hours: entryHours(e),
-    start_lat: e.start_lat,
-    start_lng: e.start_lng,
-    end_lat: e.end_lat,
-    end_lng: e.end_lng,
-  }));
-
-  // Deposits on file, with labor burned against each so far.
-  const deposits = depositJobs.map((j) => ({
-    id: j.id,
-    jobNumber: j.job_number,
-    customer: j.customer_name,
-    projectType: j.project_type,
-    amount: depositValue(j),
-    contractAmount: contractValue(j),
-    note: j.deposit_note,
-    phone: j.phone,
-    email: j.email,
-    address: j.address,
-    followUp: j.notes,
-    archived: !!j.archived,
-    laborCost: rollup.get(j.id)?.totalCost ?? 0,
-  }));
-  const depositTotal = deposits.reduce((s, d) => s + d.amount, 0);
-  // Archived jobs drop off the board but the money is still held, so the
-  // ledger keeps them — called out separately so the totals reconcile.
-  const archivedDepositTotal = deposits
-    .filter((d) => d.archived)
-    .reduce((s, d) => s + d.amount, 0);
+  const lang = worker.lang || "en";
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title="Admin — Labor & Costs" back="/shop" />
-      <div className="px-4 pt-4 max-w-5xl mx-auto">
-        <a href="/shop/admin/time" className="mr-2 inline-block rounded-lg border border-emerald-600/50 text-emerald-400 px-3 py-2 text-sm hover:bg-neutral-800">⏱ Team Timesheets</a>
-        <a
-          href="/shop/admin/settings"
-          className="inline-block rounded-lg border border-amber-600/50 text-amber-400 px-3 py-2 text-sm hover:bg-neutral-800"
-        >
-          ⚙ Organization Settings
-        </a>
-      </div>
-      <AdminClient
-        workers={workers.map((w) => ({
-          id: w.id,
-          name: w.name,
-          role: w.role,
-          hourly_rate: w.hourly_rate ?? null,
-          address: w.address ?? null,
-        }))}
-        jobs={[...rollup.values()].sort((a, b) => b.totalHours - a.totalHours)}
-        entries={entryRows}
-        deposits={deposits}
-        depositTotal={depositTotal}
-        archivedDepositTotal={archivedDepositTotal}
-        archivedJobs={archivedJobs.map((j) => ({
-          id: j.id,
-          label: `${j.job_number} — ${j.customer_name}`,
-        }))}
-        lang={worker.lang || "en"}
-      />
+      <ShopTopBar workerName={worker.name} title={t(lang, "admHubTitle")} back="/shop" lang={lang} />
+      <main className="mx-auto max-w-3xl px-4 pb-28 pt-5">
+        <header className="mb-5 flex items-start gap-3">
+          <ShieldCheck aria-hidden className="mt-0.5 h-6 w-6 shrink-0 text-amber-400" />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">{t(lang, "admHubTitle")}</h1>
+            <p className="mt-0.5 text-sm text-neutral-500">{t(lang, "admHubHint")}</p>
+          </div>
+        </header>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          {ADMIN_DESTS.map((d) => (
+            <Link
+              key={d.href}
+              href={d.href}
+              className="flex min-h-[84px] items-center gap-3 rounded-[20px] border border-white/10 bg-neutral-900/60 p-4 transition active:scale-[0.99] hover:border-amber-600/50"
+            >
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-neutral-800">
+                <d.icon aria-hidden className={`h-5 w-5 ${d.tone}`} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{t(lang, d.key)}</span>
+                <span className="block text-xs leading-snug text-neutral-500">
+                  {t(lang, d.hintKey)}
+                </span>
+              </span>
+              <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-neutral-600" />
+            </Link>
+          ))}
+        </div>
+      </main>
     </div>
   );
 }

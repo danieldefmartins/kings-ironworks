@@ -119,9 +119,9 @@ export default function AdminClient({
     <div className="p-4 max-w-5xl mx-auto pb-24 space-y-8">
       {/* Live now */}
       {running.length > 0 && (
-        <section>
-          <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-            ● On the clock right now
+        <section id="onclock">
+        <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
+          ● {t(lang, "admOnClock")}
           </h2>
           <div className="space-y-2">
             {running.map((e) => (
@@ -161,10 +161,10 @@ export default function AdminClient({
       )}
 
       {/* Customer deposits */}
-      <section>
+      <section id="deposits">
         <div className="flex items-end justify-between gap-3 mb-2">
           <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm">
-            Customer Deposits Received
+            {t(lang, "admDeposits")}
           </h2>
           <div className="text-right shrink-0">
             <div className="text-xl font-bold text-emerald-300">{money(depositTotal)}</div>
@@ -267,9 +267,9 @@ export default function AdminClient({
       </section>
 
       {/* Employee records — pay rate and the payroll mailing address */}
-      <section>
+      <section id="rates">
         <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-          Employees <span className="text-neutral-500 normal-case font-normal">(only you see this)</span>
+          {t(lang, "admRates")} <span className="text-neutral-500 normal-case font-normal">({t(lang, "admOnlyYou")})</span>
         </h2>
         <div className="space-y-2">
           {workers.map((w) => (
@@ -320,9 +320,9 @@ export default function AdminClient({
       </section>
 
       {/* Labor cost per project */}
-      <section>
+      <section id="jobcosts">
         <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-          Labor Cost by Project
+          {t(lang, "admJobCosts")}
         </h2>
         {jobs.length === 0 && (
           <p className="text-sm text-neutral-600 italic">
@@ -376,9 +376,9 @@ export default function AdminClient({
       </section>
 
       {/* Recent sessions */}
-      <section>
+      <section id="sessions">
         <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-          Recent Sessions
+          {t(lang, "admSessions")}
         </h2>
         <div className="space-y-1.5">
           {entries.slice(0, 40).map((e) => (
@@ -429,7 +429,7 @@ export default function AdminClient({
       </section>
 
       {/* The way back for a job that was taken off the board. */}
-      <section className="mt-8">
+      <section id="archived" className="mt-8">
         <h2 className="mb-2 font-display text-lg font-bold">{t(lang, "archivedJobs")}</h2>
         {archivedJobs.length === 0 ? (
           <p className="text-sm text-neutral-500">{t(lang, "noArchivedJobs")}</p>
