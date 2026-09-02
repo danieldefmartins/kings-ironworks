@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Clock } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { fmtTime, hoursToHm, shiftHours, type TimeBreak } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
@@ -32,6 +33,12 @@ export interface OnClockRow {
 // This is the PAYROLL clock (kiw_shop_shifts). The job named on a row is that
 // worker's running project entry, shown for context only; nothing here writes
 // to either clock, and reading them together does not couple them.
+// Past this, a shift is almost certainly a clock-out nobody tapped. Flagged
+// for review rather than auto-closed: the project clock caps itself because a
+// stray hour distorts a job cost, but payroll hours become a payment, and
+// software should not quietly edit one.
+const RUNAWAY_HOURS = 12;
+
 export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; lang?: string }) {
   const router = useRouter();
 
@@ -65,11 +72,14 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
         {rows.length === 0 ? (
           <p className="p-6 text-center text-sm text-neutral-500">{t(lang, "nobodyClockedIn")}</p>
         ) : (
-          rows.map((r) => (
-            <div
-              key={r.workerId}
-              className="flex min-h-[72px] items-center gap-3 border-b border-white/5 px-4 py-3 last:border-0"
-            >
+          rows.map((r) => {
+            const runningHours = shiftHours(
+              { started_at: r.startedAt, ended_at: null }, r.breaks, now
+            );
+            const runaway = runningHours >= RUNAWAY_HOURS;
+            return (
+            <div key={r.workerId} className="border-b border-white/5 last:border-0">
+            <div className="flex min-h-[72px] items-center gap-3 px-4 py-3">
               <span
                 aria-hidden
                 className={`h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -104,15 +114,28 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="text-lg font-semibold tabular-nums">
-                  {hoursToHm(shiftHours({ started_at: r.startedAt, ended_at: null }, r.breaks, now))}
+                <div className={`text-lg font-semibold tabular-nums ${runaway ? "text-amber-400" : ""}`}>
+                  {hoursToHm(runningHours)}
                 </div>
                 {r.onBreak && (
                   <div className="text-xs font-medium text-amber-400">{t(lang, "onBreakNow")}</div>
                 )}
               </div>
             </div>
-          ))
+            {runaway && (
+              <div className="flex items-start gap-2 border-t border-amber-500/20 bg-amber-500/10 px-4 py-2">
+                <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+                <span className="text-xs leading-snug text-amber-300">
+                  {t(lang, "runawayShift", { hours: hoursToHm(runningHours) })}{" "}
+                  <Link href="/shop/admin/time" className="underline">
+                    {t(lang, "reviewTimesheets")}
+                  </Link>
+                </span>
+              </div>
+            )}
+            </div>
+            );
+          })
         )}
       </div>
     </section>
