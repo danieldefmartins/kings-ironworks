@@ -51,6 +51,7 @@ export default function TimeClock({
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   const running = !!myStartedAt;
@@ -64,6 +65,7 @@ export default function TimeClock({
 
   async function act(type: "time_start" | "time_stop") {
     setBusy(true);
+    setError("");
     try {
       const loc = await getLocation();
       const res = await fetch("/shop/api/action", {
@@ -71,7 +73,16 @@ export default function TimeClock({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, jobId, lat: loc?.lat, lng: loc?.lng }),
       });
-      if (res.ok) startTransition(() => router.refresh());
+      // A tap that does nothing and says nothing is worse than an error: the
+      // worker assumes the clock is running and the job silently loses hours.
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || t(lang, "projectClockFailed"));
+        return;
+      }
+      startTransition(() => router.refresh());
+    } catch {
+      setError(t(lang, "projectClockFailed"));
     } finally {
       setBusy(false);
     }
@@ -133,6 +144,10 @@ export default function TimeClock({
         >
           {busy ? "…" : `▶ ${t(lang, "projectStart")}`}
         </button>
+      )}
+
+      {error && (
+        <p className="mt-2.5 rounded-xl bg-red-950/60 p-2.5 text-center text-sm text-red-300">{error}</p>
       )}
 
       {activeWorkers.length > 0 && (

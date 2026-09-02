@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
+import { MAX_PROJECT_ENTRY_HOURS, type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -271,26 +271,21 @@ export async function clockIn(
     start_accuracy_m: loc?.accuracy ?? null,
     start_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
   });
-  const shift = rows[0];
-  // Close a pre-migration/abandoned allocation before opening the first
-  // allocation under the new payroll shift.
-  await sbUpdate(
-    "kiw_shop_time_entries",
-    `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null`,
-    { ended_at: now }
-  );
-  return shift;
+  // Nothing here touches project time. The two clocks answer different
+  // questions and are kept apart on purpose — see the note above
+  // startProjectEntry.
+  return rows[0];
 }
 
 export async function clockOut(workerId: string, loc?: PunchLocation | null): Promise<void> {
   const shift = await getOpenShift(workerId);
   if (!shift) return;
   const now = new Date().toISOString();
+  // Breaks belong to the shift and close with it. Project time does not:
+  // clocking out of payroll is not a statement about which job was being
+  // worked, and silently stopping the job clock would quietly rewrite the
+  // job-cost number the owner reads profit from.
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
-  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, {
-    ended_at: now, end_lat: loc?.lat ?? null, end_lng: loc?.lng ?? null,
-    end_accuracy_m: loc?.accuracy ?? null,
-  });
   await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shift.id}`, {
     ended_at: now,
     end_lat: loc?.lat ?? null,
@@ -350,29 +345,73 @@ export async function startBreak(workerId: string): Promise<void> {
   const open = (await getShiftBreaks(shift.id)).find((b) => !b.ended_at);
   if (open) return;
   const now = new Date().toISOString();
-  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  // A break is a payroll fact. It does not stop the job clock: the worker owns
+  // that one, and having a break silently edit job cost is how the two numbers
+  // stopped meaning two different things in the first place.
   await sbInsert("kiw_shop_breaks", { org_id: ORG_ID, shift_id: shift.id, started_at: now, paid: false });
 }
 
-export async function endBreak(workerId: string, jobId?: string | null): Promise<void> {
+export async function endBreak(workerId: string): Promise<void> {
   const shift = await getOpenShift(workerId);
   if (!shift) throw new Error("No open shift");
   const now = new Date().toISOString();
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
-  if (jobId) {
-    await sbInsert("kiw_shop_time_entries", {
-      org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
-    });
-  }
 }
 
-export async function transferJob(workerId: string, jobId: string, loc?: PunchLocation | null): Promise<void> {
-  const shift = await getOpenShift(workerId);
-  if (!shift) throw new Error("Clock in for payroll before starting a project");
+// Payroll clock-out used to be what closed a forgotten job clock. Now that the
+// two are independent that safety net is gone, so the project clock needs its
+// own: an entry still open after a long shift is a worker who walked away, not
+// someone who worked 23 hours. Both this and the MAX_PROJECT_ENTRY_HOURS cap in
+// entryHours exist so one forgotten tap cannot quietly wreck a job's cost.
+export async function closeStaleProjectEntries(workerId?: string): Promise<void> {
+  const cutoff = new Date(Date.now() - MAX_PROJECT_ENTRY_HOURS * 3600000).toISOString();
+  const who = workerId ? `&worker_id=eq.${workerId}` : "";
+  const stale = await sbSelect<TimeEntry[]>(
+    "kiw_shop_time_entries",
+    `select=id,started_at&org_id=eq.${ORG_ID}${who}&ended_at=is.null&started_at=lt.${cutoff}`
+  );
+  await Promise.all(
+    stale.map((e) =>
+      sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&id=eq.${e.id}`, {
+        ended_at: new Date(new Date(e.started_at).getTime() + MAX_PROJECT_ENTRY_HOURS * 3600000).toISOString(),
+        note: "auto-closed: left running",
+      })
+    )
+  );
+}
+
+// The project clock, which is NOT the payroll clock.
+//
+// Daniel: "one we will pay workers, the other we will check how long we are
+// spending on each project, this only tells us what's the real profit on each
+// project."
+//
+// So they are two independent timelines over the same worker:
+//
+//   payroll  kiw_shop_shifts       what the company owes  — one open at a time
+//   project  kiw_shop_time_entries what a job costs       — one open at a time
+//
+// Neither starts, stops or truncates the other. Starting a project does not
+// require being on payroll (an owner costing his own time is not on the
+// payroll clock), and clocking out of payroll leaves the job clock alone.
+//
+// The one rule kept from before is within the project clock itself: a person
+// can only be on one job at a time, so starting a second closes the first.
+// That is not payroll coupling — it is that an hour of one pair of hands
+// cannot be charged to two jobs.
+//
+// shift_id is still stamped when a payroll shift happens to be open, purely as
+// a cross-reference for anyone reconciling the two later. Nothing keys off it.
+export async function startProjectEntry(workerId: string, jobId: string, loc?: PunchLocation | null): Promise<void> {
   const now = new Date().toISOString();
-  await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
+  const shift = await getOpenShift(workerId);
+  await sbUpdate(
+    "kiw_shop_time_entries",
+    `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&ended_at=is.null`,
+    { ended_at: now }
+  );
   await sbInsert("kiw_shop_time_entries", {
-    org_id: ORG_ID, shift_id: shift.id, worker_id: workerId, job_id: jobId, started_at: now,
+    org_id: ORG_ID, shift_id: shift?.id ?? null, worker_id: workerId, job_id: jobId, started_at: now,
     start_lat: loc?.lat ?? null, start_lng: loc?.lng ?? null, start_accuracy_m: loc?.accuracy ?? null,
   });
 }

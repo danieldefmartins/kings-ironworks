@@ -8,8 +8,6 @@ import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { shiftHours } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
-type JobOption = { id: string; label: string };
-
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve({ locationStatus: "unavailable" });
@@ -33,8 +31,6 @@ export default function ShopShell({
   lang: string;
   shift: TimeShift | null;
   breaks: TimeBreak[];
-  currentJobId: string | null;
-  jobs: JobOption[];
   hourlyRate: number | null;
   weekHoursBeforeShift: number;
 }) {

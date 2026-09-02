@@ -250,10 +250,17 @@ export function contractValue(j: Pick<Job, "contract_amount">): number {
   return num(j.contract_amount);
 }
 
+// Longest a single project entry can count for. A still-running entry is
+// capped at this so one forgotten tap cannot report 23 hours against a job and
+// quietly move its profit. Closed entries are never capped — a real long day
+// is a real long day, and only the owner can edit it.
+export const MAX_PROJECT_ENTRY_HOURS = 12;
+
 export function entryHours(e: TimeEntry, now = Date.now()): number {
   const start = new Date(e.started_at).getTime();
   const end = e.ended_at ? new Date(e.ended_at).getTime() : now;
-  return Math.max(0, (end - start) / 3600000);
+  const hours = Math.max(0, (end - start) / 3600000);
+  return e.ended_at ? hours : Math.min(hours, MAX_PROJECT_ENTRY_HOURS);
 }
 
 export function shiftHours(

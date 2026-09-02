@@ -11,7 +11,8 @@ import {
   recordShiftLocation,
   startBreak,
   endBreak,
-  transferJob,
+  startProjectEntry,
+  closeStaleProjectEntries,
   stopTimeEntry,
   deletePhotoObject,
   ORG_ID,
@@ -323,12 +324,14 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Project-cost clock. It only allocates part of an already-open payroll
-      // shift to a project and never clocks the employee in or out of payroll.
+      // The project clock. Separate system from payroll: it answers "what did
+      // this job cost", never "what do we owe this person". Starting it does
+      // not clock anyone in, and it does not require being clocked in.
       case "time_start": {
         if (!body.jobId) return NextResponse.json({ error: "Choose a project" }, { status: 400 });
         const loc = punchLocation(body);
-        await transferJob(worker.id, String(body.jobId), loc);
+        await closeStaleProjectEntries(worker.id);
+        await startProjectEntry(worker.id, String(body.jobId), loc);
         await audit("project_clock_start", { workerId: worker.id, entity: "job", entityId: body.jobId });
         break;
       }
@@ -348,16 +351,18 @@ export async function POST(req: NextRequest) {
       }
 
       case "time_break_end": {
-        await endBreak(worker.id, body.jobId ? String(body.jobId) : null);
-        await audit("shift_break_end", { workerId: worker.id, entity: "shift", detail: { resumedJobId: body.jobId || null } });
+        await endBreak(worker.id);
+        await audit("shift_break_end", { workerId: worker.id, entity: "shift" });
         break;
       }
 
+      // Moving to another job is the project clock too — stop one, start the
+      // next. Kept as its own action name because the audit trail reads better.
       case "time_transfer": {
         if (!body.jobId) return NextResponse.json({ error: "Choose a job" }, { status: 400 });
         const loc = punchLocation(body);
-        await transferJob(worker.id, String(body.jobId), loc);
-        await audit("shift_job_transfer", { workerId: worker.id, entity: "shift", detail: { jobId: body.jobId } });
+        await startProjectEntry(worker.id, String(body.jobId), loc);
+        await audit("project_clock_transfer", { workerId: worker.id, entity: "job", entityId: String(body.jobId) });
         break;
       }
 
