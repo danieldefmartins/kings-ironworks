@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { t } from "@/lib/shop/i18n";
+import { hoursToHm } from "@/lib/shop/shared";
 
 function fmtElapsed(ms: number): string {
   const s = Math.floor(ms / 1000);
@@ -106,7 +107,7 @@ export default function TimeClock({
         </div>
         <div className="text-xs text-neutral-400">
           {t(lang, "timeLogged")}:{" "}
-          <span className="text-neutral-200 font-bold">{totalHours.toFixed(1)} h</span>
+          <span className="text-neutral-200 font-bold">{hoursToHm(totalHours)}</span>
         </div>
       </div>
 

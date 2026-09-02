@@ -23,7 +23,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { Job, CutItem, Material, QcCheck, Photo, CatalogItem } from "@/lib/shop/shared";
-import { STAGES } from "@/lib/shop/shared";
+import { STAGES, hoursToHm } from "@/lib/shop/shared";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import MaterialKit from "./MaterialKit";
@@ -490,7 +490,7 @@ function ClockButton({
         {activeWorkers.length > 0 && (
           <span className="text-emerald-400">● {activeWorkers.join(", ")} · </span>
         )}
-        {totalHours.toFixed(1)} h {t(lang, "logged")}
+        {hoursToHm(totalHours)} {t(lang, "logged")}
       </p>
     </div>
   );

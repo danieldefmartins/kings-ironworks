@@ -437,3 +437,17 @@ export function fromShopInput(value: string): string {
   const utcWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone: "UTC" })).getTime();
   return new Date(asIfUtc - (shopWall - utcWall)).toISOString();
 }
+
+// Hours are carried as a decimal internally because that is the only form the
+// payroll arithmetic and the QuickBooks export work in — 40 + overtime does
+// not add up in base 60. But nothing on screen shows a decimal any more.
+//
+// Daniel asked whether "1.37 hours" meant an hour and thirty-seven minutes. It
+// did not — it meant 1h 22m. Anyone reading a timesheet reads a clock, and a
+// format that has to be explained is a format that will be misread, on the
+// numbers that turn into paychecks. So the decimal stays inside the math and
+// every screen renders hours and minutes.
+export function hoursToHm(h: number): string {
+  const total = Math.max(0, Math.round(h * 60));
+  return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, "0")}m`;
+}

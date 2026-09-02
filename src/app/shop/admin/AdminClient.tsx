@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { t } from "@/lib/shop/i18n";
-import { SHOP_TZ } from "@/lib/shop/shared";
+import { SHOP_TZ, hoursToHm } from "@/lib/shop/shared";
 
 interface WorkerRow {
   id: string;
@@ -133,7 +133,7 @@ export default function AdminClient({
                   <span className="font-semibold text-green-200">{e.worker}</span>
                   <span className="text-neutral-400"> · {e.job}</span>
                   <span className="block text-xs text-neutral-500">
-                    since {fmtDT(e.started_at)} · {e.hours.toFixed(1)} h
+                    since {fmtDT(e.started_at)} · {hoursToHm(e.hours)}
                     {mapLink(e.start_lat, e.start_lng) && (
                       <a
                         href={mapLink(e.start_lat, e.start_lng)!}
@@ -339,7 +339,7 @@ export default function AdminClient({
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{j.label}</div>
                   <div className="text-xs text-neutral-500">
-                    {j.totalHours.toFixed(1)} h total
+                    {hoursToHm(j.totalHours)} total
                     {j.missingRate && (
                       <span className="text-amber-400"> · some workers have no rate set</span>
                     )}
@@ -359,7 +359,7 @@ export default function AdminClient({
                     <div key={name} className="flex justify-between text-sm">
                       <span className="text-neutral-300">{name}</span>
                       <span className="text-neutral-400">
-                        {v.hours.toFixed(1)} h ·{" "}
+                        {hoursToHm(v.hours)} ·{" "}
                         {v.cost === null ? (
                           <span className="text-amber-400">no rate</span>
                         ) : (
@@ -392,7 +392,7 @@ export default function AdminClient({
                 <span className="block text-xs text-neutral-500">
                   {fmtDT(e.started_at)}
                   {e.ended_at ? ` → ${fmtDT(e.ended_at)}` : " → running"} ·{" "}
-                  {e.hours.toFixed(2)} h
+                  {hoursToHm(e.hours)}
                   {mapLink(e.start_lat, e.start_lng) && (
                     <a
                       href={mapLink(e.start_lat, e.start_lng)!}

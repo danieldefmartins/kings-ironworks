@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { fmtTime, shiftHours, type TimeBreak } from "@/lib/shop/shared";
+import { fmtTime, hoursToHm, shiftHours, type TimeBreak } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
 export interface OnClockRow {
@@ -20,11 +20,6 @@ export interface OnClockRow {
   lng: number | null;
   /** The job whose clock is also running, if any. The two clocks are separate. */
   job: string | null;
-}
-
-function hhmm(h: number) {
-  const total = Math.max(0, Math.round(h * 60));
-  return `${Math.floor(total / 60)}h ${String(total % 60).padStart(2, "0")}m`;
 }
 
 // Daniel: "when people clock in I should be able to see who is clocked in."
@@ -110,7 +105,7 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
               </div>
               <div className="shrink-0 text-right">
                 <div className="text-lg font-semibold tabular-nums">
-                  {hhmm(shiftHours({ started_at: r.startedAt, ended_at: null }, r.breaks, now))}
+                  {hoursToHm(shiftHours({ started_at: r.startedAt, ended_at: null }, r.breaks, now))}
                 </div>
                 {r.onBreak && (
                   <div className="text-xs font-medium text-amber-400">{t(lang, "onBreakNow")}</div>
