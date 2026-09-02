@@ -48,7 +48,7 @@ async function post(body: Record<string, unknown>) {
 }
 
 export default function JobsList({
-  jobs, lang, canSeeMoney, canManageQueue, crew, workingCount, progress,
+  jobs, lang, canSeeMoney, canManageQueue, crew, workingCount, progress, piecePct = {},
 }: {
   jobs: Job[];
   lang: string;
@@ -57,6 +57,8 @@ export default function JobsList({
   crew: Crew;
   workingCount: Record<string, number>;
   progress: Progress;
+  /** Finished-article completion per job, when the job tracks pieces. */
+  piecePct?: Record<string, { pct: number; installed: number; total: number }>;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -194,6 +196,22 @@ export default function JobsList({
                     {stageLabel(lang, j.current_stage)}
                   </span>
                 </div>
+                {piecePct[j.id] && piecePct[j.id].total > 0 && (
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-800">
+                      <span
+                        className="block h-full rounded-full bg-amber-400"
+                        style={{ width: `${piecePct[j.id].pct}%` }}
+                      />
+                    </span>
+                    <span className="shrink-0 text-[11px] font-semibold tabular-nums text-amber-400">
+                      {piecePct[j.id].pct}%
+                    </span>
+                    <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+                      {piecePct[j.id].installed}/{piecePct[j.id].total} {t(lang, "installed").toLowerCase()}
+                    </span>
+                  </div>
+                )}
                 {workingCount[j.id] > 0 && (
                   <div className="mt-2 text-xs font-semibold text-green-400">
                     ● {workingCount[j.id]} {t(lang, "working")}

@@ -211,6 +211,33 @@ export interface Job {
   created_at: string;
 }
 
+// A finished article the customer counts — "9 window wells", "14 railing
+// sections" — as opposed to CutItem, which is the steel to buy and cut for it.
+export interface JobPiece {
+  id: string;
+  job_id: string;
+  name: string;
+  qty_total: number;
+  qty_fabricated: number;
+  qty_installed: number;
+  sort_order: number;
+}
+
+// Each piece is half done when it is fabricated and whole when it is
+// installed, so a job of 10 pieces all built but none hung reads 50% — which
+// is what "based on items installed and fabricated" means and, more to the
+// point, what the shop floor would say if you asked.
+export function pieceProgress(pieces: JobPiece[]): {
+  total: number; fabricated: number; installed: number; pct: number;
+} {
+  const total = pieces.reduce((n, p) => n + p.qty_total, 0);
+  const fabricated = pieces.reduce((n, p) => n + p.qty_fabricated, 0);
+  const installed = pieces.reduce((n, p) => n + p.qty_installed, 0);
+  // No pieces means no claim: 0%, never 100% from an empty sum.
+  const pct = total === 0 ? 0 : Math.round(((fabricated + installed) / (total * 2)) * 100);
+  return { total, fabricated, installed, pct };
+}
+
 export interface CutItem {
   id: string;
   job_id: string;

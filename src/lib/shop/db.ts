@@ -16,7 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
-import { MAX_PROJECT_ENTRY_HOURS, type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
+import { MAX_PROJECT_ENTRY_HOURS, type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type JobPiece, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
 // in this file is scoped to it, and composite DB foreign keys guarantee that
@@ -296,6 +296,22 @@ export async function listRunningEntries(): Promise<TimeEntry[]> {
   return sbSelect<TimeEntry[]>(
     "kiw_shop_time_entries",
     `select=*&org_id=eq.${ORG_ID}&ended_at=is.null&order=started_at.desc`
+  );
+}
+
+export async function listJobPieces(jobId: string): Promise<JobPiece[]> {
+  return sbSelect<JobPiece[]>(
+    "kiw_shop_job_pieces",
+    `select=*&org_id=eq.${ORG_ID}&job_id=eq.${jobId}&order=sort_order.asc,created_at.asc`
+  );
+}
+
+// Every piece row for the board, so the jobs list can show a percentage per
+// job without one request per job.
+export async function listAllJobPieces(): Promise<(JobPiece & { job_id: string })[]> {
+  return sbSelect<(JobPiece & { job_id: string })[]>(
+    "kiw_shop_job_pieces",
+    `select=*&org_id=eq.${ORG_ID}&order=sort_order.asc&limit=5000`
   );
 }
 

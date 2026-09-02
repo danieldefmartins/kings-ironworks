@@ -27,10 +27,16 @@ export interface MapJob {
 const LEAFLET_JS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js";
 const LEAFLET_CSS = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css";
 
-// Dark tiles, because every other surface in the shop app is dark and a white
-// map in a dim shop at 6am is a flashbang.
-const TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const ATTRIB = '&copy; OpenStreetMap &copy; CARTO';
+// Daytime tiles, and specifically OpenStreetMap's own: the CARTO basemaps now
+// stamp "API KEY REQUIRED" diagonally across every tile they serve without a
+// key, which is what Daniel saw. They still answer 200 with a valid PNG, so
+// nothing errors — the refusal is painted into the image. This is the same
+// standard style tavvy-web uses for its light map, and it needs no key.
+//
+// Full colour rather than a muted basemap because this gets read in a truck,
+// where parks, water and arterials are the landmarks you place yourself by.
+const TILES = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const ATTRIB = '&copy; OpenStreetMap contributors';
 
 declare global {
   interface Window {
@@ -109,7 +115,7 @@ export default function JobsMap({
           const color = j.working ? "#34d399" : "#f5b642";
           const icon = L.divIcon({
             className: "",
-            html: `<span style="display:block;width:18px;height:18px;border-radius:9999px;background:${color};border:2.5px solid #0a0a0a;box-shadow:0 0 0 1.5px ${color}"></span>`,
+            html: `<span style="display:block;width:18px;height:18px;border-radius:9999px;background:${color};border:2.5px solid #ffffff;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9],
           });
@@ -156,7 +162,7 @@ export default function JobsMap({
 
   return (
     <div className={`relative overflow-hidden rounded-[22px] border border-white/10 ${className}`}>
-      <div ref={el} style={{ height }} className="w-full bg-neutral-900" />
+      <div ref={el} style={{ height }} className="w-full bg-neutral-200" />
 
       {selected && (
         <div className="absolute inset-x-0 bottom-0 z-[1000] border-t border-white/10 bg-neutral-900/95 p-3 backdrop-blur">

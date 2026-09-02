@@ -4,6 +4,7 @@ import {
   listJobs,
   listWorkers,
   getCutItems,
+  listAllJobPieces,
   getRunningEntries,
   depositValue,
   contractValue,
@@ -12,7 +13,7 @@ import {
 import { t } from "@/lib/shop/i18n";
 import ShopTopBar from "../ShopTopBar";
 import MotivationBanner from "../MotivationBanner";
-import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, pieceProgress, redactJobMoney } from "@/lib/shop/shared";
 import JobsList from "./JobsList";
 import JobsBoardMap from "./JobsBoardMap";
 
@@ -68,6 +69,24 @@ export default async function ShopBoard() {
       }
     })
   );
+
+  // Piece completion per job, in one request rather than one per job.
+  const piecePct: Record<string, { pct: number; installed: number; total: number }> = {};
+  try {
+    const allPieces = await listAllJobPieces();
+    const byJob = new Map<string, typeof allPieces>();
+    for (const pc of allPieces) {
+      const list = byJob.get(pc.job_id) || [];
+      list.push(pc);
+      byJob.set(pc.job_id, list);
+    }
+    for (const [jobId, list] of byJob) {
+      const { pct, installed, total } = pieceProgress(list);
+      piecePct[jobId] = { pct, installed, total };
+    }
+  } catch {
+    // A board that cannot count pieces is still a usable board.
+  }
 
   // The crew list is only needed by the owner controls, and it is a name-and-id
   // list either way — no rates, no PINs.
@@ -131,6 +150,7 @@ export default async function ShopBoard() {
           canManageQueue={canSeeMoney}
           crew={crew}
           workingCount={workingCount}
+          piecePct={piecePct}
           progress={progress}
         />
       </div>

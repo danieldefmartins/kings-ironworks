@@ -212,6 +212,76 @@ export async function POST(req: NextRequest) {
       // Steel nobody has catalogued yet. It is recorded as a REQUEST and does
       // not join the job or the stock count, so four spellings of one profile
       // can never reach inventory. The office turns it into a SKU.
+      // Pieces: the finished articles a job ships. Added by anyone on the
+      // floor, because the person who discovers the job is 12 sections and not
+      // 10 is the person building it.
+      case "piece_add": {
+        const { jobId, name, qty } = body;
+        if (typeof jobId !== "string" || !UUID_RE.test(jobId)) break;
+        if (typeof name !== "string" || !name.trim()) break;
+        const n = Number(qty);
+        await sbInsert("kiw_shop_job_pieces", {
+          org_id: ORG_ID,
+          job_id: jobId,
+          name: name.trim().slice(0, 120),
+          qty_total: Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), 100000) : 1,
+          sort_order: Date.now() % 100000,
+        });
+        break;
+      }
+
+      // Counting up as work happens. Clamped to the piece's own total here as
+      // well as in the table's constraints: a stepper held down on a tablet
+      // should stop at the total, not bounce off a 400 the crew cannot read.
+      case "piece_count": {
+        const { id, field, value } = body;
+        if (typeof id !== "string" || !UUID_RE.test(id)) break;
+        if (field !== "qty_fabricated" && field !== "qty_installed") break;
+        const n = Number(value);
+        if (!Number.isFinite(n) || n < 0) break;
+        const rows = await sbSelect<{ qty_total: number }[]>(
+          "kiw_shop_job_pieces",
+          `select=qty_total&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
+        );
+        const total = rows[0]?.qty_total;
+        if (total == null) break;
+        await sbUpdate("kiw_shop_job_pieces", `org_id=eq.${ORG_ID}&id=eq.${id}`, {
+          [field]: Math.min(Math.floor(n), total),
+          updated_at: new Date().toISOString(),
+        });
+        break;
+      }
+
+      case "piece_total": {
+        const { id, qty } = body;
+        if (typeof id !== "string" || !UUID_RE.test(id)) break;
+        const n = Number(qty);
+        if (!Number.isFinite(n) || n < 0 || n > 100000) break;
+        const total = Math.floor(n);
+        // Lowering the total below a count already recorded would violate the
+        // table's checks, so bring the counts down with it rather than fail.
+        const rows = await sbSelect<{ qty_fabricated: number; qty_installed: number }[]>(
+          "kiw_shop_job_pieces",
+          `select=qty_fabricated,qty_installed&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
+        );
+        const cur = rows[0];
+        if (!cur) break;
+        await sbUpdate("kiw_shop_job_pieces", `org_id=eq.${ORG_ID}&id=eq.${id}`, {
+          qty_total: total,
+          qty_fabricated: Math.min(cur.qty_fabricated, total),
+          qty_installed: Math.min(cur.qty_installed, total),
+          updated_at: new Date().toISOString(),
+        });
+        break;
+      }
+
+      case "piece_delete": {
+        const { id } = body;
+        if (typeof id !== "string" || !UUID_RE.test(id)) break;
+        await sbDelete("kiw_shop_job_pieces", `org_id=eq.${ORG_ID}&id=eq.${id}`);
+        break;
+      }
+
       case "catalog_request": {
         const { jobId, description, roleKey } = body;
         if (typeof description !== "string" || !description.trim()) break;

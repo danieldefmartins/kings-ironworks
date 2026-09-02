@@ -3,6 +3,7 @@ import { getSessionWorker } from "@/lib/shop/session";
 import {
   getJob,
   getCutItems,
+  listJobPieces,
   getMaterials,
   getQc,
   getPhotos,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/shop/db";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
+import PiecesPanel from "./PiecesPanel";
 import TimeClock from "./TimeClock";
 import TravelerV2 from "./TravelerV2";
 import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
@@ -45,7 +47,7 @@ export default async function JobTravelerPage({
   // un-redacted row would still be readable in this page's RSC payload.
   const job = redactJobMoney(rawJob, canSeePrices);
 
-  const [cut, materials, qc, rawPhotos, workers, timeEntries] =
+  const [cut, materials, qc, rawPhotos, workers, timeEntries, pieces] =
     await Promise.all([
       getCutItems(id),
       getMaterials(id),
@@ -53,6 +55,7 @@ export default async function JobTravelerPage({
       getPhotos(id),
       listWorkers(),
       getJobTimeEntries(id),
+      listJobPieces(id),
     ]);
 
   const nameById = new Map(workers.map((w) => [w.id, w.name]));
@@ -102,6 +105,11 @@ export default async function JobTravelerPage({
           totalHours={totalHours}
           catalog={catalog}
         />
+      ) : null}
+      {v2 ? (
+        <div className="mx-auto max-w-4xl px-4 pb-6">
+          <PiecesPanel jobId={job.id} pieces={pieces} lang={lang} />
+        </div>
       ) : (
         <>
       <div className="px-4 pt-4 max-w-4xl mx-auto">
@@ -123,6 +131,9 @@ export default async function JobTravelerPage({
         isAdmin={!!worker.is_admin}
         lang={lang}
       />
+      <div className="mx-auto max-w-4xl px-4 pb-6">
+        <PiecesPanel jobId={job.id} pieces={pieces} lang={lang} />
+      </div>
         </>
       )}
     </div>
