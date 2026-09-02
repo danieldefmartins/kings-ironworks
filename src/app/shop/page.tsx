@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertCircle, ArrowRight, BriefcaseBusiness, MapPin, Ruler } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, isInFabrication } from "@/lib/shop/shared";
 import { getRunningEntry, listJobs } from "@/lib/shop/db";
 import ShopTopBar from "./ShopTopBar";
 import { t } from "@/lib/shop/i18n";
@@ -22,6 +22,7 @@ export default async function ShopToday() {
   const leads = jobs.filter((j) => j.current_stage === "Lead");
   const current = mine ? jobs.find((j) => j.id === mine.job_id) : null;
   const urgent = active.filter((j) => dayDistance(j.due_date) <= 7).slice(0, 4);
+  const inFab = active.filter(isInFabrication);
   const lang = worker.lang || "en";
 
   return (
@@ -44,7 +45,7 @@ export default async function ShopToday() {
           </div>
         </section>
         <section className="grid grid-cols-2 gap-3">
-          <Link href="/shop/jobs" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><BriefcaseBusiness className="mb-6 h-6 w-6 text-blue-400" /><div className="text-2xl font-semibold">{active.length}</div><div className="text-sm text-neutral-500">{t(lang, "underFabrication", { n: active.length })}</div></Link>
+          <Link href="/shop/jobs" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><BriefcaseBusiness className="mb-6 h-6 w-6 text-blue-400" /><div className="text-2xl font-semibold">{active.length}</div><div className="text-sm text-neutral-500">{t(lang, "activeProjectsTile")}</div><div className="mt-0.5 text-xs text-amber-500/90">{t(lang, "inFabricationN", { n: inFab.length })}</div></Link>
           <Link href="/shop/leads" className="rounded-[22px] border border-white/10 bg-neutral-900/60 p-4"><Ruler className="mb-6 h-6 w-6 text-amber-400" /><div className="text-2xl font-semibold">{leads.length}</div><div className="text-sm text-neutral-500">{t(lang, "measuresLeads")}</div></Link>
         </section>
       </main>

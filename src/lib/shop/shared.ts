@@ -16,6 +16,20 @@ export const STAGES = [
 ] as const;
 export type Stage = (typeof STAGES)[number];
 
+// Daniel: "not all 16 projects are currently under fabrication, it's all active
+// and pending fabrication."
+//
+// Sold is not started. A job sits in Awarded or Shop Drawings for weeks before
+// anyone cuts anything, so the board calling all of them "under fabrication"
+// overstated the shop by about three to one. Fabrication begins when material
+// is being gathered for it — from Material onward the job is on the floor.
+export const FIRST_FABRICATION_STAGE: Stage = "Material";
+
+export function isInFabrication(job: { current_stage: string }): boolean {
+  const i = STAGES.indexOf(job.current_stage as Stage);
+  return i >= STAGES.indexOf(FIRST_FABRICATION_STAGE) && job.current_stage !== "Done";
+}
+
 // Owner-level access: contract money, labor cost, and the whole /shop/admin
 // tree. Driven by the two flags already on kiw_shop_workers, so adding or
 // removing an owner is a row edit rather than a deploy — and the rule is not
