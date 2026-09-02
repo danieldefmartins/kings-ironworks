@@ -185,16 +185,17 @@ export interface WorkerAuthState {
   pin: string | null;
   active: boolean;
   is_admin: boolean;
+  can_see_prices: boolean;
 }
 
 export async function getWorkerAuthState(id: string): Promise<WorkerAuthState | null> {
-  const rows = await sbSelect<{ pin: string | null; active: boolean; is_admin: boolean | null }[]>(
+  const rows = await sbSelect<{ pin: string | null; active: boolean; is_admin: boolean | null; can_see_prices: boolean | null }[]>(
     "kiw_shop_workers",
-    `select=pin,active,is_admin&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
+    `select=pin,active,is_admin,can_see_prices&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`
   );
   const r = rows[0];
   if (!r) return null;
-  return { pin: r.pin ?? null, active: !!r.active, is_admin: !!r.is_admin };
+  return { pin: r.pin ?? null, active: !!r.active, is_admin: !!r.is_admin, can_see_prices: !!r.can_see_prices };
 }
 
 export async function getWorkerById(id: string): Promise<Worker | null> {
@@ -308,7 +309,9 @@ export async function recordShiftLocation(
   loc: PunchLocation | null,
   state: "working" | "break" = "working",
 ): Promise<void> {
-  if (!loc?.lat || !loc?.lng) return;
+  // == null, not falsy: a real 0 coordinate is a valid reading, and silently
+  // dropping it would hide a bug rather than a bad fix.
+  if (loc?.lat == null || loc?.lng == null) return;
   const shift = await getOpenShift(workerId);
   if (!shift) return;
   await sbInsert("kiw_shop_shift_locations", {
@@ -324,10 +327,20 @@ export async function recordShiftLocation(
   });
 }
 
-export async function listShiftLocations(limit = 3000): Promise<ShiftLocation[]> {
+// A flat row cap is the wrong bound here: five people on a five-minute cadence
+// write ~480 rows a day, so "the last 3000 rows" quietly becomes "the last six
+// days" and keeps shrinking as the crew grows. Bound it by time instead, which
+// is what anyone reviewing attendance actually asks for.
+export const LOCATION_HISTORY_DAYS = 14;
+
+export async function listShiftLocations(
+  { days = LOCATION_HISTORY_DAYS, workerId, limit = 5000 }: { days?: number; workerId?: string; limit?: number } = {}
+): Promise<ShiftLocation[]> {
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const worker = workerId ? `&worker_id=eq.${workerId}` : "";
   return sbSelect<ShiftLocation[]>(
     "kiw_shop_shift_locations",
-    `select=*&org_id=eq.${ORG_ID}&order=recorded_at.desc&limit=${Math.min(10000, Math.max(1, limit))}`
+    `select=*&org_id=eq.${ORG_ID}&recorded_at=gte.${since}${worker}&order=recorded_at.desc&limit=${Math.min(10000, Math.max(1, limit))}`
   );
 }
 

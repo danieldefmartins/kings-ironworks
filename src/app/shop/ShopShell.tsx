@@ -46,6 +46,7 @@ export default function ShopShell({
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
   const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const [lastPing, setLastPing] = useState<number | null>(null);
   const onBreak = breaks.some((b) => !b.ended_at);
 
   useEffect(() => {
@@ -58,8 +59,17 @@ export default function ShopShell({
   // page layout persists across shop navigation, so this continues while the
   // worker uses jobs, inventory, or measuring screens. Unpaid breaks are marked
   // separately and no location is collected until the break ends.
+  //
+  // Keyed on the shift ID, not the shift object: the server hands down a fresh
+  // object on every router.refresh() (a clock action, a language change), and
+  // depending on the object would restart the interval and fire an extra ping
+  // each time — a trail far denser than the five minutes it advertises.
+  //
+  // The interval only runs while the app is in the foreground; a phone in a
+  // pocket records nothing. The trail is corroboration, never proof of absence.
+  const shiftId = shift?.id ?? null;
   useEffect(() => {
-    if (!shift || onBreak) return;
+    if (!shiftId || onBreak) return;
     let cancelled = false;
     const ping = async () => {
       const loc = await gps();
@@ -68,11 +78,12 @@ export default function ShopShell({
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "shift_location", workState: "working", ...loc }),
       }).catch(() => undefined);
+      if (!cancelled) setLastPing(Date.now());
     };
     void ping();
     const id = window.setInterval(() => void ping(), 5 * 60 * 1000);
     return () => { cancelled = true; window.clearInterval(id); };
-  }, [shift, onBreak]);
+  }, [shiftId, onBreak]);
 
   useEffect(() => {
     ["/shop", "/shop/jobs", "/shop/leads", "/shop/inventory"].forEach((href) => router.prefetch(href));
@@ -156,7 +167,19 @@ export default function ShopShell({
                 <button disabled={busy} onClick={() => act("shift_stop", true)} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
               </div>
             )}
-            <p className="mt-4 text-center text-xs leading-relaxed text-neutral-600">{t(lang, "clockLocationNote")}</p>
+            {shift && (
+              <p className="mt-4 flex items-center justify-center gap-2 text-xs font-medium text-neutral-400">
+                <span className={`h-2 w-2 rounded-full ${onBreak || lastPing == null ? "bg-neutral-600" : "bg-emerald-400"}`} />
+                {onBreak
+                  ? t(lang, "clockLocationPausedBadge")
+                  : lastPing == null
+                    ? t(lang, "clockLocationWaitingBadge")
+                    : t(lang, "clockLocationOnBadge", {
+                        time: new Date(lastPing).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                      })}
+              </p>
+            )}
+            <p className="mt-3 text-center text-xs leading-relaxed text-neutral-600">{t(lang, "clockLocationNote")}</p>
           </section>
         </div>
       )}

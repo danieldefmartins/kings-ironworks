@@ -10,10 +10,12 @@
 //   iat  tells us when to quietly re-issue a cookie that is past half its life.
 //   n    makes every sign-in a distinct token, so one captured cookie is one
 //        session rather than a permanent key to the account.
-//   f    revocation. It is derived from the worker's PIN, active flag and admin
-//        flag, so changing a PIN, deactivating a worker, or changing what they
-//        are allowed to do invalidates every session they have open, on every
-//        device, without a schema change or a token store.
+//   f    revocation. It is derived from the worker's PIN, active flag, admin
+//        flag and price visibility, so changing a PIN, deactivating a worker,
+//        or changing what they are allowed to see invalidates every session
+//        they have open, on every device, without a schema change or a token
+//        store. Money visibility belongs in here: revoking it has to end the
+//        open tablet session, not wait for it to expire a week later.
 import { cookies } from "next/headers";
 import crypto from "crypto";
 import { getWorkerById, getWorkerAuthState, type Worker } from "./db";
@@ -56,10 +58,13 @@ export function credentialFingerprint(state: {
   pin?: string | null;
   active?: boolean | null;
   is_admin?: boolean | null;
+  can_see_prices?: boolean | null;
 }): string {
   return crypto
     .createHmac("sha256", SECRET)
-    .update(`${state.pin ?? ""}|${state.active ? 1 : 0}|${state.is_admin ? 1 : 0}`)
+    .update(
+      `${state.pin ?? ""}|${state.active ? 1 : 0}|${state.is_admin ? 1 : 0}|${state.can_see_prices ? 1 : 0}`
+    )
     .digest("base64url")
     .slice(0, 16);
 }

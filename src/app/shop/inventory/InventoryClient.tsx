@@ -55,21 +55,31 @@ const STEEL_IMAGE_BY_CATEGORY: Record<string, string> = {
   grating: "/images/shop/materials/grating.webp",
 };
 
+// Steel reads better as a section sketch than as a photo of a rusty stick, so
+// the drawing wins for anything we have a drawing for. Everything else — paint,
+// fasteners, consumables, truck stock — falls through to its real catalog
+// photo. Order matters twice over: the category map is exact and goes first,
+// and inside the name fallback "solid" is tested before "round"/"square" so a
+// solid bar never picks up a hollow section.
 function steelCatalogImage(row: Joined): string | null {
   const direct = STEEL_IMAGE_BY_CATEGORY[row.item.category];
   if (direct) return direct;
-  if (row.item.category !== "steel_stock") return null;
+  if (row.item.category !== "steel_stock") return row.imageUrl;
   const name = row.item.display.toLowerCase();
+  const solid = name.includes("solid") || name.includes("bar stock");
   if (name.includes("diamond") || name.includes("tread")) return "/images/shop/materials/diamond-plate.webp";
   if (name.includes("rebar")) return "/images/shop/materials/rebar.webp";
   if (name.includes("molding") || name.includes("molded cap") || name.includes("scroll") || name.includes("collar")) return "/images/shop/materials/molding.webp";
+  if (name.includes("grating")) return "/images/shop/materials/grating.webp";
   if (name.includes("plate")) return "/images/shop/materials/plate.webp";
   if (name.includes("angle") || name.includes("l iron")) return "/images/shop/materials/angle.webp";
-  if (name.includes("channel") || name.includes("c-channel")) return "/images/shop/materials/channel.webp";
-  if (name.includes("beam") || name.includes("w6") || name.includes("w8") || name.includes("w10") || name.includes("w12")) return "/images/shop/materials/beam.webp";
+  if (name.includes("channel")) return "/images/shop/materials/channel.webp";
+  if (name.includes("beam") || /\bw(?:6|8|10|12|14)\b/.test(name)) return "/images/shop/materials/beam.webp";
+  if (name.includes("flat")) return "/images/shop/materials/flat-bar.webp";
+  if (solid && name.includes("round")) return "/images/shop/materials/solid-round.webp";
+  if (solid && name.includes("square")) return "/images/shop/materials/solid-square.webp";
   if (name.includes("tube") || name.includes("hss") || name.includes("square")) return "/images/shop/materials/tube.webp";
   if (name.includes("pipe") || name.includes("round")) return "/images/shop/materials/pipe.webp";
-  if (name.includes("flat")) return "/images/shop/materials/flat-bar.webp";
   return row.imageUrl;
 }
 

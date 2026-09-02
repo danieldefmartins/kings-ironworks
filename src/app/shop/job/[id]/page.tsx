@@ -18,7 +18,7 @@ import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import TimeClock from "./TimeClock";
 import TravelerV2 from "./TravelerV2";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ export default async function JobTravelerPage({
 }) {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
-  // Money is admin-only (Daniel + Kayky).
+  // Money is owner-only (is_admin + can_see_prices on the worker row).
   const canSeePrices = canViewOwnerFinancials(worker);
   const lang = worker.lang || "en";
 
@@ -39,8 +39,11 @@ export default async function JobTravelerPage({
   // Simplified traveler is the default. ?ui=legacy is a temporary rollback.
   const v2 = ((await searchParams)?.ui || "") !== "legacy";
   const catalog = v2 ? await listCatalog() : [];
-  const job = await getJob(id);
-  if (!job) notFound();
+  const rawJob = await getJob(id);
+  if (!rawJob) notFound();
+  // Strip the money fields server-side rather than only hiding them: an
+  // un-redacted row would still be readable in this page's RSC payload.
+  const job = redactJobMoney(rawJob, canSeePrices);
 
   const [cut, materials, qc, rawPhotos, workers, timeEntries] =
     await Promise.all([
@@ -82,7 +85,7 @@ export default async function JobTravelerPage({
         title={job.customer_name}
         back="/shop/jobs"
         lang={lang}
-        adminLink={!!worker.is_admin}
+        adminLink={canSeePrices}
       />
       {v2 ? (
         <TravelerV2

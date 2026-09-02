@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertCircle, ArrowRight, BriefcaseBusiness, MapPin, Ruler } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
-import { getRunningEntry, getRunningEntries, listJobs } from "@/lib/shop/db";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { getRunningEntry, listJobs } from "@/lib/shop/db";
 import ShopTopBar from "./ShopTopBar";
 import { t } from "@/lib/shop/i18n";
 
@@ -16,7 +17,7 @@ function dayDistance(date: string | null) {
 export default async function ShopToday() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
-  const [jobs, mine, running] = await Promise.all([listJobs(), getRunningEntry(worker.id), getRunningEntries()]);
+  const [jobs, mine] = await Promise.all([listJobs(), getRunningEntry(worker.id)]);
   const active = jobs.filter((j) => j.current_stage !== "Lead" && j.current_stage !== "Done");
   const leads = jobs.filter((j) => j.current_stage === "Lead");
   const current = mine ? jobs.find((j) => j.id === mine.job_id) : null;
@@ -25,7 +26,7 @@ export default async function ShopToday() {
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title={t(lang, "navToday")} lang={lang} adminLink={!!worker.is_admin} />
+      <ShopTopBar workerName={worker.name} title={t(lang, "navToday")} lang={lang} adminLink={canViewOwnerFinancials(worker)} />
       <main className="mx-auto max-w-2xl space-y-6 px-4 pb-28 pt-5">
         <header><p className="text-sm text-neutral-500">{t(lang, "welcomeBack", { name: worker.name.split(" ")[0] })}</p><h1 className="mt-0.5 text-3xl font-semibold tracking-tight">{t(lang, "attention")}</h1></header>
         {current ? (

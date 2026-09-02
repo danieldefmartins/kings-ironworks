@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { listCatalog, listInventory, listSupplierPrices, signPhotoUrls } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import InventoryClient from "./InventoryClient";
@@ -34,16 +35,21 @@ export default async function InventoryPage() {
       return a.item.display.localeCompare(b.item.display);
     });
 
-  // One signature per distinct picture, cached across requests. Rows share
-  // photos (every size of an angle is the same picture), so signing per row
-  // would be ~617 round trips for ~230 images.
+  // "Order material" browses the whole catalog, not just what is on a shelf, so
+  // every catalog item gets a row — a zero-stock placeholder when we have never
+  // counted one. Indexed by catalog_id rather than scanned per item: 419 SKUs
+  // against 600-odd inventory rows is not a scan worth doing.
   const rows = inventoryRows;
+  const stockById = new Map(inventory.map((r) => [r.catalog_id, r]));
   const allRows = catalog.map((item) => {
-    const stock = inventory.find((r) => r.catalog_id === item.id);
+    const stock = stockById.get(item.id);
     return stock
       ? { ...stock, item, buy: bestBy.get(item.id) || null, imageUrl: null as string | null }
       : { id: `catalog-${item.id}`, catalog_id: item.id, location: "", on_hand: 0, min_qty: null, updated_at: new Date(0).toISOString(), item, buy: bestBy.get(item.id) || null, imageUrl: null as string | null };
   });
+  // One signature per distinct picture, cached across requests. Rows share
+  // photos (every size of an angle is the same picture), so signing per row
+  // would be ~617 round trips for ~230 images.
   const signed = await signPhotoUrls(catalog.map((c) => c.image_url));
   for (const r of [...allRows, ...inventoryRows]) {
     if (r.item.image_url) r.imageUrl = signed.get(r.item.image_url) ?? null;
@@ -55,7 +61,7 @@ export default async function InventoryPage() {
         title={t(lang, "tileInventory")}
         workerName={worker.name}
         lang={lang}
-        adminLink={!!worker.is_admin}
+        adminLink={canViewOwnerFinancials(worker)}
         back="/shop"
       />
       <InventoryClient rows={rows} allRows={allRows} lang={lang} canEdit />

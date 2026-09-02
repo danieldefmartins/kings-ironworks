@@ -24,6 +24,8 @@ import { canViewOwnerFinancials } from "@/lib/shop/shared";
 
 export const runtime = "nodejs";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function punchLocation(body: Record<string, unknown>) {
   if (typeof body.lat !== "number" || typeof body.lng !== "number") return null;
   const targetLat = Number(process.env.SHOP_GEOFENCE_LAT);
@@ -118,14 +120,61 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Fabrication queue: who builds it and in what order.
+      //
+      // The two fields are set independently — assigning a welder must not
+      // clear the queue position, and a drag must not clear the assignment —
+      // so only keys actually present in the request are written.
+      //
+      // fabrication_order is fractional on purpose. A drop between two cards
+      // sends the midpoint of its neighbours, which is a single row write; the
+      // alternative, renumbering the list on every move, is N writes that can
+      // interleave with another owner's drag and leave ties. The column is
+      // numeric, so midpoints never run out of room.
       case "job_fabrication_set": {
         if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner access required" }, { status: 403 });
-        const { jobId, assignedWorkerId, fabricationOrder } = body;
-        await sbUpdate("kiw_shop_jobs", `org_id=eq.${ORG_ID}&id=eq.${jobId}`, {
-          assigned_worker_id: assignedWorkerId || null,
-          fabrication_order: Number.isFinite(Number(fabricationOrder)) ? Number(fabricationOrder) : null,
-        });
-        await audit("job_fabrication_set", { workerId: worker.id, entity: "job", entityId: jobId, detail: { assignedWorkerId, fabricationOrder } });
+        const { jobId } = body;
+        if (typeof jobId !== "string" || !UUID_RE.test(jobId)) {
+          return NextResponse.json({ error: "Bad job id" }, { status: 400 });
+        }
+        const patch: Record<string, string | number | null> = {};
+        if ("assignedWorkerId" in body) {
+          const id = body.assignedWorkerId;
+          if (id != null && (typeof id !== "string" || !UUID_RE.test(id))) {
+            return NextResponse.json({ error: "Bad worker id" }, { status: 400 });
+          }
+          // The composite foreign key added in 20260901000008 refuses a worker
+          // from another org or one that no longer exists, so this is the only
+          // check the write needs.
+          patch.assigned_worker_id = (id as string) || null;
+        }
+        if ("fabricationOrder" in body) {
+          const n = Number(body.fabricationOrder);
+          patch.fabrication_order = body.fabricationOrder == null || !Number.isFinite(n) ? null : n;
+        }
+        if (Object.keys(patch).length === 0) {
+          return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
+        }
+        await sbUpdate("kiw_shop_jobs", `org_id=eq.${ORG_ID}&id=eq.${jobId}`, patch);
+        await audit("job_fabrication_set", { workerId: worker.id, entity: "job", entityId: jobId, detail: patch });
+        break;
+      }
+
+      // Stamp a starting position on a queue that has never been ordered, so
+      // later drags have two numbers to take a midpoint of. Sent once, with the
+      // list in the order the owner is already looking at.
+      case "job_queue_seed": {
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner access required" }, { status: 403 });
+        const ids: unknown[] = Array.isArray(body.jobIds) ? body.jobIds : [];
+        if (ids.length === 0 || ids.length > 300 || !ids.every((id) => typeof id === "string" && UUID_RE.test(id))) {
+          return NextResponse.json({ error: "Bad job list" }, { status: 400 });
+        }
+        await Promise.all(
+          (ids as string[]).map((id, i) =>
+            sbUpdate("kiw_shop_jobs", `org_id=eq.${ORG_ID}&id=eq.${id}`, { fabrication_order: (i + 1) * 1000 })
+          )
+        );
+        await audit("job_queue_seed", { workerId: worker.id, entity: "job", detail: { count: ids.length } });
         break;
       }
 

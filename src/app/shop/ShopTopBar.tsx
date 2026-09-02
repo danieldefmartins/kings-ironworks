@@ -35,8 +35,11 @@ export default function ShopTopBar({
     router.replace("/shop/login");
     router.refresh();
   }
+  // `sticky` is already a positioned element, so it is the containing block the
+  // centered title anchors to. An extra `relative` here would just be a second
+  // position utility fighting the first.
   return (
-    <div className="sticky top-0 z-10 relative grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
+    <div className="sticky top-0 z-10 grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link

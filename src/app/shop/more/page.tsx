@@ -4,6 +4,7 @@ import { ChevronRight, ClipboardClock, Languages, Settings, ShieldCheck, UserRou
 import { getSessionWorker } from "@/lib/shop/session";
 import ShopTopBar from "../ShopTopBar";
 import { t } from "@/lib/shop/i18n";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -11,10 +12,14 @@ export default async function MorePage() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
+  // The whole /shop/admin tree is owner-level — rates, deposits, job costs. Show
+  // the links to exactly the people the pages will let in, so nobody taps a row
+  // that bounces them back to the home screen with no explanation.
+  const owner = canViewOwnerFinancials(worker);
   const links = [
     { href: "/shop/profile", label: t(lang, "myProfile"), detail: t(lang, "myProfileHint"), icon: UserRound },
     { href: "/shop/time", label: t(lang, "myTimesheet"), detail: t(lang, "myTimesheetHint"), icon: ClipboardClock },
-    ...(worker.is_admin ? [
+    ...(owner ? [
       { href: "/shop/admin/time", label: t(lang, "teamTimesheets"), detail: t(lang, "teamTimesheetsHint"), icon: ShieldCheck },
       { href: "/shop/admin", label: t(lang, "businessAdmin"), detail: t(lang, "businessAdminHint"), icon: Settings },
     ] : []),

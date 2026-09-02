@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { getJob, getMeasureSheet, getMeasureRevision, listWorkers, getOrgSettings, audit } from "@/lib/shop/db";
 import { normalizeMeasureData, type MeasureShape, type MeasureSheet } from "@/lib/shop/measure";
 import { runChecks, orderedPosts } from "@/lib/shop/measure-checks";
@@ -68,7 +69,7 @@ export default async function RevisionPage({
           title={`${job.customer_name} · ${mt(lang, "revLabel")} ${revision.rev_no}`}
           back={`/shop/job/${id}/measure/${sheetId}`}
           lang={lang}
-          adminLink={!!worker.is_admin}
+          adminLink={canViewOwnerFinancials(worker)}
         />
         <div className="px-4 pt-4 max-w-4xl mx-auto flex items-center gap-3 flex-wrap">
           <span

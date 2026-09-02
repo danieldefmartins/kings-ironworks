@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { listJobs } from "@/lib/shop/db";
 import { mt } from "@/lib/shop/measure-i18n";
 import ShopTopBar from "../ShopTopBar";
@@ -26,7 +27,7 @@ export default async function NewMeasurePage() {
         title={mt(lang, "newFieldMeasure")}
         back="/shop"
         lang={lang}
-        adminLink={!!worker.is_admin}
+        adminLink={canViewOwnerFinancials(worker)}
       />
       <div className="p-4 max-w-2xl mx-auto">
         <NewFieldMeasure lang={lang} startOpen existing={existing} />

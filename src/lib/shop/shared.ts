@@ -16,8 +16,28 @@ export const STAGES = [
 ] as const;
 export type Stage = (typeof STAGES)[number];
 
-export function canViewOwnerFinancials(worker: { is_admin?: boolean | null; name?: string | null }): boolean {
-  return !!worker.is_admin && /^(daniel|kayky)\b/i.test((worker.name || "").trim());
+// Owner-level access: contract money, labor cost, and the whole /shop/admin
+// tree. Driven by the two flags already on kiw_shop_workers, so adding or
+// removing an owner is a row edit rather than a deploy — and the rule is not
+// shipped to the browser as a list of names. Both flags are required on
+// purpose: is_admin alone covers shop-floor overrides (stage changes,
+// archiving), which is not the same trust level as seeing what a job sold for.
+export function canViewOwnerFinancials(worker: {
+  is_admin?: boolean | null;
+  can_see_prices?: boolean | null;
+}): boolean {
+  return !!worker.is_admin && !!worker.can_see_prices;
+}
+
+// Money fields travel with the job row, so hiding them in the UI is not
+// hiding them — they would still sit in the RSC payload for anyone who opens
+// the network tab. Strip them on the server before the row crosses over.
+export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_amount" | "deposit_note" | "deposit_received_on">>(
+  job: T,
+  canSeeMoney: boolean,
+): T {
+  if (canSeeMoney) return job;
+  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null };
 }
 
 // Photo categories the shop can pin an image to. "Installation — Location N"

@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { getJob, getMeasureSheets, listWorkers } from "@/lib/shop/db";
 import ShopTopBar from "../../../ShopTopBar";
 import MeasureListClient from "./MeasureListClient";
@@ -30,7 +31,7 @@ export default async function MeasureListPage({
         title={job.customer_name}
         back={`/shop/job/${id}`}
         lang={lang}
-        adminLink={!!worker.is_admin}
+        adminLink={canViewOwnerFinancials(worker)}
       />
       <MeasureListClient job={job} sheets={sheets} lang={lang} nameById={nameById} />
     </div>
