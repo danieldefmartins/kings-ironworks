@@ -39,7 +39,8 @@ const parentCategories: ParentCategory[] = [
     children: [
       "curved-staircases", "curved-project-1", "curved-project-2",
       "floating-full", "floating-mono-stringer", "floating-dual-stringer",
-      "spiral-interior", "spiral-exterior", "grand-ornamental",
+      "exterior-entry-staircases", "spiral-interior", "spiral-exterior",
+      "grand-ornamental",
     ],
   },
   {
@@ -91,8 +92,23 @@ function getSubcategories(parentId: string) {
 // CTA + constants
 // ---------------------------------------------------------------------------
 
-const ctaMessages = [
+// Cards seeded through the masonry grid between photos. One of them carries an
+// image and reads as a house ad rather than a generic prompt — it is selling a
+// specific design, so it earns the picture the others do without.
+const ctaMessages: {
+  headline: string; body: string; cta: string; href: string;
+  icon: typeof Calendar; image?: string; eyebrow?: string;
+}[] = [
   { headline: "Love what you see?", body: "Every piece is custom-built to your exact vision.", cta: "Free Consultation", href: "/contact", icon: Calendar },
+  {
+    eyebrow: "NEW DESIGN",
+    headline: "The exterior staircase that makes the house",
+    body: "Sculpted stringers, open risers, and your choice of tread — porcelain, wood, concrete, grating or composite.",
+    cta: "See the Design",
+    href: "/exterior-staircase",
+    icon: Sparkles,
+    image: "/images/portfolio-organized/Staircases/Exterior-Entry/king-iron-works-staircase-exterior-porcelain-sunlit-entry.jpg",
+  },
   { headline: "Picture this at your home?", body: "20+ years of craftsmanship. Yours could be next.", cta: "Get a Free Quote", href: "/contact", icon: ArrowRight },
   { headline: "Ready to start?", body: "From conversation to masterpiece — we make it easy.", cta: "Book Appointment", href: "/contact", icon: Sparkles },
 ];
@@ -192,6 +208,37 @@ function MasonryImage({ photo, index, onClick }: { photo: Photo; index: number; 
 function InlineCTA({ index }: { index: number }) {
   const msg = ctaMessages[index % ctaMessages.length];
   const Icon = msg.icon;
+
+  // The image variant: an ad for a specific design, sitting in the grid the
+  // same size as a photo so it reads as part of the work, not a banner.
+  if (msg.image) {
+    return (
+      <div className="mb-2 md:mb-3">
+        <Link href={msg.href} className="block group rounded-[16px] overflow-hidden bg-accent/10">
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={msg.image} alt={msg.headline} loading="lazy" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" />
+            {msg.eyebrow && (
+              <span className="absolute top-3 left-3 bg-accent text-accent-foreground text-[11px] font-display font-bold tracking-wider px-2.5 py-1">
+                {msg.eyebrow}
+              </span>
+            )}
+          </div>
+          <div className="p-4 flex flex-col gap-2.5">
+            <div className="flex items-center gap-2 text-accent">
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-display font-bold leading-snug">{msg.headline}</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-snug">{msg.body}</p>
+            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-display font-bold text-sm h-10">
+              {msg.cta} <ArrowRight className="ml-2 w-4 h-4" />
+            </Button>
+          </div>
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="mb-2 md:mb-3">
       <div className="bg-accent/10 rounded-[16px] p-4 flex flex-col gap-2.5">

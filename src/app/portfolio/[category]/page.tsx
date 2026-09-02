@@ -11,7 +11,7 @@ interface Props {
 
 // Parent categories for metadata generation
 const parentCategories = [
-  { id: "staircases", label: "Staircases", children: ["curved-staircases", "curved-project-1", "curved-project-2", "floating-full", "floating-mono-stringer", "floating-dual-stringer", "spiral-interior", "spiral-exterior", "grand-ornamental"] },
+  { id: "staircases", label: "Staircases", children: ["curved-staircases", "curved-project-1", "curved-project-2", "floating-full", "floating-mono-stringer", "floating-dual-stringer", "exterior-entry-staircases", "spiral-interior", "spiral-exterior", "grand-ornamental"] },
   { id: "railings", label: "Railings", children: ["exterior-railings", "interior-railings", "cable-railings", "deck-railings", "commercial-railings", "small-railings"] },
   { id: "gates", label: "Gates", children: ["gates"] },
   { id: "fire-escapes", label: "Fire Escapes", children: ["fire-escapes"] },
