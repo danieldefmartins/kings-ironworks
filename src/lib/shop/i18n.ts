@@ -742,10 +742,19 @@ export function t(
   return s;
 }
 
+// Stage labels are display only — current_stage and kiw_shop_stage_log keep
+// storing the key, so renaming one is a wording change, not a migration.
+//
+// Daniel on the first stage: "these are projects we already closed but didn't
+// do anything yet." "Awarded" said how the job was won, which nobody on the
+// floor needs; the crew needs to know what it is waiting for. It is waiting to
+// be scheduled for cutting.
 const STAGE_MAP: Record<Lang, Record<string, string>> = {
-  en: {},
+  en: {
+    Awarded: "To Schedule",
+  },
   pt: {
-    Awarded: "Fechado",
+    Awarded: "A Programar",
     "Shop Drawings": "Desenhos",
     Material: "Material",
     Cut: "Corte",
@@ -756,7 +765,7 @@ const STAGE_MAP: Record<Lang, Record<string, string>> = {
     Done: "Concluído",
   },
   es: {
-    Awarded: "Adjudicado",
+    Awarded: "Por Programar",
     "Shop Drawings": "Planos",
     Material: "Material",
     Cut: "Corte",
