@@ -116,6 +116,24 @@ export default function StairSections({
               choices={[["No change", mt(lang, "choiceNoChange")]]} placeholder="—" value={seg.angleBreak}
               onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
           </Grid>
+          {/* Per flight, because a switchback puts the same wall on your other
+              hand. Blank inherits the sheet-level orientation, which is right
+              for a single-flight stair and for every sheet written before. */}
+          {flights.length > 1 && (
+            <div className="mt-3">
+              <ChipRow
+                label={mt(lang, "flightWallSide")}
+                value={seg.wallSide}
+                options={[
+                  ["left", mt(lang, "choiceLeft")],
+                  ["right", mt(lang, "choiceRight")],
+                  ["both", mt(lang, "flightWallBoth")],
+                  ["none", mt(lang, "flightWallNone")],
+                ]}
+                onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).wallSide = v as FlightSegment["wallSide"]))}
+              />
+            </div>
+          )}
         </Card>
       ))}
 

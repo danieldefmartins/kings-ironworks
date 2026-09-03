@@ -154,6 +154,17 @@ export interface FlightSegment {
   angleBreak: string; // "" = consistent pitch; otherwise where/how much it changes
   // Per-flight control measurements — required on multi-flight (L/U) stairs,
   // where a single overall rake cannot verify flights that turn:
+  // Which side of THIS flight is a wall, looking up it.
+  //
+  // Daniel: "if flight one wall is on the left on the second flight it will be
+  // on the right." He is right, and it is geometry, not preference — a
+  // switchback turns you through 180°, so the same physical wall changes hands
+  // between flights. datums.orientation holds one value for the whole sheet,
+  // which can only ever describe a single-flight stair honestly.
+  //
+  // "" means inherit datums.orientation, so existing sheets and single-flight
+  // stairs are unaffected.
+  wallSide: "" | "left" | "right" | "both" | "none";
   rake: string; // this flight's nose-to-nose diagonal
   ctrlRise: string; // this flight's measured total rise
   ctrlRun: string; // this flight's measured total run
@@ -244,6 +255,24 @@ export function blankJoint(afterSegment: number): JointMeasure {
 }
 
 /** One joint per segment boundary, preserving anything already measured. */
+// What is a wall on this flight, looking up it. Falls back to the sheet-level
+// orientation when the flight has not been told otherwise.
+export function flightWalls(
+  seg: Segment | undefined,
+  orientation: DatumsSpec["orientation"] | undefined
+): { left: boolean; right: boolean } {
+  const own = seg && seg.kind === "flight" ? seg.wallSide : "";
+  if (own === "left") return { left: true, right: false };
+  if (own === "right") return { left: false, right: true };
+  if (own === "both") return { left: true, right: true };
+  if (own === "none") return { left: false, right: false };
+  const o = orientation || "";
+  return {
+    left: o === "left_wall" || o === "both_wall",
+    right: o === "right_wall" || o === "both_wall",
+  };
+}
+
 export function syncJoints(segments: Segment[], existing: JointMeasure[] = []): JointMeasure[] {
   const want = Math.max(0, segments.length - 1);
   const byIndex = new Map(existing.map((j) => [j.afterSegment, j]));
@@ -1179,6 +1208,7 @@ function blankFlight(steps: number): FlightSegment {
     width: "",
     angleDeg: "",
     angleBreak: "",
+    wallSide: "",
     rake: "",
     ctrlRise: "",
     ctrlRun: "",
@@ -1500,6 +1530,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
           ...seg,
           steps: seg.steps.map((step) => ({ ...step, levelGap: step.levelGap ?? "" })),
           rake: seg.rake ?? "",
+          wallSide: seg.wallSide ?? "",
           ctrlRise: seg.ctrlRise ?? "",
           ctrlRun: seg.ctrlRun ?? "",
         };

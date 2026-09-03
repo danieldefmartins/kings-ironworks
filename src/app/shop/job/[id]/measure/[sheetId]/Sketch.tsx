@@ -19,7 +19,7 @@ import type {
   FenceData,
   BalconyData,
 } from "@/lib/shop/measure";
-import { planPaths } from "@/lib/shop/measure";
+import { flightWalls, planPaths } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { formatIn, orderedPosts, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
 export { sortPlatPosts };
@@ -440,13 +440,21 @@ function PlanSketch({
 }) {
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
-  // which edge(s) carry rail/posts, in local coords (travel = +x, left = -y)
+  // Walls are resolved PER SEGMENT, not once for the sheet. A switchback turns
+  // you through 180°, so a wall on your left going up the first flight is on
+  // your right going up the second — one sheet-level value can only describe a
+  // single-flight stair honestly. Each flight may carry its own; those that do
+  // not fall back to the sheet orientation, which is what every existing sheet
+  // and every single-flight stair does.
+  const wallsAt = (segIdx: number) => flightWalls(data.segments[segIdx], o);
+  // Sheet-level defaults, still used where a drawing has no segment in hand.
   const openLeft = o === "right_wall" || o === "both_open" || o === "";
   const openRight = o === "left_wall" || o === "both_open" || o === "" || o === undefined;
   // Walled edges are drawn as a wall: same line, several times thicker, in the
   // dim tone rather than the stair tone.
-  const edgeStroke = (isLeft: boolean) => {
-    const walled = isLeft ? !openLeft : !openRight;
+  const edgeStroke = (isLeft: boolean, segIdx?: number) => {
+    const w = segIdx === undefined ? { left: !openLeft, right: !openRight } : wallsAt(segIdx);
+    const walled = isLeft ? w.left : w.right;
     return walled
       ? { stroke: p.dim, strokeWidth: 6, opacity: 0.75 }
       : { stroke: p.line, strokeWidth: 2, opacity: 1 };
@@ -492,8 +500,8 @@ function PlanSketch({
       fl.steps.forEach((st, i) => {
         const els: React.ReactNode[] = [
           <line key="t" x1={0} y1={-PLAN_W / 2} x2={0} y2={PLAN_W / 2} stroke={p.ghost} strokeWidth={1.2} />,
-          <line key="e1" x1={0} y1={-PLAN_W / 2} x2={PLAN_TREAD} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
-          <line key="e2" x1={0} y1={PLAN_W / 2} x2={PLAN_TREAD} y2={PLAN_W / 2} {...edgeStroke(false)} />,
+          <line key="e1" x1={0} y1={-PLAN_W / 2} x2={PLAN_TREAD} y2={-PLAN_W / 2} {...edgeStroke(true, segIdx)} />,
+          <line key="e2" x1={0} y1={PLAN_W / 2} x2={PLAN_TREAD} y2={PLAN_W / 2} {...edgeStroke(false, segIdx)} />,
         ];
         if (st.winder) {
           els.push(
@@ -631,8 +639,8 @@ function PlanSketch({
       const len = 90;
       const lv = v(rp.length, p);
       const els: React.ReactNode[] = [
-        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
-        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false)} />,
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true, segIdx)} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false, segIdx)} />,
         <line key="ar" x1={8} y1={0} x2={len - 8} y2={0} stroke={p.ghost} strokeWidth={1.2} />,
         <text key="l" x={len / 2} y={-PLAN_W / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
           {lv.text}
@@ -673,8 +681,8 @@ function PlanSketch({
       const els: React.ReactNode[] = [];
       // strip edges
       els.push(
-        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
-        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false)} />
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true, segIdx)} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false, segIdx)} />
       );
       // tread lines + taps + posts
       fl.steps.forEach((_, i) => {
