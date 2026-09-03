@@ -1325,7 +1325,13 @@ export function newPresetMeasureData(
   preset: MeasurePreset,
   steps1: number,
   steps2 = 0,
-  steps3 = 0
+  steps3 = 0,
+  // Whether the LAST flight also lands on a platform. Usually it does not —
+  // you arrive on the finished floor, which is not ours. But a stair can land
+  // on a balcony, a mezzanine, or a top landing before a door, and that
+  // platform needs its own guard. `stair_platform` has always said as much for
+  // a single flight; this says it for several.
+  endsOnPlatform = false
 ): { shape: MeasureShape; data: MeasureData } {
   const upper = steps2 || steps1;
   if (preset === "winder_l" || preset === "winder_u") {
@@ -1360,7 +1366,7 @@ export function newPresetMeasureData(
     const segs: Segment[] = [];
     for (let i = 0; i < flights; i++) {
       segs.push(blankFlight(steps1));
-      if (i < flights - 1) segs.push(blankPlatform("left"));
+      if (i < flights - 1 || endsOnPlatform) segs.push(blankPlatform("left"));
     }
     data.segments = segs;
     data.joints = syncJoints(data.segments);

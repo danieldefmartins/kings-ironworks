@@ -510,7 +510,7 @@ export async function POST(req: NextRequest) {
         const steps2 = Math.min(40, Math.max(0, Number(body.steps2) || 0));
         const steps3 = Math.min(40, Math.max(0, Number(body.steps3) || 0));
         const seeded = preset
-          ? newPresetMeasureData(preset, steps1, steps2, steps3)
+          ? newPresetMeasureData(preset, steps1, steps2, steps3, body.endsOnPlatform === true)
           : { shape, data: newMeasureData(shape, steps1, steps2) };
         // Start from the shop's standing answers — material, finish, colour,
         // rail height, transport limit — so the measurer confirms them instead

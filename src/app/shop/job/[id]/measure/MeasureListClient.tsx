@@ -34,6 +34,7 @@ export default function MeasureListClient({
   const [steps1, setSteps1] = useState(5);
   const [steps2, setSteps2] = useState(5);
   const [steps3, setSteps3] = useState(5);
+  const [endsOnPlatform, setEndsOnPlatform] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export default function MeasureListClient({
           steps1,
           steps2: isMulti || twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
           steps3: preset === "three_flight" || preset === "bifurcated" ? steps3 : 0,
+          endsOnPlatform: isMulti ? endsOnPlatform : false,
           name,
         }),
       });
@@ -212,7 +214,26 @@ export default function MeasureListClient({
                 <Stepper label={mt(lang, "stepsFlight2")} value={steps2} onChange={setSteps2} />
               )}
               {isMulti && (
-                <Stepper label={mt(lang, "howManyFlights")} value={steps2 || 2} onChange={setSteps2} />
+                <>
+                  <Stepper label={mt(lang, "howManyFlights")} value={steps2 || 2} onChange={setSteps2} />
+                  {/* Usually you arrive on the finished floor, which is not
+                      ours to guard. But a stair can land on a balcony or a top
+                      landing that is. */}
+                  <button
+                    type="button"
+                    onClick={() => setEndsOnPlatform((v) => !v)}
+                    className={`min-h-[48px] self-end rounded-xl border px-4 text-left text-xs font-semibold ${
+                      endsOnPlatform
+                        ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                        : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                    }`}
+                  >
+                    <span className="block">{mt(lang, "endsOnPlatform")}</span>
+                    <span className="mt-0.5 block text-[10px] font-normal text-neutral-500">
+                      {mt(lang, "endsOnPlatformHint")}
+                    </span>
+                  </button>
+                </>
               )}
               {preset === "three_flight" && (
                 <>
