@@ -872,6 +872,15 @@ function PlanPoint({ po, x, y, n, p, onTap, onHold }: {
       <text x={x + s.r + 3} y={y - s.r - 2} fontSize={8} fontWeight={800} fill={s.color} pointerEvents="none">
         {s.label}{n}
       </text>
+      {/* How far this post sits from the edge of the first step — the number
+          the shop lays out from. It was recorded and never drawn, so the plan
+          showed WHERE a post was without saying how far along. Daniel: "just
+          a number on top of the posts like 53\" from the edge of 1st step." */}
+      {po.distanceFromFirst?.trim() ? (
+        <text x={x} y={y - s.r - 11} fontSize={7.5} fontWeight={700} textAnchor="middle" fill={p.val} pointerEvents="none">
+          {po.distanceFromFirst.trim()}
+        </text>
+      ) : null}
     </g>
   );
 }

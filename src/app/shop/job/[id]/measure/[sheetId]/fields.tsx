@@ -55,12 +55,21 @@ export const SetupLockCtx = createContext<boolean>(false);
 // already there, decide where the posts go and dimension them off the first
 // step, then measure the steps themselves. Everything the shop needs but the
 // tape does not comes afterwards.
+// The order a measurer actually works in.
+//
+// Daniel: "apps that ask a lot of questions before seeing results no one
+// uses." Site conditions used to come first — a page of questions before the
+// tape came out. Measuring leads now, in the sequence the stair is walked:
+// the steps and risers, then the pitch they add up to, then the straightedge
+// gap that says whether they are true, then where the posts land off the
+// first step's edge. Site, shop specs and photos follow, because they can be
+// answered from memory and the stair cannot.
 export const EDITOR_STAGES: { id: EditorStage; icon: string; labelKey: string }[] = [
-  { id: "setup", icon: "1", labelKey: "stageSite" },
+  { id: "steps", icon: "1", labelKey: "stageSteps" },
   { id: "locations", icon: "2", labelKey: "stageAnglesLocations" },
-  { id: "steps", icon: "3", labelKey: "stageSteps" },
-  { id: "level", icon: "4", labelKey: "stageLevelCheck" },
-  { id: "posts", icon: "5", labelKey: "stagePostsBasic" },
+  { id: "level", icon: "3", labelKey: "stageLevelCheck" },
+  { id: "posts", icon: "4", labelKey: "stagePostsBasic" },
+  { id: "setup", icon: "5", labelKey: "stageSite" },
   { id: "specs", icon: "6", labelKey: "stageShop" },
   { id: "photos", icon: "7", labelKey: "stagePhotos" },
   { id: "review", icon: "8", labelKey: "stageReview" },

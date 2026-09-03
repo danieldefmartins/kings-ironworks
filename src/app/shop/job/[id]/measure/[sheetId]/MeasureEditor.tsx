@@ -138,7 +138,8 @@ export default function MeasureEditor({
   const [activeFlight, setActiveFlight] = useState(0);
   // Custom sheets open directly on the drawing canvas; otherwise the user
   // lands on the existing-site setup step.
-  const [activeStage, setActiveStage] = useState<EditorStage>(sheet.shape === "custom" ? "steps" : "setup");
+  // Open on measuring, not on a page of site questions.
+  const [activeStage, setActiveStage] = useState<EditorStage>("steps");
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
   function addStepPost(segIdx: number, stepIdx: number) {
