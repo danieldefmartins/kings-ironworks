@@ -576,6 +576,58 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Close someone else's shift. The flag on the dashboard could say a
+      // shift had run 15 hours and nobody could do anything about it from the
+      // app — closing it meant editing the database. The end time is given
+      // rather than assumed: "now" on a forgotten punch is whatever hour the
+      // owner happened to notice, which is not when the person went home.
+      case "shift_force_stop": {
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        const { shiftId, endedAt, note } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
+        const end = typeof endedAt === "string" ? new Date(endedAt) : null;
+        if (!end || Number.isNaN(end.getTime())) return NextResponse.json({ error: "Bad end time" }, { status: 400 });
+        const rows = await sbSelect<{ started_at: string }[]>(
+          "kiw_shop_shifts",
+          `select=started_at&org_id=eq.${ORG_ID}&id=eq.${shiftId}&ended_at=is.null&limit=1`
+        );
+        const started = rows[0]?.started_at;
+        if (!started) return NextResponse.json({ error: "Shift not found or already closed" }, { status: 404 });
+        if (end.getTime() <= new Date(started).getTime()) return NextResponse.json({ error: "End must be after the clock-in" }, { status: 400 });
+        // Close any break still open, exactly as clocking out does.
+        await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shiftId}&ended_at=is.null`, { ended_at: end.toISOString() });
+        await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}`, {
+          ended_at: end.toISOString(),
+          end_location_status: "unavailable",
+          status: "submitted",
+          manager_note: typeof note === "string" && note.trim() ? note.slice(0, 500) : "Closed by owner — worker did not tap out.",
+          updated_at: now,
+        });
+        await audit("shift_force_stop", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { endedAt: end.toISOString() } });
+        break;
+      }
+
+      // Edit a closed shift's times directly. Distinct from a correction
+      // REQUEST, which is the worker asking; this is the owner deciding.
+      case "shift_edit": {
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        const { shiftId, startedAt, endedAt, note } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
+        const st = typeof startedAt === "string" ? new Date(startedAt) : null;
+        const en = typeof endedAt === "string" ? new Date(endedAt) : null;
+        if (!st || !en || Number.isNaN(st.getTime()) || Number.isNaN(en.getTime())) return NextResponse.json({ error: "Bad times" }, { status: 400 });
+        if (en.getTime() <= st.getTime()) return NextResponse.json({ error: "End must be after the clock-in" }, { status: 400 });
+        await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}`, {
+          started_at: st.toISOString(),
+          ended_at: en.toISOString(),
+          status: "submitted",
+          manager_note: typeof note === "string" && note.trim() ? note.slice(0, 500) : "Times edited by owner.",
+          updated_at: now,
+        });
+        await audit("shift_edit", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { startedAt: st.toISOString(), endedAt: en.toISOString() } });
+        break;
+      }
+
       case "shift_review": {
         if (!worker.is_admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
         if (!body.shiftId || !["approved", "rejected"].includes(body.status)) {

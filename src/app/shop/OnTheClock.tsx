@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Clock } from "lucide-react";
-import { AlertTriangle } from "lucide-react";
-import { fmtTime, hoursToHm, shiftHours, type TimeBreak } from "@/lib/shop/shared";
+import { AlertTriangle, LogOut } from "lucide-react";
+import { fmtTime, fromShopInput, hoursToHm, shiftHours, toShopInput, type TimeBreak } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
 export interface OnClockRow {
   workerId: string;
+  /** The open shift, so an owner can close it from here. */
+  shiftId: string;
   name: string;
   /** Payroll clock-in, ISO. */
   startedAt: string;
@@ -41,6 +43,30 @@ const RUNAWAY_HOURS = 12;
 
 export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; lang?: string }) {
   const router = useRouter();
+  // Closing someone else's shift from here, because this is where a forgotten
+  // punch is actually noticed. The end time is asked for rather than assumed —
+  // "now" is when the owner looked, not when the person went home.
+  const [closing, setClosing] = useState<OnClockRow | null>(null);
+  const [endAt, setEndAt] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function forceStop() {
+    if (!closing || !endAt) return;
+    setBusy(true);
+    await fetch("/shop/api/action", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "shift_force_stop",
+        shiftId: closing.shiftId,
+        endedAt: fromShopInput(endAt),
+        note: `Closed by owner — ${closing.name} did not tap out.`,
+      }),
+    });
+    setBusy(false);
+    setClosing(null);
+    router.refresh();
+  }
 
   // Elapsed time is recomputed from started_at on every tick rather than
   // trusting a number baked in at render, so a tab left open overnight cannot
@@ -122,6 +148,19 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
                 )}
               </div>
             </div>
+            <div className="flex justify-end px-4 pb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setClosing(r);
+                  setEndAt(toShopInput(Date.now()));
+                }}
+                className="flex items-center gap-1.5 rounded-full border border-neutral-700 px-3 py-1.5 text-xs font-semibold text-neutral-300 active:bg-neutral-800"
+              >
+                <LogOut aria-hidden className="h-3.5 w-3.5" />
+                {t(lang, "clockOutWorker")}
+              </button>
+            </div>
             {runaway && (
               <div className="flex items-start gap-2 border-t border-amber-500/20 bg-amber-500/10 px-4 py-2">
                 <AlertTriangle aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
@@ -138,6 +177,36 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
           })
         )}
       </div>
+
+      {closing && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/75 p-4 sm:items-center" onClick={() => setClosing(null)}>
+          <div className="w-full max-w-sm rounded-2xl border border-neutral-700 bg-neutral-900 p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-lg font-bold">{t(lang, "clockOutWorker")}</div>
+            <div className="mt-0.5 text-sm text-neutral-400">{closing.name}</div>
+            <p className="mt-2 text-xs leading-snug text-neutral-500">{t(lang, "clockOutWorkerHint")}</p>
+            <label className="mt-3 block text-xs text-neutral-400">{t(lang, "clockOutAt")}</label>
+            <input
+              type="datetime-local"
+              value={endAt}
+              onChange={(e) => setEndAt(e.target.value)}
+              className="mt-1 min-h-12 w-full rounded-xl bg-neutral-800 px-3 text-[16px]"
+            />
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={busy || !endAt}
+                onClick={forceStop}
+                className="min-h-12 flex-1 rounded-xl bg-amber-500 font-bold text-black disabled:opacity-40"
+              >
+                {t(lang, "clockOutConfirm")}
+              </button>
+              <button type="button" onClick={() => setClosing(null)} className="min-h-12 rounded-xl border border-neutral-700 px-4 font-bold text-neutral-300">
+                {t(lang, "cancel")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

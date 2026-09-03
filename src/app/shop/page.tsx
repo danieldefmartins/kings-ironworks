@@ -39,6 +39,7 @@ async function buildOnClockRows(jobs: Awaited<ReturnType<typeof listJobs>>): Pro
     const entry = entries.find((e) => e.worker_id === s.worker_id);
     return {
       workerId: s.worker_id,
+      shiftId: s.id,
       // A shift can outlive a deactivated worker row; say so rather than
       // dropping the row and under-reporting who is on the clock.
       name: names.get(s.worker_id) || "Unknown",
