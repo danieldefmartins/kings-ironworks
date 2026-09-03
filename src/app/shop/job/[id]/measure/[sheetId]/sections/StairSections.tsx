@@ -11,6 +11,7 @@ import {
   type RampSegment,
   type CurveSegment,
 } from "@/lib/shop/measure";
+import { formatIn, parseMeas } from "@/lib/shop/measure-checks";
 import { helpText } from "@/lib/shop/measure-help";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
@@ -116,6 +117,7 @@ export default function StairSections({
               choices={[["No change", mt(lang, "choiceNoChange")]]} placeholder="—" value={seg.angleBreak}
               onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
           </Grid>
+          <DerivedAngle seg={seg} lang={lang} />
           {/* Per flight, because a switchback puts the same wall on your other
               hand. Blank inherits the sheet-level orientation, which is right
               for a single-flight stair and for every sheet written before. */}
@@ -391,5 +393,49 @@ export default function StairSections({
 
       {/* Posts */}
     </>
+  );
+}
+
+
+// The angle the steps already say, shown beside the one the finder says.
+//
+// The sheet has always computed this and compared the two — it just never
+// showed the number, so a disagreement arrived as a colour with nothing to
+// compare against. On a stair that is awkward to measure, seeing both is the
+// point: they are two independent readings of the same thing, and which one
+// to trust is a judgement the measurer makes standing there.
+function DerivedAngle({ seg, lang }: { seg: FlightSegment; lang: string }) {
+  let rise = 0;
+  let run = 0;
+  let complete = seg.steps.length > 0;
+  for (const st of seg.steps) {
+    const r = parseMeas(st.rise);
+    const u = parseMeas(st.run);
+    if (r === null || u === null) { complete = false; break; }
+    rise += r;
+    run += u;
+  }
+  if (!complete || run <= 0) {
+    return (
+      <p className="mt-2 text-xs text-neutral-500">{mt(lang, "derivedAngleWaiting")}</p>
+    );
+  }
+  const calc = (Math.atan2(rise, run) * 180) / Math.PI;
+  const meas = parseMeas(seg.angleDeg);
+  const off = meas === null ? null : Math.abs(calc - meas);
+  const tone =
+    off === null ? "text-neutral-400" : off <= 1 ? "text-green-400" : off <= 2.5 ? "text-amber-400" : "text-red-400";
+  return (
+    <div className="mt-2 rounded-lg border border-neutral-700 bg-neutral-950/50 p-2.5">
+      <div className="text-xs text-neutral-300">
+        {mt(lang, "derivedAngle")}: <b className="tabular-nums">{calc.toFixed(1)}°</b>
+        <span className="text-neutral-500"> · {mt(lang, "fromSteps")} {formatIn(rise)}&quot; / {formatIn(run)}&quot;</span>
+      </div>
+      {off !== null && (
+        <div className={`mt-1 text-xs font-semibold ${tone}`}>
+          {mt(lang, "vsFinder")} {meas!.toFixed(1)}° · {mt(lang, "offBy")} {off.toFixed(1)}°
+        </div>
+      )}
+    </div>
   );
 }
