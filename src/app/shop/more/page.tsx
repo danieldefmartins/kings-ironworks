@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, ClipboardClock, Languages, Settings, ShieldCheck, UserRound } from "lucide-react";
+import { Calculator, ChevronRight, ClipboardClock, Languages, Settings, ShieldCheck, UserRound } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
 import ShopTopBar from "../ShopTopBar";
 import { t } from "@/lib/shop/i18n";
@@ -19,6 +19,9 @@ export default async function MorePage() {
   const links = [
     { href: "/shop/profile", label: t(lang, "myProfile"), detail: t(lang, "myProfileHint"), icon: UserRound },
     { href: "/shop/time", label: t(lang, "myTimesheet"), detail: t(lang, "myTimesheetHint"), icon: ClipboardClock },
+    // Whole crew, not owner-gated: the person working out how many risers fit
+    // is the one standing at the opening with a tape.
+    { href: "/shop/calc", label: t(lang, "calcTile"), detail: t(lang, "calcTileHint"), icon: Calculator },
     ...(owner ? [
       { href: "/shop/admin/time", label: t(lang, "teamTimesheets"), detail: t(lang, "teamTimesheetsHint"), icon: ShieldCheck },
       { href: "/shop/admin", label: t(lang, "admHubTitle"), detail: t(lang, "admHubHint"), icon: Settings },

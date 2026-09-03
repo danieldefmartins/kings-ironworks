@@ -1454,12 +1454,18 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       });
       if (!has(fl.width)) gaps.push({ key: "flight_width", detail: `#${fi + 1}` });
       if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: `#${fi + 1}` });
-      // flights that turn need their own controls — one global rake/run
-      // cannot verify them
+      // A flight that turns needs its own control, because one overall rake
+      // cannot verify flights running in different directions. It needs ONE,
+      // though, not three: rise, run and rake are a right triangle, so any two
+      // give the third, and the rake alone — checked against
+      // hypot(sum of rises, sum of runs) — catches an error in either. Total
+      // rise already cross-checks every riser on the stair against
+      // floor-to-floor. Control rise and run only say WHICH of the two is
+      // wrong, which is diagnosis rather than detection, so they stay
+      // available and stop being demanded. On a three-flight stair that is
+      // three control measurements instead of nine.
       if (turns || flights.length > 1) {
         if (!has(fl.rake)) gaps.push({ key: "flight_rake", detail: `#${fi + 1}` });
-        if (!has(fl.ctrlRise)) gaps.push({ key: "flight_ctrl_rise", detail: `#${fi + 1}` });
-        if (!has(fl.ctrlRun)) gaps.push({ key: "flight_ctrl_run", detail: `#${fi + 1}` });
       }
     });
     if (missingSteps > 0) gaps.push({ key: "steps", detail: `${missingSteps}` });
