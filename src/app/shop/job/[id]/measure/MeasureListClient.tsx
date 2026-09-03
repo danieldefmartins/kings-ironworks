@@ -39,7 +39,11 @@ export default function MeasureListClient({
   const [err, setErr] = useState<string | null>(null);
 
   const twoFlights = shape ? TWO_FLIGHT_SHAPES.includes(shape) : false;
-  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
+  // Multi-flight starts with one flight and grows on site, so asking for a
+  // step count up front asks about a stair nobody has walked yet. The first
+  // flight's steps are set in the sheet like every other flight's.
+  const addAsYouGo = preset === "multi_flight";
+  const needsSteps = !addAsYouGo && shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
 
   async function create() {
     if (!shape) return;

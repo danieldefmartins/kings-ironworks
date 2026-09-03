@@ -46,9 +46,11 @@ export type MeasurePreset =
   | "curved_helical"
   | "three_flight"
   | "bifurcated"
-  | "irregular_stoop";
+  | "irregular_stoop"
+  | "multi_flight";
 
 export const MEASURE_PRESETS: MeasurePreset[] = [
+  "multi_flight",
   "winder_l",
   "winder_u",
   "curved_helical",
@@ -1267,7 +1269,7 @@ export function newMeasureData(
     // the custom shape uses, so odd corners and bump-outs can be drawn and then
     // dimensioned segment by segment.
     plan: shape === "custom" || shape === "deck" ? { points: [], closed: false, segs: [] } : null,
-    joints: [],
+    joints: syncJoints(segments),
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
@@ -1316,6 +1318,13 @@ export function newPresetMeasureData(
     const data = newMeasureData("builder", steps1, upper);
     data.segments = [blankCurve()];
     data.overall.notes = "Curved / helical stair railing — verify each tread and elevation with site photos.";
+    data.joints = syncJoints(data.segments);
+    return { shape: "builder", data };
+  }
+  if (preset === "multi_flight") {
+    const data = newMeasureData("builder", steps1);
+    data.segments = [blankFlight(steps1)];
+    data.joints = syncJoints(data.segments);
     return { shape: "builder", data };
   }
   if (preset === "three_flight") {
@@ -1327,6 +1336,7 @@ export function newPresetMeasureData(
       blankPlatform("left"),
       blankFlight(steps3 || upper),
     ];
+    data.joints = syncJoints(data.segments);
     return { shape: "builder", data };
   }
   if (preset === "bifurcated") {
@@ -1337,10 +1347,12 @@ export function newPresetMeasureData(
     right.branch = "right";
     data.segments = [blankFlight(steps1), blankPlatform("none"), left, right];
     data.overall.notes = "Bifurcated stair: Flight 1 is common; Flights 2 and 3 are independent upper branches.";
+    data.joints = syncJoints(data.segments);
     return { shape: "builder", data };
   }
   const data = newMeasureData("builder", steps1, upper);
   data.overall.notes = "Irregular exterior stoop — measure every rise and run; do not use typical-step assumptions unless verified.";
+  data.joints = syncJoints(data.segments);
   return { shape: "builder", data };
 }
 
