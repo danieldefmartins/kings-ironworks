@@ -274,6 +274,124 @@ export function SmallBtn({ onClick, children }: { onClick: () => void; children:
   );
 }
 
+// ---- What is actually required, and still empty ---------------------------
+//
+// A measurer who is sent back to a step to "fill in what is missing" has no
+// way to tell which of thirty boxes the sheet is waiting on. Optional and
+// mandatory look identical, so the answer was to fill everything or guess.
+//
+// The sheet already knows: requiredGaps says exactly what is missing, right
+// now, for this shape and these answers. This carries that list down to the
+// fields, and a field paints itself red when BOTH are true — its requirement
+// is in the list, and it is empty. Empty-and-required is the only state that
+// turns red, so a filled field never nags and a field that stopped being
+// required (the adjustments, once the floor change says "none") goes quiet on
+// its own.
+export const MissingCtx = createContext<ReadonlySet<string>>(new Set<string>());
+
+// Which requirement a field answers. Keyed by the field's `help` key, which
+// every measurement input already carries, so this is the whole wiring —
+// individual call sites stay untouched.
+const HELP_GAP: Record<string, string> = {
+  // stairs
+  rise: "steps", run: "steps",
+  winderRunIn: "winder", winderRunOut: "winder", winderTurn: "winder",
+  width: "flight_width", stairAngle: "flight_angle", flightRake: "flight_rake",
+  floorToFloor: "floor_to_floor", totalRun: "total_run", rakeLength: "rake",
+  orientation: "orientation", floorChangeQuestion: "floor_change",
+  bottomAdjustment: "bottom_adjustment", topAdjustment: "top_adjustment",
+  length: "landing_length", depth: "landing_depth", landingDiag: "landing_diag",
+  curveRadius: "curve_geometry", curveChord: "curve_geometry", curveArc: "curve_geometry",
+  rampSlopeLen: "ramp_geometry", rampRunH: "ramp_geometry", segmentRise: "ramp_geometry",
+  diameter: "diameter",
+  // railing
+  railHeight: "rail_height", returnsLabel: "returns", extensions: "extensions",
+  brackets: "brackets", topSpanLbl: "span_top", clipDetail: "clip_detail",
+  connAttachTo: "term_target", connMethod: "term_method", connMaterial: "term_material",
+  columnWLbl: "term_column_w", columnDLbl: "term_column_d", moldingHeightLbl: "term_molding_h",
+  postEdgeDist: "post_edge", postPlate: "post_plate", postAnchors: "post_anchors",
+  postSubstrate: "post_substrate", skirtHeight: "post_skirt", infillGap: "post_infill_gap",
+  existingMaterial: "existing_material", finish: "mat_finish",
+  existingPostWidth: "existing_post_size", existingPostDepth: "existing_post_size",
+  // gates
+  gateUse: "gate_use", gateOperation: "gate_operation", gateWidthTop: "gate_width_top",
+  gateWidthBottom: "gate_width_bottom", gateHeightHinge: "gate_height_hinge",
+  gateGroundClearance: "gate_ground_clearance", gateSurface: "gate_surface",
+  gateInfill: "gate_infill", gateHinges: "gate_hinges", gateLatch: "gate_latch",
+  gateGradeRise: "gate_grade_rise", gateSwingDir: "gate_swing_dir",
+  gateHingeSide: "gate_hinge_side", gatePostSize: "gate_post_size",
+  gateFooting: "gate_footing", gateOpener: "gate_opener", gatePower: "gate_power",
+  gateSafety: "gate_safety", gatePicketSpacing: "gate_picket_spacing",
+  // fences
+  fenceTotalRun: "fence_total_run", fenceHeight: "fence_height",
+  fencePostSpacing: "fence_post_spacing", fencePostSize: "fence_post_size",
+  fenceFooting: "fence_footing", fenceStartTerm: "fence_start_term",
+  fenceEndTerm: "fence_end_term", fenceUtilities: "fence_utilities",
+  fenceSegLength: "fence_seg_length", fenceSegFollows: "fence_seg_grade",
+  fencePicketSpacing: "fence_picket_spacing",
+  // balconies
+  balKind: "bal_kind", balMount: "bal_mount", balEdgeLength: "bal_edge_length",
+  balGuardHeight: "bal_guard_height_f", balSlabMaterial: "bal_slab_material",
+  balFinishedFloor: "bal_finished_floor", balReturns: "bal_returns",
+  balAnchorType: "bal_anchor_type", balSlabThickness: "bal_slab_thickness",
+  balEmbedment: "bal_embedment_f", balEdgeDistance: "bal_edge_distance_f",
+  balDoorOpening: "bal_door_opening", balPicketSpacing: "bal_picket_spacing",
+  // decks
+  deckSurface: "deck_surface", deckTotalPerimeter: "deck_total_perimeter",
+  deckMount: "deck_mount", deckGuardHeight: "deck_guard_height_f",
+  deckPostSpacing: "deck_post_spacing_f", deckCorners: "deck_corners",
+  deckSideLength: "deck_side_length", deckSideHeight: "deck_side_height",
+  deckSideOpeningWidth: "deck_opening_width", deckRimJoistSize: "deck_rim_size",
+  deckRimMaterial: "deck_rim_material", deckBlocking: "deck_blocking",
+  deckDeckingThickness: "deck_decking_thickness",
+  deckFramingCondition: "deck_framing_condition", deckPicketSpacing: "deck_picket_spacing",
+  // fire escapes
+  fireWallMaterial: "fire_wall_material", fireTotalHeight: "fire_total_height",
+  firePlatLength: "fire_plat_length", firePlatWidth: "fire_plat_width",
+  fireHeightGrade: "fire_height_grade", fireDeck: "fire_deck",
+  fireGuardHeight: "fire_guard_height", firePicketSpacing: "fire_picket_spacing",
+  fireAnchorType: "fire_anchor_type", fireAnchorCount: "fire_anchor_count",
+  fireOpening: "fire_opening", fireLadderType: "fire_ladder_type",
+  fireLadderLength: "fire_ladder_length", fireLadderWidth: "fire_ladder_width",
+  fireLadderRung: "fire_ladder_rung", fireLadderOperates: "fire_ladder_operates",
+  fireStairRise: "fire_stair_rise", fireStairRisers: "fire_stair_risers",
+  fireStairRun: "fire_stair_run", fireStairWidth: "fire_stair_width",
+  fireFloorToFloor: "fire_floor_to_floor", fireLoadTest: "fire_load_test",
+  fireRating: "fire_level_rating", fireAnchorCondition: "fire_anchor_condition",
+  // window wells
+  wellDepth: "well_depth", wellLengthAtHouse: "well_length",
+  wellProjection: "well_projection", wellWallThickness: "well_thickness",
+  wellConstruction: "well_construction", wellGuardHeight: "well_guard_height",
+  wellPostToWall: "well_post_to_wall", wellWallRef: "well_wall_ref",
+  wellGrateLoad: "well_grate_load", wellGrateBearing: "well_grate_bearing",
+  wellGrateInfill: "well_grate_infill", wellGateWidth: "well_gate_width",
+  wellGateSwing: "well_gate_swing", wellGateHinge: "well_gate_hinge",
+  wellLadderWidth: "well_ladder_width", wellLadderSpacing: "well_rung_spacing",
+  wellLadderStandoff: "well_rung_standoff",
+  wellBandFrom: "well_band_fields", wellBandTo: "well_band_fields",
+  wellBandSetback: "well_band_fields",
+};
+
+/** True when this field answers something the sheet is waiting on. */
+export function useRequiredNow(value: string, help?: string, gap?: string): boolean {
+  const missing = useContext(MissingCtx);
+  const key = gap || (help ? HELP_GAP[help] : undefined);
+  return !!key && value.trim() === "" && missing.has(key);
+}
+
+/** The look of a field the sheet is waiting on. */
+export const REQ_FIELD =
+  "border-red-500 bg-gradient-to-b from-red-950/60 to-red-950/10 text-red-100 placeholder:text-red-300/50";
+
+export function RequiredChip() {
+  const lang = useContext(LangCtx);
+  return (
+    <span className="ml-auto shrink-0 rounded-full border border-red-600 bg-red-950/60 px-1.5 text-[9px] font-bold uppercase tracking-wide text-red-300">
+      {mt(lang, "requiredLbl")}
+    </span>
+  );
+}
+
 export function MInput({
   label,
   labelClass = "",
@@ -285,6 +403,7 @@ export function MInput({
   placeholder,
   carried,
   onClearCarried,
+  gap,
 }: {
   label?: string;
   labelClass?: string;
@@ -298,16 +417,20 @@ export function MInput({
   /** Set when this value was carried over from an earlier sheet. */
   carried?: string;
   onClearCarried?: () => void;
+  /** Requirement this field answers, when its help key does not say. */
+  gap?: string;
 }) {
   const unitPh = useContext(PlaceholderCtx);
   const lang = useContext(LangCtx);
   const explain = hint || (help ? helpText(lang, help) : null);
+  const needed = useRequiredNow(value, help, gap);
   return (
     <div className="block min-w-0">
       {label && (
-        <div className={`text-[11px] text-neutral-400 flex items-center mb-1 ${labelClass}`}>
-          {label}
+        <div className={`text-[11px] flex items-center mb-1 gap-1 ${needed ? "text-red-300" : "text-neutral-400"} ${labelClass}`}>
+          <span className="min-w-0">{label}</span>
           {explain && <InfoHint text={explain} label={label} diagram={hintDiagram} />}
+          {needed && <RequiredChip />}
         </div>
       )}
       <input
@@ -317,7 +440,9 @@ export function MInput({
         placeholder={placeholder || unitPh}
         autoComplete="off"
         aria-label={label}
-        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base"
+        className={`w-full rounded-lg border px-2.5 py-2.5 text-base ${
+          needed ? REQ_FIELD : "border-neutral-700 bg-neutral-800"
+        }`}
       />
       <CarriedNote note={carried} onClear={onClearCarried} />
     </div>
@@ -488,9 +613,11 @@ export function ChoiceMInput({
   hintDiagram,
   carried,
   onClearCarried,
+  gap,
 }: {
   label: string;
   help?: string;
+  gap?: string;
   value: string;
   onChange: (value: string) => void;
   choices: [string, string][];
@@ -503,7 +630,7 @@ export function ChoiceMInput({
   return (
     <div>
       <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} help={help} hint={hint} hintDiagram={hintDiagram}
-        carried={carried} onClearCarried={onClearCarried} />
+        gap={gap} carried={carried} onClearCarried={onClearCarried} />
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {choices.map(([stored, shown]) => (
           <button key={stored} type="button" onClick={() => onChange(stored)}
@@ -646,6 +773,7 @@ export function MSelect({
   labels,
   carried,
   onClearCarried,
+  gap,
 }: {
   label: string;
   value: string;
@@ -657,18 +785,23 @@ export function MSelect({
   labels?: Record<string, string>;
   carried?: string;
   onClearCarried?: () => void;
+  gap?: string;
 }) {
+  const needed = useRequiredNow(value, help, gap);
   return (
     <div className="block min-w-0">
-      <div className="mb-1 flex items-center text-[11px] text-neutral-400">
-        {label}
+      <div className={`mb-1 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
+        <span className="min-w-0">{label}</span>
         {help && helpText(lang, help) && <InfoHint text={helpText(lang, help)!} label={label} />}
+        {needed && <RequiredChip />}
       </div>
       <select
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-2.5 py-2.5 text-base appearance-none"
+        className={`w-full appearance-none rounded-lg border px-2.5 py-2.5 text-base ${
+          needed ? REQ_FIELD : "border-neutral-700 bg-neutral-800"
+        }`}
       >
         <option value="">—</option>
         {options.map((o) => (
@@ -689,6 +822,7 @@ export function PresetInput({
   onChange,
   carried,
   onClearCarried,
+  gap,
 }: {
   label: string;
   value: string;
@@ -696,11 +830,12 @@ export function PresetInput({
   onChange: (v: string) => void;
   carried?: string;
   onClearCarried?: () => void;
+  gap?: string;
 }) {
   return (
     <div>
       <MInput label={label} value={value} onChange={onChange} placeholder="—"
-        carried={carried} onClearCarried={onClearCarried} />
+        gap={gap} carried={carried} onClearCarried={onClearCarried} />
       <div className="flex flex-wrap gap-1.5 mt-1.5">
         {presets.map((pr) => (
           <button key={pr} onClick={() => onChange(pr)}
@@ -723,20 +858,24 @@ export function ChipRow({
   options,
   onChange,
   help,
+  gap,
 }: {
   label: string;
   value: string;
   options: [string, string][];
   onChange: (v: string) => void;
   help?: string;
+  gap?: string;
 }) {
   const lang = useContext(LangCtx);
   const explain = help ? helpText(lang, help) : null;
+  const needed = useRequiredNow(value, help, gap);
   return (
-    <div>
-      <div className="mb-1 flex items-center text-[11px] text-neutral-400">
-        {label}
+    <div className={needed ? "rounded-xl border border-red-500 bg-gradient-to-b from-red-950/50 to-transparent p-2" : undefined}>
+      <div className={`mb-1 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
+        <span className="min-w-0">{label}</span>
         {explain && <InfoHint text={explain} label={label} />}
+        {needed && <RequiredChip />}
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map(([val, lbl]) => (

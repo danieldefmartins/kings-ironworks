@@ -76,17 +76,17 @@ export default function ShopSections({
     <>
       <Card stage="specs" title={mt(lang, "materialsTitle")}>
         <div className="space-y-3">
-          {!isWallRail && <PresetInput label={mt(lang, "matPost")} value={data.materials.post}
+          {!isWallRail && <PresetInput gap="mat_post" label={mt(lang, "matPost")} value={data.materials.post}
             presets={presets.post}
             carried={carriedNote("materials.post", data.materials.post)}
             onClearCarried={() => set((d) => void (d.materials.post = ""))}
             onChange={(v) => { set((d) => void (d.materials.post = v)); }} />}
-          <PresetInput label={mt(lang, "matTopRail")} value={data.materials.topRail}
+          <PresetInput gap="mat_toprail" label={mt(lang, "matTopRail")} value={data.materials.topRail}
             presets={presets.topRail}
             carried={carriedNote("materials.topRail", data.materials.topRail)}
             onClearCarried={() => set((d) => void (d.materials.topRail = ""))}
             onChange={(v) => { set((d) => void (d.materials.topRail = v)); }} />
-          {hasGuardrail && <PresetInput label={mt(lang, "matPicket")} value={data.materials.picket}
+          {hasGuardrail && <PresetInput gap="mat_picket" label={mt(lang, "matPicket")} value={data.materials.picket}
             presets={presets.picket}
             carried={carriedNote("materials.picket", data.materials.picket)}
             onClearCarried={() => set((d) => void (d.materials.picket = ""))}
@@ -206,7 +206,7 @@ export default function ShopSections({
       {/* Field-observed constraints that determine later fabrication decisions. */}
       <Card stage="specs" title={`🔩 ${mt(lang, "fabTitle")}`}>
         <Grid>
-          <ChoiceMInput label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
+          <ChoiceMInput gap="max_piece" label={mt(lang, "fabMaxPiece")} placeholder="—" value={data.fab.maxPiece}
             carried={carriedNote("fab.maxPiece", data.fab.maxPiece)}
             onClearCarried={() => set((d) => void (d.fab.maxPiece = ""))}
             choices={[["No restriction", mt(lang, "choiceNoRestriction")]]}

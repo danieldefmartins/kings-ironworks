@@ -73,6 +73,7 @@ import {
   FRACTIONS,
   LangCtx,
   PlaceholderCtx,
+  MissingCtx,
   SetupLockCtx,
   StageCtx,
   type EditorStage,
@@ -162,6 +163,15 @@ export default function MeasureEditor({
   const [activeStage, setActiveStage] = useState<EditorStage>("steps");
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
+  // Setback and edge distance repeat down a run: a new post takes them from
+  // the run it is joining rather than waiting to be told the same two numbers
+  // again. Whatever the measurer types on any post becomes the run's answer,
+  // so this needs no separate place to keep it.
+  function inheritLayout(d: MeasureData, po: PostMeasure) {
+    po.fromNosing = d.posts.find((p) => p.id !== po.id && p.fromNosing.trim() !== "")?.fromNosing || po.fromNosing;
+    po.fromEdge = d.posts.find((p) => p.id !== po.id && p.fromEdge.trim() !== "")?.fromEdge || po.fromEdge;
+  }
+
   function addStepPost(segIdx: number, stepIdx: number) {
     if (movingPostId) {
       set((d) => {
@@ -180,6 +190,7 @@ export default function MeasureEditor({
       const po = newPost(segIdx, stepIdx);
       const o = d.datums.orientation;
       po.side = o === "right_wall" ? "left" : "right";
+      inheritLayout(d, po);
       d.posts.push(po);
     });
   }
@@ -202,6 +213,7 @@ export default function MeasureEditor({
       const po = newPost(segIdx, null);
       const o = d.datums.orientation;
       po.side = o === "right_wall" ? "left" : "right";
+      inheritLayout(d, po);
       d.posts.push(po);
     });
   }
@@ -261,6 +273,7 @@ export default function MeasureEditor({
         po.anchor = "Concrete";
         po.substrate = "Concrete";
       }
+      inheritLayout(d, po);
       d.posts.push(po);
     });
     setPlacementMenu(null);
@@ -554,6 +567,10 @@ export default function MeasureEditor({
     return acc;
   }, zeroByStage());
   const activeStageIndex = EDITOR_STAGES.findIndex((s) => s.id === activeStage);
+  // One set, rebuilt on every keystroke, of the requirements still open. A
+  // field is red only while its key is in here AND the field is empty, so a
+  // box stops being red the moment it is answered.
+  const missingKeys = new Set(gaps.map((g) => g.key));
 
   // ---- The one thing to do next -------------------------------------------
   // Gaps come out of requiredGaps in validation order; the worker needs them
@@ -879,6 +896,12 @@ export default function MeasureEditor({
   return (
     <LangCtx.Provider value={lang}>
     <PlaceholderCtx.Provider value={unitPh}>
+    {/* What the sheet is waiting on, carried down to every field — the ones in
+        the page and the ones in the step overlay alike — so a
+        required-and-empty box paints itself red. Blockers only: the follow-ups
+        a sheet can be submitted without have never stopped anybody, and
+        colouring those red teaches a measurer to ignore the colour. */}
+    <MissingCtx.Provider value={missingKeys}>
       {/* Room for the fixed action bar at the bottom. */}
       <div className="mx-auto max-w-4xl p-4 pb-44 print:hidden">
         {!online && (
@@ -1670,6 +1693,7 @@ export default function MeasureEditor({
         gapCount={gaps.length}
         branding={orgSettings?.branding}
       />
+    </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
     </LangCtx.Provider>
   );

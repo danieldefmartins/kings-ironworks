@@ -76,3 +76,35 @@ describe("measuring by tapping the drawing", () => {
     expect(screen.getByRole("button", { name: /Copy step 1 to all/ })).toBeTruthy();
   });
 });
+
+describe("what the sheet is waiting on shows red", () => {
+  it("marks a required empty field, and only while it is empty", () => {
+    show(3);
+    act(() => { fireEvent.click(screen.getByRole("button", { name: /Type the list instead/ })); });
+    const rise = screen.getAllByLabelText("Rise")[0] as HTMLInputElement;
+    const nosing = screen.getAllByLabelText("Nosing")[0] as HTMLInputElement;
+    // Rise is required and empty; nosing is not required at all.
+    expect(rise.className).toContain("border-red-500");
+    expect(nosing.className).not.toContain("border-red-500");
+
+    act(() => { fireEvent.change(rise, { target: { value: "7" } }); });
+    expect((screen.getAllByLabelText("Rise")[0] as HTMLInputElement).className)
+      .not.toContain("border-red-500");
+  });
+});
+
+describe("the layout numbers that repeat down a run", () => {
+  it("gives a new post the setback and edge distance the run already uses", () => {
+    show(4);
+    // Place two posts by tapping treads on the posts step.
+    act(() => { fireEvent.click(screen.getByRole("button", { name: /2\. Posts & locations/i })); });
+    act(() => { fireEvent.click(treads()[0]); });
+    const setback = screen.getAllByLabelText(/Setback on destination step/)[0] as HTMLInputElement;
+    act(() => { fireEvent.change(setback, { target: { value: "2" } }); });
+    act(() => { fireEvent.click(treads()[2]); });
+    const all = screen.getAllByLabelText(/Setback on destination step/) as HTMLInputElement[];
+    // The standards panel plus one field per post, all carrying the same answer.
+    expect(all.length).toBeGreaterThan(2);
+    expect(all.every((el) => el.value === "2")).toBe(true);
+  });
+});

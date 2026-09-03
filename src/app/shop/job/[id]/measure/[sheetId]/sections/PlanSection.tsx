@@ -87,9 +87,9 @@ export default function PlanSection({
                             options={(["flight", "landing", "level", "ramp", "curve"] as const).map((kind) => [kind, mt(lang, `segment_${kind}`)])}
                             onChange={(v) => seg(pi, i, (s) => void (s.kind = v as typeof sg.kind))} />
                           <div className="mt-3"><Grid>
-                            <MInput help="length" label={mt(lang, "length")} value={sg.len}
+                            <MInput gap="plan_lengths" help="length" label={mt(lang, "length")} value={sg.len}
                               onChange={(v) => seg(pi, i, (s) => void (s.len = v))} />
-                            <MInput help="width" label={mt(lang, "width")} value={sg.width || ""}
+                            <MInput gap="-" help="width" label={mt(lang, "width")} value={sg.width || ""}
                               onChange={(v) => seg(pi, i, (s) => void (s.width = v))} />
                             {sg.kind === "flight" && <>
                               <MInput help="stepsThisFlight" label={mt(lang, "stepsThisFlight")} placeholder="0" value={sg.steps || ""}
@@ -121,9 +121,9 @@ export default function PlanSection({
                                   {sg.stepMeasures.map((st, si) => (
                                     <div key={si} className="grid grid-cols-[2rem_1fr_1fr] items-end gap-2">
                                       <span className="pb-3 text-center text-sm font-bold text-neutral-400">{si + 1}</span>
-                                      <MInput help="rise" label={mt(lang, "rise")} value={st.rise}
+                                      <MInput gap="plan_flights" help="rise" label={mt(lang, "rise")} value={st.rise}
                                         onChange={(v) => seg(pi, i, (s) => void (s.stepMeasures[si].rise = v))} />
-                                      <MInput help="run" label={mt(lang, "run")} value={st.run}
+                                      <MInput gap="plan_flights" help="run" label={mt(lang, "run")} value={st.run}
                                         onChange={(v) => seg(pi, i, (s) => void (s.stepMeasures[si].run = v))} />
                                     </div>
                                   ))}

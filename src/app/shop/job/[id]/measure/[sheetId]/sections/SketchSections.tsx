@@ -244,10 +244,23 @@ export default function SketchSections({
             </button>
           </div>
         )}
-        {/* View chips — phones show one view; md+ adds a second beside it */}
-        {viewList.length > 1 && (
-          <div className="mb-3 flex flex-wrap gap-2">
-            {viewList.map(([vw, key]) => (
+        {/* View chips and the zoom, on the drawing a measurer actually works
+            on. The zoom controls existed, but only on the site-conditions
+            card — the drawing everybody uses had no way to get closer. */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-1">
+            <button type="button" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.25).toFixed(2)))}
+              aria-label="Zoom out" className="h-10 w-10 text-xl font-bold text-neutral-300">−</button>
+            <span className="w-11 text-center text-[11px] font-bold text-neutral-400">{Math.round(zoom * 100)}%</span>
+            <button type="button" onClick={() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))}
+              aria-label="Zoom in" className="h-10 w-10 text-xl font-bold text-neutral-300">+</button>
+            {zoom !== 1 && (
+              <button type="button" onClick={() => setZoom(1)} aria-label="Reset zoom"
+                className="h-10 rounded-full px-2 text-[11px] font-bold text-neutral-400">↺</button>
+            )}
+          </span>
+          {viewList.length > 1 &&
+            viewList.map(([vw, key]) => (
               <button
                 key={vw}
                 onClick={() => setView(vw)}
@@ -260,8 +273,7 @@ export default function SketchSections({
                 {mt(lang, key)}
               </button>
             ))}
-          </div>
-        )}
+        </div>
         {/* The chosen view is the one being read against the numbers being
             typed, so it gets two thirds of the card; the companion view is a
             reference, not a peer. */}
@@ -293,8 +305,10 @@ export default function SketchSections({
               <div className="text-[11px] text-neutral-500 mb-1">
                 {mt(lang, viewList.find(([vw]) => vw !== view)![1])}
               </div>
+              {/* The companion view is a reference: zoom belongs to the
+                  drawing being examined, not to both at once. */}
               <Sketch
-              zoom={zoom}
+              zoom={1}
               focusSeg={focusSeg}
                 shape={shape}
                 data={data}

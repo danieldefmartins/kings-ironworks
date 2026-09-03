@@ -76,6 +76,14 @@ export default function PostsSection({
         // they hang off lines that do not exist until the drawing is made, so
         // asking for them on an earlier stage is asking the impossible.
         <Card stage={isDrawn ? "steps" : "locations"} title={`${mt(lang, "posts")} (${posts.length})`}>
+          {/* Setback and edge distance are a layout decision, made once and
+              repeated down the run — they were being typed per post, which is
+              the same two numbers fourteen times and fourteen chances to type
+              one of them differently. Set here, taken by every post added
+              after, and pushed onto the existing ones on request. */}
+          {posts.length > 0 && !isDrawn && (
+            <PostStandards lang={lang} posts={posts} set={set} />
+          )}
           {posts.length === 0 && (
             <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
           )}
@@ -257,5 +265,52 @@ export default function PostsSection({
 
       {/* Railing */}
     </>
+  );
+}
+
+/** The two numbers that repeat down a run, in one place. */
+function PostStandards({
+  lang,
+  posts,
+  set,
+}: {
+  lang: string;
+  posts: PostMeasure[];
+  set: (fn: (d: MeasureData) => void) => void;
+}) {
+  // Seeded from the run itself: whatever the first post that has an answer
+  // says, rather than a second copy of the same number kept somewhere else.
+  const setback = posts.find((p) => p.fromNosing.trim() !== "")?.fromNosing || "";
+  const edge = posts.find((p) => p.fromEdge.trim() !== "")?.fromEdge || "";
+  const applyAll = (field: "fromNosing" | "fromEdge", v: string) =>
+    set((d) => d.posts.forEach((p) => void (p[field] = v)));
+  const uneven =
+    posts.some((p) => p.fromNosing.trim() !== "" && p.fromNosing !== setback) ||
+    posts.some((p) => p.fromEdge.trim() !== "" && p.fromEdge !== edge);
+  return (
+    <div className="mb-3 rounded-xl border border-neutral-700 bg-neutral-950/40 p-3">
+      <div className="text-xs font-bold text-neutral-300">{mt(lang, "sameEveryPost")}</div>
+      <div className="mb-2 text-[11px] text-neutral-500">{mt(lang, "sameEveryPostHint")}</div>
+      <Grid>
+        <MInput help="postSetback" label={mt(lang, "postSetback")} value={setback}
+          onChange={(v) => applyAll("fromNosing", v)} />
+        <MInput help="fromEdge" label={mt(lang, "fromEdge")} value={edge}
+          onChange={(v) => applyAll("fromEdge", v)} />
+      </Grid>
+      {/* Only offered when the run has actually drifted apart — otherwise it
+          is a button that does nothing, which is worse than no button. */}
+      {uneven && (
+        <button
+          type="button"
+          onClick={() => {
+            applyAll("fromNosing", setback);
+            applyAll("fromEdge", edge);
+          }}
+          className="mt-2 min-h-[44px] w-full rounded-lg border border-amber-700 bg-amber-950/30 text-xs font-bold text-amber-300"
+        >
+          ⇊ {mt(lang, "applyToAllPosts")}
+        </button>
+      )}
+    </div>
   );
 }

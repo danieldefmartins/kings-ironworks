@@ -398,9 +398,9 @@ export default function StairSections({
               onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).runH = v))} />
             <MInput help="totalRise" label={mt(lang, "totalRise")} value={seg.rise}
               onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).rise = v))} />
-            <MInput help="stairAngle" label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
+            <MInput gap="ramp_geometry" help="stairAngle" label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
               onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).angleDeg = v))} />
-            <MInput help="width" label={mt(lang, "width")} value={seg.width}
+            <MInput gap="ramp_geometry" help="width" label={mt(lang, "width")} value={seg.width}
               onChange={(v) => set((d) => void ((d.segments[i] as RampSegment).width = v))} />
           </Grid>
         </Card>
@@ -420,7 +420,7 @@ export default function StairSections({
               onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).sweepDeg = v))} />
             <MInput help="curveRise" label={mt(lang, "curveRise")} value={seg.rise}
               onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).rise = v))} />
-            <MInput help="width" label={mt(lang, "width")} value={seg.width}
+            <MInput gap="curve_geometry" help="width" label={mt(lang, "width")} value={seg.width}
               onChange={(v) => set((d) => void ((d.segments[i] as CurveSegment).width = v))} />
           </Grid>
           <div className="mt-3">
