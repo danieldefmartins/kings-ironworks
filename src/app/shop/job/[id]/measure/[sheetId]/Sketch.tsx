@@ -1505,8 +1505,17 @@ function FrontSketch({
   const ev = v(firstPost?.fromEdge || "", p);
 
   const side = data.rail.side; // Left | Right | Both | ""
-  const showLeft = side === "Left" || side === "Both" || side === "";
-  const showRight = side === "Right" || side === "Both" || side === "";
+  // A wall beats a rail: where the stair runs against the house there is no
+  // railing to draw, and drawing one there showed the crew a rail that will
+  // never be fabricated. `datums.orientation` already records this looking UP
+  // the stairs — it is what the ▦ markers below the stair read from — so the
+  // rail drawing reads the same field rather than a second one that could
+  // disagree with it.
+  const orient = data.datums?.orientation || "";
+  const wallLeft = orient === "left_wall" || orient === "both_wall";
+  const wallRight = orient === "right_wall" || orient === "both_wall";
+  const showLeft = !wallLeft && (side === "Left" || side === "Both" || side === "");
+  const showRight = !wallRight && (side === "Right" || side === "Both" || side === "");
   const dimmed = side === ""; // no side chosen yet — show both faded
 
   const visibleSteps = Math.max(1, Math.min(flight?.steps.length || 1, 14));
@@ -1516,6 +1525,13 @@ function FrontSketch({
   const railTop = Math.max(24, upperTreadY - 62);
   const inset = 26;
   const railColor = dimmed ? p.ghost : p.post;
+  // Each tread up is drawn a little narrower, so the flight recedes instead of
+  // stacking. Capped so a long flight does not taper away to a point.
+  const taper = Math.min(46, 5.5 * visibleSteps);
+  const shrinkAt = (i: number) => (visibleSteps <= 1 ? 0 : (i / (visibleSteps - 1)) * taper);
+  const lx = (i: number) => x0 + shrinkAt(i);
+  const rx = (i: number) => x1 - shrinkAt(i);
+  const topI = visibleSteps - 1;
 
   return (
     <svg viewBox="0 0 340 235" className="w-full" style={{ maxHeight: 320 }}>
@@ -1525,10 +1541,11 @@ function FrontSketch({
         const y = treadY - i * stepGap;
         return (
           <g key={i}>
-            <line x1={x0} y1={y} x2={x1} y2={y} stroke={p.line} strokeWidth={i === 0 ? 2.8 : 1.7} />
-            <line x1={x0} y1={y} x2={x0} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
-            <line x1={x1} y1={y} x2={x1} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
-            <text x={x0 + 8} y={y - 2} fontSize={6.5} fill={p.dim}>{i + 1}</text>
+            <line x1={lx(i)} y1={y} x2={rx(i)} y2={y} stroke={p.line} strokeWidth={i === 0 ? 2.8 : 1.7} />
+            {/* the riser faces, angled inward, are what sell the depth */}
+            <line x1={lx(i)} y1={y} x2={lx(Math.max(0, i - 1))} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
+            <line x1={rx(i)} y1={y} x2={rx(Math.max(0, i - 1))} y2={y + stepGap} stroke={p.line} strokeWidth={1.4} />
+            <text x={lx(i) + 8} y={y - 2} fontSize={6.5} fill={p.dim}>{i + 1}</text>
           </g>
         );
       })}
@@ -1539,10 +1556,31 @@ function FrontSketch({
         ⟵ {mt(lang, "width")}: {widthVal.text} ⟶
       </text>
 
+      {/* A wall is drawn as a wall: a thick solid band against the stair, so
+          nobody mistakes the side against the house for a rail run. */}
+      {wallLeft && (
+        <g>
+          <line x1={lx(0) - 6} y1={treadY + stepGap} x2={lx(topI) - 6} y2={railTop} stroke={p.dim} strokeWidth={7} strokeLinecap="square" opacity={0.55} />
+          <text x={x0 - 11} y={(treadY + railTop) / 2} fontSize={8} fontWeight={700} fill={p.dim}
+            textAnchor="middle" transform={`rotate(-90 ${x0 - 11} ${(treadY + railTop) / 2})`}>
+            {mt(lang, "wallLabel")}
+          </text>
+        </g>
+      )}
+      {wallRight && (
+        <g>
+          <line x1={rx(0) + 6} y1={treadY + stepGap} x2={rx(topI) + 6} y2={railTop} stroke={p.dim} strokeWidth={7} strokeLinecap="square" opacity={0.55} />
+          <text x={x1 + 11} y={(treadY + railTop) / 2} fontSize={8} fontWeight={700} fill={p.dim}
+            textAnchor="middle" transform={`rotate(90 ${x1 + 11} ${(treadY + railTop) / 2})`}>
+            {mt(lang, "wallLabel")}
+          </text>
+        </g>
+      )}
+
       {/* posts + rail per side */}
       {showLeft && (
         <g>
-          <line x1={x0 + inset} y1={treadY} x2={x0 + inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
+          <line x1={lx(0) + inset} y1={treadY} x2={lx(topI) + inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
           <circle cx={x0 + inset} cy={railTop - 4} r={4.5} fill="none" stroke={railColor} strokeWidth={2.5} />
           <line x1={x0} y1={treadY - 8} x2={x0 + inset} y2={treadY - 8} stroke={p.dim} strokeWidth={1} />
           <text x={x0 + inset / 2} y={treadY - 13} fontSize={8.5} textAnchor="middle" fill={ev.fill}>
@@ -1552,9 +1590,9 @@ function FrontSketch({
       )}
       {showRight && (
         <g>
-          <line x1={x1 - inset} y1={treadY} x2={x1 - inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
+          <line x1={rx(0) - inset} y1={treadY} x2={rx(topI) - inset} y2={railTop} stroke={railColor} strokeWidth={3.5} />
           <circle cx={x1 - inset} cy={railTop - 4} r={4.5} fill="none" stroke={railColor} strokeWidth={2.5} />
-          <line x1={x1 - inset} y1={treadY - 8} x2={x1} y2={treadY - 8} stroke={p.dim} strokeWidth={1} />
+          <line x1={rx(0) - inset} y1={treadY - 8} x2={rx(0)} y2={treadY - 8} stroke={p.dim} strokeWidth={1} />
           <text x={x1 - inset / 2} y={treadY - 13} fontSize={8.5} textAnchor="middle" fill={ev.fill}>
             {ev.text}
           </text>

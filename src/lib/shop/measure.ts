@@ -40,6 +40,26 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "custom",
 ];
 
+// What the NEW-SHEET GRID offers, as opposed to what is VALID. The single /
+// multi-flight question now covers straight, steps-plus-platform, L, U and any
+// longer run — they are one structure differing only by the landing's turn — so
+// offering them again as separate icons is a second route to the same sheet.
+// They stay in MEASURE_SHAPES because the API validates against it and existing
+// sheets still carry those values.
+export const PICKER_SHAPES: MeasureShape[] = [
+  "level_run",
+  "ramp",
+  "wall_rail",
+  "spiral",
+  "window_well",
+  "fire_escape",
+  "gate",
+  "fence",
+  "balcony",
+  "deck",
+  "custom",
+];
+
 export type MeasurePreset =
   | "winder_l"
   | "winder_u"
@@ -55,6 +75,15 @@ export const MEASURE_PRESETS: MeasurePreset[] = [
   "winder_u",
   "curved_helical",
   "three_flight",
+  "bifurcated",
+  "irregular_stoop",
+];
+
+// Shortcuts worth keeping: geometry the flight/landing sequence cannot express.
+// winder_l and winder_u are gone because every step has its own winder toggle,
+// and three_flight because that is simply a multi-flight stair.
+export const PICKER_PRESETS: MeasurePreset[] = [
+  "curved_helical",
   "bifurcated",
   "irregular_stoop",
 ];

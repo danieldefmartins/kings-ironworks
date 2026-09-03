@@ -103,10 +103,10 @@ export default function SketchSections({
           <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
           <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
             {viewList.length > 1 && (
-              <div className="mb-3 flex gap-2">
+              <div className="mb-3 flex flex-wrap gap-2">
                 {viewList.map(([vw, key]) => (
                   <button key={vw} type="button" onClick={() => setView(vw)}
-                    className={`min-h-[44px] rounded-full border px-4 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
+                    className={`min-h-[44px] shrink-0 rounded-full border px-3 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
                     {mt(lang, key)}
                   </button>
                 ))}
@@ -258,12 +258,12 @@ export default function SketchSections({
         )}
         {/* View chips — phones show one view; md+ adds a second beside it */}
         {viewList.length > 1 && (
-          <div className="flex gap-2 mb-3">
+          <div className="mb-3 flex flex-wrap gap-2">
             {viewList.map(([vw, key]) => (
               <button
                 key={vw}
                 onClick={() => setView(vw)}
-                className={`px-3 py-1.5 rounded-full border text-xs font-bold ${
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold ${
                   view === vw
                     ? "border-amber-500 bg-amber-500/10 text-amber-300"
                     : "border-neutral-700 bg-neutral-800 text-neutral-400"

@@ -73,6 +73,7 @@ export default function RailSections({
               options={[...RAIL_SIDE_OPTIONS]} lang={lang}
               onChange={(v) => set((d) => void (d.rail.side = v))} />
           )}
+
           {hasHandrail && (
             <MInput help="extensions" label={mt(lang, "extensions")} value={data.rail.extensions}
               onChange={(v) => set((d) => void (d.rail.extensions = v))} />

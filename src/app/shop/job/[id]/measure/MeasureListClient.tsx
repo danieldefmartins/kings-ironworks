@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Job } from "@/lib/shop/shared";
 import {
-  MEASURE_SHAPES,
-  MEASURE_PRESETS,
+  PICKER_SHAPES,
+  PICKER_PRESETS,
   TWO_FLIGHT_SHAPES,
   sheetProgress,
   type MeasureShape,
@@ -146,7 +146,7 @@ export default function MeasureListClient({
 
           <div className="font-bold mb-3">{mt(lang, "chooseShapeOther")}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            {MEASURE_SHAPES.map((s) => (
+            {PICKER_SHAPES.map((s) => (
               <button
                 key={s}
                 onClick={() => { setShape(s); setPreset(null); }}
@@ -164,7 +164,7 @@ export default function MeasureListClient({
 
           <div className="font-bold mb-2 mt-5">{mt(lang, "commonSpecialLayouts")}</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-            {MEASURE_PRESETS.map((p) => {
+            {PICKER_PRESETS.map((p) => {
               const presetShape: MeasureShape = p === "winder_l" ? "l_shape" : p === "winder_u" ? "u_shape" : "builder";
               return (
                 <button
