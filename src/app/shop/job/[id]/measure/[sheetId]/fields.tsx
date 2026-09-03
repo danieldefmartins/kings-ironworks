@@ -697,22 +697,27 @@ export function NominalFill({
   onFill,
 }: {
   lang: string;
-  onFill: (rise: string, run: string) => void;
+  // Nosing belongs here with the other two. It is the same number on every
+  // tread on almost every stair, and leaving it out of the filler meant
+  // typing it once per step for the one field that never varies.
+  onFill: (rise: string, run: string, nosing: string) => void;
 }) {
   const [nr, setNr] = useState("");
   const [nu, setNu] = useState("");
+  const [nn, setNn] = useState("");
   return (
     <div className="border border-neutral-800 rounded-lg p-3 mb-3 bg-neutral-950/40">
       <div className="text-xs font-bold text-neutral-300 mb-2">
         {mt(lang, "nominalTitle")}
         <span className="font-normal text-neutral-500"> — {mt(lang, "fillHint")}</span>
       </div>
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
         <MInput help="nominalRise" label={mt(lang, "nominalRise")} value={nr} onChange={setNr} />
         <MInput help="nominalRun" label={mt(lang, "nominalRun")} value={nu} onChange={setNu} />
+        <MInput help="nosing" label={mt(lang, "nominalNosing")} value={nn} onChange={setNn} />
         <button
-          onClick={() => (nr || nu) && onFill(nr, nu)}
-          className="px-3 py-2.5 rounded-lg bg-amber-500/90 text-black text-sm font-bold"
+          onClick={() => (nr || nu || nn) && onFill(nr, nu, nn)}
+          className="min-h-[48px] rounded-lg bg-amber-500/90 px-3 text-sm font-bold text-black"
         >
           {mt(lang, "fillSteps")}
         </button>

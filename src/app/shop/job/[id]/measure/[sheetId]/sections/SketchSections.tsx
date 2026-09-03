@@ -9,10 +9,6 @@
 // than reaching into a shared closure.
 
 import {
-  blankCurve,
-  blankRamp,
-  newFlightSegment,
-  newPlatformSegment,
   type MeasureData,
   type MeasureShape,
   type PlatformSegment,
@@ -27,7 +23,6 @@ import {
   MInput,
   MSelect,
   SkirtSolver,
-  SmallBtn,
   commonThicknessChoices,
   setPost,
   type EditorStage,
@@ -101,7 +96,6 @@ export default function SketchSections({
   const isGate = shape === "gate";
   const isFence = shape === "fence";
   const isBalcony = shape === "balcony";
-  const isBuilder = shape === "builder";
   return (
     <>
       {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
@@ -205,40 +199,10 @@ export default function SketchSections({
         </Card>
       )}
 
-      {/* Mixed assembly: build the staircase segment by segment */}
-      {isBuilder && (
-        <Card stage="steps" title={`🧱 ${mt(lang, "segmentsTitle")}`}>
-          <div className="text-xs text-neutral-500 mb-3">{mt(lang, "segmentsHint")}</div>
-          <div className="flex flex-wrap gap-2">
-            <SmallBtn onClick={() => set((d) => void d.segments.push(newFlightSegment(3)))}>
-              {mt(lang, "addFlightSeg")}
-            </SmallBtn>
-            <SmallBtn onClick={() => set((d) => void d.segments.push(newPlatformSegment("left")))}>
-              {mt(lang, "addLandingSeg")}
-            </SmallBtn>
-            <SmallBtn onClick={() => set((d) => void d.segments.push(blankRamp()))}>
-              {mt(lang, "addRampSeg")}
-            </SmallBtn>
-            <SmallBtn onClick={() => set((d) => void d.segments.push(blankCurve()))}>
-              {mt(lang, "addCurveSeg")}
-            </SmallBtn>
-            {data.segments.length > 1 && (
-              <SmallBtn
-                onClick={() =>
-                  set((d) => {
-                    const last = d.segments.length - 1;
-                    d.segments.pop();
-                    d.posts = d.posts.filter((po) => po.segIdx !== last);
-                  })
-                }
-              >
-                {mt(lang, "removeLastSeg")}
-              </SmallBtn>
-            )}
-          </div>
-        </Card>
-      )}
-
+      {/* The pieces this stair is built from used to be added here, at the
+          top of the first step. They moved to SegmentsCard, below the steps:
+          the flight count is already chosen when the sheet is made, and a
+          piece added late has to say WHERE it goes. */}
       {/* Sketch (custom shapes draw their own plan below instead) */}
       {!isCustom && ["posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">

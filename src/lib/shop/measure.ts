@@ -279,6 +279,45 @@ export function syncJoints(segments: Segment[], existing: JointMeasure[] = []): 
   return Array.from({ length: want }, (_, i) => byIndex.get(i) ?? blankJoint(i));
 }
 
+/**
+ * Put a piece into the stair at `at` — 0 is below everything, segments.length
+ * is on top — and move everything that points at a segment index along with
+ * it: the railing posts already dropped on the pieces above, and the joints
+ * between them.
+ *
+ * Appending was the only thing on offer before, and appending is wrong for the
+ * piece that most often gets added late. A curve belongs where the stair
+ * actually curves — between flight 1 and its landing, say. A curve tacked onto
+ * the top of the list tells the shop to fabricate the turn somewhere it isn't,
+ * and the joints on either side of it describe the wrong two pieces.
+ */
+export function insertSegment(data: MeasureData, at: number, seg: Segment): void {
+  const idx = Math.max(0, Math.min(at, data.segments.length));
+  data.segments.splice(idx, 0, seg);
+  // Plan posts carry a pathId and their segIdx means nothing; only stair posts
+  // are numbered against the segment list.
+  for (const po of data.posts) if (!po.pathId && po.segIdx >= idx) po.segIdx += 1;
+  const moved = (data.joints || []).map((j) =>
+    j.afterSegment >= idx ? { ...j, afterSegment: j.afterSegment + 1 } : j
+  );
+  data.joints = syncJoints(data.segments, moved);
+}
+
+/** Take a piece back out, and everything measured on it with it. */
+export function removeSegment(data: MeasureData, at: number): void {
+  if (at < 0 || at >= data.segments.length || data.segments.length <= 1) return;
+  data.segments.splice(at, 1);
+  data.posts = data.posts.filter((po) => !!po.pathId || po.segIdx !== at);
+  for (const po of data.posts) if (!po.pathId && po.segIdx > at) po.segIdx -= 1;
+  // The two boundaries either side of the removed piece become one. The lower
+  // one survives — it is now the joint between what was below and what was
+  // above — and everything higher slides down.
+  const moved = (data.joints || [])
+    .filter((j) => j.afterSegment !== at)
+    .map((j) => (j.afterSegment > at ? { ...j, afterSegment: j.afterSegment - 1 } : j));
+  data.joints = syncJoints(data.segments, moved);
+}
+
 export type Segment = FlightSegment | PlatformSegment | RampSegment | CurveSegment;
 
 export interface SpiralData {

@@ -59,6 +59,7 @@ import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
 import SketchSections from "./sections/SketchSections";
 import StairSections from "./sections/StairSections";
+import SegmentsCard from "./sections/SegmentsCard";
 import JointSections from "./sections/JointSections";
 import PostsSection from "./sections/PostsSection";
 import RailSections from "./sections/RailSections";
@@ -1341,6 +1342,10 @@ export default function MeasureEditor({
           ramps={ramps}
           curves={curves}
         />
+        {/* The pieces this stair is made of, after the steps rather than before
+            them: the flight count came from the sheet picker, and what shows up
+            here is the curve or the extra landing nobody knew about. */}
+        {isBuilder && <SegmentsCard lang={lang} data={data} set={set} />}
         <PostsSection
           lang={lang}
           data={data}

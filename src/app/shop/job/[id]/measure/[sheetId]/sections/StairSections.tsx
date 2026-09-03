@@ -11,7 +11,7 @@ import {
   type RampSegment,
   type CurveSegment,
 } from "@/lib/shop/measure";
-import { formatIn, parseMeas } from "@/lib/shop/measure-checks";
+import { TOLERANCES, formatIn, parseMeas } from "@/lib/shop/measure-checks";
 import { helpText } from "@/lib/shop/measure-help";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
@@ -159,14 +159,15 @@ export default function StairSections({
           {/* typical step: enter once, correct exceptions */}
           <NominalFill
             lang={lang}
-            onFill={(nr, nu) =>
+            onFill={(nr, nu, nn) =>
               set((d) => {
                 const fl = d.segments[i] as FlightSegment;
-                // spread first: winder fields and nosing survive the fill
+                // spread first: the winder fields survive the fill
                 fl.steps = fl.steps.map((st) => ({
                   ...st,
                   rise: nr || st.rise,
                   run: nu || st.run,
+                  nosing: nn || st.nosing,
                 }));
               })
             }
@@ -296,6 +297,11 @@ export default function StairSections({
                 <MInput help="flightCtrlRun" label={mt(lang, "flightCtrlRun")} value={seg.ctrlRun}
                   onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRun = v))} />
               </div>
+              <DerivedRake
+                seg={seg}
+                lang={lang}
+                onUse={(v) => set((d) => void ((d.segments[i] as FlightSegment).rake = v))}
+              />
             </div>
           )}
         </Card>
@@ -404,6 +410,79 @@ export default function StairSections({
 // compare against. On a stair that is awkward to measure, seeing both is the
 // point: they are two independent readings of the same thing, and which one
 // to trust is a judgement the measurer makes standing there.
+// The rake the steps add up to — hypot(sum of rises, sum of runs).
+//
+// It is deliberately NOT written into the field on its own. The rake is the
+// one measurement on a flight that is independent of the steps, so a rake
+// typed off a tape is what catches a riser entered as 7 when it is 8: the two
+// numbers disagree and the sheet says so. Fill it from the steps and that
+// check is comparing the steps with themselves, which cannot fail and proves
+// nothing. So the calculated value is shown, and offered — because a stair
+// against a wall or over a stairwell sometimes cannot be taped end to end —
+// but taking it is a decision the measurer makes and the sheet records.
+function DerivedRake({
+  seg,
+  lang,
+  onUse,
+}: {
+  seg: FlightSegment;
+  lang: string;
+  onUse: (v: string) => void;
+}) {
+  let rise = 0;
+  let run = 0;
+  let complete = seg.steps.length > 0;
+  for (const st of seg.steps) {
+    const r = parseMeas(st.rise);
+    const u = parseMeas(st.run);
+    if (r === null || u === null) { complete = false; break; }
+    rise += r;
+    run += u;
+  }
+  if (!complete || (rise <= 0 && run <= 0)) return null;
+  const calc = Math.hypot(rise, run);
+  const shown = formatIn(calc);
+  const meas = parseMeas(seg.rake);
+  const off = meas === null ? null : Math.abs(calc - meas);
+  const tone =
+    off === null
+      ? "text-neutral-400"
+      : off <= TOLERANCES.rake.green
+        ? "text-green-400"
+        : off <= TOLERANCES.rake.yellow
+          ? "text-amber-400"
+          : "text-red-400";
+  // Filled from here, and never touched since: say so, because the sheet is
+  // otherwise claiming a field check that nobody made.
+  const isCalc = meas !== null && Math.abs(calc - meas) < 1 / 32;
+  return (
+    <div className="mt-3 rounded-lg border border-neutral-700 bg-neutral-950/50 p-2.5">
+      <div className="text-xs text-neutral-300">
+        {mt(lang, "derivedRake")}: <b className="tabular-nums">{shown}</b>
+        <span className="text-neutral-500"> · {mt(lang, "fromSteps")} {formatIn(rise)} / {formatIn(run)}</span>
+      </div>
+      {off !== null ? (
+        <div className={`mt-1 text-xs font-semibold ${tone}`}>
+          {isCalc
+            ? mt(lang, "rakeCalcNote")
+            : `${mt(lang, "vsTape")} ${formatIn(meas!)} · ${mt(lang, "offBy")} ${formatIn(off)}`}
+        </div>
+      ) : (
+        <>
+          <div className="mt-1 text-xs text-neutral-500">{mt(lang, "rakeWhyMeasure")}</div>
+          <button
+            type="button"
+            onClick={() => onUse(shown.replace(/"$/, ""))}
+            className="mt-2 min-h-[44px] w-full rounded-lg border border-neutral-700 bg-neutral-900 text-xs font-bold text-neutral-300"
+          >
+            = {mt(lang, "rakeUseCalc")} ({shown})
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function DerivedAngle({ seg, lang }: { seg: FlightSegment; lang: string }) {
   let rise = 0;
   let run = 0;
@@ -429,7 +508,7 @@ function DerivedAngle({ seg, lang }: { seg: FlightSegment; lang: string }) {
     <div className="mt-2 rounded-lg border border-neutral-700 bg-neutral-950/50 p-2.5">
       <div className="text-xs text-neutral-300">
         {mt(lang, "derivedAngle")}: <b className="tabular-nums">{calc.toFixed(1)}°</b>
-        <span className="text-neutral-500"> · {mt(lang, "fromSteps")} {formatIn(rise)}&quot; / {formatIn(run)}&quot;</span>
+        <span className="text-neutral-500"> · {mt(lang, "fromSteps")} {formatIn(rise)} / {formatIn(run)}</span>
       </div>
       {off !== null && (
         <div className={`mt-1 text-xs font-semibold ${tone}`}>
