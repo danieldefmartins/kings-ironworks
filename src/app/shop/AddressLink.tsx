@@ -69,7 +69,7 @@ export function DirectionsSheet({
       <div
         role="dialog"
         aria-label={t(lang, "directionsTo")}
-        className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        className="text-neutral-100 w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-lg font-bold">{t(lang, "directionsTo")}</div>

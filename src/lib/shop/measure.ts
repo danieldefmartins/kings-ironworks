@@ -1351,8 +1351,18 @@ export function newPresetMeasureData(
     return { shape: "builder", data };
   }
   if (preset === "multi_flight") {
+    // steps1 = risers in the first flight, steps2 = how many flights.
+    // Knowing the flight count up front is what lets the sketch draw a landing
+    // after every flight EXCEPT the last one — without it the drawing cannot
+    // tell a middle flight from the final one.
+    const flights = Math.min(8, Math.max(2, steps2 || 2));
     const data = newMeasureData("builder", steps1);
-    data.segments = [blankFlight(steps1)];
+    const segs: Segment[] = [];
+    for (let i = 0; i < flights; i++) {
+      segs.push(blankFlight(steps1));
+      if (i < flights - 1) segs.push(blankPlatform("left"));
+    }
+    data.segments = segs;
     data.joints = syncJoints(data.segments);
     return { shape: "builder", data };
   }

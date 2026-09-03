@@ -42,8 +42,8 @@ export default function MeasureListClient({
   // Multi-flight starts with one flight and grows on site, so asking for a
   // step count up front asks about a stair nobody has walked yet. The first
   // flight's steps are set in the sheet like every other flight's.
-  const addAsYouGo = preset === "multi_flight";
-  const needsSteps = !addAsYouGo && shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
+  const isMulti = preset === "multi_flight";
+  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
 
   async function create() {
     if (!shape) return;
@@ -59,7 +59,7 @@ export default function MeasureListClient({
           shape,
           preset,
           steps1,
-          steps2: twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
+          steps2: isMulti || twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
           steps3: preset === "three_flight" || preset === "bifurcated" ? steps3 : 0,
           name,
         }),
@@ -191,7 +191,7 @@ export default function MeasureListClient({
             <div className="flex flex-wrap gap-4 mb-4">
               <Stepper
                 label={
-                  preset === "three_flight" || preset === "bifurcated" || shape === "builder"
+                  isMulti || preset === "three_flight" || preset === "bifurcated" || shape === "builder"
                     ? mt(lang, "stepsFlight1")
                     : shape === "fire_escape"
                     ? mt(lang, "fireStories")
@@ -208,8 +208,11 @@ export default function MeasureListClient({
                 value={steps1}
                 onChange={setSteps1}
               />
-              {twoFlights && (
+              {twoFlights && !isMulti && (
                 <Stepper label={mt(lang, "stepsFlight2")} value={steps2} onChange={setSteps2} />
+              )}
+              {isMulti && (
+                <Stepper label={mt(lang, "howManyFlights")} value={steps2 || 2} onChange={setSteps2} />
               )}
               {preset === "three_flight" && (
                 <>

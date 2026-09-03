@@ -3,6 +3,7 @@
 // A phone cannot show eight stages at once. This is the full list, opened
 // from the one line that replaces the strip there.
 
+import { createPortal } from "react-dom";
 import { mt } from "@/lib/shop/measure-i18n";
 import { EDITOR_STAGES, type EditorStage } from "../fields";
 
@@ -21,9 +22,17 @@ export default function SectionsDrawer({
   onPick: (st: EditorStage) => void;
   onClose: () => void;
 }) {
-  return (
+  // Portalled to <body>, like every other sheet in this app. An inline fixed
+  // overlay is at the mercy of its ancestors — a backdrop-filter or a
+  // transform anywhere above it becomes the containing block and traps it, and
+  // a sibling at the same z-index later in the DOM covers it. This was the one
+  // sheet still rendered in place, and it was the one that did nothing when
+  // tapped. It also needs its own text colour: outside the shop shell there is
+  // no text-neutral-100 to inherit.
+  if (typeof document === "undefined") return null;
+  return createPortal(
       <div
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center"
+        className="fixed inset-0 z-[90] flex items-end justify-center bg-black/75 p-4 text-neutral-100 sm:items-center"
         onClick={onClose}
       >
         <div
@@ -76,5 +85,5 @@ export default function SectionsDrawer({
           </button>
         </div>
       </div>
-  );
+  , document.body);
 }

@@ -36,7 +36,7 @@ export default function AdminMenu({ lang = "en" }: { lang?: string }) {
       <div
         role="dialog"
         aria-label={t(lang, "admHubTitle")}
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl"
+        className="text-neutral-100 w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-neutral-900 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">

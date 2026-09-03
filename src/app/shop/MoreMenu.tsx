@@ -46,7 +46,7 @@ export default function MoreMenu({
       <div
         role="dialog"
         aria-label={label}
-        className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
+        className="text-neutral-100 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 text-lg font-bold">{label}</div>
