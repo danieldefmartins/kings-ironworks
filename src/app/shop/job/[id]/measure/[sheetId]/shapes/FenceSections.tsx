@@ -9,7 +9,8 @@ import {
   type FenceSegment,
 } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
-import { Card, ChipRow, Grid, MInput } from "../fields";
+import { fenceRun, inchesToField } from "@/lib/shop/measure-derive";
+import { AutoMInput, Card, ChipRow, Grid, MInput } from "../fields";
 
 export default function FenceSections({
   lang,
@@ -27,7 +28,10 @@ export default function FenceSections({
     <Card stage="setup" title={`🚧 ${mt(lang, "fenceTitle")}`}>
       <p className="mb-3 text-xs text-neutral-400">{mt(lang, "fenceHint")}</p>
       <Grid>
-        <MInput help="fenceTotalRun" label={mt(lang, "fenceTotalRun")} value={fence.totalRun}
+        {/* The bays added up. Typing this again on a tablet, on a fence line,
+            is how a run ends up disagreeing with its own segments. */}
+        <AutoMInput help="fenceTotalRun" label={mt(lang, "fenceTotalRun")} stored={fence.totalRun}
+          calc={(() => { const n = fenceRun(fence); return n === null ? "" : inchesToField(n); })()}
           onChange={(v) => setFence((f) => void (f.totalRun = v))} />
         <MInput help="fenceHeight" label={mt(lang, "fenceHeight")} value={fence.height}
           onChange={(v) => setFence((f) => void (f.height = v))} />

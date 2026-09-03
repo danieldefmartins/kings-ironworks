@@ -11,10 +11,10 @@ import {
   type CarryoverKey,
   type FinishSpec,
 } from "@/lib/shop/measure";
-import {
-} from "@/lib/shop/measure-checks";
+import { inchesToField, stairTotals } from "@/lib/shop/measure-derive";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
+  AutoMInput,
   Card,
   Grid,
   MInput,
@@ -68,6 +68,10 @@ export default function ShopSections({
   isCustom: boolean;
   shape: MeasureShape;
 }) {
+  // What the stair's own parts add up to, for the totals that are a sum of
+  // them. Null until every step is measured, which is exactly when a total
+  // would be a guess.
+  const totals = stairTotals(data);
   return (
     <>
       <Card stage="specs" title={mt(lang, "materialsTitle")}>
@@ -227,13 +231,29 @@ export default function ShopSections({
             <MInput help="floorToFloor" label={mt(lang, "floorToFloor")} value={data.overall.floorToFloor}
               onChange={(v) => set((d) => void (d.overall.floorToFloor = v))} />
           )}
+          {/* Total run is the treads added up — the sheet has them, so it
+              fills this in. The rake is the one that has to come off a tape:
+              it is what disagrees when a riser was typed wrong, so it is
+              offered rather than filled. */}
           {!multiFlight && (
-            <MInput help="totalRun" label={mt(lang, "totalRun")} value={data.overall.totalRun}
+            <AutoMInput help="totalRun" label={mt(lang, "totalRun")} stored={data.overall.totalRun}
+              calc={totals ? inchesToField(totals.totalRun) : ""}
               onChange={(v) => set((d) => void (d.overall.totalRun = v))} />
           )}
           {!isSpiral && !multiFlight && (
-            <MInput help="rakeLength" label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
-              onChange={(v) => set((d) => void (d.overall.rakeLength = v))} />
+            <div>
+              <MInput help="rakeLength" label={mt(lang, "rakeLength")} value={data.overall.rakeLength}
+                onChange={(v) => set((d) => void (d.overall.rakeLength = v))} />
+              {totals && data.overall.rakeLength.trim() === "" && (
+                <button
+                  type="button"
+                  onClick={() => set((d) => void (d.overall.rakeLength = inchesToField(totals.rakeLength)))}
+                  className="mt-1 min-h-[40px] w-full rounded-lg border border-neutral-700 bg-neutral-900 text-[11px] font-bold text-neutral-300"
+                >
+                  = {mt(lang, "rakeUseCalc")} ({inchesToField(totals.rakeLength)}&quot;)
+                </button>
+              )}
+            </div>
           )}
           {!isSpiral && shape !== "level_run" && (
             <>

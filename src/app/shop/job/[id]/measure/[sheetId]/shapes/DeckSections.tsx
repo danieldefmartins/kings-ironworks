@@ -17,7 +17,8 @@ import {
   type DeckSide,
 } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
-import { Card, ChipRow, Grid, MInput, MSelect, SmallBtn } from "../fields";
+import { deckPerimeter, inchesToField } from "@/lib/shop/measure-derive";
+import { AutoMInput, Card, ChipRow, Grid, MInput, MSelect, SmallBtn } from "../fields";
 
 const SURFACES = ["wood", "composite", "pvc", "concrete", "paver", "roof_deck"] as const;
 const MOUNTS = ["surface", "fascia", "through_bolt", "core_drill", "embedded"] as const;
@@ -47,7 +48,9 @@ export default function DeckSections({
             options={["residential", "commercial"]}
             labels={{ residential: mt(lang, "deckOcc_residential"), commercial: mt(lang, "deckOcc_commercial") }}
             onChange={(v) => setDeck((d) => void (d.occupancy = v as DeckData["occupancy"]))} />
-          <MInput help="deckTotalPerimeter" label={mt(lang, "deckTotalPerimeter")} value={deck.totalPerimeter}
+          {/* The railed sides added up. */}
+          <AutoMInput help="deckTotalPerimeter" label={mt(lang, "deckTotalPerimeter")} stored={deck.totalPerimeter}
+            calc={(() => { const n = deckPerimeter(deck); return n === null ? "" : inchesToField(n); })()}
             onChange={(v) => setDeck((d) => void (d.totalPerimeter = v))} />
           <MInput help="deckOutOfLevel" label={mt(lang, "deckOutOfLevel")} placeholder="—" value={deck.outOfLevel}
             onChange={(v) => setDeck((d) => void (d.outOfLevel = v))} />

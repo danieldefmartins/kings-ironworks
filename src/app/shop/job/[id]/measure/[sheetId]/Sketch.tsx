@@ -64,24 +64,33 @@ export type SketchView = "plan" | "front" | "side";
 // Ordered views a shape offers (first = default), with their i18n label keys.
 // Crews read plan (top) views best — the full path of the rail — so stairs
 // lead with the top view.
+// The first entry is what a sheet opens on.
+//
+// That used to be the plan on every stair, and the plan is the view you want
+// once you are placing posts left and right — but it is not the view you check
+// a stair against. The side view is: it is the one that shows rise, run and
+// pitch, the numbers being typed on the step just above it. So the side (or
+// the section, which is the same idea) leads wherever a shape has one, and the
+// plan is one tap away.
 export function sketchViews(shape: MeasureShape): [SketchView, string][] {
   if (shape === "spiral")
     return [
-      ["front", "planView"],
       ["side", "sideView"],
+      ["front", "planView"],
     ];
   if (shape === "level_run")
     return [
-      ["front", "frontView"],
       ["side", "sectionView"],
+      ["front", "frontView"],
     ];
   if (shape === "custom") return [["plan", "planView"]];
   // A well is read from above for the footprint and in section for the wall
-  // profile — the section is where the 4" gap problem is actually visible.
+  // profile — the section is where the 4" gap problem is actually visible, so
+  // it leads.
   if (shape === "window_well")
     return [
-      ["plan", "planView"],
       ["side", "sectionView"],
+      ["plan", "planView"],
     ];
   // A fire escape is read as an elevation — the whole stack at once.
   if (shape === "fire_escape")
@@ -102,8 +111,8 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
       ["front", "frontView"],
     ];
   return [
-    ["plan", "planView"],
     ["side", "sideView"],
+    ["plan", "planView"],
     ["front", "frontView"],
   ];
 }
@@ -838,7 +847,9 @@ function PlanSketch({
   const h = maxY - minY;
 
   return (
-    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 560 * zoom }}>
+    <ZoomBox zoom={zoom} maxHeight={560}>
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} preserveAspectRatio="xMidYMin meet"
+      style={zoomStyle(zoom, 560, w, h)}>
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
       {onToggleWallSide && (
         <g transform={`translate(${minX + 8} ${minY + 20})`}>
@@ -865,7 +876,42 @@ function PlanSketch({
       </g>
       {groups.map((g) => g.node)}
     </svg>
+    </ZoomBox>
   );
+}
+
+// Zoom that zooms.
+//
+// The drawings are `width: 100%` with a viewBox, so WIDTH is what decides how
+// big they render — raising max-height did nothing to any drawing wider than
+// it is tall, which is every stair. Zoom is now the SVG's own width, and the
+// box scrolls once the drawing outgrows it, so 200% is twice the tread rather
+// than twice the empty space around it.
+function ZoomBox({
+  zoom,
+  maxHeight,
+  children,
+}: {
+  zoom: number;
+  maxHeight: number;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="w-full overflow-auto overscroll-contain" style={{ maxHeight }}>
+      {children}
+    </div>
+  );
+}
+
+/** Width-driven sizing for a viewBox'd drawing: fills the box, never renders
+ *  taller than the box at 100%, and grows with zoom from there. */
+function zoomStyle(zoom: number, maxHeight: number, w: number, h: number): React.CSSProperties {
+  return {
+    width: `${Math.round(zoom * 100)}%`,
+    maxWidth: Math.round(zoom * maxHeight * (w / Math.max(1, h))),
+    height: "auto",
+    display: "block",
+  };
 }
 
 function pointStyle(po: PostMeasure, p: Palette) {
@@ -1078,10 +1124,13 @@ export function CustomPlanSketch({
   });
 
   return (
-    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 560 * zoom }}>
+    <ZoomBox zoom={zoom} maxHeight={560}>
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} preserveAspectRatio="xMidYMin meet"
+      style={zoomStyle(zoom, 560, w, h)}>
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
       {els}
     </svg>
+    </ZoomBox>
   );
 }
 
@@ -1108,10 +1157,15 @@ function StairSketch({
 }) {
   const wallRail = shape === "wall_rail";
 
-  // Pre-compute canvas size.
+  // Pre-compute canvas size — over the segments that are actually DRAWN.
+  // Measuring one flight at a time meant the frame was still sized for the
+  // whole stair while a single flight was drawn into the corner of it, so a
+  // three-flight sheet showed a third of the drawing a single-flight sheet
+  // showed. The focused flight now fills the frame the same way.
   let w = 90;
   let hRise = 0;
-  for (const seg of data.segments) {
+  data.segments.forEach((seg, segIdx) => {
+    if (focusSeg !== undefined && segIdx !== focusSeg) return;
     if (seg.kind === "flight") {
       w += seg.steps.length * RUN;
       hRise += seg.steps.length * RISE;
@@ -1124,7 +1178,7 @@ function StairSketch({
       w += 130;
       hRise += 60;
     }
-  }
+  });
   const H = hRise + 130;
   const baseY = H - 45;
 
@@ -1151,14 +1205,33 @@ function StairSketch({
         lastNose = [x, yTop];
         globalStep += 1;
 
-        // rise value (left of the riser)
+        // Rise and run used to be written a few pixels apart on the same
+        // corner of the step, in the same direction, and on a stair whose
+        // numbers run to 7 1/4" they printed straight over each other. They
+        // now read along the thing they measure: the rise runs UP its own
+        // riser, inside the step, with a dimension line and ticks; the run
+        // stays horizontal above its tread. Two axes, no collision, and the
+        // drawing says which number is which without being told.
         const rv = v(st.rise, p);
+        const dimX = x + 7;
         els.push(
-          <text key={`r${segIdx}-${i}`} x={x - 5} y={yTop + RISE / 2 + 3} fontSize={9} textAnchor="end" fill={rv.fill}>
-            {rv.text}
-          </text>
+          <g key={`r${segIdx}-${i}`}>
+            <line x1={dimX} y1={yTop + 2} x2={dimX} y2={y - 2} stroke={p.ghost} strokeWidth={1} />
+            <line x1={dimX - 3} y1={yTop + 2} x2={dimX + 3} y2={yTop + 2} stroke={p.ghost} strokeWidth={1} />
+            <line x1={dimX - 3} y1={y - 2} x2={dimX + 3} y2={y - 2} stroke={p.ghost} strokeWidth={1} />
+            <text
+              x={dimX + 12}
+              y={yTop + RISE / 2}
+              fontSize={8}
+              textAnchor="middle"
+              fill={rv.fill}
+              transform={`rotate(-90 ${r3(dimX + 12)} ${r3(yTop + RISE / 2)})`}
+            >
+              {rv.text}
+            </text>
+          </g>
         );
-        // run value (above the tread)
+        // run value (above the tread it measures)
         const uv = v(st.run, p);
         els.push(
           <text key={`u${segIdx}-${i}`} x={x + RUN * 0.62} y={yTop - 5} fontSize={9} textAnchor="middle" fill={uv.fill}>
@@ -1373,7 +1446,9 @@ function StairSketch({
   }
 
   return (
-    <svg viewBox={`0 0 ${w} ${H}`} className="w-full" style={{ maxHeight: 580 * zoom }}>
+    <ZoomBox zoom={zoom} maxHeight={580}>
+    <svg viewBox={`0 0 ${w} ${H}`} preserveAspectRatio="xMidYMin meet"
+      style={zoomStyle(zoom, 580, w, H)}>
       {/* ground */}
       <line x1={12} y1={baseY} x2={w - 12} y2={baseY} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
       <OrientBanner data={data} lang={lang} p={p} w={w} />
@@ -1381,6 +1456,7 @@ function StairSketch({
       {els}
       {taps}
     </svg>
+    </ZoomBox>
   );
 }
 

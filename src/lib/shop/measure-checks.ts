@@ -3,6 +3,8 @@
 // redundant measurements against each other, and reports green/yellow/red
 // results. It NEVER corrects a field value — it only surfaces disagreement.
 
+import { parseMeas } from "./measure-parse";
+import { deckPerimeter, fenceRun, flightTotals } from "./measure-derive";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -23,51 +25,9 @@ import {
   type WellData,
 } from "./measure";
 
-// ---- Parsing ---------------------------------------------------------------
-
-// "23 3/4", "23-3/4", '23 3/4"', "3' 6 1/2\"", "41.75", "32°" → number (inches
-// or degrees, caller's context). Returns null when empty or unreadable.
-export function parseMeas(s: string | undefined | null): number | null {
-  if (!s) return null;
-  let t = s.trim().toLowerCase();
-  if (t === "") return null;
-  t = t.replace(/[°º]/g, "").replace(/(in|inch|inches|deg)\b/g, "").trim();
-
-  let total = 0;
-  // feet component: 3' or 3ft
-  const ft = t.match(/^(\d+(?:\.\d+)?)\s*(?:'|ft)\s*/);
-  if (ft) {
-    total += parseFloat(ft[1]) * 12;
-    t = t.slice(ft[0].length);
-  }
-  t = t.replace(/"/g, "").trim();
-  if (t === "") return ft ? total : null;
-
-  // inches: "a b/c", "a-b/c", "b/c", or decimal
-  const m = t.match(/^(\d+(?:\.\d+)?)?(?:[\s-]*(\d+)\s*\/\s*(\d+))?$/);
-  if (!m || (!m[1] && !m[2])) return null;
-  if (m[1]) total += parseFloat(m[1]);
-  if (m[2] && m[3]) {
-    const den = parseInt(m[3], 10);
-    if (!den) return null;
-    total += parseInt(m[2], 10) / den;
-  }
-  return total;
-}
-
-// 41.766 → '41 3/4"' (nearest 1/16 for display only — never written back).
-export function formatIn(n: number): string {
-  const sixteenths = Math.round(n * 16);
-  const whole = Math.floor(sixteenths / 16);
-  let num = sixteenths % 16;
-  if (num === 0) return `${whole}"`;
-  let den = 16;
-  while (num % 2 === 0) {
-    num /= 2;
-    den /= 2;
-  }
-  return `${whole ? `${whole} ` : ""}${num}/${den}"`;
-}
+// Parsing and formatting live in measure-parse, and are re-exported here so
+// every existing importer keeps working.
+export { parseMeas, formatIn } from "./measure-parse";
 
 // ---- Tolerances (shop policy — inches / degrees) ---------------------------
 
@@ -1264,7 +1224,10 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if (!f) gaps.push({ key: "fence_missing" });
     else {
       for (const [k, v] of [
-        ["fence_total_run", f.totalRun],
+        // The run is only demanded when the bays cannot add up to it. Once
+        // every bay is measured the sheet knows the run, and asking for it
+        // again is asking a measurer to retype arithmetic.
+        ...(fenceRun(f) === null ? ([["fence_total_run", f.totalRun]] as const) : []),
         ["fence_height", f.height],
         ["fence_post_spacing", f.postSpacing],
         ["fence_post_size", f.postSize],
@@ -1313,7 +1276,7 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     else {
       for (const [k, v] of [
         ["deck_surface", dk.surface],
-        ["deck_total_perimeter", dk.totalPerimeter],
+        ...(deckPerimeter(dk) === null ? ([["deck_total_perimeter", dk.totalPerimeter]] as const) : []),
         ["deck_mount", dk.mount],
         ["deck_guard_height_f", dk.guardHeight],
         ["deck_post_spacing_f", dk.postSpacing],
@@ -1520,7 +1483,13 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       gaps.push({ key: "floor_to_floor" });
     }
     if (!turns && flights.length === 1) {
-      if (!has(data.overall.totalRun)) gaps.push({ key: "total_run" });
+      // Total run is the treads added up, so it is only asked for while the
+      // treads cannot supply it. The rake stays required either way: it is
+      // measured along a different line from the steps, which is the whole
+      // reason it catches a riser typed as 7 when it is 8.
+      if (!has(data.overall.totalRun) && flightTotals(flights[0]) === null) {
+        gaps.push({ key: "total_run" });
+      }
       if (!has(data.overall.rakeLength)) gaps.push({ key: "rake" });
     }
   }

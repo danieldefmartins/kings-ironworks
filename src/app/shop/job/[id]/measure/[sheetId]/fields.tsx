@@ -324,6 +324,71 @@ export function MInput({
   );
 }
 
+// A total the sheet can work out for itself.
+//
+// The field shows the derived value while nothing has been typed into it, with
+// an "auto" chip so nobody mistakes arithmetic for a tape. Typing replaces it —
+// that is a real measurement and it wins — and ↺ hands the field back to the
+// calculation. Nothing is written to the sheet until a human types, so the
+// number cannot go stale behind an edited step and no requirement is ever
+// satisfied by a value the app invented.
+export function AutoMInput({
+  label,
+  help,
+  hint,
+  stored,
+  calc,
+  onChange,
+}: {
+  label: string;
+  help?: string;
+  hint?: string;
+  stored: string;
+  /** The derived value, already formatted, or "" when it cannot be worked out. */
+  calc: string;
+  onChange: (v: string) => void;
+}) {
+  const lang = useContext(LangCtx);
+  const auto = stored.trim() === "" && calc !== "";
+  return (
+    <div className="block min-w-0">
+      <div className="mb-1 flex items-center gap-1 text-[11px] text-neutral-400">
+        <span className="min-w-0 truncate">{label}</span>
+        {(hint || help) && (
+          <InfoHint text={hint || helpText(lang, help!) || ""} label={label} />
+        )}
+        {auto && (
+          <span className="ml-auto shrink-0 rounded-full border border-sky-800 bg-sky-500/10 px-1.5 text-[9px] font-bold text-sky-300">
+            {mt(lang, "autoCalc")}
+          </span>
+        )}
+        {!auto && calc !== "" && stored.trim() !== calc && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="ml-auto shrink-0 rounded-full border border-neutral-700 px-1.5 text-[9px] font-bold text-neutral-400"
+          >
+            ↺ {mt(lang, "autoCalc")}
+          </button>
+        )}
+      </div>
+      <input
+        data-m="1"
+        value={auto ? calc : stored}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={calc || undefined}
+        autoComplete="off"
+        aria-label={label}
+        className={`w-full rounded-lg border px-2.5 py-2.5 text-base ${
+          auto
+            ? "border-sky-900 bg-neutral-800/60 text-sky-200"
+            : "border-neutral-700 bg-neutral-800"
+        }`}
+      />
+    </div>
+  );
+}
+
 // A value the sheet started with because a previous sheet had it. Visible, so
 // nobody submits a carried-over finish without having seen it.
 export function CarriedNote({ note, onClear }: { note?: string; onClear?: () => void }) {

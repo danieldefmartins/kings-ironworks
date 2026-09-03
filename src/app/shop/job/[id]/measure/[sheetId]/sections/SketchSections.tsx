@@ -253,8 +253,11 @@ export default function SketchSections({
             ))}
           </div>
         )}
-        <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start">
-          <div>
+        {/* The chosen view is the one being read against the numbers being
+            typed, so it gets two thirds of the card; the companion view is a
+            reference, not a peer. */}
+        <div className="md:grid md:grid-cols-3 md:gap-4 md:items-start">
+          <div className="md:col-span-2">
             <div className="hidden md:block text-[11px] text-neutral-500 mb-1">
               {mt(lang, viewList.find(([vw]) => vw === view)?.[1] || viewList[0][1])}
             </div>

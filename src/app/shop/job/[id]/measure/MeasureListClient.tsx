@@ -190,8 +190,20 @@ export default function MeasureListClient({
             })}
           </div>
 
+          {/* The two counts decide the whole sheet — how many step rows it
+              opens with, how many flights it walks you through — and they were
+              a pair of small steppers at the bottom of a long picker, below
+              two grids of shape tiles, where they were routinely left at the
+              default. They now get their own panel, with the answer written
+              back in a sentence so a wrong count is visible before it becomes
+              a sheet. */}
           {shape && needsSteps && (
-            <div className="flex flex-wrap gap-4 mb-4">
+            <div className="mb-4 rounded-xl border border-amber-700/70 bg-amber-950/20 p-4">
+              <div className="text-sm font-bold text-amber-200">{mt(lang, "countsTitle")}</div>
+              <div className="mt-1 mb-3 text-[11px] leading-snug text-neutral-400">
+                {mt(lang, "countsHint")}
+              </div>
+            <div className="flex flex-wrap gap-4">
               <Stepper
                 label={
                   isMulti || preset === "three_flight" || preset === "bifurcated" || shape === "builder"
@@ -248,6 +260,20 @@ export default function MeasureListClient({
                   <Stepper label={mt(lang, "stepsRightBranch")} value={steps3} onChange={setSteps3} />
                 </>
               )}
+            </div>
+              {/* Said back in words, because "5" and "2" in two boxes is not a
+                  sentence anybody checks. */}
+              <div className="mt-3 border-t border-amber-900/50 pt-3 text-sm font-bold text-amber-100">
+                {mt(lang, "countsSummary")}:{" "}
+                {isMulti
+                  ? `${Math.max(2, steps2 || 2)} ${mt(lang, "countsFlights")} · ${steps1} ${mt(lang, "countsSteps")} ${mt(lang, "ofWord")} ${mt(lang, "flight")} 1`
+                  : preset === "three_flight" || preset === "bifurcated"
+                    ? `${steps1} + ${steps2} + ${steps3} ${mt(lang, "countsSteps")}`
+                    : twoFlights
+                      ? `${steps1} + ${steps2} ${mt(lang, "countsSteps")} · 2 ${mt(lang, "countsFlights")}`
+                      : `${steps1} ${mt(lang, "countsSteps")}`}
+              </div>
+              <div className="mt-1 text-[11px] text-neutral-500">{mt(lang, "countsAddLater")}</div>
             </div>
           )}
 
@@ -380,18 +406,20 @@ function Stepper({
 }) {
   return (
     <div>
-      <div className="text-xs text-neutral-400 mb-1">{label}</div>
+      <div className="mb-1 text-xs font-bold text-neutral-300">{label}</div>
       <div className="flex items-center gap-2">
         <button
           onClick={() => onChange(Math.max(1, value - 1))}
-          className="w-11 h-11 rounded-lg bg-neutral-800 border border-neutral-700 text-xl font-bold"
+          aria-label="−"
+          className="h-12 w-12 rounded-lg border border-neutral-600 bg-neutral-800 text-2xl font-bold"
         >
           −
         </button>
-        <span className="w-10 text-center text-xl font-bold">{value}</span>
+        <span className="w-12 text-center text-3xl font-bold tabular-nums">{value}</span>
         <button
           onClick={() => onChange(Math.min(40, value + 1))}
-          className="w-11 h-11 rounded-lg bg-neutral-800 border border-neutral-700 text-xl font-bold"
+          aria-label="+"
+          className="h-12 w-12 rounded-lg border border-neutral-600 bg-neutral-800 text-2xl font-bold"
         >
           +
         </button>

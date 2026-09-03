@@ -12,9 +12,11 @@ import {
   type CurveSegment,
 } from "@/lib/shop/measure";
 import { TOLERANCES, formatIn, parseMeas } from "@/lib/shop/measure-checks";
+import { flightTotals, inchesToField } from "@/lib/shop/measure-derive";
 import { helpText } from "@/lib/shop/measure-help";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
+  AutoMInput,
   Card,
   Grid,
   SmallBtn,
@@ -292,9 +294,14 @@ export default function StairSections({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <MInput help="flightRake" label={mt(lang, "flightRake")} value={seg.rake}
                   onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).rake = v))} />
-                <MInput help="flightCtrlRise" label={mt(lang, "flightCtrlRise")} value={seg.ctrlRise}
+                {/* Rise and run are the risers and treads added up. The sheet
+                    has them already, so it fills them in and stands aside if a
+                    measurer taped the flight and got something else. */}
+                <AutoMInput help="flightCtrlRise" label={mt(lang, "flightCtrlRise")} stored={seg.ctrlRise}
+                  calc={autoOf(flightTotals(seg)?.rise)}
                   onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRise = v))} />
-                <MInput help="flightCtrlRun" label={mt(lang, "flightCtrlRun")} value={seg.ctrlRun}
+                <AutoMInput help="flightCtrlRun" label={mt(lang, "flightCtrlRun")} stored={seg.ctrlRun}
+                  calc={autoOf(flightTotals(seg)?.run)}
                   onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).ctrlRun = v))} />
               </div>
               <DerivedRake
@@ -410,6 +417,11 @@ export default function StairSections({
 // compare against. On a stair that is awkward to measure, seeing both is the
 // point: they are two independent readings of the same thing, and which one
 // to trust is a judgement the measurer makes standing there.
+/** A derived number ready for a field, or "" when it cannot be worked out. */
+function autoOf(n: number | undefined | null): string {
+  return n === undefined || n === null ? "" : inchesToField(n);
+}
+
 // The rake the steps add up to — hypot(sum of rises, sum of runs).
 //
 // It is deliberately NOT written into the field on its own. The rake is the
