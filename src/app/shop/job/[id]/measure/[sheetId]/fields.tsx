@@ -8,6 +8,7 @@
 // section modules stay about measuring rather than about markup.
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ATTACH_TARGETS,
   CONDITION_RATINGS,
@@ -297,7 +298,7 @@ export function MInput({
       {label && (
         <div className={`text-[11px] text-neutral-400 flex items-center mb-1 ${labelClass}`}>
           {label}
-          {explain && <InfoHint text={explain} diagram={hintDiagram} />}
+          {explain && <InfoHint text={explain} label={label} diagram={hintDiagram} />}
         </div>
       )}
       <input
@@ -335,31 +336,52 @@ export function CarriedNote({ note, onClear }: { note?: string; onClear?: () => 
   );
 }
 
-export function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" | "top" | "nosing" | "walkline" }) {
+export function InfoHint({ text, label, diagram }: { text: string; label?: string; diagram?: "bottom" | "top" | "nosing" | "walkline" }) {
   const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLSpanElement | null>(null);
 
-  // Tapping anywhere else closes it — a measurer with gloves on should not
-  // have to find a small × to get back to the form.
   useEffect(() => {
     if (!open) return;
-    const away = (e: Event) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
     const esc = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    // Capture phase, so it fires even when the thing tapped stops propagation.
-    document.addEventListener("pointerdown", away, true);
-    document.addEventListener("keydown", esc);
-    return () => {
-      document.removeEventListener("pointerdown", away, true);
-      document.removeEventListener("keydown", esc);
-    };
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
   }, [open]);
 
+  // This app is new to everyone using it, so the help has to be readable
+  // rather than merely present. It was a text-xs tooltip absolutely positioned
+  // inside the field: small to read on a phone in daylight, clipped by any
+  // ancestor that hides overflow, and at z-50 alongside other z-50 overlays.
+  //
+  // Now it is a proper sheet, portalled to <body> like every other sheet here,
+  // at readable size, carrying the field's own name so it is obvious what is
+  // being explained.
+  const sheet = (
+    <div
+      className="fixed inset-0 z-[95] flex items-end justify-center bg-black/70 p-4 text-neutral-100 sm:items-center"
+      onClick={() => setOpen(false)}
+    >
+      <div
+        role="dialog"
+        className="w-full max-w-sm rounded-2xl border border-neutral-600 bg-neutral-800 p-4 pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {label && <div className="mb-2 text-sm font-bold text-amber-300">{label}</div>}
+        {diagram && <MeasurementHintDiagram kind={diagram} />}
+        <p className="text-sm leading-relaxed text-neutral-100">{text}</p>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="mt-4 min-h-[48px] w-full rounded-xl border border-neutral-600 font-bold text-neutral-200"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+
   return (
-    <span ref={wrap} className="relative ml-1 inline-block align-middle">
+    <>
       <button
         type="button"
         aria-label={text}
@@ -367,22 +389,14 @@ export function InfoHint({ text, diagram }: { text: string; diagram?: "bottom" |
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setOpen((value) => !value);
+          setOpen(true);
         }}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-amber-700 text-xs font-bold text-amber-300 active:bg-amber-500/20"
+        className="ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-700 align-middle text-xs font-bold text-amber-300 active:bg-amber-500/20"
       >
         i
       </button>
-      {open && (
-        <span
-          role="tooltip"
-          className="absolute left-0 top-7 z-50 block w-72 max-w-[80vw] rounded-lg border border-neutral-600 bg-neutral-800 p-3 text-left text-xs font-normal leading-relaxed text-neutral-100 shadow-xl"
-        >
-          {diagram && <MeasurementHintDiagram kind={diagram} />}
-          {text}
-        </span>
-      )}
-    </span>
+      {open && typeof document !== "undefined" && createPortal(sheet, document.body)}
+    </>
   );
 }
 
@@ -392,12 +406,17 @@ export function ChoiceMInput({
   onChange,
   choices,
   placeholder,
+  // A field with chips needs its "i" as much as a typed one — arguably more,
+  // since the chips are shorthand and the help is what says what they mean.
+  // ChoiceMInput simply never forwarded it, so those fields had no help at all.
+  help,
   hint,
   hintDiagram,
   carried,
   onClearCarried,
 }: {
   label: string;
+  help?: string;
   value: string;
   onChange: (value: string) => void;
   choices: [string, string][];
@@ -409,7 +428,7 @@ export function ChoiceMInput({
 }) {
   return (
     <div>
-      <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} hint={hint} hintDiagram={hintDiagram}
+      <MInput label={label} value={value} onChange={onChange} placeholder={placeholder} help={help} hint={hint} hintDiagram={hintDiagram}
         carried={carried} onClearCarried={onClearCarried} />
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {choices.map(([stored, shown]) => (
@@ -429,6 +448,59 @@ export function commonThicknessChoices(lang: string): [string, string][] {
     ['3/4"', '3/4"'],
     ['1"', '1"'],
     ['1 1/2"', '1 1/2"'],
+  ];
+}
+
+// Site and finish conditions. Typing still works — these are the answers that
+// come up over and over, offered so a measurer taps instead of spelling
+// "composite decking" on a phone in the cold, and so the same surface is not
+// recorded five different ways across five sheets. Anything not listed is
+// simply typed: the field is a text box with chips under it, not a dropdown.
+export function surfaceChoices(lang: string): [string, string][] {
+  return [
+    ["Concrete", mt(lang, "surfConcrete")],
+    ["Wood subfloor", mt(lang, "surfSubfloor")],
+    ["Finished wood", mt(lang, "surfWood")],
+    ["Tile", mt(lang, "surfTile")],
+    ["Stone", mt(lang, "surfStone")],
+    ["Pavers", mt(lang, "surfPavers")],
+    ["Asphalt", mt(lang, "surfAsphalt")],
+    ["Soil / grass", mt(lang, "surfSoil")],
+    ["Composite decking", mt(lang, "surfComposite")],
+  ];
+}
+
+export function treadCoveringChoices(lang: string): [string, string][] {
+  return [
+    ["None — bare steel", mt(lang, "coverNone")],
+    ["Wood tread", mt(lang, "coverWood")],
+    ["Tile", mt(lang, "surfTile")],
+    ["Stone", mt(lang, "surfStone")],
+    ["Carpet", mt(lang, "coverCarpet")],
+    ["Concrete fill", mt(lang, "coverConcrete")],
+    ["Diamond plate", mt(lang, "coverDiamond")],
+  ];
+}
+
+export function wallFinishChoices(lang: string): [string, string][] {
+  return [
+    ["Drywall", mt(lang, "wallDrywall")],
+    ["Plaster", mt(lang, "wallPlaster")],
+    ["Brick", mt(lang, "wallBrick")],
+    ["Block", mt(lang, "wallBlock")],
+    ["Concrete", mt(lang, "surfConcrete")],
+    ["Wood siding", mt(lang, "wallSiding")],
+    ["Stone", mt(lang, "surfStone")],
+  ];
+}
+
+export function toppingChoices(lang: string): [string, string][] {
+  return [
+    ["None", mt(lang, "choiceNone")],
+    ["Tile", mt(lang, "surfTile")],
+    ["Stone", mt(lang, "surfStone")],
+    ["Wood", mt(lang, "surfWood")],
+    ["Carpet", mt(lang, "coverCarpet")],
   ];
 }
 
@@ -516,7 +588,7 @@ export function MSelect({
     <div className="block min-w-0">
       <div className="mb-1 flex items-center text-[11px] text-neutral-400">
         {label}
-        {help && helpText(lang, help) && <InfoHint text={helpText(lang, help)!} />}
+        {help && helpText(lang, help) && <InfoHint text={helpText(lang, help)!} label={label} />}
       </div>
       <select
         aria-label={label}
@@ -590,7 +662,7 @@ export function ChipRow({
     <div>
       <div className="mb-1 flex items-center text-[11px] text-neutral-400">
         {label}
-        {explain && <InfoHint text={explain} />}
+        {explain && <InfoHint text={explain} label={label} />}
       </div>
       <div className="flex flex-wrap gap-2">
         {options.map(([val, lbl]) => (

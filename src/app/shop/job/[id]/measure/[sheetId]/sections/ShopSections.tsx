@@ -22,6 +22,10 @@ import {
   PresetInput,
   ChipRow,
   ChoiceMInput,
+  toppingChoices,
+  wallFinishChoices,
+  treadCoveringChoices,
+  surfaceChoices,
   accessChoices,
 } from "../fields";
 
@@ -156,13 +160,27 @@ export default function ShopSections({
               onChange={(v) => set((d) => void (d.finish.topAdjustment = v))} />
           )}
           {(hasFlights || isSpiral) && (
-            <MInput help="treadCovering" label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
+            <ChoiceMInput help="treadCovering" label={mt(lang, "treadCovering")} placeholder="—" value={data.finish.treadCovering}
+              choices={treadCoveringChoices(lang)}
               onChange={(v) => set((d) => void (d.finish.treadCovering = v))} />
           )}
           {(isWallRail || data.datums.orientation.includes("wall")) && (
-            <MInput help="wallFinish" label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
+            <ChoiceMInput help="wallFinish" label={mt(lang, "wallFinish")} placeholder="—" value={data.finish.wallFinish}
+              choices={wallFinishChoices(lang)}
               onChange={(v) => set((d) => void (d.finish.wallFinish = v))} />
           )}
+          {/* What the rail lands on, top and bottom. These print on the sheet
+              and had no input anywhere, so the shop was reading blanks nobody
+              could have filled. They apply to any rail, not only a walled one. */}
+          <ChoiceMInput help="bottomSurface" label={mt(lang, "bottomSurface")} placeholder="—" value={data.finish.bottomSurface}
+            choices={surfaceChoices(lang)}
+            onChange={(v) => set((d) => void (d.finish.bottomSurface = v))} />
+          <ChoiceMInput help="topSurface" label={mt(lang, "topSurface")} placeholder="—" value={data.finish.topSurface}
+            choices={surfaceChoices(lang)}
+            onChange={(v) => set((d) => void (d.finish.topSurface = v))} />
+          <ChoiceMInput help="futureTopping" label={mt(lang, "futureTopping")} placeholder="—" value={data.finish.futureTopping}
+            choices={toppingChoices(lang)}
+            onChange={(v) => set((d) => void (d.finish.futureTopping = v))} />
           {!asksFloorChange && (
             <ChoiceMInput label={mt(lang, "demoPending")} placeholder="—" value={data.finish.demoPending}
               choices={[["No", mt(lang, "choiceNo")], ["Yes", mt(lang, "choiceYes")]]}
