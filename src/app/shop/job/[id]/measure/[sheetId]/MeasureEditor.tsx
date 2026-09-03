@@ -135,6 +135,7 @@ export default function MeasureEditor({
   const [slotErr, setSlotErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
   const [sectionsOpen, setSectionsOpen] = useState(false);
+  const [activeFlight, setActiveFlight] = useState(0);
   // Custom sheets open directly on the drawing canvas; otherwise the user
   // lands on the existing-site setup step.
   const [activeStage, setActiveStage] = useState<EditorStage>(sheet.shape === "custom" ? "steps" : "setup");
@@ -630,9 +631,26 @@ export default function MeasureEditor({
   const well = data.well;
   const wellWants = (k: WellDeliverable) => !!well?.deliverables.includes(k);
   const clearance = wellClearance(well);
-  const flights = data.segments
+  const allFlights = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "flight") as { seg: FlightSegment; i: number }[];
+  // One flight at a time.
+  //
+  // Generating every flight up front meant every section repeated itself once
+  // per flight, so the measurer met all the straightedge cards, then all the
+  // angle cards, then all the step cards — jumping between flights inside each
+  // section and never finishing anything. Daniel: "I think if we complete 1st
+  // the same way we had the single flight staircase is better, we see results
+  // and this makes an user happy to see improvement."
+  //
+  // So the sections see ONE flight and look exactly like the single-flight
+  // sheet. The joints come after the last one, which is also the only moment
+  // they can be answered — a joint needs the flights on both sides of it
+  // measured before its gap and angle mean anything.
+  const multiFlightSheet = allFlights.length > 1;
+  const flightAt = Math.min(activeFlight, Math.max(0, allFlights.length - 1));
+  const onJointsStep = multiFlightSheet && activeFlight >= allFlights.length;
+  const flights = multiFlightSheet && !onJointsStep ? [allFlights[flightAt]] : allFlights;
   const platforms = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "platform") as { seg: PlatformSegment; i: number }[];
@@ -1103,7 +1121,69 @@ export default function MeasureEditor({
           removePost={removePost}
           toggleSketchWall={toggleSketchWall}
         />
-        <JointSections lang={lang} data={data} set={set} />
+        {/* Which flight is being measured, and how many are left. Progress a
+            measurer can see, rather than one long form that never visibly
+            shortens. */}
+        {multiFlightSheet && (
+          <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">
+                {onJointsStep
+                  ? mt(lang, "jointTableTitle")
+                  : `${mt(lang, "flight")} ${flightAt + 1} ${mt(lang, "ofWord")} ${allFlights.length}`}
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                {onJointsStep ? mt(lang, "jointsAfterFlights") : mt(lang, "oneFlightAtATime")}
+              </span>
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              {allFlights.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setActiveFlight(i)}
+                  className={`h-9 min-w-9 flex-1 rounded-lg border text-xs font-bold ${
+                    !onJointsStep && i === flightAt
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setActiveFlight(allFlights.length)}
+                className={`h-9 flex-1 rounded-lg border px-2 text-xs font-bold ${
+                  onJointsStep
+                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                }`}
+              >
+                🔗
+              </button>
+            </div>
+            {!onJointsStep && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFlight(flightAt + 1);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="mt-2 min-h-[44px] w-full rounded-lg border border-neutral-700 text-xs font-bold text-neutral-300"
+              >
+                {flightAt + 1 < allFlights.length
+                  ? `${mt(lang, "flight")} ${flightAt + 2} →`
+                  : `${mt(lang, "jointTableTitle")} →`}
+              </button>
+            )}
+          </div>
+        )}
+        {/* Joints last: a joint's gap and angle only mean something once the
+            flights on both sides of it have been measured. */}
+        {(!multiFlightSheet || onJointsStep) && (
+          <JointSections lang={lang} data={data} set={set} />
+        )}
         <StairSections
           lang={lang}
           data={data}
