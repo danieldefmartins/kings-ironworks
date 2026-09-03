@@ -13,6 +13,7 @@ import {
   FASTENER_METHODS,
   type CurveSegment,
   type FlightSegment,
+  type JointMeasure,
   type MeasureData,
   type MeasureShape,
   type PlatformSegment,
@@ -730,6 +731,52 @@ function skirtChecks(data: MeasureData, sphere = 4): CheckResult[] {
   return out;
 }
 
+
+// Joints between separately-fabricated pieces.
+//
+// Each flight is built in the shop on its own and the flights are welded
+// together on site, so the joint is where two pieces made a week apart have to
+// meet. The angle across a joint is knowable twice: from the two segments'
+// own measured pitches, and from measuring the change at the joint itself.
+// When those disagree, one of the flights is about to be fabricated to the
+// wrong rake — which is precisely the failure that shows up as steel that does
+// not fit, on site, with the customer watching.
+function jointChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
+  const out: CheckResult[] = [];
+  const pitchOf = (i: number): number | null => {
+    const seg = data.segments[i];
+    if (!seg) return null;
+    if (seg.kind === "flight" || seg.kind === "ramp") return parseMeas(seg.angleDeg);
+    // a landing or platform is level by definition, save for a drainage slope
+    if (seg.kind === "platform") return parseMeas(seg.slope) ?? 0;
+    return null;
+  };
+  (data.joints || []).forEach((j: JointMeasure) => {
+    const tag = `J${j.afterSegment + 1}`;
+    if (j.method === "one_piece") return; // fabricated through — no joint here
+    const lower = pitchOf(j.afterSegment);
+    const upper = pitchOf(j.afterSegment + 1);
+    const measured = parseMeas(j.angleChange);
+    if (lower == null || upper == null || measured == null) {
+      out.push({ key: "joint_angle", level: "na", expected: null, actual: null, delta: null, unit: "deg", detail: tag });
+      return;
+    }
+    const derived = Math.abs(upper - lower);
+    const delta = Math.abs(measured) - derived;
+    const off = Math.abs(delta);
+    out.push({
+      key: "joint_angle",
+      level: off <= 1 ? "green" : off <= 2.5 ? "yellow" : "red",
+      expected: Math.round(derived * 10) / 10,
+      actual: Math.round(Math.abs(measured) * 10) / 10,
+      delta: Math.round(delta * 10) / 10,
+      unit: "deg",
+      detail: tag,
+    });
+  });
+  return out;
+}
+
 export function runChecks(
   data: MeasureData,
   shape: MeasureShape,
@@ -739,7 +786,10 @@ export function runChecks(
   // An existing column or wall with a skirt is a hazard wherever posts are
   // placed, so this rides along with whatever else the shape checks.
   const skirt = skirtChecks(data);
-  if (shape === "custom") return [...customChecks(data), ...spanChecks(data), ...skirt];
+  // Joints ride along with every multi-piece shape: the boundary between two
+  // fabricated pieces matters no matter which shape family the sheet is.
+  const joints = jointChecks(data, tol);
+  if (shape === "custom") return [...customChecks(data), ...spanChecks(data), ...skirt, ...joints];
   if (shape === "window_well") return wellChecks(data, tol);
   if (shape === "fire_escape") return fireChecks(data, tol);
   if (shape === "gate") return gateChecks(data, tol);
@@ -749,10 +799,10 @@ export function runChecks(
     // An irregular deck can also be drawn, in which case the same
     // scale-independent closure test the custom shape uses applies here.
     const drawn = data.plan && data.plan.points.length >= 3 ? customChecks(data) : [];
-    return [...deckChecks(data, tol), ...drawn, ...skirt];
+    return [...deckChecks(data, tol), ...drawn, ...skirt, ...joints];
   }
   if (shape === "spiral" || shape === "level_run" || shape === "ramp") {
-    return [...spiralOrLevelChecks(data, shape, tol), ...skirt];
+    return [...spiralOrLevelChecks(data, shape, tol), ...skirt, ...joints];
   }
 
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
@@ -931,7 +981,7 @@ export function runChecks(
     out.push({ key: "width_var", level: "na", expected: null, actual: null, delta: null, unit: "in" });
   }
 
-  return [...out, ...skirt];
+  return [...out, ...skirt, ...joints];
 }
 
 // Span molding math: the top clear span minus the lower clear span must equal
@@ -1117,6 +1167,18 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const turns = data.segments.some(
     (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
   );
+
+  // Every boundary between two segments is a place two fabricated pieces have
+  // to meet. A blank joint is not a small omission: it is the shop guessing how
+  // the flights connect, and guessing wrong is a return trip.
+  (data.joints || []).forEach((j) => {
+    const tag = `J${j.afterSegment + 1}`;
+    if (j.method === "one_piece") return;
+    if (!j.method) gaps.push({ key: "joint_method", detail: tag });
+    if (!has(j.gap)) gaps.push({ key: "joint_gap", detail: tag });
+    if (!has(j.angleChange)) gaps.push({ key: "joint_angle_change", detail: tag });
+    if (j.method === "post" && !j.carriedBy) gaps.push({ key: "joint_carried_by", detail: tag });
+  });
 
   if (shape === "gate") {
     const g = data.gate;

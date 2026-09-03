@@ -954,6 +954,47 @@ export default function PrintSheet({
           {data.materials.notes && data.materials.notes.trim() !== "" && (
             <div>{mt(lang, "matNotes")}: <b>{data.materials.notes}</b></div>
           )}
+          {/* Joints between separately-fabricated pieces. A table rather than
+              prose: the shop reads one row per joint and knows what to leave,
+              what to weld and which piece carries the connection. */}
+          {(data.joints || []).some((j) => j.method || j.gap || j.angleChange) && (
+            <div className="mt-2">
+              <SectionTitle>{mt(lang, "jointTableTitle")}</SectionTitle>
+              <table className="w-full border-collapse text-[10px]">
+                <thead>
+                  <tr>
+                    {["#", mt(lang, "jointMethod"), mt(lang, "jointGap"), mt(lang, "jointAngleChange"),
+                      mt(lang, "jointOffsetV"), mt(lang, "jointOffsetH"), mt(lang, "jointCarriedBy"),
+                      mt(lang, "jointLeaveLong")].map((h) => (
+                      <th key={h} className="border border-neutral-400 px-1 py-0.5 text-left font-semibold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.joints || []).map((j) => (
+                    <tr key={j.afterSegment}>
+                      <td className="border border-neutral-400 px-1 py-0.5 font-semibold">J{j.afterSegment + 1}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.method ? mt(lang, `jointMethod_${j.method}`) : "—"}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.method === "one_piece" ? "—" : (j.gap || "—")}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.method === "one_piece" ? "—" : (j.angleChange || "—")}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.offsetV || "—"}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.offsetH || "—"}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.carriedBy ? mt(lang, `jointCarried${j.carriedBy[0].toUpperCase()}${j.carriedBy.slice(1)}`) : "—"}</td>
+                      <td className="border border-neutral-400 px-1 py-0.5">{j.leaveLong || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {(data.joints || []).some((j) => j.note) && (
+                <div className="mt-0.5">
+                  {(data.joints || []).filter((j) => j.note).map((j) => (
+                    <div key={j.afterSegment}>J{j.afterSegment + 1}: <b>{j.note}</b></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* fabrication details */}
           {Object.values(data.fab).some((v) => v && v.trim() !== "") && (
             <div className="mt-2">

@@ -57,6 +57,7 @@ import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
 import SketchSections from "./sections/SketchSections";
 import StairSections from "./sections/StairSections";
+import JointSections from "./sections/JointSections";
 import PostsSection from "./sections/PostsSection";
 import RailSections from "./sections/RailSections";
 import ShopSections from "./sections/ShopSections";
@@ -1102,6 +1103,7 @@ export default function MeasureEditor({
           removePost={removePost}
           toggleSketchWall={toggleSketchWall}
         />
+        <JointSections lang={lang} data={data} set={set} />
         <StairSections
           lang={lang}
           data={data}

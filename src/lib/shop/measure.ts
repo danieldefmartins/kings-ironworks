@@ -161,6 +161,64 @@ export interface CurveSegment {
   width: string;
 }
 
+
+// The joint BETWEEN two fabricated pieces.
+//
+// KIW builds a stair rail flight by flight and welds the flights together on
+// site. The segment array describes each piece well and then quietly assumes
+// they butt together perfectly — which is only true if the whole rail is made
+// in one piece. It never is. The joint is the dimension that decides whether
+// two pieces that were fabricated a week apart actually meet, and until now the
+// sheet carried one free-text box (`fab.flightConnection`) for every joint on
+// the stair. Three flights, four joints, one sentence.
+//
+// One record per boundary, generated from the segments so nobody has to
+// remember to add them.
+export interface JointMeasure {
+  /** Index of the segment BEFORE this joint; the joint sits between i and i+1. */
+  afterSegment: number;
+  /** Space to leave between the two fabricated pieces. */
+  gap: string;
+  /** Rail centerline step at the joint — how much the two rails differ. */
+  offsetV: string;
+  offsetH: string;
+  /** Measured change in rail angle across the joint, cross-checked against the
+   *  two segments' own pitches. Two flights fabricated to different
+   *  assumptions is exactly how pieces arrive not fitting. */
+  angleChange: string;
+  method: JointMethod;
+  /** Which piece ships carrying the joint hardware / the post. */
+  carriedBy: "lower" | "upper" | "both" | "";
+  /** Piece left long on one side so it can be cut to fit in the field. */
+  leaveLong: string;
+  note: string;
+}
+
+export type JointMethod =
+  | ""
+  | "post"        // both rails die into a newel at the joint
+  | "weld"        // direct field weld, rail to rail
+  | "bolt"        // bolted field splice
+  | "wall"        // one side returns to the wall instead of continuing
+  | "one_piece";  // no joint here — fabricated through
+
+export const JOINT_METHODS: JointMethod[] = ["post", "weld", "bolt", "wall", "one_piece"];
+
+export function blankJoint(afterSegment: number): JointMeasure {
+  return {
+    afterSegment,
+    gap: "", offsetV: "", offsetH: "", angleChange: "",
+    method: "", carriedBy: "", leaveLong: "", note: "",
+  };
+}
+
+/** One joint per segment boundary, preserving anything already measured. */
+export function syncJoints(segments: Segment[], existing: JointMeasure[] = []): JointMeasure[] {
+  const want = Math.max(0, segments.length - 1);
+  const byIndex = new Map(existing.map((j) => [j.afterSegment, j]));
+  return Array.from({ length: want }, (_, i) => byIndex.get(i) ?? blankJoint(i));
+}
+
 export type Segment = FlightSegment | PlatformSegment | RampSegment | CurveSegment;
 
 export interface SpiralData {
@@ -989,6 +1047,8 @@ export type SheetStatus = "in_progress" | "submitted" | "approved";
 
 export interface MeasureData {
   segments: Segment[];
+  /** One per boundary between segments — see JointMeasure. */
+  joints: JointMeasure[];
   posts: PostMeasure[];
   spiral: SpiralData | null;
   well: WellData | null;
@@ -1207,6 +1267,7 @@ export function newMeasureData(
     // the custom shape uses, so odd corners and bump-outs can be drawn and then
     // dimensioned segment by segment.
     plan: shape === "custom" || shape === "deck" ? { points: [], closed: false, segs: [] } : null,
+    joints: [],
     spans: [newSpan()],
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "" },
     materials: {
@@ -1391,6 +1452,12 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       if (seg.kind === "curve") return { ...blankCurve(), ...seg };
       return seg;
     }),
+    // Rebuilt from the segments every load: sheets written before joints
+    // existed gain them, and a segment added later cannot leave a boundary
+    // silently undescribed.
+    joints: syncJoints((d.segments || []) as Segment[], (d.joints || []).map((j) => ({
+      ...blankJoint(j.afterSegment ?? 0), ...j,
+    }))),
     posts: (d.posts || []).map((p) => ({
       ...p,
       pointType: p.pointType ?? "railing_post",
