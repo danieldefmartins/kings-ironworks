@@ -597,7 +597,7 @@ export function ChipRow({
           <button
             key={val}
             onClick={() => onChange(value === val ? "" : val)}
-            className={`min-h-[48px] px-4 rounded-lg border text-sm font-semibold ${
+            className={`min-h-[48px] max-w-full whitespace-normal break-words px-3 rounded-lg border text-sm font-semibold ${
               value === val
                 ? "border-amber-500 bg-amber-500/10 text-amber-300"
                 : "border-neutral-700 bg-neutral-800 text-neutral-300"

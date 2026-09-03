@@ -443,6 +443,14 @@ function PlanSketch({
   // which edge(s) carry rail/posts, in local coords (travel = +x, left = -y)
   const openLeft = o === "right_wall" || o === "both_open" || o === "";
   const openRight = o === "left_wall" || o === "both_open" || o === "" || o === undefined;
+  // Walled edges are drawn as a wall: same line, several times thicker, in the
+  // dim tone rather than the stair tone.
+  const edgeStroke = (isLeft: boolean) => {
+    const walled = isLeft ? !openLeft : !openRight;
+    return walled
+      ? { stroke: p.dim, strokeWidth: 6, opacity: 0.75 }
+      : { stroke: p.line, strokeWidth: 2, opacity: 1 };
+  };
 
   interface Placed {
     node: React.ReactNode;
@@ -484,8 +492,8 @@ function PlanSketch({
       fl.steps.forEach((st, i) => {
         const els: React.ReactNode[] = [
           <line key="t" x1={0} y1={-PLAN_W / 2} x2={0} y2={PLAN_W / 2} stroke={p.ghost} strokeWidth={1.2} />,
-          <line key="e1" x1={0} y1={-PLAN_W / 2} x2={PLAN_TREAD} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
-          <line key="e2" x1={0} y1={PLAN_W / 2} x2={PLAN_TREAD} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+          <line key="e1" x1={0} y1={-PLAN_W / 2} x2={PLAN_TREAD} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
+          <line key="e2" x1={0} y1={PLAN_W / 2} x2={PLAN_TREAD} y2={PLAN_W / 2} {...edgeStroke(false)} />,
         ];
         if (st.winder) {
           els.push(
@@ -623,8 +631,8 @@ function PlanSketch({
       const len = 90;
       const lv = v(rp.length, p);
       const els: React.ReactNode[] = [
-        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
-        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false)} />,
         <line key="ar" x1={8} y1={0} x2={len - 8} y2={0} stroke={p.ghost} strokeWidth={1.2} />,
         <text key="l" x={len / 2} y={-PLAN_W / 2 - 6} fontSize={8.5} textAnchor="middle" fill={lv.fill}>
           {lv.text}
@@ -665,8 +673,8 @@ function PlanSketch({
       const els: React.ReactNode[] = [];
       // strip edges
       els.push(
-        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} stroke={p.line} strokeWidth={2} />,
-        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} stroke={p.line} strokeWidth={2} />
+        <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true)} />,
+        <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false)} />
       );
       // tread lines + taps + posts
       fl.steps.forEach((_, i) => {
@@ -806,8 +814,17 @@ function PlanSketch({
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
       {onToggleWallSide && (
         <g transform={`translate(${minX + 8} ${minY + 20})`}>
-          <WallSideToggle x={0} side="left" wall={o === "left_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
-          <WallSideToggle x={112} side="right" wall={o === "right_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
+          {(() => {
+            // Share whatever width the drawing actually has, so both toggles
+            // stay inside the viewBox however narrow the stair is.
+            const tw = Math.max(58, Math.min(104, (w - 24) / 2));
+            return (
+              <>
+                <WallSideToggle x={0} width={tw} side="left" wall={o === "left_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
+                <WallSideToggle x={tw + 8} width={tw} side="right" wall={o === "right_wall" || o === "both_wall"} lang={lang} p={p} onToggle={onToggleWallSide} />
+              </>
+            );
+          })()}
         </g>
       )}
       {/* UP arrow at the start of travel */}
@@ -851,13 +868,13 @@ function PlanPoint({ po, x, y, n, p, onTap, onHold }: {
   );
 }
 
-function WallSideToggle({ x, side, wall, lang, p, onToggle }: {
-  x: number; side: "left" | "right"; wall: boolean; lang: string; p: Palette; onToggle: (side: "left" | "right") => void;
+function WallSideToggle({ x, width = 104, side, wall, lang, p, onToggle }: {
+  x: number; width?: number; side: "left" | "right"; wall: boolean; lang: string; p: Palette; onToggle: (side: "left" | "right") => void;
 }) {
   return (
     <g transform={`translate(${x} 0)`} onClick={() => onToggle(side)} style={{ cursor: "pointer" }}>
-      <rect width={104} height={22} rx={6} fill={wall ? "#78350f" : "#262626"} stroke={wall ? p.val : p.dim} />
-      <text x={52} y={14.5} textAnchor="middle" fontSize={7.5} fontWeight={800} fill={wall ? p.val : p.line}>
+      <rect width={width} height={22} rx={6} fill={wall ? "#78350f" : "#262626"} stroke={wall ? p.val : p.dim} />
+      <text x={width / 2} y={14.5} textAnchor="middle" fontSize={Math.min(7.5, width / 13)} fontWeight={800} fill={wall ? p.val : p.line}>
         {side === "left" ? mt(lang, "leftSideShort") : mt(lang, "rightSideShort")} · {mt(lang, wall ? "wallShort" : "openShort")}
       </text>
     </g>
