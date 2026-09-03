@@ -98,7 +98,53 @@ export default function MeasureListClient({
         </button>
       ) : (
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-6">
-          <div className="font-bold mb-3">{mt(lang, "chooseShape")}</div>
+          {/* Stairs first, because almost every sheet is one and the answer is
+              always the same two questions. L, U, three-flight and any longer
+              run are the SAME structure — flight, landing, flight — differing
+              only by the turn recorded on the landing. The shape grid below
+              stays for the things that genuinely are not stairs. */}
+          <div className="font-bold mb-2">{mt(lang, "stairQuestion")}</div>
+          <div className="grid grid-cols-2 gap-2 mb-5">
+            <button
+              onClick={() => { setPreset(null); setShape("straight"); setName(mt(lang, "singleFlight")); }}
+              className={`rounded-xl border p-3 text-left ${
+                !preset && (shape === "straight" || shape === "stair_platform")
+                  ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                  : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
+              }`}
+            >
+              <div className="text-sm font-bold">{mt(lang, "singleFlight")}</div>
+              <div className="mt-0.5 text-[11px] leading-snug text-neutral-500">{mt(lang, "singleFlightHint")}</div>
+            </button>
+            <button
+              onClick={() => { setPreset("multi_flight"); setShape("builder"); setName(mt(lang, "multiFlight")); }}
+              className={`rounded-xl border p-3 text-left ${
+                preset === "multi_flight"
+                  ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                  : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
+              }`}
+            >
+              <div className="text-sm font-bold">{mt(lang, "multiFlight")}</div>
+              <div className="mt-0.5 text-[11px] leading-snug text-neutral-500">{mt(lang, "multiFlightHint")}</div>
+            </button>
+          </div>
+          {!preset && (shape === "straight" || shape === "stair_platform") && (
+            <div className="mb-5 flex gap-2">
+              {(["straight", "stair_platform"] as const).map((sh) => (
+                <button
+                  key={sh}
+                  onClick={() => setShape(sh)}
+                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold ${
+                    shape === sh ? "border-amber-500 text-amber-300" : "border-neutral-700 text-neutral-400"
+                  }`}
+                >
+                  {shapeLabel(lang, sh)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="font-bold mb-3">{mt(lang, "chooseShapeOther")}</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
             {MEASURE_SHAPES.map((s) => (
               <button
