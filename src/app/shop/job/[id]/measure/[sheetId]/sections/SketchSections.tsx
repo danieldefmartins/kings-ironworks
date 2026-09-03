@@ -47,6 +47,7 @@ export default function SketchSections({
   anchorOptions,
   addStepPost,
   addPlatformPost,
+  onMeasureStep,
   holdStepLocation,
   addPlanPost,
   holdPlanLocation,
@@ -72,6 +73,8 @@ export default function SketchSections({
   platforms: { seg: PlatformSegment; i: number }[];
   anchorOptions: string[];
   addStepPost: (segIdx: number, stepIdx: number) => void;
+  /** Tapping a tread while measuring opens that step, rather than placing a post. */
+  onMeasureStep: (segIdx: number, stepIdx: number) => void;
   addPlatformPost: (segIdx: number) => void;
   holdStepLocation: (segIdx: number, stepIdx: number) => void;
   addPlanPost: (pathId: string, segIdx: number, t: number) => void;
@@ -96,6 +99,9 @@ export default function SketchSections({
   const isGate = shape === "gate";
   const isFence = shape === "fence";
   const isBalcony = shape === "balcony";
+  // On the steps step the drawing is an input: a tap opens the tread it
+  // landed on. Everywhere else a tap still places a point.
+  const measuring = activeStage === "steps";
   return (
     <>
       {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
@@ -203,13 +209,16 @@ export default function SketchSections({
           top of the first step. They moved to SegmentsCard, below the steps:
           the flight count is already chosen when the sheet is made, and a
           piece added late has to say WHERE it goes. */}
-      {/* Sketch (custom shapes draw their own plan below instead) */}
-      {!isCustom && ["posts", "locations"].includes(activeStage) && (
+      {/* Sketch (custom shapes draw their own plan below instead).
+          It shows on the steps step too, where a tap means "measure this
+          step" rather than "put a post here" — the drawing is the one thing
+          on screen that knows which tread is which. */}
+      {!isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
         {!isSpiral && !isWallRail && (
           <div className="text-xs text-neutral-500 mb-2">
-            {mt(
+            {measuring ? mt(lang, "tapStepToMeasure") : mt(
               lang,
               isGate
                 ? "sketchHintGate"
@@ -268,8 +277,8 @@ export default function SketchSections({
               data={data}
               lang={lang}
               view={view}
-              onTapStep={addStepPost}
-              onTapPlatform={addPlatformPost}
+              onTapStep={measuring ? onMeasureStep : addStepPost}
+              onTapPlatform={measuring ? undefined : addPlatformPost}
               onHoldStep={holdStepLocation}
               onHoldPlatform={holdPlatformLocation}
               onTapPost={tapPost}
@@ -291,8 +300,8 @@ export default function SketchSections({
                 data={data}
                 lang={lang}
                 view={viewList.find(([vw]) => vw !== view)![0]}
-                onTapStep={addStepPost}
-                onTapPlatform={addPlatformPost}
+                onTapStep={measuring ? onMeasureStep : addStepPost}
+                onTapPlatform={measuring ? undefined : addPlatformPost}
                 onHoldStep={holdStepLocation}
                 onHoldPlatform={holdPlatformLocation}
                 onTapPost={tapPost}

@@ -41,6 +41,8 @@ export default function StairSections({
   platforms,
   ramps,
   curves,
+  stepListOpen,
+  setStepListOpen,
 }: {
   lang: string;
   data: MeasureData;
@@ -53,6 +55,9 @@ export default function StairSections({
   platforms: { seg: PlatformSegment; i: number }[];
   ramps: { seg: RampSegment; i: number }[];
   curves: { seg: CurveSegment; i: number }[];
+  /** The row list is opt-in; the drawing is the default way in. */
+  stepListOpen: boolean;
+  setStepListOpen: (v: boolean) => void;
 }) {
   return (
     <>
@@ -175,6 +180,35 @@ export default function StairSections({
             }
           />
 
+          {/* The list of rows is the fallback now, not the front door: the
+              drawing above opens whichever step was tapped. Fourteen treads
+              is a screen and a half of identical boxes, and nothing in them
+              says which row is the tread you are standing next to. */}
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-neutral-800 bg-neutral-950/40 p-3">
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-bold text-neutral-200">
+                {seg.steps.length} {mt(lang, "steps")} ·{" "}
+                <span
+                  className={
+                    measuredCount(seg) === seg.steps.length ? "text-green-400" : "text-amber-400"
+                  }
+                >
+                  {measuredCount(seg)} {mt(lang, "stepsMeasured")}
+                </span>
+              </span>
+              <span className="block text-[11px] text-neutral-500">
+                {mt(lang, "tapStepToMeasure")}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setStepListOpen(!stepListOpen)}
+              className="min-h-[44px] shrink-0 rounded-lg border border-neutral-700 bg-neutral-800 px-3 text-xs font-bold text-neutral-300"
+            >
+              {stepListOpen ? mt(lang, "hideStepList") : `✎ ${mt(lang, "showStepList")}`}
+            </button>
+          </div>
+          {stepListOpen && (<>
           {/* header row only where the compact grid shows (sm+) */}
           <div className="hidden sm:grid grid-cols-[2.2rem_1fr_1fr_1fr_3rem] gap-2 items-end mb-1 text-[11px] text-neutral-400">
             <span>#</span>
@@ -284,6 +318,7 @@ export default function StairSections({
               {mt(lang, "removeStep")}
             </SmallBtn>
           </div>
+          </>)}
           <Grid>
             <MInput help="width" label={mt(lang, "width")} value={seg.width}
               onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).width = v))} />
@@ -417,6 +452,11 @@ export default function StairSections({
 // compare against. On a stair that is awkward to measure, seeing both is the
 // point: they are two independent readings of the same thing, and which one
 // to trust is a judgement the measurer makes standing there.
+/** How many of a flight's steps have both numbers on them. */
+function measuredCount(seg: FlightSegment): number {
+  return seg.steps.filter((st) => st.rise.trim() !== "" && st.run.trim() !== "").length;
+}
+
 /** A derived number ready for a field, or "" when it cannot be worked out. */
 function autoOf(n: number | undefined | null): string {
   return n === undefined || n === null ? "" : inchesToField(n);

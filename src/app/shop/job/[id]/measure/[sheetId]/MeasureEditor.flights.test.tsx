@@ -82,8 +82,8 @@ describe("three-flight stair", () => {
   it("hands over the next step once every flight is measured", () => {
     show(3);
     expect(screen.getAllByText(/Every flight measured/).length).toBeGreaterThan(0);
-    // Walking the flights stays available, quietly, below the step change.
-    expect(screen.getByRole("button", { name: /^Flight 2 →$/ })).toBeTruthy();
+    // Walking the flights stays available, as a compact button beside it.
+    expect(screen.getByRole("button", { name: /^Flight 2$/ })).toBeTruthy();
     click(/Every flight measured · Next →/);
     expect(screen.getAllByText(/Step 2 of 8/).length).toBeGreaterThan(0);
   });

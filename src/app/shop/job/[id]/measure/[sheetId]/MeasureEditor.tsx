@@ -55,6 +55,7 @@ import WellSections from "./shapes/WellSections";
 import SectionsDrawer from "./overlays/SectionsDrawer";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
+import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
 import SketchSections from "./sections/SketchSections";
@@ -144,6 +145,11 @@ export default function MeasureEditor({
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
   const [placementMenu, setPlacementMenu] = useState<{ segIdx: number; stepIdx: number | null; side: "left" | "right"; pathId?: string; planSegIdx?: number; along?: string } | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  // Which step the drawing was tapped on, while measuring. Null the rest of
+  // the time — on the posts step a tap on a tread still means "put a post
+  // here", and the two must never be the same gesture.
+  const [stepEdit, setStepEdit] = useState<{ segIdx: number; stepIdx: number } | null>(null);
+  const [stepListOpen, setStepListOpen] = useState(false);
   const [movingPostId, setMovingPostId] = useState<string | null>(null);
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
   const [slotErr, setSlotErr] = useState<string | null>(null);
@@ -754,6 +760,38 @@ export default function MeasureEditor({
   // The flight the measurer is standing on is already on screen; the list is
   // for the ones they cannot see.
   const otherOpenFlights = openFlights.filter((i) => onJointsStep || i !== flightAt);
+
+  // What the step overlay needs to say where it is: the number the measurer
+  // reads on the drawing, which flight it belongs to, and how many steps that
+  // flight has so the arrows know where the ends are.
+  const stepTarget: StepTarget | null = (() => {
+    if (!stepEdit) return null;
+    const seg = data.segments[stepEdit.segIdx];
+    if (!seg || seg.kind !== "flight") return null;
+    const fi = allFlights.findIndex((f) => f.i === stepEdit.segIdx);
+    if (fi < 0 || !seg.steps[stepEdit.stepIdx]) return null;
+    let before = 0;
+    for (let k = 0; k < fi; k++) before += allFlights[k].seg.steps.length;
+    return {
+      segIdx: stepEdit.segIdx,
+      stepIdx: stepEdit.stepIdx,
+      number: before + stepEdit.stepIdx + 1,
+      flightLabel: multiFlightSheet ? `${mt(lang, "flight")} ${fi + 1}` : undefined,
+      total: seg.steps.length,
+    };
+  })();
+  function measureStep(segIdx: number, stepIdx: number) {
+    setStepEdit({ segIdx, stepIdx });
+  }
+  function moveStep(delta: number) {
+    setStepEdit((cur) => {
+      if (!cur) return cur;
+      const seg = dataRef.current.segments[cur.segIdx];
+      if (!seg || seg.kind !== "flight") return cur;
+      const next = cur.stepIdx + delta;
+      return next < 0 || next >= seg.steps.length ? cur : { ...cur, stepIdx: next };
+    });
+  }
   const hasWinders = flights.some(({ seg }) => seg.steps.some((step) => step.winder));
   const hasHandrail = data.rail.kind === "Handrail" || data.rail.kind === "Both";
   const hasGuardrail = data.rail.kind !== "Handrail";
@@ -841,7 +879,8 @@ export default function MeasureEditor({
   return (
     <LangCtx.Provider value={lang}>
     <PlaceholderCtx.Provider value={unitPh}>
-      <div className="p-4 max-w-4xl mx-auto pb-32 print:hidden">
+      {/* Room for the fixed action bar at the bottom. */}
+      <div className="mx-auto max-w-4xl p-4 pb-44 print:hidden">
         {!online && (
           <div className="sticky top-0 z-30 -mx-4 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black">
             {mt(lang, "offlineBanner")}
@@ -1313,6 +1352,7 @@ export default function MeasureEditor({
           platforms={platforms}
           anchorOptions={anchorOptions}
           addStepPost={addStepPost}
+          onMeasureStep={measureStep}
           addPlatformPost={addPlatformPost}
           holdStepLocation={holdStepLocation}
           addPlanPost={addPlanPost}
@@ -1341,6 +1381,8 @@ export default function MeasureEditor({
           platforms={platforms}
           ramps={ramps}
           curves={curves}
+          stepListOpen={stepListOpen}
+          setStepListOpen={setStepListOpen}
         />
         {/* The pieces this stair is made of, after the steps rather than before
             them: the flight count came from the sheet picker, and what shows up
@@ -1446,119 +1488,129 @@ export default function MeasureEditor({
           approveSheet={approveSheet}
           sendBackSheet={sendBackSheet}
         />
-        {/* The bottom of the screen is where a measurer looks for "what now".
-            On a multi-flight stair that answer is the NEXT FLIGHT, not the next
-            step — the flight tabs are up the page and easy to miss, so the
-            forward button itself walks the flights. The step only moves on
-            once every flight this step asks about has been answered. */}
-        <div className="mt-2 space-y-2">
-          {stageFlightsBlocked && (
-            <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
-              ⚠ {mt(lang, "finishFlightsFirst")}
-              {flightStageOpen.length > 0
-                ? ` — ${flightStageOpen.map((i) => `${mt(lang, "flight")} ${i + 1}`).join(", ")}`
-                : hasJoints
-                  ? ` — ${mt(lang, "jointTableTitle")}`
-                  : ""}
-            </div>
-          )}
-          <div className="flex gap-3">
-            {activeStageIndex > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveFlight(0);
-                  setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="flex-1 rounded-xl border border-neutral-700 bg-neutral-900 py-3 font-bold text-neutral-200"
-              >
-                ← {mt(lang, "previousStage")}
-              </button>
+        </SetupLockCtx.Provider>
+        </StageCtx.Provider>
+      </div>
+
+      {/* The one thing to do next, always on screen.
+          It used to sit at the end of the page, which meant that on a step
+          long enough to scroll — every step with a list of treads on it — the
+          measurer had to scroll to find the control that tells them where to
+          go. That is how the flight buttons were being missed. It is a bar
+          now, and it says the same thing the page did: walk the flights while
+          the step is still open, change the step once it is not.
+
+          It sits under the fraction bar deliberately: while a measurement
+          field has focus, fractions are what the thumb is reaching for. */}
+      {status === "in_progress" && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur print:hidden">
+          <div className="mx-auto max-w-4xl">
+            {stageFlightsBlocked && (
+              <div className="mb-1.5 truncate text-[11px] font-bold text-amber-300">
+                ⚠ {mt(lang, "finishFlightsFirst")}
+                {flightStageOpen.length > 0
+                  ? ` — ${flightStageOpen.map((i) => `${mt(lang, "flight")} ${i + 1}`).join(", ")}`
+                  : hasJoints
+                    ? ` — ${mt(lang, "jointTableTitle")}`
+                    : ""}
+              </div>
             )}
-            {/* Flight → flight → joints, in the order they are walked. While
-                anything on this step is still open the walk button IS the
-                forward button; once nothing is, the step change takes over as
-                the primary and walking becomes a quiet second line. */}
-            {onFlightStage && stageFlightsBlocked ? (
-              !onJointsStep && flightAt + 1 < allFlights.length ? (
+            <div className="flex items-center gap-2">
+              {activeStageIndex > 0 && (
                 <button
                   type="button"
-                  onClick={() => goToFlight(flightAt + 1)}
-                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+                  onClick={() => {
+                    setActiveFlight(0);
+                    setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  aria-label={mt(lang, "previousStage")}
+                  className="h-14 w-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 text-xl font-bold text-neutral-300"
                 >
-                  {mt(lang, "saveAndNextFlight")} ({flightAt + 2}) →
+                  ←
                 </button>
-              ) : flightStageOpen.length > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => goToFlight(flightStageOpen[0])}
-                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500/10 py-3 font-bold text-amber-300"
-                >
-                  {flightStageOpen.length} {mt(lang, "flight")} · {mt(lang, "goToFlight")} →
-                </button>
-              ) : (
+              )}
+              {/* Flight → flight → joints, in the order they are walked. While
+                  anything on this step is still open the walk button IS the
+                  forward button; once nothing is, the step change takes over. */}
+              {onFlightStage && stageFlightsBlocked ? (
+                !onJointsStep && flightAt + 1 < allFlights.length ? (
+                  <button
+                    type="button"
+                    onClick={() => goToFlight(flightAt + 1)}
+                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500 font-bold text-black"
+                  >
+                    {mt(lang, "saveAndNextFlight")} ({flightAt + 2}) →
+                  </button>
+                ) : flightStageOpen.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => goToFlight(flightStageOpen[0])}
+                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500/10 font-bold text-amber-300"
+                  >
+                    {flightStageOpen.length} {mt(lang, "flight")} · {mt(lang, "goToFlight")} →
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => goToFlight(allFlights.length)}
+                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500/10 font-bold text-amber-300"
+                  >
+                    ⚠ {mt(lang, "jointTableTitle")} →
+                  </button>
+                )
+              ) : onFlightStage && !onJointsStep && hasJoints && activeStage === "locations" &&
+                flightAt + 1 >= allFlights.length ? (
                 <button
                   type="button"
                   onClick={() => goToFlight(allFlights.length)}
-                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500/10 py-3 font-bold text-amber-300"
+                  className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500 font-bold text-black"
                 >
-                  ⚠ {mt(lang, "jointTableTitle")} →
+                  {mt(lang, "saveAndJoints")} 🔗
                 </button>
-              )
-            ) : onFlightStage && !onJointsStep && hasJoints && activeStage === "locations" &&
-              flightAt + 1 >= allFlights.length ? (
-              <button
-                type="button"
-                onClick={() => goToFlight(allFlights.length)}
-                className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
-              >
-                {mt(lang, "saveAndJoints")} 🔗
-              </button>
-            ) : (
-              activeStageIndex < EDITOR_STAGES.length - 1 && (
+              ) : activeStageIndex < EDITOR_STAGES.length - 1 ? (
                 <button
                   type="button"
                   onClick={nextStage}
-                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+                  className="h-14 flex-1 truncate rounded-xl border border-amber-500 bg-amber-500 px-3 font-bold text-black"
                 >
                   {onFlightStage
                     ? `✓ ${mt(lang, "allFlightsDone")} · ${mt(lang, "nextStage")} →`
                     : `${mt(lang, "nextStage")} →`}
                 </button>
-              )
-            )}
+              ) : (
+                <span className="flex-1" />
+              )}
+              {/* Nothing on this step is waiting, but there are still flights
+                  the measurer may want to look over. */}
+              {onFlightStage && !stageFlightsBlocked && !onJointsStep &&
+                flightAt + 1 < allFlights.length && (
+                  <button
+                    type="button"
+                    onClick={() => goToFlight(flightAt + 1)}
+                    aria-label={`${mt(lang, "flight")} ${flightAt + 2}`}
+                    className="h-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-xs font-bold text-neutral-300"
+                  >
+                    {flightAt + 2} →
+                  </button>
+                )}
+              {/* Stopping for the day is a first-class move on a stair that
+                  takes two visits. */}
+              {onFlightStage && (
+                <button
+                  type="button"
+                  onClick={finishLater}
+                  aria-label={mt(lang, "finishLater")}
+                  title={mt(lang, "finishLater")}
+                  className="h-14 w-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 text-lg font-bold text-neutral-300"
+                >
+                  ⬇
+                </button>
+              )}
+            </div>
           </div>
-          {/* Nothing on this step is waiting, but there are still flights the
-              measurer may want to look over. Quiet, and out of the way of the
-              step they are actually finished with. */}
-          {onFlightStage && !stageFlightsBlocked && !onJointsStep &&
-            flightAt + 1 < allFlights.length && (
-              <button
-                type="button"
-                onClick={() => goToFlight(flightAt + 1)}
-                className="min-h-[48px] w-full rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-bold text-neutral-300"
-              >
-                {mt(lang, "flight")} {flightAt + 2} →
-              </button>
-            )}
-          {/* Stopping for the day is a first-class move on a stair that takes
-              two visits, so it gets its own button instead of a back gesture
-              that leaves the measurer wondering whether anything was kept. */}
-          {onFlightStage && (
-            <button
-              type="button"
-              onClick={finishLater}
-              className="min-h-[48px] w-full rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-bold text-neutral-300"
-            >
-              ⬇ {mt(lang, "finishLater")}
-            </button>
-          )}
         </div>
-        </SetupLockCtx.Provider>
-        </StageCtx.Provider>
-      </div>
-
+      )}
       {sectionsOpen && (
         <SectionsDrawer
           lang={lang}
@@ -1583,6 +1635,15 @@ export default function MeasureEditor({
         addTypedPoint={addTypedPoint}
         removePost={removePost}
         routing={routing}
+        set={set}
+      />
+      {/* One step at a time, opened by tapping the drawing */}
+      <StepEditor
+        lang={lang}
+        data={data}
+        target={stepTarget}
+        onClose={() => setStepEdit(null)}
+        onMove={moveStep}
         set={set}
       />
       {/* Photo capture + markup modal */}
