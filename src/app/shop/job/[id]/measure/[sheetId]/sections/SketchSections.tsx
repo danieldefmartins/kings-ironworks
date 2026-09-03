@@ -40,6 +40,7 @@ export default function SketchSections({
   set,
   shape,
   activeStage,
+  focusSeg,
   view,
   viewList,
   setView,
@@ -65,6 +66,7 @@ export default function SketchSections({
   set: (fn: (d: MeasureData) => void) => void;
   shape: MeasureShape;
   activeStage: EditorStage;
+  focusSeg?: number;
   view: SketchView;
   viewList: [SketchView, string][];
   setView: (v: SketchView) => void;
@@ -119,6 +121,7 @@ export default function SketchSections({
               </div>
             )}
             <Sketch
+              focusSeg={focusSeg}
               shape={shape}
               data={data}
               lang={lang}
@@ -280,6 +283,7 @@ export default function SketchSections({
               {mt(lang, viewList.find(([vw]) => vw === view)?.[1] || viewList[0][1])}
             </div>
             <Sketch
+              focusSeg={focusSeg}
               shape={shape}
               data={data}
               lang={lang}
@@ -301,6 +305,7 @@ export default function SketchSections({
                 {mt(lang, viewList.find(([vw]) => vw !== view)![1])}
               </div>
               <Sketch
+              focusSeg={focusSeg}
                 shape={shape}
                 data={data}
                 lang={lang}

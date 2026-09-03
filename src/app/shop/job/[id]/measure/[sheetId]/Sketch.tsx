@@ -123,6 +123,7 @@ export default function Sketch({
   onHoldLine,
   onHoldPlatform,
   onToggleWallSide,
+  focusSeg,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -138,6 +139,10 @@ export default function Sketch({
   onHoldLine?: (pathId: string, segIdx: number, t: number) => void;
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
+  /** Draw only this segment. Placing a post on a three-flight drawing means
+   *  hunting for the right tread among forty; while one flight is being
+   *  measured, the drawing shows that flight. */
+  focusSeg?: number;
 }) {
   const p = light ? LIGHT : DARK;
 
@@ -188,6 +193,7 @@ export default function Sketch({
   if (view === "plan")
     return (
       <PlanSketch
+        focusSeg={focusSeg}
         shape={shape}
         data={data}
         p={p}
@@ -206,6 +212,7 @@ export default function Sketch({
     return <RampSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />;
   return (
     <StairSketch
+      focusSeg={focusSeg}
       shape={shape}
       data={data}
       p={p}
@@ -414,6 +421,7 @@ function pressHandlers(tap?: () => void, hold?: () => void) {
 }
 
 function PlanSketch({
+  focusSeg,
   shape,
   data,
   p,
@@ -437,6 +445,7 @@ function PlanSketch({
   onHoldPost?: (postId: string) => void;
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
+  focusSeg?: number;
 }) {
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
@@ -487,6 +496,9 @@ function PlanSketch({
   };
 
   data.segments.forEach((seg, segIdx) => {
+    // Skipping also skips the cursor advance, so the focused segment draws
+    // from the origin instead of wherever it would have sat in the whole run.
+    if (focusSeg !== undefined && segIdx !== focusSeg) return;
     if (seg.kind === "flight" && seg.branch && branchBase) {
       cx = branchBase.x;
       cy = branchBase.y;
@@ -1066,6 +1078,7 @@ export function CustomPlanSketch({
 // ---- Stairs (straight / platform / L / U / wall rail) ----------------------
 
 function StairSketch({
+  focusSeg,
   shape,
   data,
   p,
@@ -1079,6 +1092,7 @@ function StairSketch({
   lang: string;
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
+  focusSeg?: number;
 }) {
   const wallRail = shape === "wall_rail";
 
@@ -1113,6 +1127,9 @@ function StairSketch({
   let globalStep = 0;
 
   data.segments.forEach((seg, segIdx) => {
+    // Skipping also skips the cursor advance, so the focused segment draws
+    // from the origin instead of wherever it would have sat in the whole run.
+    if (focusSeg !== undefined && segIdx !== focusSeg) return;
     if (seg.kind === "flight") {
       const fl = seg as FlightSegment;
       fl.steps.forEach((st, i) => {

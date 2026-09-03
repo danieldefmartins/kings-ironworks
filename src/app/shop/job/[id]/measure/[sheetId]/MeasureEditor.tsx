@@ -1097,6 +1097,7 @@ export default function MeasureEditor({
         )}
 
         <SketchSections
+          focusSeg={multiFlightSheet && !onJointsStep ? allFlights[flightAt]?.i : undefined}
           lang={lang}
           data={data}
           set={set}
