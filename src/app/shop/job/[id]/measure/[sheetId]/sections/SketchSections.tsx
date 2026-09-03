@@ -32,6 +32,7 @@ import {
   setPost,
   type EditorStage,
 } from "../fields";
+import { useState } from "react";
 import Sketch, { type SketchView } from "../Sketch";
 
 export default function SketchSections({
@@ -87,6 +88,9 @@ export default function SketchSections({
   removePost: (id: string) => void;
   toggleSketchWall: (side: "left" | "right") => void;
 }) {
+  // Placing a post by thumb wants a bigger target than reading the drawing
+  // does, and a stair with fourteen treads is a lot of nearly identical taps.
+  const [zoom, setZoom] = useState(1);
   // The shape decides which of these cards mean anything; derived here rather
   // than passed as nine more booleans.
   const isSpiral = shape === "spiral";
@@ -105,7 +109,14 @@ export default function SketchSections({
           <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
           <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
             {viewList.length > 1 && (
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className="ml-auto flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-1">
+                  <button type="button" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.25).toFixed(2)))}
+                    aria-label="-" className="h-9 w-9 text-lg font-bold text-neutral-300">−</button>
+                  <span className="w-10 text-center text-[11px] font-bold text-neutral-400">{Math.round(zoom * 100)}%</span>
+                  <button type="button" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
+                    aria-label="+" className="h-9 w-9 text-lg font-bold text-neutral-300">+</button>
+                </span>
                 {viewList.map(([vw, key]) => (
                   <button key={vw} type="button" onClick={() => setView(vw)}
                     className={`min-h-[44px] shrink-0 rounded-full border px-3 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
@@ -121,6 +132,7 @@ export default function SketchSections({
               </div>
             )}
             <Sketch
+              zoom={zoom}
               focusSeg={focusSeg}
               shape={shape}
               data={data}
@@ -283,6 +295,7 @@ export default function SketchSections({
               {mt(lang, viewList.find(([vw]) => vw === view)?.[1] || viewList[0][1])}
             </div>
             <Sketch
+              zoom={zoom}
               focusSeg={focusSeg}
               shape={shape}
               data={data}
@@ -305,6 +318,7 @@ export default function SketchSections({
                 {mt(lang, viewList.find(([vw]) => vw !== view)![1])}
               </div>
               <Sketch
+              zoom={zoom}
               focusSeg={focusSeg}
                 shape={shape}
                 data={data}

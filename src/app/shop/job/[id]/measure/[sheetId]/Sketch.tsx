@@ -124,6 +124,7 @@ export default function Sketch({
   onHoldPlatform,
   onToggleWallSide,
   focusSeg,
+  zoom = 1,
 }: {
   shape: MeasureShape;
   data: MeasureData;
@@ -143,6 +144,9 @@ export default function Sketch({
    *  hunting for the right tread among forty; while one flight is being
    *  measured, the drawing shows that flight. */
   focusSeg?: number;
+  /** Multiplies the height cap. Placing a post by thumb needs a bigger
+   *  target than reading the drawing does. */
+  zoom?: number;
 }) {
   const p = light ? LIGHT : DARK;
 
@@ -194,6 +198,7 @@ export default function Sketch({
     return (
       <PlanSketch
         focusSeg={focusSeg}
+        zoom={zoom}
         shape={shape}
         data={data}
         p={p}
@@ -213,6 +218,7 @@ export default function Sketch({
   return (
     <StairSketch
       focusSeg={focusSeg}
+      zoom={zoom}
       shape={shape}
       data={data}
       p={p}
@@ -422,6 +428,7 @@ function pressHandlers(tap?: () => void, hold?: () => void) {
 
 function PlanSketch({
   focusSeg,
+  zoom = 1,
   shape,
   data,
   p,
@@ -446,6 +453,7 @@ function PlanSketch({
   onHoldPlatform?: (segIdx: number) => void;
   onToggleWallSide?: (side: "left" | "right") => void;
   focusSeg?: number;
+  zoom?: number;
 }) {
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
@@ -830,7 +838,7 @@ function PlanSketch({
   const h = maxY - minY;
 
   return (
-    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 420 }}>
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 560 * zoom }}>
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
       {onToggleWallSide && (
         <g transform={`translate(${minX + 8} ${minY + 20})`}>
@@ -935,6 +943,7 @@ export function planPointXY(
 }
 
 export function CustomPlanSketch({
+  zoom = 1,
   data,
   p,
   lang,
@@ -950,6 +959,7 @@ export function CustomPlanSketch({
   onHoldLine?: (pathId: string, segIdx: number, t: number) => void;
   onTapPost?: (postId: string) => void;
   onHoldPost?: (postId: string) => void;
+  zoom?: number;
 }) {
   const paths = planPaths(data.plan).filter((pp) => pp.points.length > 0);
   if (paths.length === 0) {
@@ -1068,7 +1078,7 @@ export function CustomPlanSketch({
   });
 
   return (
-    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 420 }}>
+    <svg viewBox={`${minX} ${minY} ${w} ${h}`} className="w-full" style={{ maxHeight: 560 * zoom }}>
       <OrientBanner data={data} lang={lang} p={p} x={minX + 8} y={minY + 12} w={w} />
       {els}
     </svg>
@@ -1079,6 +1089,7 @@ export function CustomPlanSketch({
 
 function StairSketch({
   focusSeg,
+  zoom = 1,
   shape,
   data,
   p,
@@ -1093,6 +1104,7 @@ function StairSketch({
   onTapStep?: (segIdx: number, stepIdx: number) => void;
   onTapPlatform?: (segIdx: number) => void;
   focusSeg?: number;
+  zoom?: number;
 }) {
   const wallRail = shape === "wall_rail";
 
@@ -1361,7 +1373,7 @@ function StairSketch({
   }
 
   return (
-    <svg viewBox={`0 0 ${w} ${H}`} className="w-full" style={{ maxHeight: 440 }}>
+    <svg viewBox={`0 0 ${w} ${H}`} className="w-full" style={{ maxHeight: 580 * zoom }}>
       {/* ground */}
       <line x1={12} y1={baseY} x2={w - 12} y2={baseY} stroke={p.ghost} strokeWidth={1.5} strokeDasharray="7 5" />
       <OrientBanner data={data} lang={lang} p={p} w={w} />
