@@ -66,7 +66,7 @@ export default function ReviewSection({
   saveState: SaveState;
   gapLabel: (g: Gap) => string;
   gapStage: (key: string) => EditorStage;
-  jumpToGap: (st: EditorStage) => void;
+  jumpToGap: (st: EditorStage, flight?: number) => void;
   submitSheet: () => void;
   approveSheet: () => void;
   sendBackSheet: () => void;
@@ -147,7 +147,7 @@ export default function ReviewSection({
             tone="amber"
             items={orderedGaps}
             label={gapLabel}
-            onJump={(g) => jumpToGap(gapStage(g.key))}
+            onJump={(g) => jumpToGap(gapStage(g.key), g.flight)}
           />
         )}
         {orderedDocGaps.length > 0 && (
@@ -156,7 +156,7 @@ export default function ReviewSection({
             tone="sky"
             items={orderedDocGaps}
             label={gapLabel}
-            onJump={(g) => jumpToGap(gapStage(g.key))}
+            onJump={(g) => jumpToGap(gapStage(g.key), g.flight)}
           />
         )}
 

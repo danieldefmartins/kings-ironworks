@@ -8,12 +8,13 @@ import {
   PICKER_PRESETS,
   TWO_FLIGHT_SHAPES,
   sheetProgress,
+  type FlightSegment,
   type MeasureShape,
   type MeasurePreset,
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
-import { sheetReadiness } from "@/lib/shop/measure-checks";
+import { sheetReadiness, flightGaps } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
 
 export default function MeasureListClient({
@@ -290,6 +291,16 @@ export default function MeasureListClient({
           // different answer from the sheet it opens.
           const r = sheetReadiness(s.data, s.shape);
           const prog = sheetProgress(s.data);
+          // A multi-flight stair says how many flights are done right here, so
+          // "come back tomorrow and finish flight 3" survives the walk to the
+          // truck. Without it the list shows one bar for a stair that is two
+          // thirds unmeasured.
+          const fls = s.data.segments.filter((sg) => sg.kind === "flight") as FlightSegment[];
+          const flightsLeft =
+            fls.length > 1
+              ? fls.filter((f, i) => flightGaps(f, i, { needRake: true, multi: true }).length > 0)
+                  .length
+              : 0;
           const pct = r.ready
             ? 100
             : prog.total
@@ -308,6 +319,17 @@ export default function MeasureListClient({
                 <span className="font-bold block truncate">
                   {s.name || shapeLabel(lang, s.shape)}
                 </span>
+                {fls.length > 1 && (
+                  <span
+                    className={`mt-0.5 block text-xs font-bold ${
+                      flightsLeft > 0 ? "text-amber-300" : "text-green-400"
+                    }`}
+                  >
+                    {flightsLeft > 0
+                      ? `⚠ ${fls.length - flightsLeft}/${fls.length} ${mt(lang, "flightsMeasured")}`
+                      : `✓ ${mt(lang, "allFlightsDone")}`}
+                  </span>
+                )}
                 <span className="text-xs text-neutral-400 block">
                   {shapeLabel(lang, s.shape)}
                   {r.remaining > 0

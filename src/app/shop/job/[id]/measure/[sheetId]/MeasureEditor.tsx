@@ -11,6 +11,7 @@ import {
   planPaths,
   sheetProgress,
   type FlightSegment,
+  type MeasureData,
   type MeasureSheet,
   type PlatformSegment,
   type PostMeasure,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/shop/measure";
 import {
   sheetReadiness,
+  flightGaps,
   orderedPosts,
   mergeTolerances,
   parseMeas,
@@ -74,6 +76,17 @@ import {
   type EditorStage,
 } from "./fields";
 import MoreMenu, { MoreItem } from "../../../../MoreMenu";
+
+// Where a multi-flight sheet should open. Reopening on flight 1 after a day
+// spent finishing it is the moment a measurer decides the app is not paying
+// attention; reopening on the flight that still owes numbers is the moment
+// they decide it is.
+function firstOpenFlight(data: MeasureData): number {
+  const fl = (data?.segments || []).filter((s) => s.kind === "flight") as FlightSegment[];
+  if (fl.length < 2) return 0;
+  const i = fl.findIndex((f, idx) => flightGaps(f, idx, { needRake: true, multi: true }).length > 0);
+  return i < 0 ? 0 : i;
+}
 
 export default function MeasureEditor({
   job,
@@ -135,7 +148,7 @@ export default function MeasureEditor({
   const [slotErr, setSlotErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
   const [sectionsOpen, setSectionsOpen] = useState(false);
-  const [activeFlight, setActiveFlight] = useState(0);
+  const [activeFlight, setActiveFlight] = useState(() => firstOpenFlight(sheet.data));
   // Custom sheets open directly on the drawing canvas; otherwise the user
   // lands on the existing-site setup step.
   // Open on measuring, not on a page of site questions.
@@ -504,6 +517,12 @@ export default function MeasureEditor({
       return "setup";
     }
     if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
+    // A gap has to name the step that can actually answer it. Joints are only
+    // editable on the joints step, and a flight's rake sits on its step card —
+    // sending either to a step that shows neither is a dead end.
+    if (key.startsWith("joint_")) return "locations";
+    if (key === "flight_width" || key === "flight_rake") return "steps";
+    if (key === "flight_angle") return "locations";
     if (key.startsWith("post")) return "locations";
     if (key.startsWith("span") || key.startsWith("term") ||
         ["rail_height", "returns", "extensions", "brackets"].includes(key)) return "posts";
@@ -540,22 +559,48 @@ export default function MeasureEditor({
     g.key === "photo"
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
       : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
-  const nextTarget: { stage: EditorStage; label: string } | null = orderedGaps.length
-    ? { stage: gapStage(orderedGaps[0].key), label: gapLabel(orderedGaps[0]) }
+  const targetOf = (g: Gap) => ({ stage: gapStage(g.key), label: gapLabel(g), flight: g.flight });
+  const nextTarget: { stage: EditorStage; label: string; flight?: number } | null = orderedGaps.length
+    ? targetOf(orderedGaps[0])
     : redChecks.length
-      ? { stage: "review", label: mt(lang, "check_" + redChecks[0].key) }
+      ? { stage: "review" as EditorStage, label: mt(lang, "check_" + redChecks[0].key) }
       : orderedDocGaps.length
-        ? { stage: gapStage(orderedDocGaps[0].key), label: gapLabel(orderedDocGaps[0]) }
+        ? targetOf(orderedDocGaps[0])
         : null;
   function goToStage(st: EditorStage) {
     setActiveStage(st);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+  function nextStage() {
+    const st = EDITOR_STAGES[EDITOR_STAGES.findIndex((x) => x.id === activeStage) + 1];
+    if (!st) return;
+    // A new step starts at flight 1: the step is asking a different question,
+    // and it asks it of every flight.
+    setActiveFlight(0);
+    setActiveStage(st.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function goToFlight(i: number) {
+    setActiveFlight(i);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  // Leaving mid-stair is allowed and normal — a flight can be behind a locked
+  // door or a scaffold that comes down tomorrow. What is not allowed is
+  // leaving without knowing it: the sheet list carries the unfinished flight
+  // count, and the sheet reopens on the flight that still owes numbers.
+  function finishLater() {
+    requestSave();
+    router.push(`/shop/job/${job.id}/measure`);
+  }
   // Jumping to a specific missing item must never land on a step that is
   // holding its content back — the routing card still comes first, but the
   // item the worker asked for is there too.
-  function jumpToGap(st: EditorStage) {
+  function jumpToGap(st: EditorStage, flight?: number) {
     if (st === "setup") setSetupUnlocked(true);
+    // On a multi-flight sheet a gap belongs to one flight, and the stage only
+    // shows one flight at a time — landing on the stage without switching the
+    // flight shows the measurer a card that is already filled in.
+    if (flight !== undefined) setActiveFlight(flight);
     goToStage(st);
   }
   // Nothing measured yet reads as "Start measuring" rather than "Continue".
@@ -650,7 +695,11 @@ export default function MeasureEditor({
   // measured before its gap and angle mean anything.
   const multiFlightSheet = allFlights.length > 1;
   const flightAt = Math.min(activeFlight, Math.max(0, allFlights.length - 1));
-  const onJointsStep = multiFlightSheet && activeFlight >= allFlights.length;
+  // The joints step is a step of the angles stage — that is where the joint
+  // cards live. Landing on it from another stage would otherwise drop the
+  // one-flight-at-a-time rule and put every flight on screen at once.
+  const onJointsStep =
+    multiFlightSheet && activeFlight >= allFlights.length && activeStage === "locations";
   const flights = multiFlightSheet && !onJointsStep ? [allFlights[flightAt]] : allFlights;
   const platforms = data.segments
     .map((s, i) => ({ seg: s, i }))
@@ -667,6 +716,43 @@ export default function MeasureEditor({
   );
   const multiFlight = flights.length > 1 || turns;
   const hasFlights = flights.length > 0;
+
+  // ---- Flight by flight ----------------------------------------------------
+  // The sheet is measured one flight at a time, so the screen has to be able
+  // to say, for every flight, whether it is finished — and to refuse to move
+  // on to the next step while any of them is not. Anything less and a
+  // three-flight stair leaves the shop with one flight measured and nobody
+  // aware of it until the steel does not fit.
+  const flightGapList = allFlights.map(({ seg }, i) =>
+    flightGaps(seg, i, { needRake: turns || allFlights.length > 1, multi: multiFlightSheet })
+  );
+  const flightStarted = allFlights.map(({ seg }) =>
+    seg.steps.some((st) => st.rise.trim() !== "" || st.run.trim() !== "") ||
+    seg.width.trim() !== "" ||
+    seg.angleDeg.trim() !== ""
+  );
+  const flightDone = flightGapList.map((g) => g.length === 0);
+  const flightsFinished = flightDone.filter(Boolean).length;
+  const openFlights = flightDone.map((d, i) => (d ? -1 : i)).filter((i) => i >= 0);
+  const jointGaps = gaps.filter((g) => g.key.startsWith("joint_"));
+  const hasJoints = (data.joints || []).length > 0;
+  // The stages that show one flight at a time. Everything after them describes
+  // the whole sheet, so they are the only place this gate applies.
+  const flightStageIds: EditorStage[] = ["steps", "locations", "level"];
+  const onFlightStage = multiFlightSheet && flightStageIds.includes(activeStage);
+  // Gaps for one flight that THIS step can actually answer. The step gate has
+  // to be per step: a flight's angle lives on the angles step, so demanding it
+  // before leaving the steps step would trap the measurer on a card that never
+  // asks for it.
+  const flightStageOpen = allFlights
+    .map((_, i) => i)
+    .filter((i) => flightGapList[i].some((g) => gapStage(g.key) === activeStage));
+  const jointStageOpen =
+    hasJoints && jointGaps.some((g) => gapStage(g.key) === activeStage);
+  const stageFlightsBlocked = onFlightStage && (flightStageOpen.length > 0 || jointStageOpen);
+  // The flight the measurer is standing on is already on screen; the list is
+  // for the ones they cannot see.
+  const otherOpenFlights = openFlights.filter((i) => onJointsStep || i !== flightAt);
   const hasWinders = flights.some(({ seg }) => seg.steps.some((step) => step.winder));
   const hasHandrail = data.rail.kind === "Handrail" || data.rail.kind === "Both";
   const hasGuardrail = data.rail.kind !== "Handrail";
@@ -915,7 +1001,7 @@ export default function MeasureEditor({
           {status === "in_progress" && (
             <button
               type="button"
-              onClick={() => jumpToGap(nextTarget ? nextTarget.stage : "review")}
+              onClick={() => jumpToGap(nextTarget ? nextTarget.stage : "review", nextTarget?.flight)}
               className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left min-h-[64px] ${
                 ready.remaining > 0
                   ? "border-amber-500 bg-amber-500/10 active:bg-amber-500/20"
@@ -1096,6 +1182,120 @@ export default function MeasureEditor({
           />
         )}
 
+        {/* Which flight is being measured, which ones are finished, and what
+            the unfinished ones still owe. Progress a measurer can see, rather
+            than one long form that never visibly shortens — and no way to
+            believe a stair is measured while two of its flights are blank. */}
+        {multiFlightSheet && (
+          <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-bold">
+                {onJointsStep
+                  ? mt(lang, "jointTableTitle")
+                  : `${mt(lang, "flight")} ${flightAt + 1} ${mt(lang, "ofWord")} ${allFlights.length}`}
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                {onJointsStep ? mt(lang, "jointsAfterFlights") : mt(lang, "oneFlightAtATime")}
+              </span>
+            </div>
+            {/* The count that moves. Every finished flight fills a bar segment
+                green and stays green — the visible reward for finishing one. */}
+            <div className="mt-2 flex items-center gap-2">
+              <span className="flex flex-1 gap-1">
+                {allFlights.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`h-1.5 flex-1 rounded ${
+                      flightDone[i]
+                        ? "bg-green-500"
+                        : flightStarted[i]
+                          ? "bg-amber-500/60"
+                          : "bg-neutral-800"
+                    }`}
+                  />
+                ))}
+              </span>
+              <span
+                className={`shrink-0 text-[11px] font-bold ${
+                  flightsFinished === allFlights.length ? "text-green-400" : "text-amber-300"
+                }`}
+              >
+                {flightsFinished === allFlights.length
+                  ? `✓ ${mt(lang, "allFlightsDone")}`
+                  : `${flightsFinished}/${allFlights.length} ${mt(lang, "flightsMeasured")}`}
+              </span>
+            </div>
+            <div className="mt-2 flex gap-1.5">
+              {allFlights.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goToFlight(i)}
+                  className={`min-h-[48px] min-w-9 flex-1 rounded-lg border text-xs font-bold ${
+                    !onJointsStep && i === flightAt
+                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                      : flightDone[i]
+                        ? "border-green-700 bg-green-600/10 text-green-300"
+                        : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  <span className="block">{i + 1}</span>
+                  <span
+                    className={`block text-[10px] font-bold ${
+                      flightDone[i] ? "text-green-400" : "text-amber-400"
+                    }`}
+                  >
+                    {flightDone[i] ? "✓" : flightGapList[i].length}
+                  </span>
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => goToFlight(allFlights.length)}
+                className={`min-h-[48px] flex-1 rounded-lg border px-2 text-xs font-bold ${
+                  onJointsStep
+                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                    : hasJoints && jointGaps.length === 0
+                      ? "border-green-700 bg-green-600/10 text-green-300"
+                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
+                }`}
+              >
+                <span className="block">🔗</span>
+                {hasJoints && (
+                  <span
+                    className={`block text-[10px] font-bold ${
+                      jointGaps.length === 0 ? "text-green-400" : "text-amber-400"
+                    }`}
+                  >
+                    {jointGaps.length === 0 ? "✓" : jointGaps.length}
+                  </span>
+                )}
+              </button>
+            </div>
+            {/* Named, not counted: "Flight 3 — not started" is the sentence
+                that stops a stair leaving half measured. */}
+            {otherOpenFlights.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {otherOpenFlights.map((i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => goToFlight(i)}
+                    className="flex w-full items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-left text-[11px] text-neutral-300"
+                  >
+                    <span className="flex-1">
+                      {mt(lang, "flight")} {i + 1} —{" "}
+                      {flightStarted[i]
+                        ? `${flightGapList[i].length} ${mt(lang, "flightLeftToDo")}`
+                        : mt(lang, "flightNotStarted")}
+                    </span>
+                    <span className="text-neutral-500">→</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <SketchSections
           focusSeg={multiFlightSheet && !onJointsStep ? allFlights[flightAt]?.i : undefined}
           lang={lang}
@@ -1123,64 +1323,6 @@ export default function MeasureEditor({
           removePost={removePost}
           toggleSketchWall={toggleSketchWall}
         />
-        {/* Which flight is being measured, and how many are left. Progress a
-            measurer can see, rather than one long form that never visibly
-            shortens. */}
-        {multiFlightSheet && (
-          <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-900 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold">
-                {onJointsStep
-                  ? mt(lang, "jointTableTitle")
-                  : `${mt(lang, "flight")} ${flightAt + 1} ${mt(lang, "ofWord")} ${allFlights.length}`}
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {onJointsStep ? mt(lang, "jointsAfterFlights") : mt(lang, "oneFlightAtATime")}
-              </span>
-            </div>
-            <div className="mt-2 flex gap-1.5">
-              {allFlights.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setActiveFlight(i)}
-                  className={`h-9 min-w-9 flex-1 rounded-lg border text-xs font-bold ${
-                    !onJointsStep && i === flightAt
-                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setActiveFlight(allFlights.length)}
-                className={`h-9 flex-1 rounded-lg border px-2 text-xs font-bold ${
-                  onJointsStep
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                }`}
-              >
-                🔗
-              </button>
-            </div>
-            {!onJointsStep && (
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveFlight(flightAt + 1);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-                className="mt-2 min-h-[44px] w-full rounded-lg border border-neutral-700 text-xs font-bold text-neutral-300"
-              >
-                {flightAt + 1 < allFlights.length
-                  ? `${mt(lang, "flight")} ${flightAt + 2} →`
-                  : `${mt(lang, "jointTableTitle")} →`}
-              </button>
-            )}
-          </div>
-        )}
         {/* Joints last: a joint's gap and angle only mean something once the
             flights on both sides of it have been measured. */}
         {(!multiFlightSheet || onJointsStep) && (
@@ -1299,29 +1441,112 @@ export default function MeasureEditor({
           approveSheet={approveSheet}
           sendBackSheet={sendBackSheet}
         />
-        <div className="flex gap-3 mt-2">
-          {activeStageIndex > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="flex-1 rounded-xl border border-neutral-700 bg-neutral-900 py-3 font-bold text-neutral-200"
-            >
-              ← {mt(lang, "previousStage")}
-            </button>
+        {/* The bottom of the screen is where a measurer looks for "what now".
+            On a multi-flight stair that answer is the NEXT FLIGHT, not the next
+            step — the flight tabs are up the page and easy to miss, so the
+            forward button itself walks the flights. The step only moves on
+            once every flight this step asks about has been answered. */}
+        <div className="mt-2 space-y-2">
+          {stageFlightsBlocked && (
+            <div className="rounded-xl border border-amber-700 bg-amber-950/30 px-3 py-2 text-xs text-amber-200">
+              ⚠ {mt(lang, "finishFlightsFirst")}
+              {flightStageOpen.length > 0
+                ? ` — ${flightStageOpen.map((i) => `${mt(lang, "flight")} ${i + 1}`).join(", ")}`
+                : hasJoints
+                  ? ` — ${mt(lang, "jointTableTitle")}`
+                  : ""}
+            </div>
           )}
-          {activeStageIndex < EDITOR_STAGES.length - 1 && (
+          <div className="flex gap-3">
+            {activeStageIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFlight(0);
+                  setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="flex-1 rounded-xl border border-neutral-700 bg-neutral-900 py-3 font-bold text-neutral-200"
+              >
+                ← {mt(lang, "previousStage")}
+              </button>
+            )}
+            {/* Flight → flight → joints, in the order they are walked. While
+                anything on this step is still open the walk button IS the
+                forward button; once nothing is, the step change takes over as
+                the primary and walking becomes a quiet second line. */}
+            {onFlightStage && stageFlightsBlocked ? (
+              !onJointsStep && flightAt + 1 < allFlights.length ? (
+                <button
+                  type="button"
+                  onClick={() => goToFlight(flightAt + 1)}
+                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+                >
+                  {mt(lang, "saveAndNextFlight")} ({flightAt + 2}) →
+                </button>
+              ) : flightStageOpen.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => goToFlight(flightStageOpen[0])}
+                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500/10 py-3 font-bold text-amber-300"
+                >
+                  {flightStageOpen.length} {mt(lang, "flight")} · {mt(lang, "goToFlight")} →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => goToFlight(allFlights.length)}
+                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500/10 py-3 font-bold text-amber-300"
+                >
+                  ⚠ {mt(lang, "jointTableTitle")} →
+                </button>
+              )
+            ) : onFlightStage && !onJointsStep && hasJoints && activeStage === "locations" &&
+              flightAt + 1 >= allFlights.length ? (
+              <button
+                type="button"
+                onClick={() => goToFlight(allFlights.length)}
+                className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+              >
+                {mt(lang, "saveAndJoints")} 🔗
+              </button>
+            ) : (
+              activeStageIndex < EDITOR_STAGES.length - 1 && (
+                <button
+                  type="button"
+                  onClick={nextStage}
+                  className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+                >
+                  {onFlightStage
+                    ? `✓ ${mt(lang, "allFlightsDone")} · ${mt(lang, "nextStage")} →`
+                    : `${mt(lang, "nextStage")} →`}
+                </button>
+              )
+            )}
+          </div>
+          {/* Nothing on this step is waiting, but there are still flights the
+              measurer may want to look over. Quiet, and out of the way of the
+              step they are actually finished with. */}
+          {onFlightStage && !stageFlightsBlocked && !onJointsStep &&
+            flightAt + 1 < allFlights.length && (
+              <button
+                type="button"
+                onClick={() => goToFlight(flightAt + 1)}
+                className="min-h-[48px] w-full rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-bold text-neutral-300"
+              >
+                {mt(lang, "flight")} {flightAt + 2} →
+              </button>
+            )}
+          {/* Stopping for the day is a first-class move on a stair that takes
+              two visits, so it gets its own button instead of a back gesture
+              that leaves the measurer wondering whether anything was kept. */}
+          {onFlightStage && (
             <button
               type="button"
-              onClick={() => {
-                setActiveStage(EDITOR_STAGES[activeStageIndex + 1].id);
-                window.scrollTo({ top: 0, behavior: "smooth" });
-              }}
-              className="flex-1 rounded-xl border border-amber-500 bg-amber-500 py-3 font-bold text-black"
+              onClick={finishLater}
+              className="min-h-[48px] w-full rounded-xl border border-neutral-700 bg-neutral-900 text-sm font-bold text-neutral-300"
             >
-              {mt(lang, "nextStage")} →
+              ⬇ {mt(lang, "finishLater")}
             </button>
           )}
         </div>

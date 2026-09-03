@@ -1119,10 +1119,56 @@ export interface Gap {
   key: string; // i18n key: gap_<key>
   detail?: string;
   tier?: GapTier;
+  /** Index into the sheet's flights, when the gap belongs to one flight. */
+  flight?: number;
 }
 
 export function gapTier(g: Gap): GapTier {
   return g.tier || "fab";
+}
+
+// ---- One flight ------------------------------------------------------------
+// A multi-flight stair is measured one flight at a time, so the editor has to
+// answer "is THIS flight finished?" — the same question requiredGaps answers
+// for the whole sheet. Both call this, so the flight tab and the review list
+// can never disagree about what a flight still owes.
+export function flightGaps(
+  fl: FlightSegment,
+  index: number,
+  opts: { needRake: boolean; multi: boolean }
+): Gap[] {
+  const has = (s: string | undefined | null) => !!s && s.trim() !== "";
+  const tag = `#${index + 1}`;
+  // On a single-flight sheet the step counts stand alone, exactly as they
+  // always have; on a multi-flight sheet they have to say which flight.
+  const count = (n: number) => (opts.multi ? `${tag} · ${n}` : `${n}`);
+  const gaps: Gap[] = [];
+  let missingSteps = 0;
+  let missingWinder = 0;
+  fl.steps.forEach((st) => {
+    if (!has(st.rise) || !has(st.run)) missingSteps += 1;
+    if (st.winder && (!has(st.runIn) || !has(st.runOut) || !has(st.turnDeg))) {
+      missingWinder += 1;
+    }
+  });
+  if (missingSteps > 0) gaps.push({ key: "steps", detail: count(missingSteps), flight: index });
+  if (missingWinder > 0) gaps.push({ key: "winder", detail: count(missingWinder), flight: index });
+  if (!has(fl.width)) gaps.push({ key: "flight_width", detail: tag, flight: index });
+  if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: tag, flight: index });
+  // A flight that turns needs its own control, because one overall rake
+  // cannot verify flights running in different directions. It needs ONE,
+  // though, not three: rise, run and rake are a right triangle, so any two
+  // give the third, and the rake alone — checked against
+  // hypot(sum of rises, sum of runs) — catches an error in either. Total
+  // rise already cross-checks every riser on the stair against
+  // floor-to-floor. Control rise and run only say WHICH of the two is
+  // wrong, which is diagnosis rather than detection, so they stay
+  // available and stop being demanded. On a three-flight stair that is
+  // three control measurements instead of nine.
+  if (opts.needRake && !has(fl.rake)) {
+    gaps.push({ key: "flight_rake", detail: tag, flight: index });
+  }
+  return gaps;
 }
 
 // What must exist before a sheet can be submitted for review. Requirements
@@ -1443,33 +1489,17 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       gaps.push({ key: "ramp_geometry" });
     }
   } else {
-    let missingSteps = 0;
-    let missingWinder = 0;
+    // Flight by flight, in the order they are walked, so the review list and
+    // the "next up" line send the measurer to a flight rather than to a
+    // stage-wide pile of missing steps.
     flights.forEach((fl, fi) => {
-      fl.steps.forEach((st) => {
-        if (!has(st.rise) || !has(st.run)) missingSteps += 1;
-        if (st.winder && (!has(st.runIn) || !has(st.runOut) || !has(st.turnDeg))) {
-          missingWinder += 1;
-        }
-      });
-      if (!has(fl.width)) gaps.push({ key: "flight_width", detail: `#${fi + 1}` });
-      if (!has(fl.angleDeg)) gaps.push({ key: "flight_angle", detail: `#${fi + 1}` });
-      // A flight that turns needs its own control, because one overall rake
-      // cannot verify flights running in different directions. It needs ONE,
-      // though, not three: rise, run and rake are a right triangle, so any two
-      // give the third, and the rake alone — checked against
-      // hypot(sum of rises, sum of runs) — catches an error in either. Total
-      // rise already cross-checks every riser on the stair against
-      // floor-to-floor. Control rise and run only say WHICH of the two is
-      // wrong, which is diagnosis rather than detection, so they stay
-      // available and stop being demanded. On a three-flight stair that is
-      // three control measurements instead of nine.
-      if (turns || flights.length > 1) {
-        if (!has(fl.rake)) gaps.push({ key: "flight_rake", detail: `#${fi + 1}` });
-      }
+      gaps.push(
+        ...flightGaps(fl, fi, {
+          needRake: turns || flights.length > 1,
+          multi: flights.length > 1,
+        })
+      );
     });
-    if (missingSteps > 0) gaps.push({ key: "steps", detail: `${missingSteps}` });
-    if (missingWinder > 0) gaps.push({ key: "winder", detail: `${missingWinder}` });
     // mixed-assembly curve and ramp segments must be measurable
     data.segments.forEach((seg, si) => {
       const tag = `#${si + 1}`;
