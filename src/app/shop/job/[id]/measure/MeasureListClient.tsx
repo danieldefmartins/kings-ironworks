@@ -14,7 +14,7 @@ import {
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
-import { sheetReadiness, flightGaps } from "@/lib/shop/measure-checks";
+import { sheetReadiness, flightGaps, type Tolerances } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
 
 export default function MeasureListClient({
@@ -22,11 +22,13 @@ export default function MeasureListClient({
   sheets,
   lang,
   nameById,
+  tolerances,
 }: {
   job: Job;
   sheets: MeasureSheet[];
   lang: string;
   nameById: Record<string, string>;
+  tolerances?: Tolerances;
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
@@ -315,7 +317,7 @@ export default function MeasureListClient({
         {sheets.map((s) => {
           // Same readiness model as the editor — the list must not report a
           // different answer from the sheet it opens.
-          const r = sheetReadiness(s.data, s.shape);
+          const r = sheetReadiness(s.data, s.shape, tolerances);
           const prog = sheetProgress(s.data);
           // A multi-flight stair says how many flights are done right here, so
           // "come back tomorrow and finish flight 3" survives the walk to the

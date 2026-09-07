@@ -6,6 +6,19 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    drawingWorkspace: "Measure on the drawing",
+    drawingPanHint: "Swipe to pan · Use + for detail",
+    drawing3d: "3D view",
+    drawingClose: "Close drawing",
+    drawingExpand: "Expand",
+    drawingProvisional: "Provisional geometry",
+    drawingMeasured: "Measured geometry",
+    drawingZoomOut: "Zoom out",
+    drawingZoomIn: "Zoom in",
+    drawingReset: "Reset zoom",
+    drawingFieldOnly: "Field geometry preview · Not a fabrication drawing.",
+    drawingMissingHint: "Dashed shapes include missing dimensions. ? means not measured.",
+
     fieldMeasure: "Field Measure",
     measureSheets: "Measure Sheets",
     newSheet: "New Measure Sheet",
@@ -1300,6 +1313,19 @@ const STR: Record<Lang, Dict> = {
   },
 
   pt: {
+    drawingWorkspace: "Meça no desenho",
+    drawingPanHint: "Deslize para mover · Use + para detalhes",
+    drawing3d: "Vista 3D",
+    drawingClose: "Fechar desenho",
+    drawingExpand: "Ampliar",
+    drawingProvisional: "Geometria provisória",
+    drawingMeasured: "Geometria medida",
+    drawingZoomOut: "Diminuir zoom",
+    drawingZoomIn: "Aumentar zoom",
+    drawingReset: "Redefinir zoom",
+    drawingFieldOnly: "Prévia das medidas de campo · Não é desenho de fabricação.",
+    drawingMissingHint: "Formas tracejadas têm medidas pendentes. ? significa não medido.",
+
     fieldMeasure: "Medição de Campo",
     measureSheets: "Fichas de Medição",
     newSheet: "Nova Ficha de Medição",
@@ -2589,6 +2615,19 @@ const STR: Record<Lang, Dict> = {
   },
 
   es: {
+    drawingWorkspace: "Mida en el dibujo",
+    drawingPanHint: "Deslice para mover · Use + para detalles",
+    drawing3d: "Vista 3D",
+    drawingClose: "Cerrar dibujo",
+    drawingExpand: "Ampliar",
+    drawingProvisional: "Geometría provisional",
+    drawingMeasured: "Geometría medida",
+    drawingZoomOut: "Alejar",
+    drawingZoomIn: "Acercar",
+    drawingReset: "Restablecer zoom",
+    drawingFieldOnly: "Vista previa de medidas de campo · No es un plano de fabricación.",
+    drawingMissingHint: "Las formas discontinuas tienen medidas pendientes. ? significa sin medir.",
+
     fieldMeasure: "Medición de Campo",
     measureSheets: "Hojas de Medición",
     newSheet: "Nueva Hoja de Medición",

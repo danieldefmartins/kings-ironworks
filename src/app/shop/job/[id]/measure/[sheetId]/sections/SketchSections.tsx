@@ -28,6 +28,8 @@ import {
   type EditorStage,
 } from "../fields";
 import { useState } from "react";
+import DrawingWorkspace from "../DrawingWorkspace";
+import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { type SketchView } from "../Sketch";
 
 export default function SketchSections({
@@ -102,6 +104,7 @@ export default function SketchSections({
   // On the steps step the drawing is an input: a tap opens the tread it
   // landed on. Everywhere else a tap still places a point.
   const measuring = activeStage === "steps";
+  const measuredWorkspace = measuring && ["straight", "stair_platform", "l_shape", "u_shape", "builder"].includes(shape) && !!stairGeometry(data, focusSeg);
   return (
     <>
       {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
@@ -213,7 +216,8 @@ export default function SketchSections({
           It shows on the steps step too, where a tap means "measure this
           step" rather than "put a post here" — the drawing is the one thing
           on screen that knows which tread is which. */}
-      {!isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
+      {measuredWorkspace && <DrawingWorkspace data={data} lang={lang} focusSeg={focusSeg} onMeasureStep={onMeasureStep} />}
+      {!measuredWorkspace && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
         {!isSpiral && !isWallRail && (

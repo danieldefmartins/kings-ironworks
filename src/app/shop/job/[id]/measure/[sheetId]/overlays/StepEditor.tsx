@@ -58,6 +58,7 @@ export default function StepEditor({
 
   return (
     <div
+      data-step-editor
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 sm:items-center print:hidden"
       onClick={onClose}
     >
