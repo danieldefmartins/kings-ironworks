@@ -112,6 +112,9 @@ describe("the layout numbers that repeat down a run", () => {
     // Place two posts by tapping treads on the posts step.
     act(() => { fireEvent.click(screen.getByRole("button", { name: /Posts & locations/i })); });
     act(() => { fireEvent.click(treads()[0]); });
+    const distance = screen.getByLabelText("First-step edge → post edge · P1");
+    fireEvent.change(distance, { target: { value: "25 1/2" } });
+    expect(document.querySelector('[data-post-distance]')?.textContent).toContain("25 1/2");
     const setback = screen.getAllByLabelText(/Setback on destination step/)[0] as HTMLInputElement;
     act(() => { fireEvent.change(setback, { target: { value: "2" } }); });
     act(() => { fireEvent.click(treads()[2]); });

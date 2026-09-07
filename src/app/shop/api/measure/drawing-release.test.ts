@@ -33,6 +33,8 @@ describe('measurement persistence',()=>{
     data.rail.sideSetback='3 1/2';(data.segments[0] as FlightSegment).wallSide='left';
     data.landingTransitions=[{...blankLandingTransition(1,0,2,'left'),kind:'drop',heightDifference:'17',horizontalSpan:'8',higherEnd:'upper',verticalAt:'lower'}];
     data.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'8',exitOffset:'4'});
+    data.posts[0].firstStepToPostEdge="25 1/2";
+    data.posts[0].distanceFromFirst="22";
     data.drawingReleaseVersion=1;
     mocks.update.mockResolvedValue([{updated_at:stamp}]);
     const response=await POST(new NextRequest('http://localhost/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'update',id,data,baseUpdatedAt:stamp})}));
@@ -40,6 +42,8 @@ describe('measurement persistence',()=>{
     const saved=mocks.update.mock.calls[0][2].data;
     expect(saved.joints).toEqual(data.joints);expect(saved.landingTransitions).toEqual(data.landingTransitions);expect(saved.rail.sideSetback).toBe('3 1/2');expect(saved.segments[0].wallSide).toBe('left');
     expect(saved.segments[1].entryOffset).toBe("8");
+    expect(saved.posts[0].firstStepToPostEdge).toBe("25 1/2");
+    expect(saved.posts[0].distanceFromFirst).toBe("22");
     expect(saved.drawingReleaseVersion).toBeUndefined();
   });
 });

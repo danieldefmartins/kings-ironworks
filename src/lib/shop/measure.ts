@@ -118,6 +118,7 @@ export interface PostMeasure {
   planSegIdx?: number; // which line within that run, in draw order
   pos: string; // platform posts: distance along the platform from its start;
   //             drawn points: distance along the line from its start
+  firstStepToPostEdge: string; // direct measurement from first-step edge to this post edge; never inferred from tread distances
   distanceFromFirst: string; // first-step edge to the edge of the destination tread
   fromNosing: string; // setback from the tread nosing (or platform edge)
   fromEdge: string; // setback from the open side edge
@@ -1577,6 +1578,7 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
     segIdx,
     stepIdx,
     pos: "",
+    firstStepToPostEdge: "",
     distanceFromFirst: "",
     fromNosing: "",
     fromEdge: "",
@@ -1632,6 +1634,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       ...p,
       pointType: p.pointType ?? "railing_post",
       side: p.side === "left" || p.side === "right" ? p.side : "",
+      firstStepToPostEdge: p.firstStepToPostEdge ?? "",
       distanceFromFirst: p.distanceFromFirst ?? "",
       plate: p.plate ?? "",
       anchors: p.anchors ?? "",
@@ -1928,7 +1931,7 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       vals.push(seg.radius, seg.chord, seg.arc, seg.width);
     }
   }
-  for (const p of data.posts) vals.push(p.distanceFromFirst, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
+  for (const p of data.posts) vals.push(p.firstStepToPostEdge, p.fromNosing, p.fromEdge, p.pointType === "railing_post" ? p.mount : p.pointType);
   if (data.gate) {
     const g = data.gate;
     vals.push(g.use, g.operation, g.widthTop, g.widthBottom, g.heightHinge, g.groundClearance, g.gradeRise);

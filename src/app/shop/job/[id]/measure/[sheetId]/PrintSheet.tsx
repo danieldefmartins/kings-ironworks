@@ -444,6 +444,7 @@ export default function PrintSheet({
                 <tr>
                   <Th>#</Th>
                   <Th>{mt(lang, "onStep")}</Th>
+                  <Th>{mt(lang, "firstStepToPostEdge")}</Th>
                   <Th>{mt(lang, "fromNosing")}</Th>
                   <Th>{mt(lang, "fromEdge")}</Th>
                   <Th>{mt(lang, "mountType")}</Th>
@@ -455,6 +456,7 @@ export default function PrintSheet({
                   <tr key={po.id}>
                     <Td>P{i + 1}</Td>
                     <Td>{po.stepIdx !== null ? stepOf(data, po) : mt(lang, "platform")}</Td>
+                    <Td><Val v={po.firstStepToPostEdge || ""} /></Td>
                     <Td><Val v={po.stepIdx !== null ? po.fromNosing : po.pos} /></Td>
                     <Td><Val v={po.fromEdge} /></Td>
                     <Td>{po.mount ? optLabel(lang, po.mount) : <Val v="" />}</Td>

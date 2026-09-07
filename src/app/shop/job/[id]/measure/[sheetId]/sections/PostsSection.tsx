@@ -141,8 +141,10 @@ export default function PostsSection({
                     </>
                   ) : po.stepIdx !== null ? (
                     <>
-                      <MInput help="distanceFromFirst" label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
-                        onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />
+                      <MInput help="firstStepToPostEdge" label={`${mt(lang, "firstStepToPostEdge")} · P${n + 1}`} value={po.firstStepToPostEdge}
+                        onChange={(v) => setPost(set, po.id, "firstStepToPostEdge", v)} />
+                      {po.distanceFromFirst && <MInput help="distanceFromFirst" label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
+                        onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />}
                       <MInput help="postSetback" label={mt(lang, "postSetback")} value={po.fromNosing}
                         onChange={(v) => setPost(set, po.id, "fromNosing", v)} />
                     </>

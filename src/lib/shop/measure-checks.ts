@@ -1523,8 +1523,8 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   data.posts.forEach((p, i) => {
     const tag = `P${i + 1}`;
     const posOk = p.stepIdx !== null ? has(p.fromNosing) : has(p.pos);
-    if (p.stepIdx !== null && !has(p.distanceFromFirst)) {
-      gaps.push({ key: "post_first_edge", detail: tag });
+    if (p.stepIdx !== null && !has(p.firstStepToPostEdge)) {
+      gaps.push({ key: "post_first_post_edge", detail: tag });
     }
     if (!posOk || !has(p.fromEdge) || (p.pointType === "railing_post" && !has(p.mount))) {
       gaps.push({ key: "post", detail: tag });

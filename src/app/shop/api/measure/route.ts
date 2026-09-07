@@ -99,6 +99,7 @@ const PostSchema = z.object({
   pathId: z.string().max(40).optional(),
   planSegIdx: z.number().int().min(0).max(80).optional(),
   pos: meas,
+  firstStepToPostEdge: meas.optional(),
   distanceFromFirst: meas.optional(),
   fromNosing: meas,
   fromEdge: meas,

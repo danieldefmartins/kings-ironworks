@@ -20,10 +20,13 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   const surfaces=model.treads.map(t=>t.corners);
   const hidden=(p:Point3)=>view!=="side"&&drawingPointOccluded(p,surfaces,camera);
   const posts=details?drawingPosts(data,model).filter(p=>p.base&&p.top):[];
+  const postDistances=posts.filter(p=>p.post.firstStepToPostEdge?.trim());
   const transitions=details&&focusSeg===undefined?landingConnections(data).map((t,i)=>({t,i,geometry:landingConnectionGeometry(data,t)})).filter(x=>x.geometry&&(x.t.kind==='drop'||x.t.kind==='level')):[];
+  const distanceOrder=[...postDistances].sort((a,b)=>project(a.base!)[1]-project(b.base!)[1]);
   const all=[...model.treads.flatMap(t=>[...t.corners,{...t.corners[0],z:t.corners[0].z-t.rise}]),...posts.flatMap(p=>[p.base!,p.top!]),...transitions.flatMap(x=>x.geometry!.path)].map(project);
   const minX=Math.min(...all.map(p=>p[0]))-70,minY=Math.min(...all.map(p=>p[1]))-80;
-  const width=Math.max(...all.map(p=>p[0]))-minX+70,height=Math.max(...all.map(p=>p[1]))-minY+80;
+  const geometryRight=Math.max(...all.map(p=>p[0]))+70;
+  const width=geometryRight-minX+(postDistances.length?270:0),height=Math.max(Math.max(...all.map(p=>p[1]))-minY+80,postDistances.length*54+100);
   const ink=light?'#222':'#e5e5e5',accent=light?'#854d0e':'#fcd34d';
   const pts=(p:Point3[])=>p.map(project).map(p=>p.join(',')).join(' ');
   const title=mt(lang,view==='side'?'sideView':view==='plan'?'planView':'drawing3d');
@@ -72,6 +75,14 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
       if(!tread)return null;
       const a=project(tread.corners[0]);
       return <g key={`joint-${index}`}><circle cx={a[0]} cy={a[1]} r={8} fill={light?'#fff':'#171717'} stroke={accent}/><text x={a[0]-12} y={a[1]-12} textAnchor="end" fill={accent} fontSize={12}>J{index+1}</text></g>;
+    })}
+    {postDistances.map(p=>{
+      const base=project(p.base!),labelY=minY+80+distanceOrder.indexOf(p)*54;
+      return <g key={`distance-${p.post.id}`} pointerEvents="none" data-post-distance={p.post.id}>
+        <polyline points={`${base[0]},${base[1]} ${geometryRight-15},${labelY} ${geometryRight},${labelY}`} fill="none" stroke={accent} strokeWidth={1} strokeDasharray="3 3"/>
+        <text x={geometryRight+8} y={labelY-6} fill={ink} fontSize={11}>{mt(lang,'firstStepToPostEdge')} · {p.label}</text>
+        <text x={geometryRight+8} y={labelY+13} fill={accent} fontSize={15} fontWeight="bold">{p.post.firstStepToPostEdge}{data.units==='in'?'″':''}</text>
+      </g>;
     })}
     {posts.map((p,index)=>{
       const a=project(p.base!),b=project(p.top!);
