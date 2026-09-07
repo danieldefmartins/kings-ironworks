@@ -179,6 +179,7 @@ export interface PlatformSegment {
   diag: string; // corner-to-corner diagonal — verifies squareness
   slope: string; // e.g. 1.2° or 3/8"/ft — rail gets pitched to match
   slopeDir: string; // which way it falls
+  entryOffset?: string; // landing left edge to incoming flight left edge, looking uphill
   exitOffset?: string; // departure edge to next flight left edge, looking out
   turn: "none" | "left" | "right" | "u"; // direction change after this landing
 }

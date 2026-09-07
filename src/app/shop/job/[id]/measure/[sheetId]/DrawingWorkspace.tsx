@@ -3,19 +3,22 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MeasureData } from '@/lib/shop/measure';
 import { stairGeometry } from '@/lib/shop/measure-geometry';
+import AssemblyLayout from './AssemblyLayout';
 import DrawingSvg from './DrawingSvg';
 import DrawingDetails from './DrawingDetails';
 import { mt } from '@/lib/shop/measure-i18n';
 
 type View = 'side' | 'plan' | 'iso';
 
-export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, onTapPost }: {
+export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, onTapPost, set }: {
   data: MeasureData; lang: string; focusSeg?: number;
+  set?: (fn: (data: MeasureData) => void) => void;
   onTapPost?: (id: string) => void;
   onMeasureStep: (segIdx: number, stepIdx: number) => void;
 }) {
   const [view, setView] = useState<View>('iso');
   const [expanded, setExpanded] = useState(false);
+  const [azimuth, setAzimuth] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [assembly, setAssembly] = useState(false);
   const [details, setDetails] = useState(false);
@@ -75,6 +78,8 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
         <button type="button" aria-pressed={details} onClick={()=>setDetails(v=>!v)} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm">{mt(lang,'progressSchedules')}</button>
         <button type="button" onClick={download} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm">{mt(lang,'drawingExportSvg')}</button>
       </div></details>
+      {view==='iso' && <div className="mb-2 flex gap-2"><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a-90)}>↶ {mt(lang,'assemblyRotateLeft')}</button><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a+90)}>{mt(lang,'assemblyRotateRight')} ↷</button></div>}
+      {selected===undefined && model.provisional && <p className="mb-2 text-sm text-amber-200">{mt(lang,'assemblyUnresolved')}</p>}
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className={`text-xs ${model.provisional ? 'text-amber-200' : 'text-emerald-300'}`}>{mt(lang, model.provisional ? 'drawingProvisional' : 'drawingMeasured')}</span>
         <div className="flex shrink-0 items-center rounded-xl border border-neutral-700">
@@ -85,10 +90,11 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div>
       <div className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
         <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:view==='iso'?0:Math.max(340,model.treads.length*64)*zoom}}>
-          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={onMeasureStep} onTapPost={onTapPost}/>
+          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={onMeasureStep} onTapPost={onTapPost}/>
         </div>
       </div>
       <p className="mt-2 text-xs text-neutral-400">{mt(lang, 'drawingPanHint')}</p>
+      {!expanded && selected===undefined && set && <AssemblyLayout data={data} lang={lang} set={set}/>}
       {!expanded && details && <DrawingDetails data={data} lang={lang}/>}
       <p className="mt-2 text-xs leading-relaxed text-neutral-300">{mt(lang, 'drawingFieldOnly')}{model.provisional && ` ${mt(lang, 'drawingMissingHint')}`}</p>
     </section>

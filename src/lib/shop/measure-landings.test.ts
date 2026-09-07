@@ -4,7 +4,7 @@ import {landingConnections,landingConnectionGeometry,landingConnectionComplete,l
 const fixture=()=>{
   const d=newMeasureData('straight',2),lower=d.segments[0] as FlightSegment;
   lower.width='36';lower.steps.forEach(s=>Object.assign(s,{rise:'7',run:'11'}));
-  d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',exitOffset:'0'},structuredClone(lower));
+  d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'0',exitOffset:'0'},structuredClone(lower));
   d.rail.height='36';d.rail.side='Left';d.datums.postRef='centerline';
   d.posts=[Object.assign(newPost(0,1),{side:'left',fromNosing:'2',fromEdge:'3 1/2'}),Object.assign(newPost(2,0),{side:'left',fromNosing:'2',fromEdge:'3 1/2'})];
   return d;

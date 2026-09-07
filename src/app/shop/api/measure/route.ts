@@ -68,6 +68,7 @@ const PlatformSchema = z.object({
   slope: meas,
   slopeDir: z.string().max(120),
   turn: z.enum(["none", "left", "right", "u"]),
+  entryOffset: meas.optional(),
   exitOffset: meas.optional(),
 });
 const RampSchema = z.object({

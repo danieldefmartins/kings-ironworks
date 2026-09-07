@@ -106,3 +106,38 @@ describe('assembly placement',()=>{
     const m=stairGeometry(d)!;expect(m.rise).toBeCloseTo(10);expect(m.treads.every(t=>t.stepIdx===null&&t.corners.every(p=>Number.isFinite(p.x+p.y+p.z)))).toBe(true);
   });
 });
+
+describe('landing registration and inherited uncertainty',()=>{
+  const modelData=()=>{
+    const d=fixture();
+    d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'8',exitOffset:'4'},structuredClone(d.segments[0]));
+    return d;
+  };
+  it('registers a wider landing against the incoming flight before placing the return',()=>{
+    const d=modelData(),m=stairGeometry(d)!;
+    expect(m.treads[2].corners[0]).toEqual({x:22,y:-8,z:14.5});
+    expect(m.treads[2].corners[3]).toEqual({x:22,y:76,z:14.5});
+    expect(m.treads[3].corners[0]).toEqual({x:22,y:72,z:21.5});
+    expect(m.treads[3].corners[3].y).toBeCloseTo(36);
+    expect(m.provisional).toBe(false);
+    expect((d.segments[1] as {entryOffset:string}).entryOffset).toBe('8');
+  });
+  it('marks downstream flights provisional when their landing placement is unknown',()=>{
+    const d=modelData(),p=d.segments[1];if(p.kind!=='platform')throw Error();
+    p.entryOffset='';
+    expect(stairGeometry(d)!.treads[3].provisional).toBe(true);
+    expect(stairGeometry(d,2)!.provisional).toBe(false);
+    p.entryOffset='8';p.exitOffset='';
+    expect(stairGeometry(d)!.treads[3].provisional).toBe(true);
+  });
+  it('flags a flight that cannot fit within the measured landing width',()=>{
+    const d=modelData(),p=d.segments[1];if(p.kind!=='platform')throw Error();
+    p.entryOffset='60';expect(stairGeometry(d)!.provisional).toBe(true);
+  });
+  it('keeps the incoming elevation fixed when registering a sloping landing',()=>{
+    const d=modelData(),p=d.segments[1];if(p.kind!=='platform')throw Error();
+    p.slope='3/8"/ft';p.slopeDir='Right';
+    const t=stairGeometry(d)!.treads[2];
+    expect(t.corners[0].z+.03125*-8).toBeCloseTo(14.5);
+  });
+});

@@ -361,6 +361,7 @@ export default function StairSections({
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
             <MInput help="depth" label={mt(lang, "depth")} value={seg.depth}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
+            {i>0 && <MInput label={mt(lang,"assemblyEntry")} value={seg.entryOffset||""} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).entryOffset=v))}/>}
             {data.segments[i+1] && <MInput label={mt(lang,"drawingExitOffset")} value={seg.exitOffset||""} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).exitOffset=v))}/>}
             <MInput help="landingDiag" label={mt(lang, "landingDiag")} value={seg.diag}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />

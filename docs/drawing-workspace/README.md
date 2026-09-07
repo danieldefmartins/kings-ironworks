@@ -131,3 +131,28 @@ physical tablet checklist remains a post-deployment follow-up; it was not
 represented as completed by browser emulation. The dedicated SketchUp worker
 still needs registration and a live generation check before automated drawing
 output can be called operational.
+
+## Whole-stair accuracy follow-up
+
+Landings now accept an incoming-flight left-edge offset (`entryOffset`) in
+addition to the departure offset. The landing origin shifts by that measurement;
+its incoming elevation is preserved on crossfall. Unknown or out-of-bounds
+registration is provisional and that uncertainty propagates to downstream
+flights. Focused flights retain their local-coordinate view. An unmeasured
+switchback uses a clearly provisional two-flight-wide footprint, instead of
+placing both runs on the same strip. Existing source measurements are not
+rewritten.
+
+Whole-stair layout controls sit beside the drawing, with straight, left, right
+and 180-degree departure choices. Camera rotation changes projection only.
+Faces render by camera depth; hidden surface annotations and setback guides
+are suppressed. Individual-flight views and schedules remain available when
+another flight blocks the view. `assembly-registration.png` is a synthetic
+three-flight coordinate check, including a switchback and a right-hand exit.
+The newest production multi-flight sheet has no measured dimensions yet, so
+these tests do not claim a match to that physical staircase.
+
+Validation: 128 tests, targeted ESLint and a production build pass. Regression
+checks cover asymmetric landing registration, crossfall datum preservation,
+inherited uncertainty, API persistence, occlusion and editing the turn controls.
+No database migration is needed for this optional JSON measurement field.

@@ -32,12 +32,14 @@ describe('measurement persistence',()=>{
     data.joints=[{...blankJoint(0),method:'weld',gap:'1/8',offsetV:'8',offsetH:'3 1/2',angleChange:'90',carriedBy:'upper'}];
     data.rail.sideSetback='3 1/2';(data.segments[0] as FlightSegment).wallSide='left';
     data.landingTransitions=[{...blankLandingTransition(1,0,2,'left'),kind:'drop',heightDifference:'17',horizontalSpan:'8',higherEnd:'upper',verticalAt:'lower'}];
+    data.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'8',exitOffset:'4'});
     data.drawingReleaseVersion=1;
     mocks.update.mockResolvedValue([{updated_at:stamp}]);
     const response=await POST(new NextRequest('http://localhost/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'update',id,data,baseUpdatedAt:stamp})}));
     expect(response.status).toBe(200);
     const saved=mocks.update.mock.calls[0][2].data;
     expect(saved.joints).toEqual(data.joints);expect(saved.landingTransitions).toEqual(data.landingTransitions);expect(saved.rail.sideSetback).toBe('3 1/2');expect(saved.segments[0].wallSide).toBe('left');
+    expect(saved.segments[1].entryOffset).toBe("8");
     expect(saved.drawingReleaseVersion).toBeUndefined();
   });
 });

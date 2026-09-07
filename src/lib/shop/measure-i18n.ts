@@ -6,6 +6,20 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    assemblyLayout: "Whole-stair layout",
+    assemblyLayoutHint: "Set each landing turn and its measured footprint. Entry offset is measured across the landing, from its left edge to the incoming flight’s left edge, looking uphill. Enter 0 when those edges line up.",
+    assemblyTurn: "Next flight direction",
+    assemblyTurn_none: "Straight ahead",
+    assemblyTurn_left: "Left · 90°",
+    assemblyTurn_right: "Right · 90°",
+    assemblyTurn_u: "Return · 180°",
+    assemblyLength: "Landing length · along incoming flight",
+    assemblyWidth: "Landing width · across incoming flight",
+    assemblyEntry: "Incoming flight · left-edge offset",
+    assemblyRotateLeft: "Rotate left",
+    assemblyRotateRight: "Rotate right",
+    assemblyUnresolved: "Layout preview: missing landing dimensions or offsets affect every flight after them. Dashed geometry is not a measured assembly.",
+
     progressDrawingOptions: "Drawing options",
     progressSchedules: "Details & schedules",
     progressTitle: "Your drawing, taking shape",
@@ -1394,6 +1408,20 @@ const STR: Record<Lang, Dict> = {
   },
 
   pt: {
+    assemblyLayout: "Traçado da escada inteira",
+    assemblyLayoutHint: "Defina a direção e as medidas de cada patamar. O recuo de entrada vai da borda esquerda do patamar à borda esquerda do lance que chega, olhando para cima da escada. Informe 0 quando estiverem alinhadas.",
+    assemblyTurn: "Direção do próximo lance",
+    assemblyTurn_none: "Seguir em frente",
+    assemblyTurn_left: "Esquerda · 90°",
+    assemblyTurn_right: "Direita · 90°",
+    assemblyTurn_u: "Retorno · 180°",
+    assemblyLength: "Comprimento do patamar · no sentido da chegada",
+    assemblyWidth: "Largura do patamar · transversal à chegada",
+    assemblyEntry: "Lance de chegada · recuo da borda esquerda",
+    assemblyRotateLeft: "Girar à esquerda",
+    assemblyRotateRight: "Girar à direita",
+    assemblyUnresolved: "Prévia do traçado: medidas ou recuos ausentes nos patamares afetam os lances seguintes. A geometria tracejada ainda não representa uma escada medida.",
+
     progressDrawingOptions: "Opções do desenho",
     progressSchedules: "Detalhes e tabelas",
     progressTitle: "Seu desenho tomando forma",
@@ -2777,6 +2805,20 @@ const STR: Record<Lang, Dict> = {
   },
 
   es: {
+    assemblyLayout: "Trazado de toda la escalera",
+    assemblyLayoutHint: "Defina la dirección y las medidas de cada descanso. El retiro de entrada va del borde izquierdo del descanso al borde izquierdo del tramo entrante, mirando hacia arriba. Introduzca 0 si están alineados.",
+    assemblyTurn: "Dirección del siguiente tramo",
+    assemblyTurn_none: "Seguir recto",
+    assemblyTurn_left: "Izquierda · 90°",
+    assemblyTurn_right: "Derecha · 90°",
+    assemblyTurn_u: "Retorno · 180°",
+    assemblyLength: "Longitud del descanso · dirección de llegada",
+    assemblyWidth: "Ancho del descanso · transversal a la llegada",
+    assemblyEntry: "Tramo entrante · retiro del borde izquierdo",
+    assemblyRotateLeft: "Girar a la izquierda",
+    assemblyRotateRight: "Girar a la derecha",
+    assemblyUnresolved: "Vista previa: las medidas o retiros ausentes en los descansos afectan los tramos siguientes. La geometría discontinua aún no representa una escalera medida.",
+
     progressDrawingOptions: "Opciones del dibujo",
     progressSchedules: "Detalles y tablas",
     progressTitle: "Su dibujo toma forma",

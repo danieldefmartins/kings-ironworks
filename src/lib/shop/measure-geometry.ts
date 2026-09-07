@@ -34,8 +34,8 @@ export function landingGrade(s: string): number | null {
 export function stairGeometry(data: MeasureData, focusSeg?: number) {
   const treads: MeasuredTread[] = [];
   let pose: Pose = { x: 0, y: 0, z: 0, heading: 0 };
-  let landing: { pose: Pose; run: number; width: number; gradeX: number; gradeY: number } | null = null;
-  let number = 0, runTotal = 0;
+  let landing: { pose: Pose; run: number; width: number; gradeX: number; gradeY: number; provisional: boolean } | null = null;
+  let number = 0, runTotal = 0, originProvisional = false;
   const widthOf = (index: number) => {
     const s = data.segments[index];
     return s && 'width' in s ? value(s.width) ?? 36 : 36;
@@ -53,14 +53,15 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
           const left = segment.branch === 'left';
           const across = left ? 0 : landing.width;
           const offset=value(segment.branchOffset,true);
-          branchProvisional=offset===null || (offset+(width??36)>landing.run);
+          branchProvisional=landing.provisional || offset===null || (offset+(width??36)>landing.run);
+          originProvisional=landing.provisional;
           const along = offset===null ? (landing.run + (left ? -1 : 1) * (width ?? 36)) / 2 : left?offset:landing.run-offset;
           pose = poseAt(landing.pose, along, across, landing.gradeX * along + landing.gradeY * across, left ? -Math.PI / 2 : Math.PI / 2);
         } else branchProvisional = true;
       }
       segment.steps.forEach((step, stepIdx) => {
         const rise = value(step.rise), run = value(step.run), w = width ?? 36, r = rise ?? 7, d = run ?? 11;
-        let provisional = rise === null || run === null || width === null || branchProvisional;
+        let provisional = originProvisional || rise === null || run === null || width === null || branchProvisional;
         let corners: MeasuredTread['corners'];
         if (step.winder) {
           const angle = value(step.turnDeg), inside = value(step.runIn, true), outside = value(step.runOut);
@@ -84,21 +85,26 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
         }
         treads.push({segIdx,stepIdx,number:++number,x:corners[0].x,z:corners[0].z,rise:r,run:d,width:w,corners,
           riseLabel:rise===null?'?':step.rise,runLabel:run===null?'?':step.run,widthLabel:width===null?'?':segment.width,provisional});
+        originProvisional = provisional;
         runTotal += d;
       });
     } else if (segment.kind === 'platform') {
-      const run=value(segment.length), width=value(segment.depth), d=run??36, w=width??36;
+      const run=value(segment.length), width=value(segment.depth), d=run??36;
+      const incomingWidth=widthOf(segIdx-1),nextWidth=widthOf(segIdx+1);
+      const w=width??(segment.turn==='u'?incomingWidth+nextWidth:Math.max(incomingWidth,nextWidth));
+      const entry=value(segment.entryOffset,true),entryOffset=entry??0;
       const grade=landingGrade(segment.slope);
       const direction=segment.slopeDir;
       const knownDirection=['Left','Right','Toward stairs','Away from stairs'].includes(direction);
       const gx=direction==='Toward stairs' ? grade??0 : direction==='Away from stairs' ? -(grade??0) : 0;
       const gy=direction==='Left' ? grade??0 : direction==='Right' ? -(grade??0) : 0;
+      const entryUnknown=focusSeg===undefined && segIdx>0 && (entry===null && Math.abs(w-incomingWidth)>.001 || entryOffset+incomingWidth>w);
+      pose=poseAt(pose,0,-entryOffset,-gy*entryOffset);
       const corners: MeasuredTread['corners']=[point(pose,0,0),point(pose,d,0,gx*d),point(pose,d,w,gx*d+gy*w),point(pose,0,w,gy*w)];
       treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:0,run:d,width:w,corners,
         riseLabel:'',runLabel:run===null?'?':segment.length,widthLabel:width===null?'?':segment.depth,
-        provisional:run===null||width===null||!segment.slope.trim()||grade===null||(grade!==0&&!knownDirection)});
-      landing={pose:{...pose},run:d,width:w,gradeX:gx,gradeY:gy};
-      const nextWidth=widthOf(segIdx+1);
+        provisional:originProvisional||entryUnknown||run===null||width===null||!segment.slope.trim()||grade===null||(grade!==0&&!knownDirection)});
+      landing={pose:{...pose},run:d,width:w,gradeX:gx,gradeY:gy,provisional:treads[treads.length-1].provisional};
       const offset=value(segment.exitOffset,true);
       const x=segment.turn==='left' ? (d-nextWidth)/2 : segment.turn==='right' ? (d+nextWidth)/2 : segment.turn==='u' ? 0 : d;
       const y=segment.turn==='left' ? 0 : segment.turn==='right'||segment.turn==='u' ? w : (w-nextWidth)/2;
@@ -107,11 +113,13 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       const oy=offset===null?y:segment.turn==='u'?w-offset:segment.turn==='none'?offset:y;
       const next=data.segments[segIdx+1];
       if(next && !(next.kind==='flight'&&next.branch) && (offset===null || offset+nextWidth>(segment.turn==='left'||segment.turn==='right'?d:w)))treads[treads.length-1].provisional=true;
+      originProvisional=treads[treads.length-1].provisional;
       pose=poseAt(pose,ox,oy,gx*ox+gy*oy,turn);runTotal+=d;
     } else if (segment.kind === 'ramp') {
       const run=value(segment.runH), rise=value(segment.rise,true), width=value(segment.width), d=run??48, r=rise??0,w=width??36;
       const corners: MeasuredTread['corners']=[point(pose,0,0),point(pose,d,0,r),point(pose,d,w,r),point(pose,0,w)];
-      treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:r,run:d,width:w,corners,riseLabel:rise===null?'?':segment.rise,runLabel:run===null?'?':segment.runH,widthLabel:width===null?'?':segment.width,provisional:run===null||rise===null||width===null});
+      treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:r,run:d,width:w,corners,riseLabel:rise===null?'?':segment.rise,runLabel:run===null?'?':segment.runH,widthLabel:width===null?'?':segment.width,provisional:originProvisional||run===null||rise===null||width===null});
+      originProvisional=treads[treads.length-1].provisional;
       pose=poseAt(pose,d,0,r);runTotal+=d;
     } else if (segment.kind === 'curve') {
       const radius=value(segment.radius), width=value(segment.width), angle=value(segment.sweepDeg), rise=value(segment.rise,true);
@@ -120,8 +128,9 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       const at=(t:number,y:number)=>point(pose,-(y-pivotY)*Math.sin(sign*t),pivotY+(y-pivotY)*Math.cos(sign*t),(rise??0)*t/a);
       for(let i=0;i<count;i++) {
         const t=i*a/count,u=(i+1)*a/count,corners:MeasuredTread['corners']=[at(t,0),at(u,0),at(u,w),at(t,w)];
-        treads.push({segIdx,stepIdx:null,number:null,x:corners[0].x,z:corners[0].z,rise:0,run:R*a/count,width:w,corners,riseLabel:'',runLabel:i===0?segment.arc:'',widthLabel:i===0?segment.width:'',provisional:radius===null||width===null||R<=w/2||angle===null||angle>360||(!!segment.rise.trim()&&rise===null)});
+        treads.push({segIdx,stepIdx:null,number:null,x:corners[0].x,z:corners[0].z,rise:0,run:R*a/count,width:w,corners,riseLabel:'',runLabel:i===0?segment.arc:'',widthLabel:i===0?segment.width:'',provisional:originProvisional||radius===null||width===null||R<=w/2||angle===null||angle>360||(!!segment.rise.trim()&&rise===null)});
       }
+      originProvisional=treads[treads.length-1].provisional;
       pose={...at(a,0),heading:pose.heading+sign*a};runTotal+=R*a;
     }
   });
