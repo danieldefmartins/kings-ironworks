@@ -4,6 +4,48 @@ import { newMeasureData, newPost, normalizeMeasureData } from '@/lib/shop/measur
 import DrawingWorkspace from './DrawingWorkspace';
 afterEach(cleanup);
 describe('drawing workspace', () => {
+  it('pinches within zoom limits in every view and expanded mode without placing a post', () => {
+    const edit=vi.fn();
+    render(<DrawingWorkspace data={newMeasureData('straight',4)} lang="en" onMeasureStep={edit} placingPosts/>);
+    const viewport=document.querySelector('[data-drawing-viewport]')!;
+    const touches=(gap:number)=>[{identifier:1,clientX:50,clientY:100},{identifier:2,clientX:50+gap,clientY:100}];
+    for(const view of ['Side view','Top view','3D view']) {
+      fireEvent.click(screen.getByRole('button',{name:view}));
+      fireEvent.touchStart(viewport,{touches:touches(100)});
+      fireEvent.touchMove(viewport,{touches:touches(200)});
+      expect(screen.getByText('200%')).toBeTruthy();
+      fireEvent.touchMove(viewport,{touches:touches(900)});
+      expect(screen.getByText('400%')).toBeTruthy();
+      fireEvent.touchMove(viewport,{touches:touches(10)});
+      expect(screen.getByText('100%')).toBeTruthy();
+      fireEvent.touchEnd(viewport,{touches:[]});
+      fireEvent.click(screen.getByRole('button',{name:'Step 2'}),{detail:1});
+      expect(edit).not.toHaveBeenCalled();
+    }
+    fireEvent.click(screen.getByRole('button',{name:'Expand'}));
+    fireEvent.touchStart(viewport,{touches:touches(100)});
+    fireEvent.touchMove(viewport,{touches:touches(150)});
+    expect(screen.getByText('150%')).toBeTruthy();
+    fireEvent.touchCancel(viewport,{touches:[]});
+    // A fresh, deliberate single-finger tap works immediately after the gesture.
+    fireEvent.touchStart(viewport,{touches:[touches(100)[0]]});
+    fireEvent.touchEnd(viewport,{touches:[]});
+    fireEvent.click(screen.getByRole('button',{name:'Step 2'}),{detail:1});
+    expect(edit).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button',{name:/Reset/}));
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+  it('allows single-finger scrolling but suppresses a click after dragging', () => {
+    const edit=vi.fn();render(<DrawingWorkspace data={newMeasureData('straight',3)} lang="en" onMeasureStep={edit}/>);
+    const viewport=document.querySelector('[data-drawing-viewport]')!;
+    fireEvent.touchStart(viewport,{touches:[{clientX:10,clientY:10}]});
+    expect(fireEvent.touchMove(viewport,{touches:[{clientX:10,clientY:50}]})).toBe(true);
+    fireEvent.touchEnd(viewport,{touches:[]});
+    fireEvent.click(screen.getByRole('button',{name:'Step 1'}),{detail:1});
+    expect(edit).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByRole('button',{name:'Step 1'}),{key:'Enter'});
+    expect(edit).toHaveBeenCalledWith(0,0);
+  });
   it('shows independent first-step to post-edge measurements in every view', () => {
     const data=newMeasureData('straight',6);
     data.posts=[0,2,5].map((step,index)=>({...newPost(0,step),firstStepToPostEdge:['2','24 1/2','58'][index]}));

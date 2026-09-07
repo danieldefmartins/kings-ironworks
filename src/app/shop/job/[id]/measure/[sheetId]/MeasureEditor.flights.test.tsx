@@ -54,6 +54,19 @@ beforeEach(() => { push.mockReset(); });
 afterEach(cleanup);
 
 describe("three-flight stair", () => {
+  it.each(['This flight only','All flights'])('applies typical steps with scope: %s', (scope) => {
+    show(0);
+    fireEvent.change(screen.getByLabelText('Typical rise'),{target:{value:'7 1/4'}});
+    fireEvent.change(screen.getByLabelText('Typical run'),{target:{value:'11 1/2'}});
+    fireEvent.change(screen.getByLabelText('Typical nosing'),{target:{value:'1'}});
+    fireEvent.click(screen.getByRole('button',{name:scope}));
+    fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
+    expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe('7 1/4');
+    click(/Save · next flight \(2\)/);
+    if(screen.queryByRole('button',{name:/Type the list instead/})) fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
+    expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'7 1/4':'');
+    expect((screen.getAllByLabelText('Run')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'11 1/2':'');
+  });
   it("opens on the flight that still owes numbers", () => {
     show(2);
     expect(screen.getByText(/Flight 3 of 3/)).toBeTruthy();

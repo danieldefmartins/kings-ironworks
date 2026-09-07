@@ -169,9 +169,11 @@ export default function StairSections({
           {/* typical step: enter once, correct exceptions */}
           <NominalFill
             lang={lang}
-            onFill={(nr, nu, nn) =>
+            allFlights={data.segments.filter(s => s.kind === "flight").length > 1}
+            onFill={(nr, nu, nn, scope) =>
               set((d) => {
-                const fl = d.segments[i] as FlightSegment;
+                d.segments.forEach((fl, index) => {
+                if (fl.kind !== "flight" || (scope === "flight" && index !== i)) return;
                 // spread first: the winder fields survive the fill
                 fl.steps = fl.steps.map((st) => ({
                   ...st,
@@ -179,6 +181,7 @@ export default function StairSections({
                   run: nu || st.run,
                   nosing: nn || st.nosing,
                 }));
+                });
               })
             }
           />

@@ -887,12 +887,14 @@ export function ChipRow({
 export function NominalFill({
   lang,
   onFill,
+  allFlights = false,
 }: {
   lang: string;
+  allFlights?: boolean;
   // Nosing belongs here with the other two. It is the same number on every
   // tread on almost every stair, and leaving it out of the filler meant
   // typing it once per step for the one field that never varies.
-  onFill: (rise: string, run: string, nosing: string) => void;
+  onFill: (rise: string, run: string, nosing: string, scope: "flight" | "all") => void;
 }) {
   const [nr, setNr] = useState("");
   const [nu, setNu] = useState("");
@@ -907,12 +909,18 @@ export function NominalFill({
         <MInput help="nominalRise" label={mt(lang, "nominalRise")} value={nr} onChange={setNr} />
         <MInput help="nominalRun" label={mt(lang, "nominalRun")} value={nu} onChange={setNu} />
         <MInput help="nosing" label={mt(lang, "nominalNosing")} value={nn} onChange={setNn} />
-        <button
-          onClick={() => (nr || nu || nn) && onFill(nr, nu, nn)}
-          className="min-h-[48px] rounded-lg bg-amber-500/90 px-3 text-sm font-bold text-black"
-        >
-          {mt(lang, "fillSteps")}
-        </button>
+        <div className="flex gap-2">
+          <button type="button" disabled={!(nr || nu || nn)}
+            onClick={() => onFill(nr, nu, nn, "flight")}
+            className="min-h-[48px] flex-1 rounded-lg bg-amber-500/90 px-3 text-sm font-bold text-black disabled:opacity-40">
+            {mt(lang, allFlights ? "typicalThisFlight" : "fillSteps")}
+          </button>
+          {allFlights && <button type="button" disabled={!(nr || nu || nn)}
+            onClick={() => onFill(nr, nu, nn, "all")}
+            className="min-h-[48px] flex-1 rounded-lg border border-amber-500 px-3 text-sm font-bold text-amber-300 disabled:opacity-40">
+            {mt(lang, "typicalAllFlights")}
+          </button>}
+        </div>
       </div>
     </div>
   );

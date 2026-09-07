@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { MeasureData } from '@/lib/shop/measure';
 import { stairGeometry } from '@/lib/shop/measure-geometry';
+import { useDrawingPinch } from './useDrawingPinch';
 import AssemblyLayout from './AssemblyLayout';
 import DrawingSvg from './DrawingSvg';
 import { mt } from '@/lib/shop/measure-i18n';
@@ -23,6 +24,8 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
   const [zoom, setZoom] = useState(1);
   const [assembly, setAssembly] = useState(false);
   const drawingRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  useDrawingPinch(viewportRef, drawingRef, zoom, setZoom);
   const selected = assembly ? undefined : focusSeg;
   const expandButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -87,7 +90,7 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
           <button type="button" aria-label={mt(lang, 'drawingZoomIn')} onClick={() => setZoom(z => Math.min(4, z + 0.5))} disabled={zoom === 4} className="h-11 w-11 text-xl disabled:opacity-30">+</button>
         </div>
       </div>
-      <div className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
+      <div ref={viewportRef} data-drawing-viewport style={{touchAction:"pan-x pan-y"}} className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
         <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:view==='iso'?0:Math.max(340,model.treads.length*64)*zoom}}>
           <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={onMeasureStep} onTapPost={onTapPost} onTapPlatform={onTapPlatform}/>
         </div>
