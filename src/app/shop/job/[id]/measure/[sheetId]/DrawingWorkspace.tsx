@@ -5,7 +5,6 @@ import type { MeasureData } from '@/lib/shop/measure';
 import { stairGeometry } from '@/lib/shop/measure-geometry';
 import AssemblyLayout from './AssemblyLayout';
 import DrawingSvg from './DrawingSvg';
-import DrawingDetails from './DrawingDetails';
 import { mt } from '@/lib/shop/measure-i18n';
 
 type View = 'side' | 'plan' | 'iso';
@@ -21,7 +20,6 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
   const [azimuth, setAzimuth] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [assembly, setAssembly] = useState(false);
-  const [details, setDetails] = useState(false);
   const drawingRef = useRef<HTMLDivElement>(null);
   const selected = assembly ? undefined : focusSeg;
   const expandButton = useRef<HTMLButtonElement>(null);
@@ -75,7 +73,6 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div>
       <details className="mb-3"><summary className="min-h-11 cursor-pointer rounded-xl border border-neutral-700 px-3 py-3 text-sm text-neutral-300">{mt(lang,"progressDrawingOptions")}</summary><div className="mt-2 flex flex-wrap gap-2">
         {focusSeg !== undefined && <button type="button" aria-pressed={assembly} onClick={()=>{setAssembly(v=>!v);if(!assembly)setView('iso');}} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm">{mt(lang,assembly?'drawingFlightOnly':'drawingAssembly')}</button>}
-        <button type="button" aria-pressed={details} onClick={()=>setDetails(v=>!v)} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm">{mt(lang,'progressSchedules')}</button>
         <button type="button" onClick={download} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm">{mt(lang,'drawingExportSvg')}</button>
       </div></details>
       {view==='iso' && <div className="mb-2 flex gap-2"><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a-90)}>↶ {mt(lang,'assemblyRotateLeft')}</button><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a+90)}>{mt(lang,'assemblyRotateRight')} ↷</button></div>}
@@ -95,7 +92,6 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div>
       <p className="mt-2 text-xs text-neutral-400">{mt(lang, 'drawingPanHint')}</p>
       {!expanded && selected===undefined && set && <AssemblyLayout data={data} lang={lang} set={set}/>}
-      {!expanded && details && <DrawingDetails data={data} lang={lang}/>}
       <p className="mt-2 text-xs leading-relaxed text-neutral-300">{mt(lang, 'drawingFieldOnly')}{model.provisional && ` ${mt(lang, 'drawingMissingHint')}`}</p>
     </section>
   );

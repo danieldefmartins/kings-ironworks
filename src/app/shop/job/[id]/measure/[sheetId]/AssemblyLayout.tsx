@@ -6,7 +6,7 @@ import { MInput } from './fields';
 export default function AssemblyLayout({ data, lang, set }: { data: MeasureData; lang: string; set: (fn: (data: MeasureData) => void) => void }) {
   const landings = data.segments.flatMap((seg, index) => seg.kind === 'platform' ? [{ seg, index }] : []);
   if (!landings.length) return null;
-  return <details className="mt-3 rounded-xl border border-sky-900 bg-sky-950/20 p-3" open>
+  return <details className="mt-3 rounded-xl border border-sky-900 bg-sky-950/20 p-3">
     <summary className="cursor-pointer font-semibold text-sky-200">{mt(lang, 'assemblyLayout')}</summary>
     <p className="mt-2 text-sm text-neutral-300">{mt(lang, 'assemblyLayoutHint')}</p>
     {landings.map(({ seg, index }, number) => {

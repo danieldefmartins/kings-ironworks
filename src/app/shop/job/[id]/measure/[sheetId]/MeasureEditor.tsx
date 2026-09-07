@@ -1551,16 +1551,6 @@ export default function MeasureEditor({
       {status === "in_progress" && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur print:hidden">
           <div className="mx-auto max-w-4xl">
-            {stageFlightsBlocked && (
-              <div className="mb-1.5 truncate text-[11px] font-bold text-amber-300">
-                ⚠ {mt(lang, "finishFlightsFirst")}
-                {flightStageOpen.length > 0
-                  ? ` — ${flightStageOpen.map((i) => `${mt(lang, "flight")} ${i + 1}`).join(", ")}`
-                  : hasJoints
-                    ? ` — ${mt(lang, "jointTableTitle")}`
-                    : ""}
-              </div>
-            )}
             <div className="flex items-center gap-2">
               {activeStageIndex > 0 && (
                 <button

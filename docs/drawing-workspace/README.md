@@ -103,8 +103,8 @@ before the final production build. No customer measurements were changed.
 
 The guided order is Steps → Level check → Railing basics → Posts/connections →
 Site → Shop details → Photos → Review. Flight width appears before bulk step
-entry. The default drawing opens in 3D, while schedules/export tools stay behind
-Drawing options. Posts and rails remain visible even with schedules collapsed.
+entry. The default drawing opens in 3D, while export tools stay behind Drawing options and schedules are an optional
+technical report in Review. Posts and rails remain visible even with schedules collapsed.
 
 A recorded-step counter advances per valid rise/run pair (including the extra
 winder dimensions and direction). It falls back if a measurement is cleared or
@@ -156,3 +156,17 @@ Validation: 128 tests, targeted ESLint and a production build pass. Regression
 checks cover asymmetric landing registration, crossfall datum preservation,
 inherited uncertainty, API persistence, occlusion and editing the turn controls.
 No database migration is needed for this optional JSON measurement field.
+
+## Reduce report overload during measurement
+
+The September 7 11:45 screenshot showed the detailed drawing report exposed
+inside the measuring workspace: unresolved-item paragraphs, empty transition
+rows and connection schedules. The workspace no longer mounts that report or
+provides a schedules toggle. Review offers an explicit, initially closed “View
+technical report” button; Print / PDF retains the full schedules. Whole-stair
+layout settings start collapsed. The sticky footer keeps its next-flight action
+without the long warning enumerating every unfinished flight. Validation and
+submission gates remain unchanged.
+
+Regression tests verify a five-flight workspace never exposes the placeholder
+report and that reviewers can open and close it deliberately. All 130 tests pass.

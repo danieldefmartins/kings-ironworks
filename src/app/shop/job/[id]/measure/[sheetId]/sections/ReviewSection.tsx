@@ -15,7 +15,7 @@ import {
 } from "@/lib/shop/measure-checks";
 import ShopDrawingSubmission from "../ShopDrawingSubmission";
 import DrawingSvg from "../DrawingSvg";
-import DrawingDetails from "../DrawingDetails";
+import DrawingReport from "../DrawingReport";
 import { stairGeometry } from "@/lib/shop/measure-geometry";
 import type { Job } from "@/lib/shop/shared";
 import type { SaveState } from "../useSheetSync";
@@ -133,7 +133,7 @@ export default function ReviewSection({
       {hasDrawing && <Card stage="review" title={mt(lang,"drawingDetails")}>
         <p className="mb-3 text-sm">{mt(lang,"drawingReleaseReview")}</p>
         {(["side","plan","iso"] as const).map(view=><div key={view} className="mb-3"><DrawingSvg data={data} lang={lang} view={view}/></div>)}
-        <DrawingDetails data={data} lang={lang} sheetId={sheet.id}/>
+        <DrawingReport data={data} lang={lang} sheetId={sheet.id}/>
       </Card>}
       {hasDrawing && <Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
       {/* Review & submit — checks, gaps, and the approval gate */}

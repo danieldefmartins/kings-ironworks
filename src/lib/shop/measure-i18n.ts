@@ -6,6 +6,10 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    showDrawingReport: "View technical report",
+    hideDrawingReport: "Hide technical report",
+    drawingReportHint: "For shop review: materials, posts and connections.",
+
     assemblyLayout: "Whole-stair layout",
     assemblyLayoutHint: "Set each landing turn and its measured footprint. Entry offset is measured across the landing, from its left edge to the incoming flight’s left edge, looking uphill. Enter 0 when those edges line up.",
     assemblyTurn: "Next flight direction",
@@ -1408,6 +1412,10 @@ const STR: Record<Lang, Dict> = {
   },
 
   pt: {
+    showDrawingReport: "Ver relatório técnico",
+    hideDrawingReport: "Ocultar relatório técnico",
+    drawingReportHint: "Para revisão na oficina: materiais, postes e conexões.",
+
     assemblyLayout: "Traçado da escada inteira",
     assemblyLayoutHint: "Defina a direção e as medidas de cada patamar. O recuo de entrada vai da borda esquerda do patamar à borda esquerda do lance que chega, olhando para cima da escada. Informe 0 quando estiverem alinhadas.",
     assemblyTurn: "Direção do próximo lance",
@@ -2805,6 +2813,10 @@ const STR: Record<Lang, Dict> = {
   },
 
   es: {
+    showDrawingReport: "Ver informe técnico",
+    hideDrawingReport: "Ocultar informe técnico",
+    drawingReportHint: "Para revisión del taller: materiales, postes y conexiones.",
+
     assemblyLayout: "Trazado de toda la escalera",
     assemblyLayoutHint: "Defina la dirección y las medidas de cada descanso. El retiro de entrada va del borde izquierdo del descanso al borde izquierdo del tramo entrante, mirando hacia arriba. Introduzca 0 si están alineados.",
     assemblyTurn: "Dirección del siguiente tramo",
