@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Job } from "@/lib/shop/shared";
-import { newMeasureData, type FlightSegment, type MeasureSheet } from "@/lib/shop/measure";
+import { newMeasureData, type MeasureSheet } from "@/lib/shop/measure";
 import { installFetch } from "./useSheetSync.harness";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {}, refresh: () => {} }) }));
@@ -38,6 +38,19 @@ const treads = () => Array.from(document.querySelectorAll("svg rect[style*='curs
 afterEach(cleanup);
 
 describe("measuring by tapping the drawing", () => {
+  it("adds a post from the tread surface in Railing & basics", () => {
+    show(4);
+    fireEvent.click(screen.getByRole("button", { name: /Railing & basics/i }));
+    expect(screen.getByText(/Tap a step surface or number to add a post/)).toBeTruthy();
+    const surface = document.querySelector('polygon[data-tread-surface="true"]');
+    expect(surface).toBeTruthy();
+    fireEvent.click(surface!);
+    expect(document.querySelectorAll('svg [aria-label="P1"]').length).toBeGreaterThan(0);
+    expect(document.querySelector('[data-step-editor]')).toBeNull();
+    fireEvent.click(surface!);
+    expect(screen.getByRole("button", { name: /Relocate/i })).toBeTruthy();
+  });
+
   it("opens the tread that was tapped, not a post", () => {
     show();
     act(() => { fireEvent.click(treads()[2]); });

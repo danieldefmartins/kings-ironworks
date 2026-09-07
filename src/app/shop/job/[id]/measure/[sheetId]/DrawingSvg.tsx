@@ -9,8 +9,9 @@ import { stairGeometry, surfacePoint, type Point3 } from '@/lib/shop/measure-geo
 import { drawingPosts } from '@/lib/shop/measure-drawing';
 import { mt } from '@/lib/shop/measure-i18n';
 export type DrawingView='side'|'plan'|'iso';
-export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,onMeasureStep,onTapPost,style}: {
+export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,onMeasureStep,onTapPost,onTapPlatform,style}: {
   data:MeasureData;lang:string;focusSeg?:number;view:DrawingView;azimuth?:number;light?:boolean;details?:boolean;
+  onTapPlatform?:(segIdx:number)=>void;
   onMeasureStep?:(segIdx:number,stepIdx:number)=>void;onTapPost?:(id:string)=>void;style?:CSSProperties;
 }) {
   const model=stairGeometry(data,focusSeg);if(!model)return null;
@@ -31,24 +32,24 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
     <rect x={minX} y={minY} width={width} height={height} fill={light?'#fff':'#171717'}/>
     {view!=='side'&&model.treads.flatMap(t=>{
       const [a,b,c,d]=t.corners;
-      const faces=[{key:`${t.segIdx}-${t.stepIdx}-${a.x}-${a.y}-top`,points:[a,b,c,d],fill:light?'#f5f5f4':t.provisional?'#292524':'#25362f',provisional:t.provisional}];
-      if(view==='iso'&&t.rise>0)faces.push({key:faces[0].key+'-riser',points:[{...a,z:a.z-t.rise},a,d,{...d,z:d.z-t.rise}],fill:light?'#e5e5e5':'#404040',provisional:t.provisional});
+      const faces=[{key:`${t.segIdx}-${t.stepIdx}-${a.x}-${a.y}-top`,points:[a,b,c,d],action:t.stepIdx===null?(onTapPlatform?()=>onTapPlatform(t.segIdx):undefined):(onMeasureStep?()=>onMeasureStep(t.segIdx,t.stepIdx!):undefined),fill:light?'#f5f5f4':t.provisional?'#292524':'#25362f',provisional:t.provisional}];
+      if(view==='iso'&&t.rise>0)faces.push({key:faces[0].key+'-riser',points:[{...a,z:a.z-t.rise},a,d,{...d,z:d.z-t.rise}],action:undefined,fill:light?'#e5e5e5':'#404040',provisional:t.provisional});
       return faces;
-    }).sort((a,b)=>depth(a.points)-depth(b.points)).map(face=><polygon key={face.key} points={pts(face.points)} fill={face.fill} stroke={face.provisional?accent:ink} strokeWidth={1.5} strokeDasharray={face.provisional?'5 4':undefined}/>)}
+    }).sort((a,b)=>depth(a.points)-depth(b.points)).map(face=><polygon key={face.key} points={pts(face.points)} fill={face.fill} stroke={face.provisional?accent:ink} strokeWidth={1.5} strokeDasharray={face.provisional?'5 4':undefined} onClick={face.action} style={{cursor:face.action?'pointer':undefined}} data-tread-surface={face.action?'true':undefined}/>)}
     {model.treads.map((t,index)=>{
       const [a,b,c,d]=t.corners,low={...a,z:a.z-t.rise};
       const pa=project(a),pb=project(b),pl=project(low);
       const center={x:(a.x+b.x+c.x+d.x)/4,y:(a.y+b.y+c.y+d.y)/4,z:(a.z+b.z+c.z+d.z)/4};
       const mid=project(center),covered=hidden(center);
       if(view==='side')mid[1]+=20;
-      const action=t.stepIdx===null||!onMeasureStep?undefined:()=>onMeasureStep(t.segIdx,t.stepIdx!);
-      return <g key={`${t.segIdx}-${t.stepIdx}-${index}`}>
+      const action=t.stepIdx===null?(onTapPlatform?()=>onTapPlatform(t.segIdx):undefined):(onMeasureStep?()=>onMeasureStep(t.segIdx,t.stepIdx!):undefined);
+      return <g key={`${t.segIdx}-${t.stepIdx}-${index}`} pointerEvents="none">
         {view==='side'&&<polyline points={pts([low,a,b])} fill="none" stroke={t.provisional?accent:ink} strokeWidth={2.5} strokeDasharray={t.provisional?'5 4':undefined}/>}
         {!hidden({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2})&&<text x={(pa[0]+pb[0])/2} y={(pa[1]+pb[1])/2-12} textAnchor="middle" fontSize={12} fill={accent}>{t.runLabel}</text>}
         {view==='side'&&t.rise>0&&<text x={pa[0]+12} y={(pa[1]+pl[1])/2} textAnchor="start" fontSize={11} fill={accent}>{t.riseLabel}</text>}
         {view!=='side'&&!hidden(d)&&t.widthLabel&&(focusSeg!==undefined||t.stepIdx===0||t.stepIdx===null)&&<text x={project(d)[0]-8} y={project(d)[1]} textAnchor="end" fontSize={11} fill={ink}>{t.widthLabel}</text>}
         {!covered&&(t.number!==null||data.segments[t.segIdx].kind!=='curve')&&<><circle cx={mid[0]} cy={mid[1]} r={13} fill={light?'white':'#171717'} stroke={ink}/><text x={mid[0]} y={mid[1]+4} textAnchor="middle" fontSize={11} fill={ink}>{t.number??`S${t.segIdx+1}`}</text></>}
-        {action&&!covered&&<rect x={mid[0]-22} y={mid[1]-22} width={44} height={44} fill="transparent" role="button" tabIndex={0} aria-label={`${mt(lang,'step')} ${t.number}`} style={{cursor:'pointer'}} onClick={action} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}}}/>}
+        {action&&!covered&&<rect x={mid[0]-22} y={mid[1]-22} width={44} height={44} fill="transparent" pointerEvents="all" role="button" tabIndex={0} aria-label={`${mt(lang,'step')} ${t.number}`} style={{cursor:'pointer'}} onClick={action} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}}}/>}
       </g>;
     })}
     {details&&data.segments.map((seg,segIdx)=>{

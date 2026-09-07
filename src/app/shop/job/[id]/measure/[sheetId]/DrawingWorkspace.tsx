@@ -9,10 +9,12 @@ import { mt } from '@/lib/shop/measure-i18n';
 
 type View = 'side' | 'plan' | 'iso';
 
-export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, onTapPost, set }: {
+export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, onTapPost, set, placingPosts = false, onTapPlatform }: {
   data: MeasureData; lang: string; focusSeg?: number;
   set?: (fn: (data: MeasureData) => void) => void;
   onTapPost?: (id: string) => void;
+  placingPosts?: boolean;
+  onTapPlatform?: (segIdx: number) => void;
   onMeasureStep: (segIdx: number, stepIdx: number) => void;
 }) {
   const [view, setView] = useState<View>('iso');
@@ -65,7 +67,7 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       ? 'fixed inset-0 z-40 flex flex-col bg-neutral-950 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] print:hidden'
       : 'mb-4 overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-950 p-3 sm:p-4'}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div><h2 className="font-bold text-white">{mt(lang, 'drawingWorkspace')}</h2><p className="text-xs text-neutral-300">{mt(lang, 'tapStepToMeasure')}</p></div>
+        <div><h2 className="font-bold text-white">{mt(lang, 'drawingWorkspace')}</h2><p className="text-xs text-neutral-300">{mt(lang, placingPosts ? 'drawingPlacePostHint' : 'tapStepToMeasure')}</p></div>
         <button ref={expandButton} type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm font-semibold">{mt(lang, expanded ? 'drawingClose' : 'drawingExpand')}</button>
       </div>
       <div className="mb-3 grid grid-cols-3 gap-2">
@@ -87,7 +89,7 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div>
       <div className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
         <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:view==='iso'?0:Math.max(340,model.treads.length*64)*zoom}}>
-          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={onMeasureStep} onTapPost={onTapPost}/>
+          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={onMeasureStep} onTapPost={onTapPost} onTapPlatform={onTapPlatform}/>
         </div>
       </div>
       <p className="mt-2 text-xs text-neutral-400">{mt(lang, 'drawingPanHint')}</p>

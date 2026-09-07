@@ -130,6 +130,7 @@ const STR: Record<Lang, Dict> = {
     autoCalc: "auto", autoFromParts: "Added up from what you measured — type over it if you taped it.",
     // Measuring by tapping the drawing instead of scrolling a list of rows.
     tapStepToMeasure: "Tap a step in the drawing to measure it.",
+    drawingPlacePostHint: 'Tap a step surface or number to add a post. Tap an existing post to edit it.',
     sameEveryPost: "The same on every post",
     sameEveryPostHint: "Setback and edge distance are laid out once and repeated. Set them here; every post you add takes them.",
     applyToAllPosts: "Apply to every post",
@@ -1535,6 +1536,7 @@ const STR: Record<Lang, Dict> = {
     derivedAngle: "Seus degraus indicam", fromSteps: "altura / avanço", vsFinder: "Inclinômetro", offBy: "diferença de",
     autoCalc: "auto", autoFromParts: "Somado do que você mediu — escreva por cima se mediu com trena.",
     tapStepToMeasure: "Toque em um degrau no desenho para medi-lo.",
+    drawingPlacePostHint: 'Toque na superfície ou no número do degrau para adicionar um poste. Toque em um poste para editá-lo.',
     sameEveryPost: "Igual em todos os postes",
     sameEveryPostHint: "Recuo e distância da borda são marcados uma vez e repetidos. Defina aqui; todo poste novo já vem assim.",
     applyToAllPosts: "Aplicar em todos os postes",
@@ -2936,6 +2938,7 @@ const STR: Record<Lang, Dict> = {
     derivedAngle: "Sus escalones indican", fromSteps: "altura / paso", vsFinder: "Inclinómetro", offBy: "diferencia de",
     autoCalc: "auto", autoFromParts: "Sumado de lo que midió — escriba encima si lo midió con cinta.",
     tapStepToMeasure: "Toque un escalón en el dibujo para medirlo.",
+    drawingPlacePostHint: 'Toque la superficie o el número del escalón para agregar un poste. Toque un poste para editarlo.',
     sameEveryPost: "Igual en todos los postes",
     sameEveryPostHint: "El recuo y la distancia al borde se marcan una vez y se repiten. Defínalos aquí; cada poste nuevo los toma.",
     applyToAllPosts: "Aplicar a todos los postes",
