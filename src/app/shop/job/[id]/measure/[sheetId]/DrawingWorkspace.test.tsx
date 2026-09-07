@@ -1,9 +1,29 @@
+import { useState } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { newMeasureData, newPost, normalizeMeasureData } from '@/lib/shop/measure';
 import DrawingWorkspace from './DrawingWorkspace';
 afterEach(cleanup);
 describe('drawing workspace', () => {
+  it('adds opposite walls and preserves a local open step without adding posts', () => {
+    const place=vi.fn();
+    function WallsHarness(){
+      const [data,setData]=useState(()=>{const d=newMeasureData('straight',3);d.rail.side='Left';return d;});
+      return <DrawingWorkspace data={data} lang="en" onMeasureStep={vi.fn()} onPlaceStep={place} set={fn=>setData(d=>{const next=structuredClone(d);fn(next);return next;})}/>;
+    }
+    render(<WallsHarness/>);
+    fireEvent.click(screen.getByRole('button',{name:'Walls'}));
+    fireEvent.click(screen.getByRole('button',{name:'Add walls opposite railing'}));
+    expect(document.querySelectorAll('[data-wall-segment]')).toHaveLength(3);
+    expect(document.querySelector('[data-wall-segment="0-1-right"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button',{name:'Step 2'}));
+    fireEvent.change(screen.getByLabelText('Walls at this location'),{target:{value:'none'}});
+    expect(document.querySelectorAll('[data-wall-segment]')).toHaveLength(2);
+    expect(document.querySelector('[data-wall-segment="0-1-right"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Add walls opposite railing'}));
+    expect(document.querySelector('[data-wall-segment="0-1-right"]')).toBeNull();
+    expect(place).not.toHaveBeenCalled();
+  });
   it('pinches within zoom limits in every view and expanded mode without placing a post', () => {
     const edit=vi.fn();
     render(<DrawingWorkspace data={newMeasureData('straight',4)} lang="en" onMeasureStep={edit} placingPosts/>);

@@ -1,7 +1,7 @@
 "use client";
 import { drawingProjection, drawingPointOccluded } from '@/lib/shop/measure-projection';
 import type { CSSProperties } from 'react';
-import { railSideSetback } from "@/lib/shop/measure";
+import { railSideSetback, flightWalls } from "@/lib/shop/measure";
 import { parseMeas } from "@/lib/shop/measure-parse";
 import { landingConnections,landingConnectionGeometry } from "@/lib/shop/measure-landings";
 import type { MeasureData } from '@/lib/shop/measure';
@@ -75,6 +75,12 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
       if(!tread)return null;
       const a=project(tread.corners[0]);
       return <g key={`joint-${index}`}><circle cx={a[0]} cy={a[1]} r={8} fill={light?'#fff':'#171717'} stroke={accent}/><text x={a[0]-12} y={a[1]-12} textAnchor="end" fill={accent} fontSize={12}>J{index+1}</text></g>;
+    })}
+    {model.treads.flatMap((t,index)=>{
+      const seg=data.segments[t.segIdx];
+      const override=seg.kind==='flight'&&t.stepIdx!==null?seg.steps[t.stepIdx].wallSide:undefined;
+      const walls=override?{left:override==='left'||override==='both',right:override==='right'||override==='both'}:flightWalls(seg,data.datums.orientation);
+      return (['left','right'] as const).filter(side=>walls[side]).map(side=><polyline key={`wall-${index}-${side}`} data-wall-segment={`${t.segIdx}-${t.stepIdx}-${side}`} points={pts(side==='left'?[t.corners[0],t.corners[1]]:[t.corners[3],t.corners[2]])} stroke={light?'#64748b':'#94a3b8'} strokeWidth={8} strokeLinecap="butt" opacity={0.7} fill="none" pointerEvents="none"><title>{mt(lang,'drawingWalls')} · {mt(lang,side==='left'?'leftLookingUp':'rightLookingUp')}</title></polyline>);
     })}
     {postDistances.map(p=>{
       const base=project(p.base!),labelY=minY+80+distanceOrder.indexOf(p)*54;

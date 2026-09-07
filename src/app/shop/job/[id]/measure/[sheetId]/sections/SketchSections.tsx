@@ -199,7 +199,7 @@ export default function SketchSections({
               <ChipRow key={i} label={`${mt(lang, "landing")} ${landingIndex + 1}`}
                 value={seg.turn}
                 options={[["left", `↰ ${mt(lang, "turnLeft")}`], ["right", `↱ ${mt(lang, "turnRight")}`], ["u", "180°"]]}
-                onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).turn = (v || "left") as "left" | "right" | "u"))} />
+                onChange={(v) => set((d) => { d.segments.forEach(s=>{if(s.kind==="platform")s.turn=(v || "left") as "left" | "right" | "u";}); })} />
             ))}
           </div>
           {platforms.filter(({ seg }) => seg.turn !== "none").length === 2 && (

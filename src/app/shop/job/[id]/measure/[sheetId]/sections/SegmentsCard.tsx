@@ -70,7 +70,12 @@ export default function SegmentsCard({
   function place(at: number) {
     const piece = PIECES.find((p) => p.kind === pending);
     if (!piece) return;
-    set((d) => insertSegment(d, at, piece.make()));
+    set((d) => {
+      const next = piece.make();
+      const existing = d.segments.find(s=>s.kind==='platform');
+      if(next.kind==='platform' && existing?.kind==='platform')next.turn=existing.turn;
+      insertSegment(d, at, next);
+    });
     setPending(null);
     setAdded(true);
   }

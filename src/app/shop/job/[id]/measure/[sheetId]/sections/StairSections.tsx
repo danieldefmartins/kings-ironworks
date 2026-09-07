@@ -382,7 +382,7 @@ export default function StairSections({
               <div className="flex gap-2">
                 {(["left", "right"] as const).map((tn) => (
                   <button key={tn}
-                    onClick={() => set((d) => void ((d.segments[i] as PlatformSegment).turn = tn))}
+                    onClick={() => set((d) => {d.segments.forEach(s=>{if(s.kind==="platform")s.turn=tn;});})}
                     className={`px-4 py-2 rounded-lg border text-sm font-semibold ${
                       seg.turn === tn
                         ? "border-amber-500 bg-amber-500/10 text-amber-300"

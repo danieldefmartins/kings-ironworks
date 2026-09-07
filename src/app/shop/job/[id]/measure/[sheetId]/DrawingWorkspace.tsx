@@ -19,6 +19,8 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
   onTapPlatform?: (segIdx: number) => void;
   onMeasureStep: (segIdx: number, stepIdx: number) => void;
 }) {
+  const [wallMode, setWallMode] = useState(false);
+  const [wallLocation, setWallLocation] = useState<{segIdx:number;stepIdx:number|null}|null>(null);
   const [postMode, setPostMode] = useState(placingPosts);
   const [view, setView] = useState<View>('iso');
   const [expanded, setExpanded] = useState(false);
@@ -72,12 +74,22 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       ? 'fixed inset-0 z-40 flex flex-col bg-neutral-950 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] print:hidden'
       : 'mb-4 overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-950 p-3 sm:p-4'}>
       <div className="mb-3 flex items-center justify-between gap-3">
-        <div><h2 className="font-bold text-white">{mt(lang, 'drawingWorkspace')}</h2><p className="text-xs text-neutral-300">{mt(lang, postMode ? 'drawingPlacePostHint' : 'tapStepToMeasure')}</p></div>
+        <div><h2 className="font-bold text-white">{mt(lang, 'drawingWorkspace')}</h2><p className="text-xs text-neutral-300">{mt(lang, wallMode ? 'drawingWallHint' : postMode ? 'drawingPlacePostHint' : 'tapStepToMeasure')}</p></div>
         <button ref={expandButton} type="button" aria-expanded={expanded} onClick={() => setExpanded(v => !v)} className="min-h-11 rounded-xl border border-neutral-600 px-3 text-sm font-semibold">{mt(lang, expanded ? 'drawingClose' : 'drawingExpand')}</button>
       </div>
-      {onPlaceStep && <div className="mb-3 grid grid-cols-2 gap-2" aria-label={mt(lang,'drawingTapAction')}>
-        <button type="button" aria-pressed={!postMode} onClick={()=>setPostMode(false)} className={`min-h-12 rounded-xl border px-3 font-semibold ${!postMode?'border-amber-400 bg-amber-400 text-black':'border-neutral-600 text-neutral-200'}`}>{mt(lang,'drawingMeasureSteps')}</button>
-        <button type="button" aria-pressed={postMode} onClick={()=>setPostMode(true)} className={`min-h-12 rounded-xl border px-3 font-semibold ${postMode?'border-amber-400 bg-amber-400 text-black':'border-neutral-600 text-neutral-200'}`}>＋ {mt(lang,'drawingPlacePosts')}</button>
+      {onPlaceStep && <div className="mb-3 grid grid-cols-3 gap-2" aria-label={mt(lang,'drawingTapAction')}>
+        <button type="button" aria-pressed={!postMode&&!wallMode} onClick={()=>{setPostMode(false);setWallMode(false);setWallLocation(null);}} className={`min-h-12 rounded-xl border px-3 font-semibold ${!postMode&&!wallMode?'border-amber-400 bg-amber-400 text-black':'border-neutral-600 text-neutral-200'}`}>{mt(lang,'drawingMeasureSteps')}</button>
+        <button type="button" aria-pressed={postMode&&!wallMode} onClick={()=>{setPostMode(true);setWallMode(false);setWallLocation(null);}} className={`min-h-12 rounded-xl border px-3 font-semibold ${postMode&&!wallMode?'border-amber-400 bg-amber-400 text-black':'border-neutral-600 text-neutral-200'}`}>＋ {mt(lang,'drawingPlacePosts')}</button>
+        {set&&<button type="button" aria-pressed={wallMode} onClick={()=>{setWallMode(true);setWallLocation(null);}} className={`min-h-12 rounded-xl border px-3 font-semibold ${wallMode?'border-amber-400 bg-amber-400 text-black':'border-neutral-600 text-neutral-200'}`}>{mt(lang,'drawingWalls')}</button>}
+      </div>}
+      {wallMode&&set&&<div className="mb-3 space-y-2">
+        <label className="block text-sm">{mt(lang,'railSide')}<select className="mt-1 min-h-12 w-full rounded-xl border border-neutral-600 bg-neutral-900 px-3" value={data.rail.side} onChange={e=>{const side=e.target.value;set(d=>{d.rail.side=side;});}}><option value="">—</option><option value="Left">{mt(lang,'leftLookingUp')}</option><option value="Right">{mt(lang,'rightLookingUp')}</option><option value="Both">{mt(lang,'flightWallBoth')}</option></select></label>
+        {(data.rail.side==='Left'||data.rail.side==='Right')&&<button type="button" className="min-h-12 w-full rounded-xl border border-sky-600 px-3 text-sky-200" onClick={()=>set(d=>{const side=d.rail.side==='Left'?'right':'left';d.segments.forEach(s=>{if(s.kind==='flight'||s.kind==='platform')s.wallSide=side;});})}>{mt(lang,'drawingWallOpposite')}</button>}
+        {wallLocation&&<label className="block text-sm">{mt(lang,'drawingWallHere')}
+          <select className="mt-1 min-h-12 w-full rounded-xl border border-neutral-600 bg-neutral-900 px-3" value={(()=>{const s=data.segments[wallLocation.segIdx];return s.kind==='flight'&&wallLocation.stepIdx!==null?s.steps[wallLocation.stepIdx].wallSide||'':s.kind==='platform'?s.wallSide||'':'';})()} onChange={e=>{const value=e.target.value as 'left'|'right'|'both'|'none'|'';set(d=>{const s=d.segments[wallLocation.segIdx];if(s.kind==='flight'&&wallLocation.stepIdx!==null)s.steps[wallLocation.stepIdx].wallSide=value||undefined;else if(s.kind==='platform')s.wallSide=value||undefined;});}}>
+            <option value="">{mt(lang,'drawingWallInherit')}</option><option value="none">{mt(lang,'drawingWallNone')}</option><option value="left">{mt(lang,'leftLookingUp')}</option><option value="right">{mt(lang,'rightLookingUp')}</option><option value="both">{mt(lang,'drawingWallBoth')}</option>
+          </select>
+        </label>}
       </div>}
       <div className="mb-3 grid grid-cols-3 gap-2">
         {labels.map(([v, key]) => <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={`min-h-11 rounded-xl border text-sm font-semibold ${view === v ? 'border-amber-400 bg-amber-400 text-black' : 'border-neutral-700 bg-neutral-900 text-neutral-200'}`}>{mt(lang, key)}</button>)}
@@ -98,7 +110,7 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div>
       <div ref={viewportRef} data-drawing-viewport style={{touchAction:"pan-x pan-y"}} className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
         <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:view==='iso'?0:Math.max(340,model.treads.length*64)*zoom}}>
-          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={postMode && onPlaceStep ? onPlaceStep : onMeasureStep} onTapPost={onTapPost} onTapPlatform={postMode ? onTapPlatform : undefined}/>
+          <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={wallMode ? (segIdx,stepIdx)=>setWallLocation({segIdx,stepIdx}) : postMode && onPlaceStep ? onPlaceStep : onMeasureStep} onTapPost={onTapPost} onTapPlatform={wallMode ? segIdx=>setWallLocation({segIdx,stepIdx:null}) : postMode ? onTapPlatform : undefined}/>
         </div>
       </div>
       <p className="mt-2 text-xs text-neutral-400">{mt(lang, 'drawingPanHint')}</p>

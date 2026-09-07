@@ -41,6 +41,7 @@ const StepSchema = z.object({
   run: meas,
   nosing: meas,
   levelGap: meas.optional(),
+  wallSide: z.enum(["left", "right", "both", "none"]).optional(),
   winder: z.boolean().optional(),
   runIn: meas.optional(),
   runOut: meas.optional(),
@@ -62,6 +63,7 @@ const FlightSchema = z.object({
 });
 const PlatformSchema = z.object({
   kind: z.literal("platform"),
+  wallSide: z.enum(["left", "right", "both", "none"]).optional(),
   length: meas,
   depth: meas,
   diag: meas,

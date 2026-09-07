@@ -92,6 +92,7 @@ export const PICKER_PRESETS: MeasurePreset[] = [
 export const TWO_FLIGHT_SHAPES: MeasureShape[] = ["l_shape", "u_shape"];
 
 export interface StepMeasure {
+  wallSide?: "left" | "right" | "both" | "none"; // local override; absent inherits flight walls
   rise: string; // riser height
   run: string; // tread depth at the walkline, nose to riser
   nosing: string; // nosing overhang ("Back 5" on field sheets)
@@ -174,6 +175,7 @@ export interface FlightSegment {
 }
 
 export interface PlatformSegment {
+  wallSide?: "left" | "right" | "both" | "none";
   kind: "platform";
   length: string; // along the rail run
   depth: string;
@@ -266,7 +268,7 @@ export function flightWalls(
   seg: Segment | undefined,
   orientation: DatumsSpec["orientation"] | undefined
 ): { left: boolean; right: boolean } {
-  const own = seg && seg.kind === "flight" ? seg.wallSide : "";
+  const own = seg && (seg.kind === "flight" || seg.kind === "platform") ? seg.wallSide : "";
   if (own === "left") return { left: true, right: false };
   if (own === "right") return { left: false, right: true };
   if (own === "both") return { left: true, right: true };
