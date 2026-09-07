@@ -101,6 +101,7 @@ export interface StepMeasure {
   runIn?: string; // tread depth at the inside (narrow) edge
   runOut?: string; // tread depth at the outside (wide) edge
   turnDeg?: string; // how much this tread turns the direction of travel
+  turnDirection?: "left" | "right"; // viewed walking up; absent on older sheets
 }
 
 export interface PostMeasure {
@@ -148,6 +149,7 @@ export interface FlightSegment {
   // branches. Branches are measured independently and are never added to one
   // another for the floor-to-floor check.
   branch?: "left" | "right";
+  branchOffset?: string; // landing departure edge to flight left edge, looking out
   steps: StepMeasure[];
   width: string; // stair width
   angleDeg: string; // measured stair pitch
@@ -177,6 +179,7 @@ export interface PlatformSegment {
   diag: string; // corner-to-corner diagonal — verifies squareness
   slope: string; // e.g. 1.2° or 3/8"/ft — rail gets pitched to match
   slopeDir: string; // which way it falls
+  exitOffset?: string; // departure edge to next flight left edge, looking out
   turn: "none" | "left" | "right" | "u"; // direction change after this landing
 }
 
@@ -294,6 +297,8 @@ export function syncJoints(segments: Segment[], existing: JointMeasure[] = []): 
 export function insertSegment(data: MeasureData, at: number, seg: Segment): void {
   const idx = Math.max(0, Math.min(at, data.segments.length));
   data.segments.splice(idx, 0, seg);
+  for(const t of data.landingTransitions||[])for(const key of ['landingSegIdx','lowerFlightIdx','upperFlightIdx'] as const)if(t[key]>=idx)t[key]++;
+
   // Plan posts carry a pathId and their segIdx means nothing; only stair posts
   // are numbered against the segment list.
   for (const po of data.posts) if (!po.pathId && po.segIdx >= idx) po.segIdx += 1;
@@ -307,6 +312,9 @@ export function insertSegment(data: MeasureData, at: number, seg: Segment): void
 export function removeSegment(data: MeasureData, at: number): void {
   if (at < 0 || at >= data.segments.length || data.segments.length <= 1) return;
   data.segments.splice(at, 1);
+  data.landingTransitions=(data.landingTransitions||[]).filter(t=>![t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx].includes(at));
+  for(const t of data.landingTransitions)for(const key of ['landingSegIdx','lowerFlightIdx','upperFlightIdx'] as const)if(t[key]>at)t[key]--;
+
   data.posts = data.posts.filter((po) => !!po.pathId || po.segIdx !== at);
   for (const po of data.posts) if (!po.pathId && po.segIdx > at) po.segIdx -= 1;
   // The two boundaries either side of the removed piece become one. The lower
@@ -809,7 +817,36 @@ export function blankWell(): WellData {
   };
 }
 
+export interface LandingTransition {
+  landingSegIdx: number;
+  lowerFlightIdx: number;
+  upperFlightIdx: number;
+  side: "left" | "right"; // side of the lower flight, looking up
+  kind: "" | "drop" | "level" | "separate" | "landing_posts";
+  lowerPostId: string;
+  upperPostId: string;
+  lowerReach: string; // horizontal extension from lower post toward connection
+  upperReach: string; // horizontal extension back from upper post toward connection
+  heightDifference: string; // top of cap to top of cap, positive magnitude
+  higherEnd: "" | "lower" | "upper" | "level";
+  horizontalSpan: string; // end-to-end distance in plan, not sloped length
+  verticalAt: "" | "lower" | "upper"; // location of the vertical leg
+  note: string;
+}
+
+export function blankLandingTransition(landingSegIdx:number,lowerFlightIdx:number,upperFlightIdx:number,side:"left"|"right"):LandingTransition {
+  return {landingSegIdx,lowerFlightIdx,upperFlightIdx,side,kind:"",lowerPostId:"",upperPostId:"",lowerReach:"",upperReach:"",heightDifference:"",higherEnd:"",horizontalSpan:"",verticalAt:"",note:""};
+}
+
+/** Design default only; existing measured post offsets always remain untouched. */
+export function railSideSetback(data:MeasureData):string {
+  return data.rail.sideSetback ?? data.posts.find(p=>p.pointType==='railing_post'&&p.fromEdge.trim())?.fromEdge
+    ?? (data.segments.filter(s=>s.kind==='flight').length>1?'3 1/2':'');
+}
+
 export interface RailSpec {
+  sideSetback?: string; // usual stair-edge setback for new posts; editable
+
   kind: string; // Guardrail | Handrail | Both
   height: string;
   side: string; // Left | Right | Both (looking up the stairs)
@@ -1145,6 +1182,9 @@ export type Units = "in" | "ftin";
 export type SheetStatus = "in_progress" | "submitted" | "approved";
 
 export interface MeasureData {
+  landingTransitions?: LandingTransition[];
+  /** Set only in an immutable revision by the release transaction. */
+  drawingReleaseVersion?: number;
   segments: Segment[];
   /** One per boundary between segments — see JointMeasure. */
   joints: JointMeasure[];
@@ -1562,6 +1602,8 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
 export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefined): MeasureData {
   const d = (raw || {}) as Partial<MeasureData>;
   return {
+    drawingReleaseVersion: d.drawingReleaseVersion,
+    landingTransitions: (d.landingTransitions || []).map(t=>({...blankLandingTransition(t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx,t.side),...t})),
     units: d.units === "ftin" ? "ftin" : "in",
     segments: (d.segments || []).map((seg) => {
       if (seg.kind === "flight") {

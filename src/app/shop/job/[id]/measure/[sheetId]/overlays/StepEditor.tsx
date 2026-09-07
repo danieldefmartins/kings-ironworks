@@ -12,9 +12,11 @@
 // with all fourteen risers already written on a scrap of paper wants to type,
 // not tap.
 
+import { stepDimensionsRecorded } from "@/lib/shop/measure-progress";
+import { parseMeas } from "@/lib/shop/measure-parse";
 import { mt } from "@/lib/shop/measure-i18n";
 import type { FlightSegment, MeasureData } from "@/lib/shop/measure";
-import { MInput } from "../fields";
+import { MInput, ChipRow } from "../fields";
 
 export interface StepTarget {
   segIdx: number;
@@ -54,6 +56,12 @@ export default function StepEditor({
       const fl = d.segments[target.segIdx] as FlightSegment;
       fn(fl.steps[target.stepIdx]);
     });
+  const recorded = seg.steps.filter(stepDimensionsRecorded).length;
+  const complete = stepDimensionsRecorded(st);
+  const rise = parseMeas(st.rise), run = parseMeas(st.run);
+  const scale = Math.min(140 / Math.max(1, run || 11), 65 / Math.max(1, rise || 7));
+  const x = 75 + Math.max(15, Math.min(140, (run && run > 0 ? run : 11) * scale));
+  const y = 100 - Math.max(15, Math.min(65, (rise && rise > 0 ? rise : 7) * scale));
   const below = target.stepIdx > 0 ? seg.steps[target.stepIdx - 1] : null;
 
   return (
@@ -63,7 +71,7 @@ export default function StepEditor({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
+        className="max-h-[85dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center gap-2">
@@ -89,6 +97,20 @@ export default function StepEditor({
           </button>
         </div>
 
+        <div className="mb-3 rounded-xl border border-neutral-700 bg-neutral-950 p-2">
+          <div className="flex items-center justify-between gap-2 text-xs">
+            <span className={complete ? "text-emerald-300" : "text-neutral-400"} role="status">{complete ? `✓ ${mt(lang, "progressStepDone")}` : mt(lang, "progressStepPrompt")}</span>
+            <span className="shrink-0 tabular-nums text-neutral-300">{recorded}/{seg.steps.length}</span>
+          </div>
+          <svg viewBox="0 0 280 130" className="mx-auto h-28 w-full" role="img" aria-label={mt(lang, "progressStepProfile")}>
+            <title>{mt(lang, "progressStepProfile")}</title>
+            <path d={`M 45 100 H 75 V ${y} H ${x}`} fill="none" stroke={complete ? "#6ee7b7" : "#fcd34d"} strokeWidth="4" strokeLinejoin="round"/>
+            <text x="68" y={(100+y)/2} textAnchor="end" fill="#e5e5e5" fontSize="12">{st.rise || "?"}</text>
+            <text x={(75+x)/2} y={y-10} textAnchor="middle" fill="#e5e5e5" fontSize="12">{st.run || "?"}</text>
+            <text x="140" y="123" textAnchor="middle" fill="#a3a3a3" fontSize="10">{mt(lang, "progressStepProfile")}</text>
+          </svg>
+          <div className="h-1.5 overflow-hidden rounded-full bg-neutral-800" aria-hidden="true"><div className="h-full bg-emerald-400 transition-[width] duration-300 motion-reduce:transition-none" style={{width:`${100*recorded/seg.steps.length}%`}}/></div>
+        </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <MInput help="rise" label={mt(lang, "rise")} value={st.rise}
             onChange={(v) => edit((s) => void (s.rise = v))} />
@@ -132,6 +154,9 @@ export default function StepEditor({
               onChange={(v) => edit((s) => void (s.runIn = v))} />
             <MInput help="winderRunOut" label={mt(lang, "winderRunOut")} value={st.runOut || ""}
               onChange={(v) => edit((s) => void (s.runOut = v))} />
+            <ChipRow label={mt(lang, "drawingTurnDirection")} value={st.turnDirection || ""}
+              options={[["left",mt(lang,"turnLeft")],["right",mt(lang,"turnRight")]]}
+              onChange={v=>edit(s=>void(s.turnDirection=v as "left"|"right"))}/>
             <MInput help="winderTurn" label={mt(lang, "winderTurn")} placeholder="°" value={st.turnDeg || ""}
               onChange={(v) => edit((s) => void (s.turnDeg = v))} />
           </div>

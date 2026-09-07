@@ -51,24 +51,12 @@ export const StageCtx = createContext<EditorStage>("setup");
 // True while the Site step is holding everything back behind the routing card.
 export const SetupLockCtx = createContext<boolean>(false);
 
-// The order a measurer actually works in on site: read the site and what is
-// already there, decide where the posts go and dimension them off the first
-// step, then measure the steps themselves. Everything the shop needs but the
-// tape does not comes afterwards.
-// The order a measurer actually works in.
-//
-// Daniel: "apps that ask a lot of questions before seeing results no one
-// uses." Site conditions used to come first — a page of questions before the
-// tape came out. Measuring leads now, in the sequence the stair is walked:
-// the steps and risers, then the pitch they add up to, then the straightedge
-// gap that says whether they are true, then where the posts land off the
-// first step's edge. Site, shop specs and photos follow, because they can be
-// answered from memory and the stair cannot.
+// Measure the stair first, establish the railing line, then locate its connections.
 export const EDITOR_STAGES: { id: EditorStage; icon: string; labelKey: string }[] = [
   { id: "steps", icon: "1", labelKey: "stageSteps" },
-  { id: "locations", icon: "2", labelKey: "stageAnglesLocations" },
-  { id: "level", icon: "3", labelKey: "stageLevelCheck" },
-  { id: "posts", icon: "4", labelKey: "stagePostsBasic" },
+  { id: "level", icon: "2", labelKey: "stageLevelCheck" },
+  { id: "posts", icon: "3", labelKey: "stagePostsBasic" },
+  { id: "locations", icon: "4", labelKey: "stageAnglesLocations" },
   { id: "setup", icon: "5", labelKey: "stageSite" },
   { id: "specs", icon: "6", labelKey: "stageShop" },
   { id: "photos", icon: "7", labelKey: "stagePhotos" },

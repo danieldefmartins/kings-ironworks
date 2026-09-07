@@ -3,6 +3,7 @@
 // redundant measurements against each other, and reports green/yellow/red
 // results. It NEVER corrects a field value — it only surfaces disagreement.
 
+import { landingConnections, landingConnectionMeasured } from "./measure-landings";
 import { parseMeas } from "./measure-parse";
 import { deckPerimeter, fenceRun, flightTotals } from "./measure-derive";
 import {
@@ -1173,6 +1174,10 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const turns = data.segments.some(
     (s) => s.kind === "platform" && (s as PlatformSegment).turn !== "none"
   );
+
+  landingConnections(data).forEach((t,i)=>{
+    if(t.kind && !landingConnectionMeasured(data,t))gaps.push({key:"landing_transition",detail:`T${i+1}`});
+  });
 
   // Every boundary between two segments is a place two fabricated pieces have
   // to meet. A blank joint is not a small omission: it is the shop guessing how

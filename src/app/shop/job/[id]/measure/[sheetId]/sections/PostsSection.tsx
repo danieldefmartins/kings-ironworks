@@ -8,6 +8,7 @@ import {
   type PostMeasure,
   type CarryoverKey,
   MOUNT_OPTIONS,
+  railSideSetback,
 } from "@/lib/shop/measure";
 import { planPaths, newPlanPost } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
@@ -81,8 +82,8 @@ export default function PostsSection({
               the same two numbers fourteen times and fourteen chances to type
               one of them differently. Set here, taken by every post added
               after, and pushed onto the existing ones on request. */}
-          {posts.length > 0 && !isDrawn && (
-            <PostStandards lang={lang} posts={posts} set={set} />
+          {!isDrawn && (
+            <PostStandards lang={lang} data={data} posts={posts} set={set} />
           )}
           {posts.length === 0 && (
             <div className="text-sm text-neutral-500">{mt(lang, "noPosts")}</div>
@@ -270,20 +271,25 @@ export default function PostsSection({
 
 /** The two numbers that repeat down a run, in one place. */
 function PostStandards({
+  data,
   lang,
   posts,
   set,
 }: {
   lang: string;
+  data: MeasureData;
   posts: PostMeasure[];
   set: (fn: (d: MeasureData) => void) => void;
 }) {
   // Seeded from the run itself: whatever the first post that has an answer
   // says, rather than a second copy of the same number kept somewhere else.
   const setback = posts.find((p) => p.fromNosing.trim() !== "")?.fromNosing || "";
-  const edge = posts.find((p) => p.fromEdge.trim() !== "")?.fromEdge || "";
+  const edge = railSideSetback(data);
   const applyAll = (field: "fromNosing" | "fromEdge", v: string) =>
-    set((d) => d.posts.forEach((p) => void (p[field] = v)));
+    set((d) => {
+      if(field === "fromEdge") d.rail.sideSetback=v;
+      d.posts.filter(p=>p.pointType==='railing_post'&&!p.pathId).forEach((p) => void (p[field] = v));
+    });
   const uneven =
     posts.some((p) => p.fromNosing.trim() !== "" && p.fromNosing !== setback) ||
     posts.some((p) => p.fromEdge.trim() !== "" && p.fromEdge !== edge);
@@ -294,9 +300,10 @@ function PostStandards({
       <Grid>
         <MInput help="postSetback" label={mt(lang, "postSetback")} value={setback}
           onChange={(v) => applyAll("fromNosing", v)} />
-        <MInput help="fromEdge" label={mt(lang, "fromEdge")} value={edge}
+        <MInput help="fromEdge" label={mt(lang, "railSideSetback")} hint={mt(lang,"railSideSetbackHint")} value={edge}
           onChange={(v) => applyAll("fromEdge", v)} />
       </Grid>
+      <ChipRow label={mt(lang,"postRefLbl")} value={data.datums.postRef} options={[["centerline",mt(lang,"postRef_centerline")],["face",mt(lang,"postRef_face")]]} onChange={v=>set(d=>void(d.datums.postRef=v as ""|"centerline"|"face"))}/>
       {/* Only offered when the run has actually drifted apart — otherwise it
           is a button that does nothing, which is worse than no button. */}
       {uneven && (

@@ -44,6 +44,7 @@ import {
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { SPEC_OPTIONS } from "@/lib/shop/i18n";
 import { sketchViews, type SketchView } from "./Sketch";
+import { railSideSetback } from "@/lib/shop/measure";
 import PrintSheet from "./PrintSheet";
 import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
@@ -67,6 +68,7 @@ import RailSections from "./sections/RailSections";
 import ShopSections from "./sections/ShopSections";
 import PlanSection from "./sections/PlanSection";
 import PhotosSection from "./sections/PhotosSection";
+import MeasurementProgress from "./MeasurementProgress";
 import ReviewSection from "./sections/ReviewSection";
 import {
   EDITOR_STAGES,
@@ -134,6 +136,7 @@ export default function MeasureEditor({
     enqueue,
     mutate,
     noteUpdatedAt,
+    currentUpdatedAt,
   } = useSheetSync({
     sheet,
     jobId: job.id,
@@ -169,7 +172,7 @@ export default function MeasureEditor({
   // so this needs no separate place to keep it.
   function inheritLayout(d: MeasureData, po: PostMeasure) {
     po.fromNosing = d.posts.find((p) => p.id !== po.id && p.fromNosing.trim() !== "")?.fromNosing || po.fromNosing;
-    po.fromEdge = d.posts.find((p) => p.id !== po.id && p.fromEdge.trim() !== "")?.fromEdge || po.fromEdge;
+    po.fromEdge = railSideSetback(d) || po.fromEdge;
   }
 
   function addStepPost(segIdx: number, stepIdx: number) {
@@ -427,13 +430,27 @@ export default function MeasureEditor({
     }
   }
 
+  async function submitDrawing() {
+    return enqueue(async () => {
+      const res = await fetch("/shop/api/measure", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "submit_drawing", id: sheet.id, jobId: job.id, expectedUpdatedAt: currentUpdatedAt() }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Drawing submission failed");
+      noteUpdatedAt(result.updated_at);
+      if (result.status) setStatus(result.status);
+      return result;
+    });
+  }
+
   async function approveSheet(extra: Record<string, unknown> = {}) {
     const d = await enqueue(async () => {
       try {
         const res = await fetch("/shop/api/measure", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "approve", id: sheet.id, jobId: job.id, ...extra }),
+          body: JSON.stringify({ type: "approve", id: sheet.id, jobId: job.id, ...extra, expectedUpdatedAt: currentUpdatedAt() }),
         });
         const j = await res.json().catch(() => ({}));
         if (res.ok) {
@@ -540,7 +557,7 @@ export default function MeasureEditor({
     // A gap has to name the step that can actually answer it. Joints are only
     // editable on the joints step, and a flight's rake sits on its step card —
     // sending either to a step that shows neither is a dead end.
-    if (key.startsWith("joint_")) return "locations";
+    if (key.startsWith("joint_") || key === "landing_transition") return "locations";
     if (key === "flight_width" || key === "flight_rake") return "steps";
     if (key === "flight_angle") return "locations";
     if (key.startsWith("post")) return "locations";
@@ -584,7 +601,10 @@ export default function MeasureEditor({
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
       : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
   const targetOf = (g: Gap) => ({ stage: gapStage(g.key), label: gapLabel(g), flight: g.flight });
-  const nextTarget: { stage: EditorStage; label: string; flight?: number } | null = orderedGaps.length
+  const currentStageGap = orderedGaps.find(g => gapStage(g.key) === activeStage);
+  const nextTarget: { stage: EditorStage; label: string; flight?: number } | null = currentStageGap
+    ? targetOf(currentStageGap)
+    : orderedGaps.length
     ? targetOf(orderedGaps[0])
     : redChecks.length
       ? { stage: "review" as EditorStage, label: mt(lang, "check_" + redChecks[0].key) }
@@ -1017,7 +1037,7 @@ export default function MeasureEditor({
                       window.print();
                     }}
                   >
-                    🖨 {mt(lang, "printSheet")}
+                    🖨 {mt(lang, "drawingPrint")}
                   </MoreItem>
                   <div className="pt-2 text-[11px] uppercase tracking-widest text-neutral-500">
                     {mt(lang, "unitsLabel")}
@@ -1078,7 +1098,7 @@ export default function MeasureEditor({
                   }`}
                 >
                   {ready.remaining > 0
-                    ? `${ready.remaining} ${mt(lang, ready.remaining === 1 ? "itemLeft" : "itemsLeft")} · ${mt(lang, started ? "continueMeasuring" : "startMeasuring")}`
+                    ? mt(lang, started ? "continueMeasuring" : "startMeasuring")
                     : `✓ ${mt(lang, ready.complete ? "allDone" : "readyForShop")}`}
                 </span>
                 {nextTarget && (
@@ -1158,6 +1178,7 @@ export default function MeasureEditor({
           </div>
         </div>
 
+        {status === "in_progress" && <MeasurementProgress data={data} lang={lang} stage={activeStage}/>}
         <StageCtx.Provider value={activeStage}>
         <SetupLockCtx.Provider value={setupLocked}>
 
@@ -1487,6 +1508,7 @@ export default function MeasureEditor({
           slotErr={slotErr}
         />
         <ReviewSection
+          data={data}
           lang={lang}
           sheet={sheet}
           job={job}
@@ -1508,6 +1530,7 @@ export default function MeasureEditor({
           gapStage={gapStage}
           jumpToGap={jumpToGap}
           submitSheet={submitSheet}
+          submitDrawing={submitDrawing}
           approveSheet={approveSheet}
           sendBackSheet={sendBackSheet}
         />

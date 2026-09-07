@@ -85,3 +85,26 @@ upgraded. Deploy **between shifts**, then, in this order:
 7. The three fabrication-critical photos (well wall profile, balcony slab edge,
    fire escape anchors) still block submission.
 8. Archive a job, confirm it leaves the list, restore it from Admin.
+
+## Drawing workspace and release (September 7 upgrade)
+
+- [ ] Open a multi-flight sheet; switch selected flight / whole stair, then all
+      three views. Check left, right and 180-degree landings against the site.
+- [ ] Enter landing exit and branch offsets. Verify each branch starts from the
+      shared landing and that edits do not move or renumber the wrong flight.
+- [ ] Enter a winder's inside/outside depths, walkline, angle and left/right
+      direction. An unresolved or inconsistent wedge stays provisional.
+- [ ] Enter `3/8"/ft` on a landing and each fall direction. Check the rendered
+      high and low edges against the measurements.
+- [ ] Expand, zoom and pan; tap a numbered tread in each view; edit it and close
+      the step editor. Close the expanded drawing. Repeat after rotation.
+- [ ] Match P/J/F labels to posts, joint schedules and photos. Open a photo and
+      verify its saved markup is positioned correctly.
+- [ ] Download an SVG; confirm it opens independently and says DO NOT FABRICATE.
+- [ ] Print / Save PDF. Inspect all three views, profile and connection tables,
+      photo markup, revision identity and draft/superseded markings.
+- [ ] On a staging job, use a second reviewer to release a complete drawing.
+      Confirm the locked revision alone carries the drawing release. Editing
+      the live sheet leaves the snapshot unchanged and reopens field review.
+- [ ] On staging, change the sheet after the reviewer opens it. Release must
+      reject the stale review rather than approve unseen changes.

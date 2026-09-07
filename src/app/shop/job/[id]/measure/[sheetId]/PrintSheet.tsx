@@ -23,6 +23,9 @@ import type {
 import { formatIn, wellClearance, type CheckResult } from "@/lib/shop/measure-checks";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
+import DrawingSvg from "./DrawingSvg";
+import DrawingDetails from "./DrawingDetails";
+import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { sketchViews } from "./Sketch";
 
 const GOLD = "#b8860b";
@@ -289,6 +292,15 @@ export default function PrintSheet({
         </div>
       )}
 
+      {stairGeometry(data) && <div style={{breakBefore:"page"}}>
+        <h2 style={{fontSize:16,fontWeight:700}}>{mt(lang,"drawingDetails")} · {sheet.name || job.customer_name} · {mt(lang,"revLabel")} {sheet.current_rev}</h2>
+        <p style={{fontWeight:700,color:"#991b1b"}}>{visible && approved && !superseded && data.drawingReleaseVersion === 1 ? mt(lang,"approvedBadge") : mt(lang,"drawingDraft")}</p>
+        {(["side","plan","iso"] as const).map(view=><figure key={view} style={{breakInside:"avoid",marginBottom:16}}>
+          <figcaption>{mt(lang,view==="side"?"sideView":view==="plan"?"planView":"drawing3d")}</figcaption>
+          <DrawingSvg data={data} lang={lang} view={view} light style={{height:360}}/>
+        </figure>)}
+        <DrawingDetails data={data} lang={lang} light sheetId={sheet.id} rev={visible?sheet.current_rev:undefined}/>
+      </div>}
       {/* Sketches (light palette): first two views of this shape */}
       <div className={`grid ${sketchViews(sheet.shape).length > 1 ? "grid-cols-2" : "grid-cols-1"} gap-3 mb-3`}>
         {sketchViews(sheet.shape)

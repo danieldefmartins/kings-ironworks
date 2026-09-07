@@ -10,6 +10,8 @@
 // sentence — so the shop was guessing the connection and a wrong guess is a
 // return trip.
 
+import LandingConnections from "./LandingConnections";
+import { drawingJointSource } from "@/lib/shop/measure-drawing";
 import { JOINT_METHODS, type JointMeasure, type MeasureData, type Segment } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, Grid, MInput, ChipRow } from "../fields";
@@ -33,7 +35,7 @@ export default function JointSections({
   set: (fn: (d: MeasureData) => void) => void;
 }) {
   const joints = data.joints || [];
-  if (joints.length === 0) return null;
+
 
   const edit = (idx: number, fn: (j: JointMeasure) => void) =>
     set((d) => {
@@ -43,15 +45,17 @@ export default function JointSections({
 
   return (
     <>
+      <LandingConnections data={data} lang={lang} set={set}/>
       {joints.map((j, idx) => {
-        const lower = data.segments[j.afterSegment];
+        const source=drawingJointSource(data,j.afterSegment);
+        const lower = data.segments[source];
         const upper = data.segments[j.afterSegment + 1];
         const onePiece = j.method === "one_piece";
         return (
           <Card
             stage="locations"
             key={`joint-${j.afterSegment}`}
-            title={`🔗 ${mt(lang, "jointTitle")} J${j.afterSegment + 1} — ${segLabel(lang, lower, j.afterSegment)} → ${segLabel(lang, upper, j.afterSegment + 1)}`}
+            title={`🔗 ${mt(lang, "jointTitle")} J${j.afterSegment + 1} — ${segLabel(lang, lower, source)} → ${segLabel(lang, upper, j.afterSegment + 1)}`}
           >
             <p className="mb-3 text-xs text-neutral-400">{mt(lang, "jointHint")}</p>
 

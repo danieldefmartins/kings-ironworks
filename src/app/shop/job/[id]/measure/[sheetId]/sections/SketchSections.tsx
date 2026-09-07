@@ -104,7 +104,7 @@ export default function SketchSections({
   // On the steps step the drawing is an input: a tap opens the tread it
   // landed on. Everywhere else a tap still places a point.
   const measuring = activeStage === "steps";
-  const measuredWorkspace = measuring && ["straight", "stair_platform", "l_shape", "u_shape", "builder"].includes(shape) && !!stairGeometry(data, focusSeg);
+  const measuredWorkspace = ["steps", "posts", "locations"].includes(activeStage) && ["straight", "stair_platform", "l_shape", "u_shape", "builder", "ramp", "level_run"].includes(shape) && !!stairGeometry(data, focusSeg);
   return (
     <>
       {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
@@ -197,9 +197,9 @@ export default function SketchSections({
           <div className="space-y-3">
             {platforms.filter(({ seg }) => seg.turn !== "none").map(({ seg, i }, landingIndex) => (
               <ChipRow key={i} label={`${mt(lang, "landing")} ${landingIndex + 1}`}
-                value={seg.turn === "u" ? "left" : seg.turn}
-                options={[["left", `↰ ${mt(lang, "turnLeft")}`], ["right", `↱ ${mt(lang, "turnRight")}`]]}
-                onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).turn = (v || "left") as "left" | "right"))} />
+                value={seg.turn}
+                options={[["left", `↰ ${mt(lang, "turnLeft")}`], ["right", `↱ ${mt(lang, "turnRight")}`], ["u", "180°"]]}
+                onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).turn = (v || "left") as "left" | "right" | "u"))} />
             ))}
           </div>
           {platforms.filter(({ seg }) => seg.turn !== "none").length === 2 && (
@@ -216,8 +216,8 @@ export default function SketchSections({
           It shows on the steps step too, where a tap means "measure this
           step" rather than "put a post here" — the drawing is the one thing
           on screen that knows which tread is which. */}
-      {measuredWorkspace && <DrawingWorkspace data={data} lang={lang} focusSeg={focusSeg} onMeasureStep={onMeasureStep} />}
-      {!measuredWorkspace && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
+      {measuredWorkspace && <DrawingWorkspace data={data} lang={lang} focusSeg={focusSeg} onMeasureStep={measuring ? onMeasureStep : addStepPost} onTapPost={tapPost} />}
+      {(!measuredWorkspace || !measuring) && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
         {!isSpiral && !isWallRail && (

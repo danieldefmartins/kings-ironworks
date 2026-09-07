@@ -318,6 +318,7 @@ export function useSheetSync({
     enqueue,
     mutate,
     /** Record the concurrency base returned by a mutation this hook did not make. */
+    currentUpdatedAt: () => baseUpdatedAt.current,
     noteUpdatedAt: (at: unknown) => {
       if (typeof at === "string") baseUpdatedAt.current = at;
     },

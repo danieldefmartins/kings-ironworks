@@ -6,12 +6,17 @@
 
 import {
   type MeasureSheet,
+  type MeasureData,
 } from "@/lib/shop/measure";
 import {
   type CheckResult,
   type Gap,
   type Readiness,
 } from "@/lib/shop/measure-checks";
+import ShopDrawingSubmission from "../ShopDrawingSubmission";
+import DrawingSvg from "../DrawingSvg";
+import DrawingDetails from "../DrawingDetails";
+import { stairGeometry } from "@/lib/shop/measure-geometry";
 import type { Job } from "@/lib/shop/shared";
 import type { SaveState } from "../useSheetSync";
 import { mt } from "@/lib/shop/measure-i18n";
@@ -24,6 +29,7 @@ import {
 
 export default function ReviewSection({
   lang,
+  data,
   sheet,
   job,
   status,
@@ -44,10 +50,12 @@ export default function ReviewSection({
   gapStage,
   jumpToGap,
   submitSheet,
+  submitDrawing,
   approveSheet,
   sendBackSheet,
 }: {
   lang: string;
+  data: MeasureData;
   sheet: MeasureSheet;
   job: Job;
   status: string;
@@ -68,9 +76,11 @@ export default function ReviewSection({
   gapStage: (key: string) => EditorStage;
   jumpToGap: (st: EditorStage, flight?: number) => void;
   submitSheet: () => void;
-  approveSheet: () => void;
+  submitDrawing: () => Promise<unknown>;
+  approveSheet: (extra?: Record<string, unknown>) => void;
   sendBackSheet: () => void;
 }) {
+  const hasDrawing=!!stairGeometry(data);
   return (
     <>
       {history.length > 0 && (
@@ -120,6 +130,12 @@ export default function ReviewSection({
         </Card>
       )}
 
+      {hasDrawing && <Card stage="review" title={mt(lang,"drawingDetails")}>
+        <p className="mb-3 text-sm">{mt(lang,"drawingReleaseReview")}</p>
+        {(["side","plan","iso"] as const).map(view=><div key={view} className="mb-3"><DrawingSvg data={data} lang={lang} view={view}/></div>)}
+        <DrawingDetails data={data} lang={lang} sheetId={sheet.id}/>
+      </Card>}
+      {hasDrawing && <Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
       {/* Review & submit — checks, gaps, and the approval gate */}
       <Card stage="review" title={`✅ ${mt(lang, "reviewTitle")}`}>
         <div className="text-xs text-neutral-500 mb-2">{mt(lang, "neverCorrects")}</div>

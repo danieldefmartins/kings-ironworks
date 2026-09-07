@@ -24,6 +24,7 @@ import {
   type MeasurePreset,
   type MeasureSheet,
 } from "@/lib/shop/measure";
+import { drawingIssues } from "@/lib/shop/measure-drawing";
 import { runChecks, submitBlockers, mergeTolerances } from "@/lib/shop/measure-checks";
 
 export const runtime = "nodejs";
@@ -44,10 +45,13 @@ const StepSchema = z.object({
   runIn: meas.optional(),
   runOut: meas.optional(),
   turnDeg: meas.optional(),
+  turnDirection: z.enum(["left", "right"]).optional(),
 });
 const FlightSchema = z.object({
   kind: z.literal("flight"),
   branch: z.enum(["left", "right"]).optional(),
+  branchOffset: meas.optional(),
+  wallSide: z.enum(["", "left", "right", "both", "none"]).optional(),
   steps: z.array(StepSchema).min(1).max(60),
   width: meas,
   angleDeg: meas,
@@ -64,6 +68,7 @@ const PlatformSchema = z.object({
   slope: meas,
   slopeDir: z.string().max(120),
   turn: z.enum(["none", "left", "right", "u"]),
+  exitOffset: meas.optional(),
 });
 const RampSchema = z.object({
   kind: z.literal("ramp"),
@@ -418,6 +423,16 @@ const MeasureDataSchema = z.object({
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
     .max(12),
   posts: z.array(PostSchema).max(120),
+  joints: z.array(z.object({
+    afterSegment:z.number().int().min(0).max(30),gap:meas,offsetV:meas,offsetH:meas,angleChange:meas,
+    method:z.enum(["","post","weld","bolt","wall","one_piece"]),carriedBy:z.enum(["","lower","upper","both"]),leaveLong:meas,note:note,
+  })).max(30).optional(),
+  landingTransitions: z.array(z.object({
+    landingSegIdx:z.number().int().min(0).max(30),lowerFlightIdx:z.number().int().min(0).max(30),upperFlightIdx:z.number().int().min(0).max(30),
+    side:z.enum(["left","right"]),kind:z.enum(["","drop","level","separate","landing_posts"]),
+    lowerPostId:z.string().max(40),upperPostId:z.string().max(40),lowerReach:meas,upperReach:meas,heightDifference:meas,
+    higherEnd:z.enum(["","lower","upper","level"]),horizontalSpan:meas,verticalAt:z.enum(["","lower","upper"]),note:note,
+  })).max(60).optional(),
   spiral: SpiralSchema,
   well: WellSchema.optional(),
   fire: FireEscapeSchema.optional(),
@@ -426,6 +441,7 @@ const MeasureDataSchema = z.object({
   balcony: BalconySchema.optional(),
   deck: DeckSchema.optional(),
   rail: z.object({
+    sideSetback: meas.optional(),
     kind: z.string().max(40),
     height: meas,
     side: z.string().max(20),
@@ -664,7 +680,8 @@ export async function POST(req: NextRequest) {
       }
 
       // Measurer finishes: gate on completeness + geometry, then queue for review.
-      case "submit": {
+      case "submit":
+      case "submit_drawing": {
         if (!uuid.safeParse(body.id).success) return bad("Bad sheet id");
         const sheet = await loadSheet(body.id, jobOk);
         if (!sheet) return bad("Sheet not found", 404);
@@ -707,6 +724,19 @@ export async function POST(req: NextRequest) {
             );
           }
         }
+        if (type === "submit_drawing") {
+          if (body.expectedUpdatedAt !== sheet.updated_at) return bad("Measurements changed. Reload before submitting.", 409);
+          if (!data.segments.length || !["straight", "stair_platform", "l_shape", "u_shape", "level_run", "ramp", "wall_rail", "builder"].includes(sheet.shape)) return bad("SketchUp generation currently supports measured stair, landing and ramp segments.", 422);
+          try {
+            const requestId = await sbRpc<string>("kiw_shop_queue_drawing", { p_sheet_id: sheet.id, p_org_id: ORG_ID, p_worker_id: worker.id, p_expected_updated_at: sheet.updated_at });
+            const after = await loadSheet(sheet.id, jobOk);
+            await audit("drawing_submit", { workerId: worker.id, entity: "measure_sheet", entityId: sheet.id, detail: { requestId } });
+            return NextResponse.json({ ok: true, requestId, updated_at: after?.updated_at, status: after?.status });
+          } catch (e) {
+            if (e instanceof Error && e.message.includes("DRAWING_CHANGED")) return bad("Measurements changed. Reload before submitting.", 409);
+            throw e;
+          }
+        }
         const rows = await sbUpdate<MeasureSheet[]>(TABLE, sheetFilter(body.id, jobOk), {
           status: "submitted",
           submitted_by: worker.id,
@@ -739,6 +769,16 @@ export async function POST(req: NextRequest) {
         }
         const data = normalizeMeasureData(sheet.data);
         const orgSettings = await getOrgSettings();
+        const releasingDrawing = body.releaseDrawing === true;
+        if (releasingDrawing) {
+          const issues = drawingIssues(data);
+          const blocked = submitBlockers(data, sheet.shape, mergeTolerances(orgSettings.tolerances));
+          if (issues.length || blocked.gaps.length || blocked.redChecks.length) {
+            return NextResponse.json({error:"Drawing is not ready for fabrication release",drawingIssues:issues},{status:422});
+          }
+          if (body.ackDrawing !== true) return NextResponse.json({error:"Review the drawings before releasing",needsDrawingAck:true},{status:409});
+          if (body.expectedUpdatedAt !== sheet.updated_at) return bad("Drawing changed. Reload and review the current sheet.",409);
+        }
         // yellow warnings need an explicit reviewer acknowledgment
         const yellows = runChecks(
           data,
@@ -759,7 +799,8 @@ export async function POST(req: NextRequest) {
           );
         }
         try {
-          const revNo = await sbRpc<number>("kiw_shop_approve_measure_sheet", {
+          const revNo = await sbRpc<number>(releasingDrawing ? "kiw_shop_release_measure_drawing" : "kiw_shop_approve_measure_sheet", {
+            ...(releasingDrawing ? {p_expected_updated_at: sheet.updated_at} : {}),
             p_sheet_id: sheet.id,
             p_worker_id: worker.id,
             p_org_id: ORG_ID,
@@ -773,6 +814,7 @@ export async function POST(req: NextRequest) {
               rev: revNo,
               ackWarnings: body.ackWarnings === true,
               confirmReference: body.confirmReference === true,
+              drawingReleased: releasingDrawing,
               warnings: yellows.map((c) => c.key),
             },
           });
@@ -784,6 +826,7 @@ export async function POST(req: NextRequest) {
           });
         } catch (e) {
           const msg = e instanceof Error ? e.message : "";
+          if (msg.includes("DRAWING_CHANGED")) return bad("Drawing changed. Reload and review the current sheet.",409);
           if (msg.includes("SELF_APPROVAL")) {
             return bad("The person who submitted a sheet cannot approve it — a second reviewer must approve", 409);
           }

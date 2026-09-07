@@ -14,6 +14,7 @@ import {
 import { TOLERANCES, formatIn, parseMeas } from "@/lib/shop/measure-checks";
 import { flightTotals, inchesToField } from "@/lib/shop/measure-derive";
 import { helpText } from "@/lib/shop/measure-help";
+import { stepDimensionsRecorded } from "@/lib/shop/measure-progress";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
   AutoMInput,
@@ -163,6 +164,8 @@ export default function StairSections({
               : mt(lang, "steps")
           }
         >
+          <div className="mb-4"><MInput help="width" label={mt(lang, "width")} value={seg.width}
+              onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).width = v))} /></div>
           {/* typical step: enter once, correct exceptions */}
           <NominalFill
             lang={lang}
@@ -180,6 +183,7 @@ export default function StairSections({
             }
           />
 
+          {seg.branch && <MInput label={mt(lang,"drawingBranchOffset")} value={seg.branchOffset||""} onChange={v=>set(d=>void((d.segments[i] as FlightSegment).branchOffset=v))}/>}
           {/* The list of rows is the fallback now, not the front door: the
               drawing above opens whichever step was tapped. Fourteen treads
               is a screen and a half of identical boxes, and nothing in them
@@ -270,6 +274,9 @@ export default function StairSections({
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runIn = v))} />
                   <MInput help="winderRunOut" label={mt(lang, "winderRunOut")} value={st.runOut || ""}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].runOut = v))} />
+                  <ChipRow label={mt(lang,"drawingTurnDirection")} value={st.turnDirection || ""}
+                    options={[["left",mt(lang,"turnLeft")],["right",mt(lang,"turnRight")]]}
+                    onChange={v=>set(d=>void((d.segments[i] as FlightSegment).steps[si].turnDirection=v as "left"|"right"))}/>
                   <MInput help="winderTurn" label={mt(lang, "winderTurn")} placeholder="°" value={st.turnDeg || ""}
                     onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).steps[si].turnDeg = v))} />
                 </div>
@@ -319,10 +326,7 @@ export default function StairSections({
             </SmallBtn>
           </div>
           </>)}
-          <Grid>
-            <MInput help="width" label={mt(lang, "width")} value={seg.width}
-              onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).width = v))} />
-          </Grid>
+
           {multiFlight && (
             <div className="mt-3 border border-neutral-800 rounded-lg p-3 bg-neutral-950/40">
               <div className="text-xs text-neutral-500 mb-2">{mt(lang, "flightCtrlHint")}</div>
@@ -357,6 +361,7 @@ export default function StairSections({
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
             <MInput help="depth" label={mt(lang, "depth")} value={seg.depth}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
+            {data.segments[i+1] && <MInput label={mt(lang,"drawingExitOffset")} value={seg.exitOffset||""} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).exitOffset=v))}/>}
             <MInput help="landingDiag" label={mt(lang, "landingDiag")} value={seg.diag}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
             <ChoiceMInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
@@ -454,7 +459,7 @@ export default function StairSections({
 // to trust is a judgement the measurer makes standing there.
 /** How many of a flight's steps have both numbers on them. */
 function measuredCount(seg: FlightSegment): number {
-  return seg.steps.filter((st) => st.rise.trim() !== "" && st.run.trim() !== "").length;
+  return seg.steps.filter(stepDimensionsRecorded).length;
 }
 
 /** A derived number ready for a field, or "" when it cannot be worked out. */
