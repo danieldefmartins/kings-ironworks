@@ -26,11 +26,18 @@ export interface AdminDest {
 
 export const ADMIN_DESTS: AdminDest[] = [
   {
-    href: "/shop/admin/time",
+    href: "/shop/admin/payroll",
     key: "admNavPayroll",
     hintKey: "admNavPayrollHint",
     icon: Clock3,
     tone: "text-emerald-400",
+  },
+  {
+    href: "/shop/admin/time",
+    key: "teamTimesheets",
+    hintKey: "timeReviewHint",
+    icon: Clock3,
+    tone: "text-sky-400",
   },
   {
     href: "/shop/admin/labor#jobcosts",
