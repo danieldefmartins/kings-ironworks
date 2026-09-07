@@ -38,6 +38,17 @@ const treads = () => Array.from(document.querySelectorAll("svg rect[style*='curs
 afterEach(cleanup);
 
 describe("measuring by tapping the drawing", () => {
+  it("lets the user place posts directly from the measuring stage, then return to sizing", () => {
+    show(4);
+    fireEvent.click(screen.getByRole('button',{name:/^＋ Place posts$/}));
+    fireEvent.click(document.querySelector('polygon[data-tread-surface="true"]')!);
+    expect(document.querySelector('svg [aria-label="P1"]')).toBeTruthy();
+    expect(document.querySelector('[data-step-editor]')).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Measure steps'}));
+    fireEvent.click(screen.getByRole('button',{name:'Step 2'}));
+    expect(document.querySelector('[data-step-editor]')).toBeTruthy();
+    expect(screen.getByText(/2 of 4/)).toBeTruthy();
+  });
   it("adds a post from the tread surface in Railing & basics", () => {
     show(4);
     fireEvent.click(screen.getByRole("button", { name: /Railing & basics/i }));

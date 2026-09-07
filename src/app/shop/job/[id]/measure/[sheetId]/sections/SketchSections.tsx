@@ -216,8 +216,8 @@ export default function SketchSections({
           It shows on the steps step too, where a tap means "measure this
           step" rather than "put a post here" — the drawing is the one thing
           on screen that knows which tread is which. */}
-      {measuredWorkspace && <DrawingWorkspace data={data} lang={lang} set={set} focusSeg={focusSeg} onMeasureStep={measuring ? onMeasureStep : addStepPost} onTapPost={tapPost} placingPosts={!measuring} onTapPlatform={measuring ? undefined : addPlatformPost} />}
-      {(!measuredWorkspace || !measuring) && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
+      {measuredWorkspace && <DrawingWorkspace key={activeStage} data={data} lang={lang} set={set} focusSeg={focusSeg} onMeasureStep={onMeasureStep} onPlaceStep={addStepPost} onTapPost={tapPost} placingPosts={!measuring} onTapPlatform={addPlatformPost} />}
+      {!measuredWorkspace && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
         {!isSpiral && !isWallRail && (
