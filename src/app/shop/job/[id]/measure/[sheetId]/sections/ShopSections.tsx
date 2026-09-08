@@ -147,7 +147,7 @@ export default function ShopSections({
           <div className="space-y-4">
             <ChipRow label={tx("Top rail construction", "Montagem do trilho superior", "Montaje del riel superior")} value={data.fab.topRailConstruction ?? "continuous_per_flight"}
               options={[["continuous_per_flight", tx("Continuous per flight", "Contínuo por lance", "Continuo por tramo")], ["between_posts", tx("Between posts", "Entre postes", "Entre postes")], ["custom", tx("Custom", "Personalizado", "Personalizado")]]}
-              onChange={v => set(d => { d.fab.topRailConstruction = v as NonNullable<MeasureData["fab"]["topRailConstruction"]>; })} />
+              onChange={v => set(d => { d.fab.topRailConstruction = (v || "continuous_per_flight") as NonNullable<MeasureData["fab"]["topRailConstruction"]>; })} />
             <ChipRow label={tx("Rail height at each post is measured to", "Altura em cada poste medida até", "Altura en cada poste medida hasta")} value={data.fab.railHeightDatum ?? ""}
               options={[["finished_top_at_post", tx("Finished top of rail", "Topo acabado do trilho", "Parte superior terminada")], ["reference_axis", tx("Reference axis", "Eixo de referência", "Eje de referencia")]]}
               onChange={v => set(d => { d.fab.railHeightDatum = v as NonNullable<MeasureData["fab"]["railHeightDatum"]>; })} />
@@ -157,6 +157,7 @@ export default function ShopSections({
               <MInput label={tx("Top rail: extension at last post", "Extensão no último poste", "Extensión en último poste")} value={data.fab.topRailEndExtension ?? ""} onChange={v => set(d => { d.fab.topRailEndExtension=v; })} />
               <MInput label={tx("Vertical gap: post to top rail", "Folga vertical: poste ao trilho", "Holgura vertical: poste al riel")} value={data.fab.postTopGap ?? ""} onChange={v => set(d => { d.fab.postTopGap=v; })} />
             </Grid>
+            <MInput label={tx("Bottom rail: vertical clearance above stair pitch line", "Trilho inferior: folga vertical acima da linha dos degraus", "Riel inferior: separación vertical sobre la pendiente")} value={data.fab.bottomClearance} onChange={v => set(d => { d.fab.bottomClearance=v; })} />
             <ChipRow label={tx("Top rail end cuts", "Cortes das pontas do trilho", "Cortes de extremos del riel")} value={data.fab.topRailEndCut ?? ""}
               options={[["plumb", tx("Plumb / vertical", "Prumo / vertical", "Plomo / vertical")], ["square", tx("Square to rail", "Esquadro ao trilho", "Escuadra al riel")], ["custom", tx("Connection-specific", "Conforme conexão", "Según conexión")]]}
               onChange={v => set(d => { d.fab.topRailEndCut=v as NonNullable<MeasureData["fab"]["topRailEndCut"]>; })} />
