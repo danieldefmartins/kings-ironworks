@@ -30,7 +30,8 @@ def package(output):
     archive=output/'shop-drawings.zip'
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for name in required:z.write(output/name,name)
-        for path in sorted(output.glob('sheet-*.svg')):z.write(path,path.name)
+        for pattern in ('sheet-*.svg','assembly.json','member-schedule.csv'):
+            for path in sorted(output.glob(pattern)):z.write(path,path.name)
     if archive.stat().st_size>100*1024*1024:raise ValueError('Drawing package exceeds storage limit')
     return archive
 

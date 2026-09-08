@@ -57,6 +57,12 @@ describe('Submit to Shop Drawings',()=>{
     expect((await submit()).status).toBe(200);
     expect(mocks.rpc).toHaveBeenCalledWith('kiw_shop_queue_drawing',expect.objectContaining({p_sheet_id:id,p_org_id:'org',p_expected_updated_at:stamp}));
   });
+  it('queues special project records for a detailing package',async()=>{
+    data=newMeasureData('gate',1);
+    mocks.select.mockImplementation(async()=>[{id,status:'submitted',shape:'gate',data,updated_at:stamp}]);
+    expect((await submit()).status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith('kiw_shop_queue_drawing',expect.objectContaining({p_sheet_id:id}));
+  });
   it('requires the saved version and rejects field blockers',async()=>{
     expect((await submit({expectedUpdatedAt:'stale'})).status).toBe(409);
     mocks.blockers.mockReturnValue({gaps:['missing'],docGaps:[],redChecks:[]});

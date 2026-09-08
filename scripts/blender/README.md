@@ -62,3 +62,28 @@ Official references: [Blender license](https://www.blender.org/about/license/),
 - API authentication, lease, upload and submission tests pass in the 144-test suite.
 - HTTP requests identify themselves as `KIW-Blender-Worker/1.0`; default Python
   identification was rejected upstream during integration testing.
+
+## Custom KIW template (September 8 update)
+
+The submission control accepts all app project types. A saved immutable snapshot
+queues automatically and the existing Mac mini worker creates a private package.
+`assembly.py` supplies the same member envelopes to Blender and PDF/SVG output.
+`shop_template.py` creates a right-hand KIW title block, arrangement views,
+segment elevations/plans, enlarged transition paths, grouped member quantities,
+post offsets, connection specifications, and a paginated review list. The ZIP
+also carries `assembly.json` and `member-schedule.csv`.
+
+Supported straight post bays can show top/bottom rails and vertical pickets from
+explicit profiles and clearance. Common numeric inch profiles are accepted;
+ambiguous catalog descriptions are retained for review, not guessed. Drawings
+use external profile envelopes, not hollow section interiors or connection cuts.
+Reference-axis lengths are deliberately NOT labeled saw cut lengths. Current
+post-top axes, infill spacing convention, end treatments, mounting/embedment and
+separate graspable handrails require shop detailing. Curved/winder bays and custom
+infill are not replaced with straight or vertical members. Non-segment project
+types (gates, fences, spiral, etc.) receive their recorded specification package
+and an explicit custom-geometry detailing item, not an invented staircase model.
+Automatic fabrication-ready drawings for those types are not implemented yet.
+
+Validate with `python3 -m unittest discover -s scripts/blender -p 'test_*.py'`, the
+application test suite, and `verify_model.py` against a generated Blender file.

@@ -135,7 +135,7 @@ export default function ReviewSection({
         {(["side","plan","iso"] as const).map(view=><div key={view} className="mb-3"><DrawingSvg data={data} lang={lang} view={view}/></div>)}
         <DrawingReport data={data} lang={lang} sheetId={sheet.id}/>
       </Card>}
-      {hasDrawing && <Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
+      {<Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
       {/* Review & submit — checks, gaps, and the approval gate */}
       <Card stage="review" title={`✅ ${mt(lang, "reviewTitle")}`}>
         <div className="text-xs text-neutral-500 mb-2">{mt(lang, "neverCorrects")}</div>

@@ -730,7 +730,6 @@ export async function POST(req: NextRequest) {
         }
         if (type === "submit_drawing") {
           if (body.expectedUpdatedAt !== sheet.updated_at) return bad("Measurements changed. Reload before submitting.", 409);
-          if (!data.segments.length || !["straight", "stair_platform", "l_shape", "u_shape", "level_run", "ramp", "wall_rail", "builder"].includes(sheet.shape)) return bad("SketchUp generation currently supports measured stair, landing and ramp segments.", 422);
           try {
             const requestId = await sbRpc<string>("kiw_shop_queue_drawing", { p_sheet_id: sheet.id, p_org_id: ORG_ID, p_worker_id: worker.id, p_expected_updated_at: sheet.updated_at });
             const after = await loadSheet(sheet.id, jobOk);

@@ -9,6 +9,7 @@ import bpy
 from mathutils import Vector
 sys.path.insert(0,str(Path(__file__).resolve().parent))
 from drawing_sheets import generate_sheets
+from assembly import build_assembly
 
 
 def line(name, points, material):
@@ -32,7 +33,7 @@ def main():
     payload=json.loads(Path(args[0]).read_text());output=Path(args[1]);output.mkdir(parents=True,exist_ok=True)
     if payload.get('version')!=2 or payload.get('engine')!='blender' or payload.get('units')!='inches' or payload.get('draft') is not True:
         raise ValueError('Unsupported drawing payload')
-    if not payload.get('surfaces') or len(payload['surfaces'])>3000: raise ValueError('Invalid geometry size')
+    if len(payload.get('surfaces',[]))>3000: raise ValueError('Invalid geometry size')
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)
     scene=bpy.context.scene;scene.name='ISO';scene.unit_settings.system='IMPERIAL';scene.unit_settings.scale_length=.0254;scene.unit_settings.length_unit='INCHES'
     scene['request_id']=payload['id'];scene['draft']=True;scene['source_updated_at']=payload.get('sourceUpdatedAt','')
@@ -51,13 +52,19 @@ def main():
         obj['measurements']=json.dumps(p)
         text=bpy.data.curves.new(p['label']+' label','FONT');text.body=p['label'];text.size=2
         label=bpy.data.objects.new(p['label']+' label',text);scene.collection.objects.link(label);label.location=Vector(point(p['top']))+Vector((1,0,1));label.rotation_euler=(math.pi/2,0,0)
-    posts=[p for p in payload['posts'] if p.get('pointType')=='railing_post']
-    for i,p in enumerate(posts):
-        q=next((q for q in posts[i+1:] if q['segment']==p['segment'] and q['side']==p['side']),None)
-        if q:line(f"Top rail reference {p['label']}-{q['label']}",[point(p['top']),point(q['top'])],verify if p['provisional'] or q['provisional'] else steel)
-    for t in payload['transitions']:line(t['label'],[point(p) for p in t['points']],verify if t['provisional'] else steel)
+    assembly=build_assembly(payload)
+    for member in assembly['members']:
+        if not member['vertices']:continue
+        mesh=bpy.data.meshes.new(member['mark']+' profile')
+        mesh.from_pydata([point(p) for p in member['vertices']],[],member['faces']);mesh.update()
+        obj=bpy.data.objects.new(member['mark']+' member',mesh);scene.collection.objects.link(obj)
+        obj.data.materials.append(verify if member['provisional'] else steel)
+        obj['profile']=member['profile'];obj['reference_axis_length']=member['length'];obj['shop_detailing_required']=True
+    for obj in scene.objects:
+        if obj.get('reference_only'):obj.hide_render=True
     for i,w in enumerate(payload.get('walls',[])):line(f'Wall boundary {i+1}',[point(p) for p in w['points']],measured)
     coords=[Vector(point(p)) for s in payload['surfaces'] for p in s['corners']]+[Vector(point(p['top'])) for p in payload['posts']]
+    if not coords:coords=[Vector((0,0,0)),Vector((1,1,1))]
     low=Vector(tuple(min(p[i] for p in coords) for i in range(3)));high=Vector(tuple(max(p[i] for p in coords) for i in range(3)));center=(low+high)/2;extent=max(50,(high-low).length)
     for name,direction in [('ISO',(1,-1,1)),('Plan',(0,0,1)),('Side',(0,-1,0))]:
         camera=bpy.data.cameras.new(name+' camera');camera.type='ORTHO';camera.ortho_scale=extent*1.2;camera.clip_end=extent*10
