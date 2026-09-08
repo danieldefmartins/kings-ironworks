@@ -109,10 +109,19 @@ def table_pages(rows,headings,widths,title,prefix,pages):
 def generate(payload,output):
     output=Path(output);assembly=build_assembly(payload);pages=[]
     p=Page();pages.append((p,'General arrangement','G-01'))
-    p.text(42,53,'RAILING / GENERAL ARRANGEMENT',16)
-    draw_view(p,payload,assembly,'plan',(36,65,480,320),'01 / PLAN')
-    draw_view(p,payload,assembly,'iso',(526,65,490,320),'02 / ASSEMBLY VIEW')
-    draw_view(p,payload,assembly,'side',(36,395,980,325),'03 / PROJECT ELEVATION')
+    if payload['surfaces']:
+        p.text(42,53,'RAILING / GENERAL ARRANGEMENT',16)
+        draw_view(p,payload,assembly,'plan',(36,65,480,320),'01 / PLAN')
+        draw_view(p,payload,assembly,'iso',(526,65,490,320),'02 / ASSEMBLY VIEW')
+        draw_view(p,payload,assembly,'side',(36,395,980,325),'03 / PROJECT ELEVATION')
+    else:
+        p.text(42,53,'CUSTOM PROJECT / DETAILING PACKAGE',16)
+        p.text(50,100,'PROJECT TYPE: '+str(payload.get('shape','custom')).replace('_',' ').upper(),13)
+        p.text(50,140,'Measurements captured / custom geometry detailing required',13)
+        wrapped(p,50,180,'This project uses a specialized measurement form. Its saved dimensions and specifications follow on the S sheets. Automatic fabrication geometry for this project type is not implemented; the shop must prepare the assembly and connection details before cutting.',120,11)
+        p.text(50,300,'PACKAGE CONTENTS',12)
+        for i,label in enumerate(['Saved project dimensions and material specifications','Recorded support and connection information','Open items for shop detailing','Original measurement snapshot in the download']):p.text(65,333+i*26,label,11)
+        p.text(50,500,'No staircase geometry has been substituted for this project.',11)
     segments=sorted({s['segment'] for s in payload['surfaces']})
     for segment in segments:
         if not any(m['segment']==segment for m in assembly['members']):continue
