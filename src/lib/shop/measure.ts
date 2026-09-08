@@ -123,6 +123,7 @@ export interface PostMeasure {
   distanceFromFirst: string; // first-step edge to the edge of the destination tread
   fromNosing: string; // setback from the tread nosing (or platform edge)
   fromEdge: string; // setback from the open side edge
+  embedment?: string; // post length below finished supporting surface, for core drilling
   mount: string; // Core-drill | Base plate | Side mount
   anchor: string; // what it anchors into (granite, concrete, brick…)
   // Detail (optional in the field, wanted by the shop):
@@ -936,6 +937,10 @@ export interface FabDetails {
   topRailEndExtension?: string; // horizontal, beyond last post outer face
   topRailEndCut?: "" | "plumb" | "square" | "custom";
   postTopGap?: string; // vertical fitting gap to cap underside
+  bottomRailConstruction?: "" | "between_posts" | "custom";
+  bottomRailEndGap?: string; // horizontal gap at each plumb post face
+  picketEndGap?: string; // vertical gap at each sloped rail face
+  picketSpacingDatum?: "" | "max_clear_horizontal" | "custom";
 
   corners: string; // inside/outside corner treatment (multi-segment shapes)
   flightConnection: string; // connection between flights and landings

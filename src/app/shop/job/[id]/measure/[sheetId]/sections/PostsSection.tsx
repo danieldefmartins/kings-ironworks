@@ -201,6 +201,7 @@ export default function PostsSection({
                     + {mt(lang, "postMore")}
                   </summary>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {po.pointType === "railing_post" && po.mount === "Core-drill" && <MInput label={lang === "pt" ? "Poste abaixo do piso acabado (embutimento)" : lang === "es" ? "Poste bajo piso terminado (empotramiento)" : "Post below finished surface (embedment)"} value={po.embedment ?? ""} onChange={v => setPost(set, po.id, "embedment", v)} />}
                     <MInput help="postPlate" label={mt(lang, "postPlate")} placeholder="—" value={po.plate}
                       onChange={(v) => setPost(set, po.id, "plate", v)} />
                     <MInput help="postAnchors" label={mt(lang, "postAnchors")} placeholder="—" value={po.anchors}

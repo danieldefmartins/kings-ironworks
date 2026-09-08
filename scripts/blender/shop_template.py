@@ -142,11 +142,17 @@ def generate(payload,output):
         for note in notes:y=wrapped(p,580,y,note,62,9)+9
     if assembly.get('sections'):
         table_pages([(s['mark'],s['topRail'],', '.join(s['posts']),', '.join(t['label'] for t in payload.get('transitions',[]) if s['segment'] in (t.get('lowerSegment'),t.get('upperSegment'))),f'A-{s["segment"]+1:02d}') for s in assembly['sections']],['FLIGHT ASSEMBLY','CONTINUOUS TOP RAIL','POSTS','CONNECTORS','ASSEMBLY SHEET'],[155,215,215,215,168],'Flight assembly register / fabricate separately','AR',pages)
+    cut_groups={}
     for part in assembly.get('cut_parts',[]):
-        p=Page();pages.append((p,'Top rail part '+part['mark'],'CUT-'+part['mark']))
+        key=(part.get('kind'),part['section'],part['profile'],round(part['stock_length'],8),round(part['depth'],8),round(part['saw_angle_from_square_deg'],8)) if part.get('kind')=='Picket' else (part['mark'],)
+        if key not in cut_groups:cut_groups[key]=dict(part,marks=[part['mark']])
+        else:cut_groups[key]['marks'].append(part['mark']);cut_groups[key]['quantity']+=part['quantity']
+    for part in cut_groups.values():
+        p=Page();pages.append((p,part.get('kind','Top rail')+' part '+part['mark'],'CUT-'+part['mark']))
         p.text(42,54,'INDIVIDUAL PART / '+part['mark'],16)
         p.text(45,86,'PROFILE: '+part['profile']+' | QTY '+str(part['quantity'])+' | SECTION '+part['section'],11)
-        p.text(45,111,'Retained shape shown in elevation. Dimensions below are calculated inches; shop rounding tolerance must be specified.',9)
+        if len(part['marks'])>1:p.text(45,102,'APPLIES TO: '+', '.join(part['marks']),8)
+        p.text(45,120,'Retained shape shown in elevation. Dimensions below are calculated inches; shop rounding tolerance must be specified.',9)
         polygon=part['polygon'];stock=part['stock_length'];depth=part['depth']
         scale=min(850/max(stock,1),110/max(depth,1));ox,oy=80,205
         xy=lambda v:(ox+v[0]*scale,oy-v[1]*scale)
@@ -166,7 +172,32 @@ def generate(payload,output):
         p.text(65,607,'END ORIENTATION IS SHOWN ABOVE; do not mirror the second cut.',11)
         wrapped(p,65,645,part['notes'],140,9)
         p.text(65,701,'RELEASE PENDING: material specification, connection details and shop cutting tolerance.',9)
-    post_fits=[m for m in assembly['members'] if m.get('topFit')]
+    if assembly.get('post_cuts'):
+        table_pages([(c['mark'],c['section'],c['profile'],f'{c["shortLength"]:.4f}',f'{c["longLength"]:.4f}',f'{c["embedment"]:.4f}',f'{c["topCutDeg"]:.3f} / 0') for c in assembly['post_cuts']],['POST','ASSEMBLY','PROFILE','SHORT CUT / IN','LONG / STOCK / IN','EMBED / IN','TOP / BOTTOM DEG'],[65,90,240,135,160,120,158],'Full post cutting / square bottom, raked top','PC',pages)
+        for c in assembly['post_cuts']:
+            page=Page();pages.append((page,'Post '+c['mark']+' / cut shape','PC-'+c['mark']))
+            page.text(42,54,'POST PART / '+c['mark']+' / '+c['section'],16)
+            page.text(45,87,'PROFILE: '+c['profile']+' | SQUARE BOTTOM / RAKED TOP',11)
+            width=c['width'];scale=min(450/c['longLength'],80/width);x,y=300,605
+            points=[(x,y),(x+width*scale,y),(x+width*scale,y-c['longLength']*scale),(x,y-c['shortLength']*scale)]
+            page.line(points+[points[0]],'#111111',1)
+            page.dimension(points[0],points[3],f'{c["shortLength"]:.4f}" SHORT',-60)
+            page.dimension(points[1],points[2],f'{c["longLength"]:.4f}" LONG / STOCK',60)
+            floor=y-c['embedment']*scale;page.line([(x-35,floor),(x+width*scale+60,floor)],'#777777',.8)
+            page.text(x+width*scale+70,floor,'FINISHED SUPPORT SURFACE',9)
+            page.dimension((x+width*scale,y),(x+width*scale,floor),f'{c["embedment"]:.4f}" EMBED',30)
+            page.text(570,190,'TOP CUT: '+f'{c["topCutDeg"]:.3f}'+' DEG FROM SQUARE',11)
+            page.text(570,218,'BOTTOM CUT: SQUARE',11)
+            page.text(570,250,'Orient the high side uphill under the cap.',10)
+            page.text(570,278,'No baseplate added to the core-drilled post.',10)
+            page.text(70,680,'Full retained post lengths include the recorded embedment. Check stock specification and mounting approval.',9)
+    if assembly.get('picket_layouts'):
+        rows=[]
+        for layout in assembly['picket_layouts']:
+            for c in layout['centers']:
+                rows.append((layout['section'],layout['bay'],c['mark'],layout['startPost'],f'{c["centerFromStartPostFace"]:.4f}',f'{layout["equalClearGap"]:.4f}'))
+        table_pages(rows,['ASSEMBLY','BAY','PICKET','FROM POST','CENTER FROM INSIDE FACE / IN','EQUAL CLEAR GAP / IN'],[120,80,120,110,285,253],'Picket layout / horizontal stations, uphill','PL',pages)
+    post_fits=[m for m in assembly['members'] if m.get('topFit') and not m.get('postCut')]
     if post_fits:
         table_pages([(m['mark'],f'{m["topFit"]["aboveSurfaceShort"]:.4f}',f'{m["topFit"]["aboveSurfaceLong"]:.4f}',f'{abs(m["topFit"]["angleDeg"]):.3f}',str(m['topFit']['verticalGap']),'Add mounting/embedding detail before deriving full post cut length') for m in post_fits],['POST','SHORT ABOVE FLOOR','LONG ABOVE FLOOR','TOP CUT / DEG','VERTICAL GAP','BOTTOM / MOUNT'],[70,155,155,115,110,363],'Post top fit / finished surface datum','PF',pages)
     grouped={}

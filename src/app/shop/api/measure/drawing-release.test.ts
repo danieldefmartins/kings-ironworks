@@ -36,7 +36,8 @@ describe('measurement persistence',()=>{
     (data.segments[0] as FlightSegment).steps[0].wallSide="none";
     data.posts[0].firstStepToPostEdge="25 1/2";
     data.posts[0].distanceFromFirst="22";
-    Object.assign(data.fab,{topRailConstruction:'continuous_per_flight',railHeightDatum:'finished_top_at_post',topRailStartExtension:'1',topRailEndExtension:'8',topRailEndCut:'plumb',postTopGap:'1/16'});
+    data.posts[0].embedment="4";
+    Object.assign(data.fab,{topRailConstruction:'continuous_per_flight',railHeightDatum:'finished_top_at_post',topRailStartExtension:'1',topRailEndExtension:'8',topRailEndCut:'plumb',postTopGap:'1/16',bottomRailConstruction:'between_posts',bottomRailEndGap:'1/16',picketEndGap:'1/32',picketSpacingDatum:'max_clear_horizontal'});
     Object.assign(data.landingTransitions[0],{weldLocation:'field',weldType:'fillet',weldSize:'1/8',jointPreparation:'Test preparation'});
     data.drawingReleaseVersion=1;
     mocks.update.mockResolvedValue([{updated_at:stamp}]);
@@ -49,6 +50,7 @@ describe('measurement persistence',()=>{
     expect(saved.segments[1].entryOffset).toBe("8");
     expect(saved.segments[0].steps[0].wallSide).toBe("none");
     expect(saved.posts[0].firstStepToPostEdge).toBe("25 1/2");
+    expect(saved.posts[0].embedment).toBe("4");
     expect(saved.posts[0].distanceFromFirst).toBe("22");
     expect(saved.drawingReleaseVersion).toBeUndefined();
   });

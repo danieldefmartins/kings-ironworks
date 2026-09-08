@@ -118,4 +118,5 @@ def build_assembly(payload):
     issue('Member lengths are reference-axis lengths, not saw cut lengths. Confirm rail face offsets, end cuts, weld gaps, embedment and joint allowances before fabrication.')
     from flight_sections import apply_flight_sections
     from connector_details import add_connector_details
-    return add_connector_details(payload,apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues)))
+    from flight_fabrication import add_flight_fabrication
+    return add_connector_details(payload,add_flight_fabrication(payload,apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues))))
