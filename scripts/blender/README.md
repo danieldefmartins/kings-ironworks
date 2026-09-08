@@ -107,3 +107,32 @@ fabrication release. Bottom rail/infill construction, actual stock specification
 section connection details and cutting tolerance remain to be resolved. The
 synthetic example's zero overhang, plumb cuts and 1/16 fitting gap are example
 values, not adopted shop standards. This update has not been deployed yet.
+
+## Live measuring-tool workflow verification (September 8)
+
+A labeled synthetic five-flight U-return project was created and filled through
+the browser UI, saved/reloaded, submitted with **Submit to Shop Drawings**, and
+downloaded through the signed-in link. No fixture was inserted to replace the UI
+record. The exported measurement snapshot exactly matched the saved sheet.
+
+The test has 25 steps, 10 posts, four no-post landing connectors and 12 numbered
+connector welds. Recorded fitting datums now produce 39 cap/bottom-rail/picket
+cut records, 10 full post cut details including embedment, and five picket
+station layouts. Each calculated stock extent was compared with the member
+vertices. Repeated post details share a sheet, and flight assembly sheets carry
+their own cutting tables. Photos in this test are explicitly labeled synthetic
+reference images, not site photos.
+
+The workflow found and fixed server validation dropping new fields, missing
+bottom-rail clearance entry, a deselectable invalid construction value, and
+Blender rejecting profile names offered by app presets. Post embedment, horizontal
+bottom-rail fitting gaps, vertical picket fitting gaps and the spacing convention
+are now explicit inputs; unknown fitting data is not inferred from freeform notes.
+
+The package remains a fabrication draft. The eight connector pieces still need
+the shop's actual bent/mitered/fitting construction, profile orientation and joint
+allowances. Stock specification, weld specification and cutting tolerance also
+require project-specific confirmation. Correct data transfer and geometric cut
+checks are not a claim that every connection is fabrication-ready.
+
+Validation: 150 app tests, 21 Python tests, TypeScript and production build.
