@@ -127,8 +127,27 @@ def generate(payload,output):
         if not any(m['segment']==segment for m in assembly['members']):continue
         kind=payload['measurements']['segments'][segment]['kind'];flight_number=sum(s['kind']=='flight' for s in payload['measurements']['segments'][:segment+1]);name=f'Flight {flight_number}' if kind=='flight' else f'Segment {segment+1}';p=Page();pages.append((p,f'{name} / assembly',f'A-{segment+1:02d}'))
         p.text(42,54,f'{name.upper()} / {kind.upper()} / ASSEMBLY',16)
-        draw_view(p,payload,assembly,'side',(36,65,980,385),'01 / LOCAL ELEVATION',segment)
+        draw_view(p,payload,assembly,'side',(36,65,590,385),'01 / LOCAL ELEVATION',segment)
         draw_view(p,payload,assembly,'plan',(36,465,520,250),'02 / POST LAYOUT',segment)
+        cuts=[c for c in assembly.get('cut_parts',[]) if any(s['segment']==segment and s['mark']==c['section'] for s in assembly.get('sections',[]))]
+        postcuts=[c for c in assembly.get('post_cuts',[]) if any(s['segment']==segment and s['mark']==c['section'] for s in assembly.get('sections',[]))]
+        if cuts or postcuts:
+            p.text(635,97,'FLIGHT PARTS / CUT INCHES',12)
+            p.text(635,120,'MARK / QTY',8);p.text(825,120,'STOCK LENGTH',8);p.text(925,120,'CUT / DEG',8)
+            grouped={}
+            for c in cuts:
+                key=(c.get('kind'),round(c['stock_length'],7),c['profile'])
+                grouped.setdefault(key,[]).append(c)
+            yy=140
+            for group in grouped.values():
+                c=group[0];mark=c['mark'] if len(group)==1 else c['mark']+' ... '+group[-1]['mark']
+                p.text(635,yy,mark+' / '+str(len(group)),8);p.text(825,yy,f'{c["stock_length"]:.4f}',9);p.text(925,yy,f'{c["saw_angle_from_square_deg"]:.3f}',9)
+                p.text(635,yy+14,c['profile'],8);yy+=39
+            for c in postcuts:
+                p.text(635,yy,c['mark']+' / 1',8);p.text(825,yy,f'{c["stockLength"]:.4f}',9);p.text(925,yy,f'{c["topCutDeg"]:.3f} / 0',9);yy+=24
+            p.text(635,yy+8,'Angles are away from square. See part sheets.',8)
+            p.text(635,yy+23,'Post stock includes recorded embedment.',8)
+
         p.text(580,490,'ASSEMBLY REFERENCES',11)
         notes=['Post positions: see P schedule.', 'Continuous top rail per flight.' if payload['measurements'].get('fab',{}).get('topRailConstruction','continuous_per_flight')=='continuous_per_flight' else 'Rail construction: see fabrication specification.','Solid envelopes show recorded profiles.','Infill and end treatments: see open items.', 'Bottom clearance: '+(payload['measurements'].get('fab',{}).get('bottomClearance') or 'VERIFY')]
         joined=[t['label'] for t in payload.get('transitions',[]) if segment in (t.get('lowerSegment'),t.get('upperSegment'))]
@@ -138,8 +157,11 @@ def generate(payload,output):
                 notes.append('Cap past first / last post face: '+('VERIFY' if section.get('capStartOverhang') is None else fmt(section['capStartOverhang']))+' / '+('VERIFY' if section.get('capEndOverhang') is None else fmt(section['capEndOverhang'])))
         bays=[b['mark'] for b in assembly['bays'] if b['segment']==segment]
         notes+=['Assemblies: '+(', '.join(bays) or 'No connected post bays')]
-        y=516
-        for note in notes:y=wrapped(p,580,y,note,62,9)+9
+        for layout in assembly.get('picket_layouts',[]):
+            if any(s['segment']==segment and s['mark']==layout['section'] for s in assembly.get('sections',[])):
+                notes.append(layout['bay']+': '+str(layout['quantity'])+' pickets; equal clear gaps '+f'{layout["equalClearGap"]:.4f}'+' in. See PL stations.')
+        y=510
+        for note in notes:y=wrapped(p,580,y,note,62,8)+5
     if assembly.get('sections'):
         table_pages([(s['mark'],s['topRail'],', '.join(s['posts']),', '.join(t['label'] for t in payload.get('transitions',[]) if s['segment'] in (t.get('lowerSegment'),t.get('upperSegment'))),f'A-{s["segment"]+1:02d}') for s in assembly['sections']],['FLIGHT ASSEMBLY','CONTINUOUS TOP RAIL','POSTS','CONNECTORS','ASSEMBLY SHEET'],[155,215,215,215,168],'Flight assembly register / fabricate separately','AR',pages)
     cut_groups={}
@@ -174,10 +196,16 @@ def generate(payload,output):
         p.text(65,701,'RELEASE PENDING: material specification, connection details and shop cutting tolerance.',9)
     if assembly.get('post_cuts'):
         table_pages([(c['mark'],c['section'],c['profile'],f'{c["shortLength"]:.4f}',f'{c["longLength"]:.4f}',f'{c["embedment"]:.4f}',f'{c["topCutDeg"]:.3f} / 0') for c in assembly['post_cuts']],['POST','ASSEMBLY','PROFILE','SHORT CUT / IN','LONG / STOCK / IN','EMBED / IN','TOP / BOTTOM DEG'],[65,90,240,135,160,120,158],'Full post cutting / square bottom, raked top','PC',pages)
+        grouped_posts={}
         for c in assembly['post_cuts']:
+            key=(c['profile'],round(c['shortLength'],7),round(c['longLength'],7),round(c['embedment'],7),round(c['topCutDeg'],7))
+            grouped_posts.setdefault(key,[]).append(c)
+        for group in grouped_posts.values():
+            c=group[0]
             page=Page();pages.append((page,'Post '+c['mark']+' / cut shape','PC-'+c['mark']))
             page.text(42,54,'POST PART / '+c['mark']+' / '+c['section'],16)
             page.text(45,87,'PROFILE: '+c['profile']+' | SQUARE BOTTOM / RAKED TOP',11)
+            page.text(45,112,'QTY '+str(len(group))+' | MARKS: '+', '.join(p['mark'] for p in group),10)
             width=c['width'];scale=min(450/c['longLength'],80/width);x,y=300,605
             points=[(x,y),(x+width*scale,y),(x+width*scale,y-c['longLength']*scale),(x,y-c['shortLength']*scale)]
             page.line(points+[points[0]],'#111111',1)

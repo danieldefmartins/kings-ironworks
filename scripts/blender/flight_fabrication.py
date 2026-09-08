@@ -80,4 +80,10 @@ def add_flight_fabrication(payload,assembly):
                 clear=run-post_shape['width'];width=picket_shape['depth'];gap=layout[0]['centerFromStartPostFace']-width/2
                 assembly['picket_layouts'].append(dict(bay=bay['mark'],section=section['mark'],startPost=p['label'],endPost=q['label'],clearWidth=clear,quantity=len(layout),equalClearGap=gap,picketWidth=width,centers=layout))
                 assembly['issues'][:]=[i for i in assembly['issues'] if not i.startswith(bay['mark']+': infill preview treats')]
+    if assembly.get('post_cuts') or len(assembly.get('cut_parts',[]))>len(assembly.get('sections',[])):
+        defined={p['mark'] for p in assembly.get('cut_parts',[])}|{p['mark'] for p in assembly['post_cuts']}
+        unresolved=[m['mark'] for m in members if m['mark'] not in defined]
+        assembly['issues'][:]=[i for i in assembly['issues'] if not i.startswith('Member lengths are reference-axis lengths')]
+        if unresolved:assembly['issues'].append('Cut geometry still required for: '+', '.join(unresolved)+'. Landing connector construction (bent, mitered or separate fittings), profile orientation and joint allowances must be specified before these parts can be cut.')
+        assembly['issues'].append('Cut shapes use recorded outside dimensions. Confirm stock grade/wall thickness, welding specification and shop cutting tolerance before release.')
     return assembly
