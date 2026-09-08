@@ -1,3 +1,5 @@
+> Replaced by the [Blender worker](../blender/README.md). Kept for historical reference; the live worker API now requires Blender.
+
 # KIW SketchUp worker
 
 The app saves measurements, queues an immutable request, and reports progress.

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(await drawingDownloadUrl(row.artifact_path), { headers: { 'Cache-Control': 'private, no-store' } });
     }
     const workers = await sbSelect<{ last_seen_at: string | null }[]>('kiw_shop_drawing_workers', `select=last_seen_at&org_id=eq.${ORG_ID}&revoked=eq.false&order=last_seen_at.desc.nullslast&limit=1`);
-    return NextResponse.json({ requests: rows.map(({ artifact_path, ...row }) => ({ ...row, hasFile: !!artifact_path })), connected: !!workers[0]?.last_seen_at && Date.now() - Date.parse(workers[0].last_seen_at) < 120000 }, { headers: { 'Cache-Control': 'private, no-store' } });
+    return NextResponse.json({ requests: rows.map(({ artifact_path, ...row }) => ({ ...row, hasFile: !!artifact_path, format: artifact_path?.endsWith('.skp') ? 'sketchup' : 'blender' })), connected: !!workers[0]?.last_seen_at && Date.now() - Date.parse(workers[0].last_seen_at) < 120000 }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch {
     return NextResponse.json({ error: 'Shop Drawings is not available yet. Your measurements are saved.' }, { status: 503 });
   }
