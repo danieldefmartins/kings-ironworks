@@ -69,7 +69,7 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
                 at=xy(post['base']);end=(at[0],at[1]+25+(i%2)*16)
                 page.line([at,end],'#777777',.5)
                 page.text(end[0]+3,end[1],'FIRST -> '+post['label']+': '+(post.get('firstStepToPostEdge') or 'VERIFY')+' FIELD',7)
-            p=posts[0];page.dimension(xy(p['base']),xy(p['top']),fmt(p['top']['z']-p['base']['z'])+' AXIS HT',-30)
+            p=posts[0];page.dimension(xy(p['base']),xy(p['top']),fmt(p['top']['z']-p['base']['z'])+(' FINISHED HT' if payload['measurements'].get('fab',{}).get('railHeightDatum')=='finished_top_at_post' else ' AXIS HT'),-30)
     if segment is not None and view=='plan':
         for post in [p for p in payload['posts'] if p['segment']==segment][:1]:
             source=post.get('sourcePost',{})
@@ -130,11 +130,38 @@ def generate(payload,output):
         draw_view(p,payload,assembly,'side',(36,65,980,385),'01 / LOCAL ELEVATION',segment)
         draw_view(p,payload,assembly,'plan',(36,465,520,250),'02 / POST LAYOUT',segment)
         p.text(580,490,'ASSEMBLY REFERENCES',11)
-        notes=['Post positions: see P schedule.','Post tops define rail reference axes.','Solid envelopes show recorded profiles.','Infill and end treatments: see open items.', 'Bottom clearance: '+(payload['measurements'].get('fab',{}).get('bottomClearance') or 'VERIFY')]
+        notes=['Post positions: see P schedule.', 'Continuous top rail per flight.' if payload['measurements'].get('fab',{}).get('topRailConstruction','continuous_per_flight')=='continuous_per_flight' else 'Rail construction: see fabrication specification.','Solid envelopes show recorded profiles.','Infill and end treatments: see open items.', 'Bottom clearance: '+(payload['measurements'].get('fab',{}).get('bottomClearance') or 'VERIFY')]
         bays=[b['mark'] for b in assembly['bays'] if b['segment']==segment]
         notes+=['Assemblies: '+(', '.join(bays) or 'No connected post bays')]
         y=516
         for note in notes:y=wrapped(p,580,y,note,62,9)+9
+    for part in assembly.get('cut_parts',[]):
+        p=Page();pages.append((p,'Top rail part '+part['mark'],'CUT-'+part['mark']))
+        p.text(42,54,'INDIVIDUAL PART / '+part['mark'],16)
+        p.text(45,86,'PROFILE: '+part['profile']+' | QTY '+str(part['quantity'])+' | SECTION '+part['section'],11)
+        p.text(45,111,'Retained shape shown in elevation. Dimensions below are calculated inches; shop rounding tolerance must be specified.',9)
+        polygon=part['polygon'];stock=part['stock_length'];depth=part['depth']
+        scale=min(850/max(stock,1),110/max(depth,1));ox,oy=80,205
+        xy=lambda v:(ox+v[0]*scale,oy-v[1]*scale)
+        p.line([xy(v) for v in polygon+[polygon[0]]],'#111111',1)
+        p.dimension((ox,oy+depth*scale/2),(ox+stock*scale,oy+depth*scale/2),f'{stock:.4f}" / STOCK EXTENT',35)
+        p.text(65,295,f'Both retained longitudinal edges: {part["edge_length"]:.4f}"',11)
+        p.text(65,318,f'End cuts: {part["saw_angle_from_square_deg"]:.3f} degrees away from square; parallel / same direction.',11)
+        for title,vertices,cx in [('LEFT END',(polygon[0],polygon[3]),110),('RIGHT END',(polygon[1],polygon[2]),610)]:
+            p.text(cx,370,title+' / ENLARGED',12)
+            a,b=vertices;lo=min(a[0],b[0]);factor=min(90/max(depth,0.01),100/max(abs(a[0]-b[0]),0.01));cy=455
+            pts=[(cx+60+(v[0]-lo)*factor,cy-v[1]*factor) for v in (a,b)]
+            p.line(pts,'#111111',1.2)
+            direction=1 if title=='LEFT END' else -1
+            for x,y in pts:p.line([(x,y),(x+direction*100,y)],'#111111',1)
+            p.dimension(pts[0],(pts[0][0],pts[1][1]),f'{depth:.4f}" DEPTH',-35)
+            p.text(cx,555,f'Shear across depth: {abs(a[0]-b[0]):.4f}"',10)
+        p.text(65,607,'END ORIENTATION IS SHOWN ABOVE; do not mirror the second cut.',11)
+        wrapped(p,65,645,part['notes'],140,9)
+        p.text(65,701,'RELEASE PENDING: material specification, connection details and shop cutting tolerance.',9)
+    post_fits=[m for m in assembly['members'] if m.get('topFit')]
+    if post_fits:
+        table_pages([(m['mark'],f'{m["topFit"]["aboveSurfaceShort"]:.4f}',f'{m["topFit"]["aboveSurfaceLong"]:.4f}',f'{abs(m["topFit"]["angleDeg"]):.3f}',str(m['topFit']['verticalGap']),'Add mounting/embedding detail before deriving full post cut length') for m in post_fits],['POST','SHORT ABOVE FLOOR','LONG ABOVE FLOOR','TOP CUT / DEG','VERTICAL GAP','BOTTOM / MOUNT'],[70,155,155,115,110,363],'Post top fit / finished surface datum','PF',pages)
     grouped={}
     for m in assembly['members']:
         key=(m['kind'],m['profile'],round(m['length'],5),m['segment'],m['mark'].split('-I')[0] if m['kind']=='Picket' else m['mark'])

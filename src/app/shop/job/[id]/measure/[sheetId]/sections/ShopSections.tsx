@@ -72,6 +72,7 @@ export default function ShopSections({
   // them. Null until every step is measured, which is exactly when a total
   // would be a guess.
   const totals = stairTotals(data);
+  const tx = (en: string, pt: string, es: string) => lang === "pt" ? pt : lang === "es" ? es : en;
   return (
     <>
       <Card stage="specs" title={mt(lang, "materialsTitle")}>
@@ -138,6 +139,30 @@ export default function ShopSections({
             onChange={(v) => set((d) => void (d.materials.notes = v))} />
         </div>
       </Card>
+
+      {hasFlights && !isWallRail && <Card stage="specs" title={tx("Flight fabrication", "Fabricação por lance", "Fabricación por tramo")}>
+        <p className="text-sm text-neutral-300">{tx("KIW standard: continuous top rail over the posts, one fabricated section per flight.", "Padrão KIW: corrimão superior contínuo sobre os postes, uma seção fabricada por lance.", "Estándar KIW: riel superior continuo sobre los postes, una sección por tramo.")}</p>
+        <details className="mt-3">
+          <summary className="cursor-pointer py-3 text-sm font-semibold">{tx("Cutting and fitting details", "Detalhes de corte e encaixe", "Detalles de corte y ajuste")}</summary>
+          <div className="space-y-4">
+            <ChipRow label={tx("Top rail construction", "Montagem do trilho superior", "Montaje del riel superior")} value={data.fab.topRailConstruction ?? "continuous_per_flight"}
+              options={[["continuous_per_flight", tx("Continuous per flight", "Contínuo por lance", "Continuo por tramo")], ["between_posts", tx("Between posts", "Entre postes", "Entre postes")], ["custom", tx("Custom", "Personalizado", "Personalizado")]]}
+              onChange={v => set(d => { d.fab.topRailConstruction = v as NonNullable<MeasureData["fab"]["topRailConstruction"]>; })} />
+            <ChipRow label={tx("Rail height at each post is measured to", "Altura em cada poste medida até", "Altura en cada poste medida hasta")} value={data.fab.railHeightDatum ?? ""}
+              options={[["finished_top_at_post", tx("Finished top of rail", "Topo acabado do trilho", "Parte superior terminada")], ["reference_axis", tx("Reference axis", "Eixo de referência", "Eje de referencia")]]}
+              onChange={v => set(d => { d.fab.railHeightDatum = v as NonNullable<MeasureData["fab"]["railHeightDatum"]>; })} />
+            <p className="text-xs text-neutral-400">{tx("Height starts at the finished surface under each post. Profile dimensions are width across the railing × depth in elevation. End extensions are horizontal distances past the outside post faces.", "A altura parte da superfície acabada sob cada poste. Perfil: largura transversal × altura na elevação. Extensões são horizontais além das faces externas dos postes.", "La altura parte de la superficie terminada bajo cada poste. Perfil: ancho transversal × profundidad en elevación. Extensiones horizontales desde las caras exteriores de los postes.")}</p>
+            <Grid>
+              <MInput label={tx("Top rail: extension at first post", "Extensão no primeiro poste", "Extensión en primer poste")} value={data.fab.topRailStartExtension ?? ""} onChange={v => set(d => { d.fab.topRailStartExtension=v; })} />
+              <MInput label={tx("Top rail: extension at last post", "Extensão no último poste", "Extensión en último poste")} value={data.fab.topRailEndExtension ?? ""} onChange={v => set(d => { d.fab.topRailEndExtension=v; })} />
+              <MInput label={tx("Vertical gap: post to top rail", "Folga vertical: poste ao trilho", "Holgura vertical: poste al riel")} value={data.fab.postTopGap ?? ""} onChange={v => set(d => { d.fab.postTopGap=v; })} />
+            </Grid>
+            <ChipRow label={tx("Top rail end cuts", "Cortes das pontas do trilho", "Cortes de extremos del riel")} value={data.fab.topRailEndCut ?? ""}
+              options={[["plumb", tx("Plumb / vertical", "Prumo / vertical", "Plomo / vertical")], ["square", tx("Square to rail", "Esquadro ao trilho", "Escuadra al riel")], ["custom", tx("Connection-specific", "Conforme conexão", "Según conexión")]]}
+              onChange={v => set(d => { d.fab.topRailEndCut=v as NonNullable<MeasureData["fab"]["topRailEndCut"]>; })} />
+          </div>
+        </details>
+      </Card>}
 
       {/* Site & finish conditions — what surface existed when measured */}
       <Card stage="setup" title={`🧱 ${mt(lang, "finishTitle")}`}>

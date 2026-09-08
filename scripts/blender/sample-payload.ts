@@ -4,7 +4,7 @@ import {newPresetMeasureData,newPost,blankLandingTransition,type FlightSegment} 
 import {landingConnectionGeometry} from '../../src/lib/shop/measure-landings';
 import {blenderPayload,type DrawingRequest} from '../../src/lib/shop/shop-drawings';
 const {data}=newPresetMeasureData('multi_flight',5,5);
-data.rail.height='36';data.rail.side='Left';data.datums.postRef='centerline';data.materials.post='2 x 2 square';data.materials.topRail='2 x 1';data.materials.bottomRail='1 x 1';data.materials.picket='1/2 square';data.materials.picketSpacing='3 1/2';data.fab.bottomClearance='2';
+data.rail.height='36';data.rail.side='Left';data.datums.postRef='centerline';data.materials.post='2 x 2 square';data.materials.topRail='2 x 1';data.materials.bottomRail='1 x 1';data.materials.picket='1/2 square';data.materials.picketSpacing='3 1/2';data.fab.bottomClearance='2';Object.assign(data.fab,{topRailConstruction:'continuous_per_flight',railHeightDatum:'finished_top_at_post',topRailStartExtension:'0',topRailEndExtension:'0',topRailEndCut:'plumb',postTopGap:'1/16'});data.materials.notes='SYNTHETIC example fitting values: zero cap overhang, plumb ends and 1/16 vertical post fitting gap. Not approved shop standards.';
 data.segments.forEach((s,index)=>{
   if(s.kind==='flight') {
     s.width='36';s.wallSide='right';s.angleDeg='32.47';s.rake='65.19';

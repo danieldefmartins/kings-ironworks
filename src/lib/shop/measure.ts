@@ -924,6 +924,13 @@ export interface FinishSpec {
 
 // Fabrication-critical details, conditionally shown per shape.
 export interface FabDetails {
+  topRailConstruction?: "continuous_per_flight" | "between_posts" | "custom";
+  railHeightDatum?: "" | "finished_top_at_post" | "reference_axis";
+  topRailStartExtension?: string; // horizontal, beyond first post outer face
+  topRailEndExtension?: string; // horizontal, beyond last post outer face
+  topRailEndCut?: "" | "plumb" | "square" | "custom";
+  postTopGap?: string; // vertical fitting gap to cap underside
+
   corners: string; // inside/outside corner treatment (multi-segment shapes)
   flightConnection: string; // connection between flights and landings
   bottomClearance: string;
@@ -1554,6 +1561,10 @@ export function blankFinish(): FinishSpec {
 }
 export function blankFab(): FabDetails {
   return {
+    topRailConstruction: "continuous_per_flight",
+    railHeightDatum: "", topRailStartExtension: "", topRailEndExtension: "",
+    topRailEndCut: "", postTopGap: "",
+
     corners: "",
     flightConnection: "",
     bottomClearance: "",

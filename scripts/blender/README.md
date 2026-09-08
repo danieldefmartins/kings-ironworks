@@ -87,3 +87,23 @@ Automatic fabrication-ready drawings for those types are not implemented yet.
 
 Validate with `python3 -m unittest discover -s scripts/blender -p 'test_*.py'`, the
 application test suite, and `verify_model.py` against a generated Blender file.
+
+## Continuous flight template (local draft)
+
+The shop confirmed one continuous top rail over all posts of each flight, with
+separate fabricated flight sections. `flight_sections.py` now merges bay cap
+references into one marked flight part. Explicit height datum, horizontal end
+extensions, end-cut direction and vertical post fitting gap drive rectangular
+cap geometry and sloped post-top fits. The fitting controls live in a collapsed
+Flight fabrication card in the shop specifications stage; unset values block
+individual cap cutting sheets. Intermediate supports must share a straight rail
+plane. Tests verify continuous grouping, retained end planes, stock extent,
+post-to-cap contact, square-cut extension datums and invalid fitting conditions.
+
+The generated CUT sheets show retained cap shapes, parallel end orientations,
+stock extent and edge length. Post-fit dimensions stop at the finished surface;
+mounting/embedment must still determine full post length. This is not an automatic
+fabrication release. Bottom rail/infill construction, actual stock specification,
+section connection details and cutting tolerance remain to be resolved. The
+synthetic example's zero overhang, plumb cuts and 1/16 fitting gap are example
+values, not adopted shop standards. This update has not been deployed yet.

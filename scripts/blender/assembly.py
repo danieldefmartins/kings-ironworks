@@ -115,4 +115,5 @@ def build_assembly(payload):
     if data.get('rail',{}).get('kind')=='Both':issue('Separate graspable handrail, brackets and returns require detailing in addition to the guard assembly.')
     if not posts:issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
     issue('Member lengths are reference-axis lengths, not saw cut lengths. Confirm rail face offsets, end cuts, weld gaps, embedment and joint allowances before fabrication.')
-    return dict(members=members,bays=bays,issues=issues)
+    from flight_sections import apply_flight_sections
+    return apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues))
