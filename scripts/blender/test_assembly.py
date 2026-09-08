@@ -19,6 +19,14 @@ class AssemblyTests(unittest.TestCase):
         self.assertTrue(profile('3/4 round')['round'])
         self.assertIsNone(profile('2 nominal pipe Sch 40'))
 
+    def test_profiles_entered_through_measuring_tool_presets(self):
+        for spec,width,depth in [('2" sq tube',2,2),('1/2" sq solid',.5,.5),('Flat bar 1-1/2x3/8',1.5,.375),('1-1/2" sq tube',1.5,1.5)]:
+            with self.subTest(spec=spec):
+                section=profile(spec)
+                self.assertIsNotNone(section)
+                self.assertEqual((section['width'],section['depth']),(width,depth))
+        self.assertIsNone(profile('1-1/2" Sch40 pipe'))
+
     def test_infill_spacing_and_end_clearances(self):
         result=build_assembly(fixture());pickets=[m for m in result['members'] if m['kind']=='Picket']
         self.assertEqual(len(pickets),14)

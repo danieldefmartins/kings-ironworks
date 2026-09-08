@@ -10,6 +10,7 @@ from fractions import Fraction
 
 def inches(value):
     text=str(value or '').strip().lower()
+    text=re.sub(r'(?<=\d)-(?=\d+/\d+)', ' ', text)
     for glyph, fraction in [('½',' 1/2'),('¼',' 1/4'),('¾',' 3/4'),('⅛',' 1/8'),('⅜',' 3/8'),('⅝',' 5/8'),('⅞',' 7/8')]:
         text=text.replace(glyph,fraction)
     text=re.sub(r'\s*(?:inches|inch|in|["″])\s*$', '', text).strip()
@@ -23,11 +24,11 @@ def inches(value):
 def profile(spec):
     """Parse unambiguous common inch profiles; retain original shop specification."""
     text=str(spec or '').lower().replace('×','x')
-    text=re.sub(r'\b(?:hss|tube|square|rectangular|solid|flat|bar|round|pipe|diameter|dia)\b|[Øø]', '',text).strip()
+    text=re.sub(r'\b(?:hss|tube|square|sq|rectangular|solid|flat|bar|round|pipe|diameter|dia)\b|[Øø]', '',text).strip()
     parts=text.split('x');dims=[inches(p) for p in parts]
     if not dims or any(v is None or v<=0 or v>24 for v in dims) or len(dims)>3:return None
     round_=bool(re.search(r'round|pipe|diameter|\bdia\b|[Øø]',str(spec),re.I))
-    if len(dims)==1 and not (round_ or 'square' in str(spec).lower()):return None
+    if len(dims)==1 and not (round_ or re.search(r'\b(?:square|sq)\b',str(spec),re.I)):return None
     return {'width':dims[0],'depth':dims[1] if len(dims)>1 else dims[0],'round':round_,'spec':spec}
 
 
