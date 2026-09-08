@@ -32,7 +32,7 @@ export function blenderPayload(request: DrawingRequest) {
     transitions: landingConnections(data).flatMap((t, i) => {
       if (t.kind !== 'drop' && t.kind !== 'level') return [];
       const g = landingConnectionGeometry(data, t);
-      return g ? [{ label: `T${i + 1}`, points: g.path, provisional: g.provisional }] : [];
+      return g ? [{ label: `T${i + 1}`, source: t, layout: g.layout, lowerSegment: t.lowerFlightIdx, upperSegment: t.upperFlightIdx, lowerPostLabel: posts.find(p=>p.post.id===t.lowerPostId)?.label, upperPostLabel: posts.find(p=>p.post.id===t.upperPostId)?.label, points: g.path, provisional: g.provisional }] : [];
     }),
     // Preserve field records alongside geometry for the shop reviewer.
     measurements: data,

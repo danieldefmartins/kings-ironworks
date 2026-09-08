@@ -73,7 +73,7 @@ export default function SegmentsCard({
     set((d) => {
       const next = piece.make();
       const existing = d.segments.find(s=>s.kind==='platform');
-      if(next.kind==='platform' && existing?.kind==='platform')next.turn=existing.turn;
+      if(next.kind==='platform' && existing?.kind==='platform'){next.turn=existing.turn;next.uDirection=existing.uDirection;}
       insertSegment(d, at, next);
     });
     setPending(null);

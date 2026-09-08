@@ -70,6 +70,7 @@ const PlatformSchema = z.object({
   slope: meas,
   slopeDir: z.string().max(120),
   turn: z.enum(["none", "left", "right", "u"]),
+  uDirection: z.enum(["left", "right"]).optional(),
   entryOffset: meas.optional(),
   exitOffset: meas.optional(),
 });
@@ -326,6 +327,12 @@ const FinishSchema = z.object({
   topAdjustment: meas,
 });
 const FabSchema = z.object({
+  topRailConstruction: z.enum(["continuous_per_flight", "between_posts", "custom"]).optional(),
+  railHeightDatum: z.enum(["", "finished_top_at_post", "reference_axis"]).optional(),
+  topRailStartExtension: meas.optional(),
+  topRailEndExtension: meas.optional(),
+  topRailEndCut: z.enum(["", "plumb", "square", "custom"]).optional(),
+  postTopGap: meas.optional(),
   corners: short,
   flightConnection: short,
   bottomClearance: short,
@@ -436,6 +443,8 @@ const MeasureDataSchema = z.object({
     side:z.enum(["left","right"]),kind:z.enum(["","drop","level","separate","landing_posts"]),
     lowerPostId:z.string().max(40),upperPostId:z.string().max(40),lowerReach:meas,upperReach:meas,heightDifference:meas,
     higherEnd:z.enum(["","lower","upper","level"]),horizontalSpan:meas,verticalAt:z.enum(["","lower","upper"]),note:note,
+    weldLocation:z.enum(["","shop","field"]).optional(),weldType:short.optional(),
+    weldSize:meas.optional(),jointPreparation:short.optional(),
   })).max(60).optional(),
   spiral: SpiralSchema,
   well: WellSchema.optional(),

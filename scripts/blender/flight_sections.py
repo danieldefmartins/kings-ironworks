@@ -23,7 +23,7 @@ def apply_flight_sections(payload,result):
         first,last=posts[0],posts[-1];run=along(last['base'])-along(first['base'])
         if run<=0:continue
         rise=last['top']['z']-first['top']['z'];slope=rise/run;theta=math.atan(slope);cos=math.cos(theta)
-        mark=f'F{segment+1:02d}-{side[0].upper()}';part=mark+'-T'
+        flight_number=sum(s['kind']=='flight' for s in data['segments'][:segment+1]);mark=f'F{flight_number:02d}-{side[0].upper()}';part=mark+'-T'
         top=profile(data.get('materials',{}).get('topRail',''));post_profile=profile(data.get('materials',{}).get('post',''))
         concerns=[]
         def missing(s):concerns.append(s);issues.append(mark+': '+s)
@@ -31,6 +31,19 @@ def apply_flight_sections(payload,result):
             missing('Measured supports do not lie on one straight rail plane; resolve the fit before cutting.')
         if any(p['provisional'] for p in posts):missing('Resolve provisional post coordinates before cutting.')
         ext0=inches(fab.get('topRailStartExtension'));ext1=inches(fab.get('topRailEndExtension'));gap=inches(fab.get('postTopGap'))
+        # Landing reach is from the support reference, while the isolated-flight
+        # extension is beyond its outer face. Connected ends use their own record.
+        if post_profile and post_profile['width']==post_profile['depth']:
+            for t in data.get('landingTransitions',[]):
+                if t.get('kind') not in ('drop','level') or t.get('side')!=side:continue
+                if t.get('upperFlightIdx')==segment and t.get('upperPostId')==first.get('sourcePost',{}).get('id'):
+                    reach=inches(t.get('upperReach'))
+                    if reach is not None and reach>=post_profile['width']/2:ext0=reach-post_profile['width']/2
+                    else:missing('Upper connection reach stops inside the end post; resolve the cap termination.')
+                if t.get('lowerFlightIdx')==segment and t.get('lowerPostId')==last.get('sourcePost',{}).get('id'):
+                    reach=inches(t.get('lowerReach'))
+                    if reach is not None and reach>=post_profile['width']/2:ext1=reach-post_profile['width']/2
+                    else:missing('Lower connection reach stops inside the end post; resolve the cap termination.')
         datum=fab.get('railHeightDatum');cut=fab.get('topRailEndCut')
         if not top or top['round']:missing('Continuous cap detail requires an explicit rectangular profile, width across x depth in elevation.')
         if not post_profile or post_profile['round'] or post_profile['width']!=post_profile['depth']:missing('Post fit currently requires a square post profile; other orientations require detailing.')
@@ -62,7 +75,7 @@ def apply_flight_sections(payload,result):
         members[:]=[m for m in members if not (m['kind']=='Top rail' and m['mark'].split('-T')[0] in baymarks)]
         member=dict(mark=part,kind='Top rail',a=a,b=b,profile=data['materials'].get('topRail') or 'VERIFY',section=top,segment=segment,length=distance(a,b),vertices=vertices,faces=faces,provisional=bool(concerns))
         members.append(member)
-        result['sections'].append(dict(mark=mark,segment=segment,side=side,topRail=part,posts=[p['label'] for p in posts],pitchDeg=math.degrees(theta),construction='Continuous top rail; one fabricated section per flight',issues=concerns))
+        result['sections'].append(dict(mark=mark,segment=segment,side=side,topRail=part,posts=[p['label'] for p in posts],pitchDeg=math.degrees(theta),capStartOverhang=ext0,capEndOverhang=ext1,construction='Continuous top rail; one fabricated section per flight',issues=concerns))
         if can_fit and gap is not None:
             for p in posts:
                 m=next((m for m in members if m['mark']==p['label']),None)

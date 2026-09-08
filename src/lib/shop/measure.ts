@@ -184,6 +184,7 @@ export interface PlatformSegment {
   slopeDir: string; // which way it falls
   entryOffset?: string; // landing left edge to incoming flight left edge, looking uphill
   exitOffset?: string; // departure edge to next flight left edge, looking out
+  uDirection?: "left" | "right"; // handedness of a 180-degree return; absent preserves legacy right return
   turn: "none" | "left" | "right" | "u"; // direction change after this landing
 }
 
@@ -822,6 +823,11 @@ export function blankWell(): WellData {
 }
 
 export interface LandingTransition {
+  weldLocation?: "" | "shop" | "field";
+  weldType?: string;
+  weldSize?: string;
+  jointPreparation?: string;
+
   landingSegIdx: number;
   lowerFlightIdx: number;
   upperFlightIdx: number;

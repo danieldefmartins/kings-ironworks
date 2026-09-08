@@ -8,6 +8,7 @@ import {Card,Grid,MInput,ChipRow} from '../fields';
 
 export default function LandingConnections({data,lang,set}:{data:MeasureData;lang:string;set:(fn:(d:MeasureData)=>void)=>void}){
   const posts=orderedPosts(data);
+  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
   return <>{landingConnections(data).map((t,index)=>{
     const elbow=t.verticalAt==='lower'?110:285;
     const key=transitionKey(t),geometry=landingConnectionGeometry(data,t),joins=t.kind==='drop'||t.kind==='level';
@@ -32,6 +33,21 @@ export default function LandingConnections({data,lang,set}:{data:MeasureData;lan
           <text x={elbow+12} y="76" fill="#fff" fontSize="14">{t.heightDifference||'?'}</text><text x="145" y="132" fill="#d4d4d4" fontSize="13">{t.horizontalSpan||'?'}</text>
           <text x="25" y="20" fill="#d4d4d4" fontSize="12">S{t.lowerFlightIdx+1}</text><text x="345" y="20" fill="#d4d4d4" fontSize="12">S{t.upperFlightIdx+1}</text>
         </svg>
+        {geometry&&<details className="my-3 rounded-xl border border-neutral-700 p-3">
+          <summary className="cursor-pointer font-semibold">{tx('Connection layout from the setbacks', 'Conexão a partir dos recuos', 'Conexión a partir de los retiros')}</summary>
+          <p className="mt-3 text-sm">{tx('Post setbacks', 'Recuos dos postes', 'Retiros de postes')}: {formatIn(geometry.layout.lowerSetback)} / {formatIn(geometry.layout.upperSetback)}<br/>
+            {tx('Across the railing lines', 'Entre as linhas de guarda-corpo', 'Entre líneas de baranda')}: {formatIn(geometry.layout.acrossRailLines)}<br/>
+            {tx('Longitudinal end offset', 'Desalinhamento longitudinal', 'Desfase longitudinal')}: {formatIn(geometry.layout.alongRailEnds)}<br/>
+            {tx('Height difference at post supporting steps', 'Desnível dos degraus que recebem os postes', 'Desnivel entre peldaños de los postes')}: {formatIn(geometry.layout.stepHeightDifference)}</p>
+          {geometry.layout.clearGapBetweenFlights!==null&&<p className="text-sm">{tx('Clear gap between flights', 'Vão entre os lances', 'Hueco entre tramos')}: {formatIn(geometry.layout.clearGapBetweenFlights)}</p>}
+          {geometry.layout.lowerReachForSquareBridge!==null&&<button type="button" className="mt-3 min-h-12 rounded-lg border border-sky-700 px-3 text-sm" onClick={()=>edit('lowerReach',String(Number(geometry.layout.lowerReachForSquareBridge!.toFixed(4))))}>{tx('Align across the stairwell: lower extension', 'Alinhar a travessa: extensão inferior', 'Alinear travesaño: extensión inferior')} {formatIn(geometry.layout.lowerReachForSquareBridge)} {tx('from post reference', 'a partir da referência do poste', 'desde la referencia del poste')}</button>}
+        </details>}
+        <details className="my-3 rounded-xl border border-neutral-700 p-3">
+          <summary className="cursor-pointer font-semibold">{tx('Shop details: connector welds', 'Fabricação: soldas da conexão', 'Taller: soldaduras de conexión')}</summary>
+          <ChipRow label={tx('Final weld location', 'Local da solda final', 'Lugar de soldadura final')} value={t.weldLocation||''} options={[["shop",tx('Shop','Oficina','Taller')],["field",tx('On site','Obra','En obra')]]} onChange={v=>edit('weldLocation',v)}/>
+          <Grid><MInput label={tx('Weld type', 'Tipo de solda', 'Tipo de soldadura')} value={t.weldType||''} onChange={v=>edit('weldType',v)}/><MInput label={tx('Weld size', 'Tamanho da solda', 'Tamaño de soldadura')} value={t.weldSize||''} onChange={v=>edit('weldSize',v)}/></Grid>
+          <MInput label={tx('Joint preparation / end treatment', 'Preparação da junta / pontas', 'Preparación de junta / extremos')} value={t.jointPreparation||''} onChange={v=>edit('jointPreparation',v)}/>
+        </details>
         {geometry&&<div className={`my-3 rounded-xl border p-3 text-sm ${geometry.provisional?'border-amber-800 text-amber-200':'border-emerald-800 text-emerald-200'}`}><strong>{mt(lang,'landingCalculated')}</strong><p>{mt(lang,'landingHeightDifference')}: {formatIn(geometry.heightDifference)} · {mt(lang,`landingEnd_${geometry.higherEnd}`)}<br/>{mt(lang,'landingHorizontalSpan')}: {formatIn(geometry.horizontalSpan)}</p>{geometry.provisional&&<p>{mt(lang,'landingMismatch')}</p>}</div>}
       </>}
       <MInput label={mt(lang,'jointNote')} hint={!joins?mt(lang,'landingSeparateHint'):undefined} value={t.note} onChange={v=>edit('note',v)}/>

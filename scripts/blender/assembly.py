@@ -116,4 +116,5 @@ def build_assembly(payload):
     if not posts:issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
     issue('Member lengths are reference-axis lengths, not saw cut lengths. Confirm rail face offsets, end cuts, weld gaps, embedment and joint allowances before fabrication.')
     from flight_sections import apply_flight_sections
-    return apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues))
+    from connector_details import add_connector_details
+    return add_connector_details(payload,apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues)))

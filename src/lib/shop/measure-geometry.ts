@@ -107,12 +107,17 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       landing={pose:{...pose},run:d,width:w,gradeX:gx,gradeY:gy,provisional:treads[treads.length-1].provisional};
       const offset=value(segment.exitOffset,true);
       const x=segment.turn==='left' ? (d-nextWidth)/2 : segment.turn==='right' ? (d+nextWidth)/2 : segment.turn==='u' ? 0 : d;
-      const y=segment.turn==='left' ? 0 : segment.turn==='right'||segment.turn==='u' ? w : (w-nextWidth)/2;
-      const turn=segment.turn==='left' ? -Math.PI/2 : segment.turn==='right' ? Math.PI/2 : segment.turn==='u' ? Math.PI : 0;
+      const uLeft=segment.turn==='u'&&segment.uDirection==='left';
+      const y=uLeft ? nextWidth : segment.turn==='left' ? 0 : segment.turn==='right'||segment.turn==='u' ? w : (w-nextWidth)/2;
+      const turn=segment.turn==='left' ? -Math.PI/2 : segment.turn==='right' ? Math.PI/2 : segment.turn==='u' ? (uLeft?-Math.PI:Math.PI) : 0;
       const ox=offset===null?x:segment.turn==='left'?offset:segment.turn==='right'?d-offset:x;
-      const oy=offset===null?y:segment.turn==='u'?w-offset:segment.turn==='none'?offset:y;
+      const oy=offset===null?y:segment.turn==='u'?(uLeft?offset+nextWidth:w-offset):segment.turn==='none'?offset:y;
       const next=data.segments[segIdx+1];
       if(next && !(next.kind==='flight'&&next.branch) && (offset===null || offset+nextWidth>(segment.turn==='left'||segment.turn==='right'?d:w)))treads[treads.length-1].provisional=true;
+      if(next&&segment.turn==='u'&&segment.uDirection&&offset!==null){
+        const outgoingMin=oy-nextWidth,outgoingMax=oy;
+        if(Math.min(entryOffset+incomingWidth,outgoingMax)-Math.max(entryOffset,outgoingMin)>.001)treads[treads.length-1].provisional=true;
+      }
       originProvisional=treads[treads.length-1].provisional;
       pose=poseAt(pose,ox,oy,gx*ox+gy*oy,turn);runTotal+=d;
     } else if (segment.kind === 'ramp') {

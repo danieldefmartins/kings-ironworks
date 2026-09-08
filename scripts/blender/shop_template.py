@@ -125,16 +125,23 @@ def generate(payload,output):
     segments=sorted({s['segment'] for s in payload['surfaces']})
     for segment in segments:
         if not any(m['segment']==segment for m in assembly['members']):continue
-        kind=payload['measurements']['segments'][segment]['kind'];p=Page();pages.append((p,f'Segment {segment+1} / {kind}',f'A-{segment+1:02d}'))
-        p.text(42,54,f'SEGMENT {segment+1} / {kind.upper()} / ASSEMBLY',16)
+        kind=payload['measurements']['segments'][segment]['kind'];flight_number=sum(s['kind']=='flight' for s in payload['measurements']['segments'][:segment+1]);name=f'Flight {flight_number}' if kind=='flight' else f'Segment {segment+1}';p=Page();pages.append((p,f'{name} / assembly',f'A-{segment+1:02d}'))
+        p.text(42,54,f'{name.upper()} / {kind.upper()} / ASSEMBLY',16)
         draw_view(p,payload,assembly,'side',(36,65,980,385),'01 / LOCAL ELEVATION',segment)
         draw_view(p,payload,assembly,'plan',(36,465,520,250),'02 / POST LAYOUT',segment)
         p.text(580,490,'ASSEMBLY REFERENCES',11)
         notes=['Post positions: see P schedule.', 'Continuous top rail per flight.' if payload['measurements'].get('fab',{}).get('topRailConstruction','continuous_per_flight')=='continuous_per_flight' else 'Rail construction: see fabrication specification.','Solid envelopes show recorded profiles.','Infill and end treatments: see open items.', 'Bottom clearance: '+(payload['measurements'].get('fab',{}).get('bottomClearance') or 'VERIFY')]
+        joined=[t['label'] for t in payload.get('transitions',[]) if segment in (t.get('lowerSegment'),t.get('upperSegment'))]
+        if joined:notes.append('Landing connections: '+', '.join(joined))
+        for section in assembly.get('sections',[]):
+            if section['segment']==segment:
+                notes.append('Cap past first / last post face: '+('VERIFY' if section.get('capStartOverhang') is None else fmt(section['capStartOverhang']))+' / '+('VERIFY' if section.get('capEndOverhang') is None else fmt(section['capEndOverhang'])))
         bays=[b['mark'] for b in assembly['bays'] if b['segment']==segment]
         notes+=['Assemblies: '+(', '.join(bays) or 'No connected post bays')]
         y=516
         for note in notes:y=wrapped(p,580,y,note,62,9)+9
+    if assembly.get('sections'):
+        table_pages([(s['mark'],s['topRail'],', '.join(s['posts']),', '.join(t['label'] for t in payload.get('transitions',[]) if s['segment'] in (t.get('lowerSegment'),t.get('upperSegment'))),f'A-{s["segment"]+1:02d}') for s in assembly['sections']],['FLIGHT ASSEMBLY','CONTINUOUS TOP RAIL','POSTS','CONNECTORS','ASSEMBLY SHEET'],[155,215,215,215,168],'Flight assembly register / fabricate separately','AR',pages)
     for part in assembly.get('cut_parts',[]):
         p=Page();pages.append((p,'Top rail part '+part['mark'],'CUT-'+part['mark']))
         p.text(42,54,'INDIVIDUAL PART / '+part['mark'],16)
@@ -174,6 +181,8 @@ def generate(payload,output):
     for i,t in enumerate(payload.get('transitions',[])):
         page=Page();pages.append((page,'Landing connection '+t['label'],f'D-{i+1:02d}'))
         page.text(42,55,'LANDING CONNECTION / '+t['label'],16)
+        layout=t.get('layout',{});source=t.get('source',{})
+        page.text(48,77,'POST RECUO: '+str(layout.get('lowerSetback','VERIFY'))+' / '+str(layout.get('upperSetback','VERIFY'))+' | ACROSS RAIL LINES: '+str(round(layout.get('acrossRailLines',0),4))+' in',9)
         points=t['points'];start,end=points[0],points[-1]
         heading=math.atan2(end['y']-start['y'],end['x']-start['x'])
         for view,box,title in [('plan',(60,85,900,260),'01 / PLAN'),('side',(60,390,900,260),'02 / CONNECTION ELEVATION')]:
@@ -182,12 +191,18 @@ def generate(payload,output):
             scale=min((w-120)/max(1,hi[0]-lo[0]),(h-100)/max(1,hi[1]-lo[1]))
             xy=lambda p:(x+60+(p[0]-lo[0])*scale,y+40+(p[1]-lo[1])*scale)
             page.line([xy(p) for p in pts],'#222222',2)
+            if view=='side':
+                for j,pt in enumerate(pts):
+                    at=xy(pt);page.text(at[0]+5,at[1]-10,f'{t["label"]}-W{j+1}',9)
             for j,(a,b) in enumerate(zip(points,points[1:])):
                 length=math.dist([a[k] for k in (('x','y') if view=='plan' else ('x','y','z'))],[b[k] for k in (('x','y') if view=='plan' else ('x','y','z'))])
                 page.dimension(xy(pts[j]),xy(pts[j+1]),t['label']+f'-{j+1} / '+fmt(length)+' REF',-22)
             page.text(x,y+h,title+' / NOT TO SCALE',11)
-        page.text(65,687,'Rail reference path. See connection schedule for measured reaches, height difference and joint specifications.',9)
-        page.text(65,708,'Connection profiles, miters and infill around the landing require shop detailing.',9)
+        gap=layout.get('clearGapBetweenFlights')
+        page.text(65,687,('Across connection = '+fmt(gap)+' clear gap + '+fmt(layout['lowerSetback'])+' recuo + '+fmt(layout['upperSetback'])+' recuo = '+fmt(layout['acrossRailLines'])) if gap is not None else 'Rail reference path. Check measured reaches and joint specifications.',9)
+        page.text(65,708,'See numbered weld schedule. Cap reaches from post references: '+str(source.get('lowerReach','VERIFY'))+' / '+str(source.get('upperReach','VERIFY'))+' in.',9)
+    if assembly.get('welds'):
+        table_pages([(w['mark'],w['joins'],w['location'],w['type']+' / '+w['size'],w['preparation']) for w in assembly['welds']],['WELD','PIECES JOINED','SHOP / FIELD','TYPE / SIZE','JOINT PREPARATION'],[100,320,115,150,283],'Landing connector weld schedule','W',pages)
     data=payload['measurements'];raw=[p.get('sourcePost',{}) for p in payload.get('posts',[])] or data.get('posts',[])
     rows=[]
     # Payload labels include non-railing support points; match the source order used by drawingPosts.
