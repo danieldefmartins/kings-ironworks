@@ -50,3 +50,15 @@ not customer field records.
 
 Official references: [Blender license](https://www.blender.org/about/license/),
 [background command line](https://docs.blender.org/manual/en/latest/advanced/command_line/arguments.html).
+
+## Verified on September 8, 2026
+
+- Blender 4.5.13 LTS installed from the checksum-verified official ARM64 installer.
+- Five-flight sample: 29 surfaces, 10 posts, four landing connections, 10 sheets.
+- Saved `.blend` reopened and every surface/post coordinate matched its payload.
+- Background rendering produced a PNG preview.
+- Isolated live queue test reached ready, uploaded a valid ZIP, and downloaded
+  through the signed-in Shop link. Customer measurement sheets were untouched.
+- API authentication, lease, upload and submission tests pass in the 144-test suite.
+- HTTP requests identify themselves as `KIW-Blender-Worker/1.0`; default Python
+  identification was rejected upstream during integration testing.

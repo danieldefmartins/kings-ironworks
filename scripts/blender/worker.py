@@ -17,7 +17,7 @@ LOG=logging.getLogger('kiw-blender')
 
 def api(config, body):
     data=json.dumps(dict(body,engine='blender')).encode()
-    request=Request(config['url']+'/shop/api/shop-drawings/worker',data=data,headers={'Authorization':'Bearer '+config['token'],'Content-Type':'application/json'})
+    request=Request(config['url']+'/shop/api/shop-drawings/worker',data=data,headers={'Authorization':'Bearer '+config['token'],'Content-Type':'application/json','User-Agent':'KIW-Blender-Worker/1.0','Accept':'application/json'})
     with urlopen(request,timeout=30) as response:return json.load(response)
 
 
@@ -55,7 +55,7 @@ def generate(config,job,blender,root):
     archive=package(output)
     upload=urlparse(job['uploadUrl'])
     if upload.scheme!='https' or not (upload.hostname or '').endswith('.supabase.co') or upload.username:raise ValueError('Invalid storage URL')
-    request=Request(job['uploadUrl'],method='PUT',data=archive.read_bytes(),headers={'Content-Type':'application/zip'})
+    request=Request(job['uploadUrl'],method='PUT',data=archive.read_bytes(),headers={'Content-Type':'application/zip','User-Agent':'KIW-Blender-Worker/1.0'})
     with urlopen(request,timeout=60) as response:
         if response.status not in (200,201):raise RuntimeError('Upload failed')
     api(config,{'action':'complete','id':identifier,'lease':lease})
