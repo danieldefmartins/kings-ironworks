@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const GHL_LOCATION_ID = "rJsKSnzzxWdCgDCq21rI";
+
 
 const SERVICE_TYPES = [
   "Fire Escape",
@@ -35,8 +35,8 @@ const SOURCES = [
 
 export default function GHLForm() {
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
+    preferredContact: "phone",
     phone: "",
     email: "",
     serviceType: "",
@@ -65,11 +65,11 @@ export default function GHLForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          locationId: GHL_LOCATION_ID,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          phone: form.phone,
-          email: form.email,
+          name: form.name,
+          preferredContact: form.preferredContact,
+          phone: form.preferredContact === "phone" ? form.phone : "",
+          email: form.preferredContact === "email" ? form.email : "",
+          consent: form.preferredContact === "phone" && form.consent,
           serviceType: form.serviceType,
           projectAddress: form.projectAddress,
           projectDescription: form.projectDescription,
@@ -78,10 +78,11 @@ export default function GHLForm() {
         }),
       });
 
-      if (res.ok) {
+      const result = await res.json();
+      if (res.ok && result.success) {
         setStatus("success");
         setForm({
-          firstName: "", lastName: "", phone: "", email: "",
+          name: "", preferredContact: "phone", phone: "", email: "",
           serviceType: "", projectAddress: "", projectDescription: "",
           timeline: "", source: "", consent: false,
         });
@@ -96,7 +97,7 @@ export default function GHLForm() {
   if (status === "success") {
     return (
       <div className="ghl-form-container">
-        <div className="py-16 text-center">
+        <div role="status" className="py-16 text-center">
           <div className="w-16 h-16 mx-auto mb-6 bg-accent/10 flex items-center justify-center">
             <svg className="w-8 h-8 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -113,8 +114,8 @@ export default function GHLForm() {
         <style>{`
           .ghl-form-container {
             background: oklch(0.99 0.003 90);
-            border: 8px solid oklch(0.15 0.005 280);
-            padding: 2rem;
+            border: 2px solid oklch(0.15 0.005 280);
+            padding: 1.25rem;
             width: 100%;
           }
           @media (min-width: 768px) {
@@ -128,49 +129,43 @@ export default function GHLForm() {
   return (
     <div className="ghl-form-container">
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Name Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="firstName" className="form-label">First Name *</label>
-            <input
-              id="firstName" name="firstName" type="text" required
-              value={form.firstName} onChange={handleChange}
-              className="form-input"
-              placeholder="John"
-            />
-          </div>
-          <div>
-            <label htmlFor="lastName" className="form-label">Last Name *</label>
-            <input
-              id="lastName" name="lastName" type="text" required
-              value={form.lastName} onChange={handleChange}
-              className="form-input"
-              placeholder="Smith"
-            />
-          </div>
+        <fieldset disabled={status === "sending"} className="space-y-6">
+        <div>
+          <label htmlFor="name" className="form-label">Name *</label>
+          <input id="name" name="name" type="text" required autoComplete="name"
+            maxLength={120} value={form.name} onChange={handleChange}
+            className="form-input" placeholder="Your name" />
         </div>
 
-        {/* Contact Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <fieldset>
+          <legend className="form-label">How should we contact you?</legend>
+          <div className="flex gap-6">
+            {[{ value: "phone", label: "Phone call" }, { value: "email", label: "Email" }].map(option => (
+              <label key={option.value} className="flex items-center gap-2 min-h-11 cursor-pointer">
+                <input type="radio" name="preferredContact" value={option.value}
+                  checked={form.preferredContact === option.value} onChange={handleChange}
+                  className="accent-[oklch(0.66_0.12_75)]" />
+                {option.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        {form.preferredContact === "phone" ? (
           <div>
             <label htmlFor="phone" className="form-label">Phone *</label>
-            <input
-              id="phone" name="phone" type="tel" required
+            <input id="phone" name="phone" type="tel" required autoComplete="tel"
+              maxLength={40} pattern="[+()0-9 .-]{7,40}"
               value={form.phone} onChange={handleChange}
-              className="form-input"
-              placeholder="(617) 555-1234"
-            />
+              className="form-input" placeholder="(617) 555-1234" />
           </div>
+        ) : (
           <div>
             <label htmlFor="email" className="form-label">Email *</label>
-            <input
-              id="email" name="email" type="email" required
-              value={form.email} onChange={handleChange}
-              className="form-input"
-              placeholder="john@example.com"
-            />
+            <input id="email" name="email" type="email" required autoComplete="email"
+              maxLength={254} value={form.email} onChange={handleChange}
+              className="form-input" placeholder="you@example.com" />
           </div>
-        </div>
+        )}
 
         {/* Service & Timeline Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -206,7 +201,7 @@ export default function GHLForm() {
         <div>
           <label htmlFor="projectAddress" className="form-label">Project Address</label>
           <input
-            id="projectAddress" name="projectAddress" type="text"
+            id="projectAddress" name="projectAddress" type="text" maxLength={300} autoComplete="street-address"
             value={form.projectAddress} onChange={handleChange}
             className="form-input"
             placeholder="123 Main St, Boston, MA"
@@ -217,13 +212,19 @@ export default function GHLForm() {
         <div>
           <label htmlFor="projectDescription" className="form-label">Tell us about your project *</label>
           <textarea
-            id="projectDescription" name="projectDescription" required
+            id="projectDescription" name="projectDescription" required maxLength={5000}
             value={form.projectDescription} onChange={handleChange}
             className="form-input min-h-[120px] resize-y"
             placeholder="Describe your project, include dimensions if possible. You can also text us photos at (617) 404-2589."
             rows={4}
           />
         </div>
+
+        <p className="text-sm text-muted-foreground">
+          Have photos? You can <a href="sms:+16174042589" className="text-accent underline">text project photos to (617) 404-2589</a> or{' '}
+          <a href="mailto:info@kingsironworks.com?subject=Ironwork%20project%20photos" className="text-accent underline">email them to our team</a>.
+          Include your name so we can match them to your request.
+        </p>
 
         {/* How did you find us */}
         <div>
@@ -240,10 +241,10 @@ export default function GHLForm() {
           </select>
         </div>
 
-        {/* SMS Consent */}
-        <div className="flex items-start gap-3">
+        {/* Optional SMS permission, independent of requesting a phone call. */}
+        {form.preferredContact === "phone" && <div className="flex items-start gap-3">
           <input
-            id="consent" name="consent" type="checkbox" required
+            id="consent" name="consent" type="checkbox"
             checked={form.consent} onChange={handleChange}
             className="mt-1 w-4 h-4 accent-[oklch(0.66_0.12_75)]"
           />
@@ -254,17 +255,19 @@ export default function GHLForm() {
           </label>
         </div>
 
+        }
+
         {/* Submit */}
         <button
           type="submit"
           disabled={status === "sending"}
           className="w-full bg-accent text-sidebar font-bold text-lg py-4 px-8 hover:opacity-90 transition-opacity disabled:opacity-50 tracking-wide uppercase"
         >
-          {status === "sending" ? "Sending..." : "Get Your Free Quote"}
+          {status === "sending" ? "Sending..." : "Get a Free Quote"}
         </button>
 
         {status === "error" && (
-          <p className="text-center text-red-500 text-sm">
+          <p role="alert" className="text-center text-red-700 text-sm">
             Something went wrong. Please try again or call us at (617) 404-2589.
           </p>
         )}
@@ -272,13 +275,14 @@ export default function GHLForm() {
         <p className="text-center text-xs text-muted-foreground">
           We respond within 1 hour during business hours (Mon-Fri 7AM-5PM)
         </p>
+        </fieldset>
       </form>
 
       <style>{`
         .ghl-form-container {
           background: oklch(0.99 0.003 90);
-          border: 8px solid oklch(0.15 0.005 280);
-          padding: 2rem;
+          border: 2px solid oklch(0.15 0.005 280);
+          padding: 1.25rem;
           width: 100%;
         }
         @media (min-width: 768px) {

@@ -474,14 +474,14 @@ export default function ProjectShowcaseClient({ projectSlug }: { projectSlug: st
                 <div key={i} className="group relative overflow-hidden rounded-sm">
                   <img
                     src={opt.image}
-                    alt={`${opt.name} finish`}
+                    alt={`${opt.name} — design rendering`}
                     className="w-full h-[400px] sm:h-[480px] object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
                     <div className="inline-block px-2 py-0.5 bg-accent/90 text-accent-foreground text-[10px] font-display font-bold tracking-wider uppercase mb-2">
-                      {opt.style}
+                      Design rendering · {opt.style}
                     </div>
                     <h3 className="text-display text-xl text-white mb-2">{opt.name}</h3>
                     <p className="text-sm text-white/60 leading-snug">{opt.description}</p>
@@ -496,7 +496,7 @@ export default function ProjectShowcaseClient({ projectSlug }: { projectSlug: st
               </p>
               <Link href="/contact">
                 <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold">
-                  Get Your Free Design Consultation
+                  Get a Free Quote
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>
@@ -589,7 +589,7 @@ export default function ProjectShowcaseClient({ projectSlug }: { projectSlug: st
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold px-8 py-5">
-                  Start Your Project
+                  Get a Free Quote
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>

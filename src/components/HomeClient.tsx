@@ -366,7 +366,7 @@ export default function HomeClient() {
                   size="lg"
                   className="bg-sidebar text-sidebar-foreground hover:bg-sidebar/90 font-display font-bold px-8 py-5"
                 >
-                  Request a Quote
+                  Get a Free Quote
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
               </Link>

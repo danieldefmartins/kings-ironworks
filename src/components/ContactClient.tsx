@@ -14,7 +14,7 @@ export default function ContactClient() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative min-h-[50vh] flex items-center bg-sidebar text-sidebar-foreground pt-4">
+      <section className="relative flex items-center bg-sidebar text-sidebar-foreground pt-28 pb-10 md:pt-40 md:pb-16">
         <div className="container">
           <p className="section-eyebrow mb-4" style={{ color: "var(--accent)" }}>Get in Touch</p>
           <h1 className="text-display text-4xl md:text-6xl mb-6">Contact Us</h1>
@@ -25,12 +25,12 @@ export default function ContactClient() {
       </section>
 
       {/* Contact Form & Info */}
-      <section className="bg-card py-24">
+      <section className="bg-card py-10 md:py-16">
         <div className="w-full px-[3%] max-w-[1800px] mx-auto">
-          <h2 className="text-display text-3xl md:text-4xl mb-8 text-center">Request a Quote</h2>
+          <h2 className="text-display text-3xl md:text-4xl mb-8 text-center">Get a Free Quote</h2>
 
           {/* Full-width Form */}
-          <div className="w-full mb-12">
+          <div className="w-full max-w-3xl mx-auto mb-12">
             <GHLForm />
             <div className="mt-6 text-sm text-muted-foreground text-center">
               <p>
@@ -57,7 +57,7 @@ export default function ContactClient() {
                   </div>
                   <div>
                     <h3 className="text-heading text-lg mb-1">Your Local Number</h3>
-                    <p className="text-xs text-muted-foreground mb-2">{localPhone.label} Office</p>
+                    <p className="text-xs text-muted-foreground mb-2">{localPhone.label} contact number</p>
                     <PhoneLink tel={localPhone.tel}
                       className="text-accent hover:underline text-lg font-medium"
                     >
@@ -147,7 +147,7 @@ export default function ContactClient() {
       {/* Locations Quick Reference */}
       <section className="bg-secondary text-secondary-foreground py-24">
         <div className="container">
-          <h2 className="text-display text-3xl md:text-4xl text-center mb-12">All Locations</h2>
+          <h2 className="text-display text-3xl md:text-4xl text-center mb-12">Headquarters & Service Areas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Everett, MA</h3>
@@ -158,56 +158,56 @@ export default function ContactClient() {
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Cape Cod, MA</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.CAPE_COD.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.CAPE_COD.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Worcester, MA</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.WORCESTER.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.WORCESTER.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Miami, FL</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.MIAMI.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.MIAMI.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">New Hampshire</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.NEW_HAMPSHIRE.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.NEW_HAMPSHIRE.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Maine</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.MAINE.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.MAINE.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Rhode Island</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.RHODE_ISLAND.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.RHODE_ISLAND.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">New York</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.NEW_YORK.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.NEW_YORK.display}
               </PhoneLink>
             </Card>
             <Card className="p-6 bg-card text-card-foreground border border-border">
               <h3 className="text-heading text-xl mb-2">Connecticut</h3>
-              <p className="text-sm text-muted-foreground mb-3">By Appointment</p>
+              <p className="text-sm text-muted-foreground mb-3">Service area · By appointment</p>
               <PhoneLink tel={PHONE_NUMBERS.CONNECTICUT.tel} className="text-accent hover:underline text-sm">
                 {PHONE_NUMBERS.CONNECTICUT.display}
               </PhoneLink>

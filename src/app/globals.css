@@ -126,3 +126,10 @@
     }
   }
 }
+
+/* Keep the last content clear of the fixed mobile contact actions. */
+@media (max-width: 1023px) {
+  body:has(#mobile-contact-bar) {
+    padding-bottom: calc(52px + env(safe-area-inset-bottom, 0px));
+  }
+}

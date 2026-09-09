@@ -181,7 +181,7 @@ export default function ServicesPage() {
                 </Link>
                 <Link href="/contact">
                   <Button size="lg" variant="outline" className="border-border hover:border-accent hover:bg-accent hover:text-accent-foreground font-display font-bold">
-                    Free Assessment
+                    Get a Free Quote
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
@@ -295,7 +295,7 @@ export default function ServicesPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
                 <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-display font-bold px-8">
-                  Request a Quote
+                  Get a Free Quote
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>

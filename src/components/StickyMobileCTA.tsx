@@ -9,11 +9,11 @@ export default function StickyMobileCTA() {
   const localPhone = useLocalPhone();
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-sidebar border-t border-sidebar-border/30 shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
+    <div id="mobile-contact-bar" className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-sidebar border-t border-sidebar-border/30 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-stretch">
         <Link href="/contact" className="flex-1">
           <div className="flex items-center justify-center gap-2 py-3.5 bg-accent text-accent-foreground">
-            <span className="text-sm font-display font-bold">Free Assessment</span>
+            <span className="text-sm font-display font-bold">Get a Free Quote</span>
             <ArrowRight className="w-4 h-4" />
           </div>
         </Link>

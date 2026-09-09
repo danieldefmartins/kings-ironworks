@@ -6,6 +6,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import StickyMobileCTA from "@/components/StickyMobileCTA";
 import ChromeGate from "@/components/ChromeGate";
+import ChatWidget from "@/components/ChatWidget";
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
@@ -204,14 +205,8 @@ export default function RootLayout({
         <ChromeGate>
           <Footer />
           <StickyMobileCTA />
-          {/* GHL Chat Widget */}
-          <Script
-            src="https://widgets.leadconnectorhq.com/loader.js"
-            data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
-            data-widget-id="699737916e6009b3eccf3dff"
-            strategy="afterInteractive"
-          />
         </ChromeGate>
+        <ChatWidget />
       </body>
     </html>
   );

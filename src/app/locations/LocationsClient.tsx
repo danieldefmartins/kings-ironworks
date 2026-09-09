@@ -184,7 +184,7 @@ export default function LocationsClient() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/contact">
                 <Button size="lg" variant="outline" className="bg-transparent border-accent-foreground text-accent-foreground hover:bg-accent-foreground hover:text-accent text-lg px-8 py-6">
-                  REQUEST QUOTE
+                  GET A FREE QUOTE
                   <ArrowRight className="ml-2 w-5 h-5" />
                 </Button>
               </Link>

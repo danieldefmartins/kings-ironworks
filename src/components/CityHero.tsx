@@ -137,7 +137,7 @@ export default function CityHero({ cityName, stateName, tagline }: CityHeroProps
           <div className="flex flex-col sm:flex-row gap-3">
             <Link href="/contact">
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-sm sm:text-base px-6 py-4 font-display font-bold">
-                FREE ASSESSMENT
+                GET A FREE QUOTE
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
