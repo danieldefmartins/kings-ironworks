@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionWorker } from '@/lib/shop/session';
 import { getPhotos, PRICE_CATEGORY, getJob, getMeasureSheet, getMeasureRevision, signPhotoUrl } from '@/lib/shop/db';
+import { canViewOwnerFinancials, isJobDocument } from '@/lib/shop/shared';
 import { normalizeMeasureData } from '@/lib/shop/measure';
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest) {
@@ -16,7 +17,7 @@ export async function GET(req:NextRequest) {
   const photo=normalizeMeasureData(snapshot?.data??sheet.data).photos[index];
   if(!photo||!photo.path.startsWith(`${sheet.job_id}/`)||photo.path.includes('..'))return new NextResponse('Not found',{status:404});
   const record=(await getPhotos(sheet.job_id)).find(p=>p.url===photo.path);
-  if(!record || (record.category===PRICE_CATEGORY&&!worker.is_admin))return new NextResponse('Not found',{status:404});
+  if(!record || isJobDocument(record) || ([PRICE_CATEGORY, 'Original Estimate'].includes(record.category || '')&&!canViewOwnerFinancials(worker)))return new NextResponse('Not found',{status:404});
   const url=await signPhotoUrl(photo.path,300);
   if(!url)return new NextResponse('Photo unavailable',{status:404});
   const response=NextResponse.redirect(url);response.headers.set('Cache-Control','private, no-store');return response;

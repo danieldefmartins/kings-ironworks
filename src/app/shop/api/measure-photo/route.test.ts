@@ -16,3 +16,6 @@ describe('drawing photo references',()=>{
   it('uses a private short-lived redirect for a valid reference',async()=>{const r=await request();expect(r.status).toBe(307);expect(r.headers.get('Cache-Control')).toBe('private, no-store');expect(m.sign).toHaveBeenCalledWith('job/photo.jpg',300);});
   it('never substitutes live photos for an absent locked revision',async()=>{m.revision.mockResolvedValue(null);expect((await request('&rev=2')).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 });
+
+it('never signs a PDF disguised as a measurement photo',async()=>{m.photos.mockResolvedValue([{url:'job/photo.jpg',kind:'document',category:'Original Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
+it('blocks operational admins from signing financial images',async()=>{m.worker.mockResolvedValue({is_admin:true,can_see_prices:false});m.photos.mockResolvedValue([{url:'job/photo.jpg',category:'Approved Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
