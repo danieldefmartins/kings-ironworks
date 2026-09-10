@@ -3,7 +3,7 @@ import type { Job } from "@/lib/shop/shared";
 
 export default function JobEstimateDetails({ estimates, job, owner, lang }: {
   estimates: VisibleEstimate[] | null;
-  job: Pick<Job, "scope" | "contract_amount" | "deposit_amount" | "deposit_note">;
+  job: Pick<Job, "scope" | "contract_amount" | "deposit_amount" | "deposit_note"> & { due_date?: string | null };
   owner: boolean; lang: string;
 }) {
   const label = (en: string, pt: string, es: string) => lang === "pt" ? pt : lang === "es" ? es : en;
@@ -19,7 +19,12 @@ export default function JobEstimateDetails({ estimates, job, owner, lang }: {
       {job.deposit_note && <p className="mt-4 whitespace-pre-line text-sm text-neutral-300">{job.deposit_note}</p>}
     </div>}
     <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-4">
-      <h2 className="text-lg font-semibold">{label("What we are fabricating · Estimate items", "O que vamos fabricar · Itens do orçamento", "Qué vamos a fabricar · Partidas del presupuesto")}</h2>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="text-lg font-semibold">{label("What we are fabricating · Estimate items", "O que vamos fabricar · Itens do orçamento", "Qué vamos a fabricar · Partidas del presupuesto")}</h2>
+        {job.due_date && <strong className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-base font-bold text-amber-300">
+          {label("Installation", "Instalação", "Instalación")}: <time dateTime={job.due_date}>{new Intl.DateTimeFormat(lang === "pt" ? "pt-BR" : lang === "es" ? "es-US" : "en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${job.due_date}T12:00:00Z`))}</time>
+        </strong>}
+      </header>
       {job.scope && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-300">{job.scope}</p>}
       {estimates === null ? <p role="alert" className="mt-4 text-sm text-amber-300">{label("Estimate items could not load. Refresh to try again.", "Não foi possível carregar os itens. Atualize para tentar novamente.", "No se pudieron cargar las partidas. Actualiza para intentarlo de nuevo.")}</p> : estimates.length === 0 ? <p className="mt-4 text-sm text-neutral-500">{label("No itemized estimate added yet.", "Nenhum orçamento detalhado adicionado ainda.", "Aún no se añadió un presupuesto detallado.")}</p> : estimates.map(estimate => <article key={estimate.id} className="mt-5 border-t border-white/10 pt-4">
         <header className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{estimate.number} · {estimate.title}</h3><p className="mt-1 text-xs text-neutral-400">{estimate.issuedOn}{estimate.original && ` · ${label("Original first estimate", "Primeiro orçamento original", "Primer presupuesto original")}`}</p></div>{owner && estimate.total !== undefined && <div className="text-right"><p className="text-xs text-neutral-400">{label("Estimate amount", "Valor do orçamento", "Importe del presupuesto")}</p><p className="text-xl font-semibold text-amber-300">{money(estimate.total)}</p></div>}</header>
