@@ -67,7 +67,7 @@ export default async function TeamTimePage() {
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title={t(lang, "teamTimesheets")} back="/shop/more" lang={lang} />
+      <ShopTopBar workerName={worker.name} title={t(lang, "teamTimesheets")} back="/shop/admin" lang={lang} adminLink />
       <main className="mx-auto max-w-4xl px-4 py-5">
         <div className="mb-5">
           <h1 className="text-3xl font-semibold tracking-tight">{t(lang, "timeReview")}</h1>

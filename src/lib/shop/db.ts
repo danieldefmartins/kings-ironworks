@@ -316,10 +316,17 @@ export async function listAllJobPieces(): Promise<(JobPiece & { job_id: string }
 }
 
 export async function listCorrections(): Promise<TimeCorrection[]> {
-  return sbSelect<TimeCorrection[]>(
-    "kiw_shop_time_corrections",
-    `select=*&org_id=eq.${ORG_ID}&order=created_at.desc&limit=300`
-  );
+  // Pending requests must remain reachable even after 300 newer reviews.
+  const pending: TimeCorrection[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await sbSelect<TimeCorrection[]>("kiw_shop_time_corrections",
+      `select=*&org_id=eq.${ORG_ID}&status=eq.pending&order=created_at.asc,id.asc&limit=500&offset=${offset}`);
+    pending.push(...page);
+    if (page.length < 500) break;
+  }
+  const reviewed = await sbSelect<TimeCorrection[]>("kiw_shop_time_corrections",
+    `select=*&org_id=eq.${ORG_ID}&status=neq.pending&order=created_at.desc,id.desc&limit=300`);
+  return [...pending, ...reviewed];
 }
 
 export async function clockIn(

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ShieldCheck } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
@@ -32,6 +33,7 @@ export default async function AdminHub() {
           </div>
         </header>
 
+        <Link href="/shop/admin/actions" className="mb-6 block rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 hover:bg-amber-500/15"><span className="block text-xl font-semibold text-amber-300">{t(lang, "actionsTitle")} →</span><span className="mt-1 block text-sm text-neutral-300">{t(lang, "actionsNavHint")}</span></Link>
         <MenuDirectory scope="admin" lang={lang} />
       </main>
     </div>
