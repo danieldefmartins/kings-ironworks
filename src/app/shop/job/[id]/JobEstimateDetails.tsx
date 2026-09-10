@@ -24,7 +24,7 @@ export default function JobEstimateDetails({ estimates, job, owner, lang }: {
     <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-lg font-semibold">{label("What we are fabricating · Estimate items", "O que vamos fabricar · Itens do orçamento", "Qué vamos a fabricar · Partidas del presupuesto")}</h2>
-        {job.due_date && <strong className="inline-flex flex-wrap items-center gap-x-1 rounded-lg border border-amber-200 bg-amber-300 px-4 py-2.5 text-base font-extrabold text-amber-950 shadow-md shadow-amber-500/20">
+        {job.due_date && <strong className="inline-flex flex-wrap items-center gap-x-1 rounded-lg border border-blue-400 bg-blue-600 px-4 py-2.5 text-base font-extrabold text-white shadow-md shadow-blue-500/25">
           {label("Installation", "Instalação", "Instalación")}: <time dateTime={job.due_date}>{new Intl.DateTimeFormat(lang === "pt" ? "pt-BR" : lang === "es" ? "es-US" : "en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" }).format(new Date(`${job.due_date}T12:00:00Z`))}</time>
         </strong>}
       </header>
