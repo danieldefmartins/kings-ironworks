@@ -176,6 +176,18 @@ export interface Photo {
   uploaderName?: string;
 }
 
+// PDFs may contain prices even when their category was entered incorrectly.
+export function isJobDocument(photo: Pick<Photo, "kind" | "url">): boolean {
+  return photo.kind === "document" || photo.kind === "pdf" || /\.pdf(?:[?#]|$)/i.test(photo.url);
+}
+
+export function partitionJobAttachments(photos: Photo[], owner: boolean) {
+  return {
+    photos: photos.filter(p => !isJobDocument(p) && (owner || (p.category !== PRICE_CATEGORY && p.category !== "Original Estimate"))),
+    documents: owner ? photos.filter(isJobDocument) : [],
+  };
+}
+
 export interface Job {
   id: string;
   job_number: string;

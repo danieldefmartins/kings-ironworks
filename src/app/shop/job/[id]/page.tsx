@@ -11,16 +11,16 @@ import {
   signPhotoUrl,
   getJobTimeEntries,
   entryHours,
-  PRICE_CATEGORY,
   type Photo,
   listCatalog,
 } from "@/lib/shop/db";
+import JobDocuments from "./JobDocuments";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import PiecesPanel from "./PiecesPanel";
 import TimeClock from "./TimeClock";
 import TravelerV2 from "./TravelerV2";
-import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, redactJobMoney, partitionJobAttachments } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +70,7 @@ export default async function JobTravelerPage({
   const totalHours = timeEntries.reduce((sum, e) => sum + entryHours(e), 0);
 
   // Hide price-sensitive photos from workers without access, then sign URLs.
-  const visible = rawPhotos.filter(
-    (p) => canSeePrices || p.category !== PRICE_CATEGORY
-  );
+  const { photos: visible, documents } = partitionJobAttachments(rawPhotos, canSeePrices);
   const photos: Photo[] = await Promise.all(
     visible.map(async (p) => ({
       ...p,
@@ -90,6 +88,7 @@ export default async function JobTravelerPage({
         lang={lang}
         adminLink={canSeePrices}
       />
+      {canSeePrices && <JobDocuments documents={documents} lang={lang} />}
       {v2 ? (
         <TravelerV2
           job={job}
