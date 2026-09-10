@@ -1,3 +1,5 @@
+import { getJobEstimates } from "@/lib/shop/job-estimates-db";
+import JobEstimateDetails from "./JobEstimateDetails";
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
 import {
@@ -58,6 +60,9 @@ export default async function JobTravelerPage({
       listJobPieces(id),
     ]);
 
+  let estimates: Awaited<ReturnType<typeof getJobEstimates>> | null = null;
+  try { estimates = await getJobEstimates(id, canSeePrices); } catch { /* Keep job work usable; show explicit estimate load error. */ }
+
   const nameById = new Map(workers.map((w) => [w.id, w.name]));
 
   // Time clock state for this worker + the whole job
@@ -88,6 +93,7 @@ export default async function JobTravelerPage({
         lang={lang}
         adminLink={canSeePrices}
       />
+      <JobEstimateDetails estimates={estimates} job={job} owner={canSeePrices} lang={lang} />
       {canSeePrices && <JobDocuments documents={documents} lang={lang} />}
       {v2 ? (
         <TravelerV2

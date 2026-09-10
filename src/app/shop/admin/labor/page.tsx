@@ -1,3 +1,4 @@
+import { getEstimateTotals } from "@/lib/shop/job-estimates-db";
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
 import {
@@ -24,7 +25,7 @@ export default async function ShopAdminPage() {
   if (!worker) redirect("/shop/login");
   if (!canViewOwnerFinancials(worker)) redirect("/shop");
 
-  const [workers, entries, jobs, depositJobs, archivedJobs] = await Promise.all([
+  const [workers, entries, jobs, depositJobs, archivedJobs, estimateTotals] = await Promise.all([
     listWorkersWithRates(),
     getAllTimeEntries(),
     sbSelect<Job[]>(
@@ -33,6 +34,7 @@ export default async function ShopAdminPage() {
     ),
     listJobsWithDeposits(),
     listArchivedJobs(),
+    getEstimateTotals(),
   ]);
 
   const workerById = new Map(workers.map((w) => [w.id, w]));
@@ -103,6 +105,7 @@ export default async function ShopAdminPage() {
     projectType: j.project_type,
     amount: depositValue(j),
     contractAmount: contractValue(j),
+    estimates: estimateTotals.filter(e => e.job_id === j.id).map(e => ({ number: e.estimate_number, amount: Number(e.total_amount), original: e.is_original })),
     note: j.deposit_note,
     phone: j.phone,
     email: j.email,

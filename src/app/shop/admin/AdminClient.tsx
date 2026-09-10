@@ -41,6 +41,7 @@ interface DepositRow {
   projectType: string | null;
   amount: number;
   contractAmount: number;
+  estimates?: { number: string; amount: number; original: boolean }[];
   note: string | null;
   phone: string | null;
   email: string | null;
@@ -234,6 +235,7 @@ export default function AdminClient({
                       <span>{money(d.contractAmount)}</span>
                     </div>
                   )}
+                  {d.estimates?.map(e => <div key={e.number} className="flex justify-between gap-3 rounded-lg bg-amber-500/5 p-2 text-amber-300"><span>{e.original ? "Original first estimate" : "Estimate"} {e.number}</span><span className="shrink-0 font-semibold">{money(e.amount)}</span></div>)}
                   <div className="flex justify-between text-neutral-400 pt-1">
                     <span>Labor logged against this job</span>
                     <span>{money(d.laborCost)}</span>
