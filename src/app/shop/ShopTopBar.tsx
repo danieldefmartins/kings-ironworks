@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { t } from "@/lib/shop/i18n";
 import AdminMenu from "./AdminMenu";
+import MenuDirectory from "./MenuDirectory";
 import MoreMenu, { MoreItem } from "./MoreMenu";
 import { ChevronLeft, UserRound } from "lucide-react";
 
@@ -36,11 +37,8 @@ export default function ShopTopBar({
     router.replace("/shop/login");
     router.refresh();
   }
-  // `sticky` is already a positioned element, so it is the containing block the
-  // centered title anchors to. An extra `relative` here would just be a second
-  // position utility fighting the first.
   return (
-    <div className="sticky top-0 z-10 grid min-h-[64px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-4 backdrop-blur-xl">
+    <div className="sticky top-0 z-10 grid min-h-[64px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-3 backdrop-blur-xl">
       <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link
@@ -58,20 +56,15 @@ export default function ShopTopBar({
         >
           <Image src="/images/logo-white-transparent.png" alt="King Iron Works" width={1536} height={1024} className="h-auto w-full" priority />
         </Link>
-        <span aria-hidden className="h-6 w-px shrink-0 bg-white/10" />
-        <h1 className="pointer-events-none absolute left-1/2 max-w-[44%] -translate-x-1/2 truncate text-center text-lg font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>
       </div>
-      {/* Language and sign-out are housekeeping and stay behind one button, so
-          the bar can be the job the worker is standing in front of. Admin is
-          the exception: the owners reach for it constantly and it was two taps
-          deep, so it gets its own control — icon-only on a phone, where the
-          centred title has already claimed the middle 44%. */}
+      <h1 className="min-w-0 truncate text-center text-base font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>
       <div className="col-start-3 flex items-center justify-end gap-2">
         {adminLink && <AdminMenu lang={lang} />}
-        <span className="hidden text-sm text-neutral-300 sm:inline">{workerName}</span>
-        <MoreMenu label={t(lang, "more")} closeLabel={t(lang, "close")}>
+        <span className="hidden max-w-24 truncate text-sm text-neutral-300 lg:inline">{workerName}</span>
+        <MoreMenu label={t(lang, "menuCrew")} closeLabel={t(lang, "close")}>
           {(close) => (
             <>
+              <MenuDirectory scope="crew" lang={lang} compact onNavigate={close} />
               <div className="text-[11px] uppercase tracking-widest text-neutral-500">
                 {t(lang, "language")}
               </div>
@@ -99,7 +92,7 @@ export default function ShopTopBar({
                   </button>
                 ))}
               </div>
-              <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {t(lang, "navMore")}</MoreItem>
+              <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {t(lang, "menuCrew")}</MoreItem>
               <MoreItem
                 onClick={() => {
                   close();

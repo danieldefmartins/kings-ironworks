@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 import ShopTopBar from "../ShopTopBar";
-import { ADMIN_DESTS } from "../adminNav";
+import MenuDirectory from "../MenuDirectory";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +22,7 @@ export default async function AdminHub() {
 
   return (
     <div>
-      <ShopTopBar workerName={worker.name} title={t(lang, "admHubTitle")} back="/shop" lang={lang} />
+      <ShopTopBar workerName={worker.name} title={t(lang, "admHubTitle")} back="/shop" lang={lang} adminLink />
       <main className="mx-auto max-w-3xl px-4 pb-28 pt-5">
         <header className="mb-5 flex items-start gap-3">
           <ShieldCheck aria-hidden className="mt-0.5 h-6 w-6 shrink-0 text-amber-400" />
@@ -33,26 +32,7 @@ export default async function AdminHub() {
           </div>
         </header>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          {ADMIN_DESTS.map((d) => (
-            <Link
-              key={d.href}
-              href={d.href}
-              className="flex min-h-[84px] items-center gap-3 rounded-[20px] border border-white/10 bg-neutral-900/60 p-4 transition active:scale-[0.99] hover:border-amber-600/50"
-            >
-              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-neutral-800">
-                <d.icon aria-hidden className={`h-5 w-5 ${d.tone}`} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{t(lang, d.key)}</span>
-                <span className="block text-xs leading-snug text-neutral-500">
-                  {t(lang, d.hintKey)}
-                </span>
-              </span>
-              <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-neutral-600" />
-            </Link>
-          ))}
-        </div>
+        <MenuDirectory scope="admin" lang={lang} />
       </main>
     </div>
   );

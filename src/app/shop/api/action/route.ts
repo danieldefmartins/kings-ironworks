@@ -479,8 +479,8 @@ export async function POST(req: NextRequest) {
       // Organization settings (branding, tolerances, presets, rules) — the
       // change itself is audited with previous and new values.
       case "org_settings_set": {
-        if (!worker.is_admin) {
-          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) {
+          return NextResponse.json({ error: "Owner only" }, { status: 403 });
         }
         const prev = await getOrgSettings();
         const inb = (body.settings || {}) as Record<string, unknown>;
@@ -541,8 +541,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "rate_set": {
-        if (!worker.is_admin) {
-          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) {
+          return NextResponse.json({ error: "Owner only" }, { status: 403 });
         }
         const rate = body.rate === null || body.rate === "" ? null : Number(body.rate);
         const patch: Record<string, unknown> = { hourly_rate: rate };
@@ -567,8 +567,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "entry_stop": {
-        if (!worker.is_admin) {
-          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) {
+          return NextResponse.json({ error: "Owner only" }, { status: 403 });
         }
         await sbUpdate("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&id=eq.${body.id}`, {
           ended_at: new Date().toISOString(),
@@ -629,7 +629,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "shift_review": {
-        if (!worker.is_admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
         if (!body.shiftId || !["approved", "rejected"].includes(body.status)) {
           return NextResponse.json({ error: "Bad review" }, { status: 400 });
         }
@@ -643,7 +643,7 @@ export async function POST(req: NextRequest) {
       }
 
       case "correction_review": {
-        if (!worker.is_admin) return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
         if (!body.id || !["approved", "rejected"].includes(body.status)) {
           return NextResponse.json({ error: "Bad review" }, { status: 400 });
         }
@@ -666,8 +666,8 @@ export async function POST(req: NextRequest) {
       }
 
       case "entry_delete": {
-        if (!worker.is_admin) {
-          return NextResponse.json({ error: "Admin only" }, { status: 403 });
+        if (!canViewOwnerFinancials(worker)) {
+          return NextResponse.json({ error: "Owner only" }, { status: 403 });
         }
         await sbDelete("kiw_shop_time_entries", `org_id=eq.${ORG_ID}&id=eq.${body.id}`);
         break;

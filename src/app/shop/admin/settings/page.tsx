@@ -23,7 +23,7 @@ export default async function OrgSettingsPage() {
         title="Organization Settings"
         back="/shop/admin"
         lang={worker.lang || "en"}
-        adminLink={false}
+        adminLink
       />
       <SettingsClient initial={settings} />
     </div>
