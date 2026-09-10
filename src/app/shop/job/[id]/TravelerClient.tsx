@@ -149,7 +149,7 @@ export default function TravelerClient({
             />
           </div>
         )}
-        <div className={`text-sm mt-1.5 flex items-center gap-2 ${due.cls}`}>
+        <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-extrabold shadow-sm ${due.cls}`}>
           <span aria-hidden>🗓️</span>
           <span className="font-semibold">
             {t(lang, "installBy")} {due.text}
@@ -981,10 +981,10 @@ export function dueInfo(due: string | null, lang: string) {
   );
   const unit = Math.abs(days) === 1 ? t(lang, "dayLeft") : t(lang, "daysLeft");
   if (days < 0)
-    return { text: `${date} · ${t(lang, "overdue")}`, cls: "text-red-400" };
+    return { text: `${date} · ${t(lang, "overdue")}`, cls: "bg-red-300 text-red-950 ring-1 ring-red-200" };
   if (days <= 7)
-    return { text: `${date} · ${days} ${unit}`, cls: "text-amber-400" };
-  return { text: `${date} · ${days} ${unit}`, cls: "text-neutral-200" };
+    return { text: `${date} · ${days} ${unit}`, cls: "bg-orange-300 text-orange-950 ring-1 ring-orange-200" };
+  return { text: `${date} · ${days} ${unit}`, cls: "bg-amber-300 text-amber-950 ring-1 ring-amber-200" };
 }
 
 function Section({

@@ -122,7 +122,7 @@ export default function TravelerV2({
           <span className="rounded-full bg-amber-500/15 px-2.5 py-1 font-semibold text-amber-400">
             {stageLabel(lang, job.current_stage)}
           </span>
-          {job.due_date && <span className={due.cls}>{t(lang, "installBy")} {due.text}</span>}
+          {job.due_date && <span className={`rounded-lg px-3 py-2 font-extrabold shadow-sm ${due.cls}`}>{t(lang, "installBy")} {due.text}</span>}
           <span className="text-neutral-600">{job.job_number}</span>
         </div>
 

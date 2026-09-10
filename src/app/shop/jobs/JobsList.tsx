@@ -231,7 +231,7 @@ export default function JobsList({
                   </div>
                 )}
                 <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
-                  <span className={`min-w-0 truncate ${d < 0 ? "text-red-400" : d <= 7 ? "text-amber-400" : "text-neutral-400"}`}>
+                  <span className={`min-w-0 rounded-lg px-3 py-2 font-extrabold shadow-sm ${!j.due_date ? "bg-neutral-800 text-neutral-400" : d < 0 ? "bg-red-300 text-red-950 ring-1 ring-red-200" : d <= 7 ? "bg-orange-300 text-orange-950 ring-1 ring-orange-200" : "bg-amber-300 text-amber-950 ring-1 ring-amber-200"}`}>
                     {t(lang, "due")} {j.due_date || t(lang, "noDue")}
                   </span>
                   <span className="shrink-0 text-neutral-400">{t(lang, "cutProgress")} {p.done}/{p.total}</span>
@@ -384,7 +384,7 @@ function FabricationQueue({
               <span className="w-6 shrink-0 text-center text-sm font-bold tabular-nums text-amber-500">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <Link href={`/shop/job/${j.id}`} className="block truncate font-semibold">{j.customer_name}</Link>
-                <div className="truncate text-xs text-neutral-500">{j.job_number}{j.due_date ? ` · ${t(lang, "due")} ${j.due_date}` : ""}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs"><span className="text-neutral-500">{j.job_number}</span>{j.due_date && <span className={`rounded-md px-2 py-1.5 font-extrabold ${days(j.due_date) < 0 ? "bg-red-300 text-red-950" : days(j.due_date) <= 7 ? "bg-orange-300 text-orange-950" : "bg-amber-300 text-amber-950"}`}>{t(lang, "due")} {j.due_date}</span>}</div>
               </div>
               <div className="flex shrink-0 flex-col gap-1">
                 <button
