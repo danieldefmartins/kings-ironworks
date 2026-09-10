@@ -1,0 +1,33 @@
+import React from "react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import JobMoneyManager from "./JobMoneyManager";
+vi.stubGlobal("React", React);
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.stubGlobal("React", React); });
+it("keeps the same payment request ID when retrying a lost response", async () => {
+  const fetcher = vi.fn().mockRejectedValueOnce(new Error("Connection lost")).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+  vi.stubGlobal("fetch", fetcher);
+  render(<JobMoneyManager jobId="job" ledger={{ entries: [], estimates: [] }} lang="en" />);
+  fireEvent.click(screen.getByText("Manage contract & payments · Daniel and Kayky"));
+  fireEvent.change(screen.getByLabelText("Amount ($)"), { target: { value: "1325" } });
+  fireEvent.change(screen.getByLabelText("Description / payment reference"), { target: { value: "Deposit check 123" } });
+  fireEvent.click(screen.getByRole("button", { name: "Review entry" }));
+  expect(fetcher).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Confirm and save" }));
+  await screen.findByRole("alert");
+  fireEvent.click(screen.getByRole("button", { name: "Confirm and save" }));
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  const first = JSON.parse(fetcher.mock.calls[0][1].body);
+  const second = JSON.parse(fetcher.mock.calls[1][1].body);
+  expect(first.change).toMatchObject({ amount: 1325, kind: "payment", date: null });
+  expect(second).toEqual(first);
+});
+it("requires an explicit reason before adding an unreviewed estimate", () => {
+  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  render(<JobMoneyManager jobId="job" ledger={{ entries: [], estimates: [{id:"e",estimate_number:"26-452",title:"Original scope",total_amount:94120,money_status:"review",money_note:null}] }} lang="en" />);
+  fireEvent.click(screen.getByRole("button", { name: "Add to contract" }));
+  expect(screen.getByText("Increase contract by $94,120.00")).toBeTruthy();
+  expect((screen.getByRole("button", {name:"Confirm and save"}) as HTMLButtonElement).disabled).toBe(true);
+  expect(fetcher).not.toHaveBeenCalled();
+});

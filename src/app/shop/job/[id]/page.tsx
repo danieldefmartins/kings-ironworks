@@ -1,3 +1,5 @@
+import { getJobMoneyLedger } from "@/lib/shop/money-ledger-db";
+import JobMoneyManager from "./JobMoneyManager";
 import { getJobEstimates } from "@/lib/shop/job-estimates-db";
 import JobEstimateDetails from "./JobEstimateDetails";
 import { redirect, notFound } from "next/navigation";
@@ -63,6 +65,11 @@ export default async function JobTravelerPage({
   let estimates: Awaited<ReturnType<typeof getJobEstimates>> | null = null;
   try { estimates = await getJobEstimates(id, canSeePrices); } catch { /* Keep job work usable; show explicit estimate load error. */ }
 
+  let ledger: Awaited<ReturnType<typeof getJobMoneyLedger>> | null = null;
+  if (canSeePrices) {
+    try { ledger = await getJobMoneyLedger(id); } catch { /* Explicit load error in owner controls. */ }
+  }
+
   const nameById = new Map(workers.map((w) => [w.id, w.name]));
 
   // Time clock state for this worker + the whole job
@@ -94,6 +101,7 @@ export default async function JobTravelerPage({
         adminLink={canSeePrices}
       />
       <JobEstimateDetails estimates={estimates} job={job} owner={canSeePrices} lang={lang} />
+      {canSeePrices && <JobMoneyManager jobId={id} ledger={ledger} lang={lang} />}
       {canSeePrices && <JobDocuments documents={documents} lang={lang} />}
       {v2 ? (
         <TravelerV2

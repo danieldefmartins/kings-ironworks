@@ -592,7 +592,7 @@ export async function setJobArchived(jobId: string, archived: boolean): Promise<
   const rows = await sbUpdate<Job[]>(
     "kiw_shop_jobs",
     `org_id=eq.${ORG_ID}&id=eq.${jobId}`,
-    { archived }
+    { archived, auto_archived: false }
   );
   return rows[0] || null;
 }

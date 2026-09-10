@@ -1,3 +1,4 @@
+import { jobMoney } from "@/lib/shop/project-money";
 import type { VisibleEstimate } from "@/lib/shop/job-estimates";
 import type { Job } from "@/lib/shop/shared";
 
@@ -6,16 +7,18 @@ export default function JobEstimateDetails({ estimates, job, owner, lang }: {
   job: Pick<Job, "scope" | "contract_amount" | "deposit_amount" | "deposit_note"> & { due_date?: string | null };
   owner: boolean; lang: string;
 }) {
+  const totals = jobMoney(job);
   const label = (en: string, pt: string, es: string) => lang === "pt" ? pt : lang === "es" ? es : en;
   const money = (value: number | string | null) => new Intl.NumberFormat(lang === "pt" ? "pt-BR" : lang === "es" ? "es-US" : "en-US", { style: "currency", currency: "USD" }).format(Number(value));
   return <section className="mx-auto max-w-4xl space-y-4 px-4 pt-4" aria-label={label("Estimate details", "Detalhes do orçamento", "Detalles del presupuesto")}>
     {owner && <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
       <h2 className="font-semibold text-amber-300">{label("Project money · Daniel & Kayky", "Valores da obra · Daniel e Kayky", "Importes del proyecto · Daniel y Kayky")}</h2>
       <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div><dt className="text-sm text-neutral-400">{label("Recorded job amount", "Valor registrado da obra", "Importe registrado del proyecto")}</dt><dd className="mt-1 text-2xl font-semibold">{job.contract_amount == null ? "—" : money(job.contract_amount)}</dd></div>
-        <div><dt className="text-sm text-neutral-400">{label("Deposit received", "Sinal recebido", "Anticipo recibido")}</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{job.deposit_amount == null ? "—" : money(job.deposit_amount)}</dd></div>
-        <div><dt className="text-sm text-neutral-400">{label("Job amount less recorded deposit", "Valor da obra menos o sinal registrado", "Importe menos anticipo registrado")}</dt><dd className="mt-1 text-2xl font-semibold">{job.contract_amount == null || job.deposit_amount == null ? "—" : money(Number(job.contract_amount) - Number(job.deposit_amount))}</dd></div>
+        <div><dt className="text-sm text-neutral-400">{label("Contract total", "Total do contrato", "Total del contrato")}</dt><dd className="mt-1 text-2xl font-semibold">{job.contract_amount == null ? "—" : money(job.contract_amount)}</dd></div>
+        <div><dt className="text-sm text-neutral-400">{label("Money received", "Dinheiro recebido", "Dinero recibido")}</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{job.deposit_amount == null ? "—" : money(job.deposit_amount)}</dd></div>
+        <div><dt className="text-sm text-neutral-400">{label("Balance due", "Saldo a receber", "Saldo pendiente")}</dt><dd className="mt-1 text-2xl font-semibold">{totals.due === null ? "—" : money(totals.due / 100)}</dd></div>
       </dl>
+      {totals.credit !== null && totals.credit > 0 && <p className="mt-3 text-sm text-amber-300">{label("Customer credit", "Crédito do cliente", "Crédito del cliente")}: {money(totals.credit / 100)}</p>}
       {job.deposit_note && <p className="mt-4 whitespace-pre-line text-sm text-neutral-300">{job.deposit_note}</p>}
     </div>}
     <div className="rounded-2xl border border-white/10 bg-neutral-900/60 p-4">

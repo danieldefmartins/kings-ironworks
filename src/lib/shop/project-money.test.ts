@@ -19,3 +19,6 @@ it("keeps unknown payments and prices distinct from confirmed zero", () => {
 it("sums cents exactly", () => {
   expect(projectMoney([job("one", { contract_amount: "0.10", deposit_amount: "0.03" }), job("two", { contract_amount: "0.20", deposit_amount: "0.07" })], "current")).toMatchObject({ total: 0.3, received: 0.1, balance: 0.2 });
 });
+it("flags unreviewed estimates instead of silently presenting reconciled totals", () => {
+  expect(projectMoney([job("ARCO", { contract_amount: 50710, deposit_amount: 0, estimatesToReview: 1 })], "current")).toMatchObject({ total: 50710, balance: 50710, estimatesToReview: 1 });
+});

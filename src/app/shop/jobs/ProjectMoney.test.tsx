@@ -18,3 +18,8 @@ it("does not render numeric cards after a failed load", () => {
   expect(screen.getByRole("alert")).toBeTruthy();
   expect(screen.queryByText("$0.00")).toBeNull();
 });
+it("warns and links the customer when an estimate is not reconciled", () => {
+  render(<ProjectMoney jobs={[{ ...jobs[0], estimatesToReview: 1 }]} lang="en" />);
+  expect(screen.getByText("Provisional totals — estimates need review")).toBeTruthy();
+  expect(screen.getByRole("link", { name: "A · Current (1)" }).getAttribute("href")).toBe("/shop/job/a");
+});
