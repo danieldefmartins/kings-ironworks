@@ -1,3 +1,5 @@
+import ProjectMoney from "./ProjectMoney";
+import { loadProjectMoney } from "@/lib/shop/project-money-db";
 import { redirect } from "next/navigation";
 import { getSessionWorker, randomSeed } from "@/lib/shop/session";
 import {
@@ -6,8 +8,6 @@ import {
   getCutItems,
   listAllJobPieces,
   getRunningEntries,
-  depositValue,
-  contractValue,
   type Job,
 } from "@/lib/shop/db";
 import { t } from "@/lib/shop/i18n";
@@ -18,14 +18,6 @@ import JobsList from "./JobsList";
 import JobsBoardMap from "./JobsBoardMap";
 
 export const dynamic = "force-dynamic";
-
-function money(n: number) {
-  return n.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  });
-}
 
 export default async function ShopBoard() {
   const worker = await getSessionWorker();
@@ -50,10 +42,10 @@ export default async function ShopBoard() {
   // Sales leads live on /shop/leads — the board shows fabrication work only.
   jobs = jobs.filter((j) => j.current_stage !== "Lead");
 
-  const pendingProjects = jobs.filter((j) => j.current_stage !== "Done");
-  const projectTotal = pendingProjects.reduce((s, j) => s + Math.max(0, contractValue(j)), 0);
-  const receivedTotal = pendingProjects.reduce((s, j) => s + Math.max(0, depositValue(j)), 0);
-  const balanceTotal = Math.max(0, projectTotal - receivedTotal);
+  let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
+  if (canSeeMoney) {
+    try { financialJobs = await loadProjectMoney(); } catch { /* Explicit error instead of partial totals. */ }
+  }
 
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
@@ -121,17 +113,7 @@ export default async function ShopBoard() {
         <div className="mb-4">
           <MotivationBanner lang={lang} seed={randomSeed()} />
         </div>
-        {canSeeMoney && (projectTotal > 0 || receivedTotal > 0) && (
-          <section className="mb-4 rounded-2xl border border-emerald-800/70 bg-emerald-950/30 p-4">
-            <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-emerald-400">{t(lang, "projectMoney")}</div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-neutral-950/40 p-3"><div className="text-lg font-bold text-neutral-100">{money(projectTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "activeProjectTotal")}</div></div>
-              <div className="rounded-xl bg-neutral-950/40 p-3"><div className="text-lg font-bold text-emerald-300">{money(receivedTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "depositReceived")}</div></div>
-              <div className="rounded-xl bg-amber-500/10 p-3"><div className="text-lg font-bold text-amber-300">{money(balanceTotal)}</div><div className="mt-1 text-[11px] leading-tight text-neutral-500">{t(lang, "balanceToReceive")}</div></div>
-            </div>
-            <div className="mt-3 text-xs text-neutral-500">{pendingProjects.length} {t(lang, "pendingProjects")}</div>
-          </section>
-        )}
+        {canSeeMoney && <ProjectMoney jobs={financialJobs} lang={lang} />}
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
             {error}
