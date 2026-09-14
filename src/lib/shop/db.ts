@@ -124,6 +124,16 @@ export async function listJobsWithDeposits(): Promise<Job[]> {
   );
 }
 
+// Jobs sent out to a subcontractor to handle entirely, instead of KIW
+// fabricating in-house. Still real jobs (contract_amount included in the
+// normal totals) — this is the admin-only list for the Subcontractor Jobs tab.
+export async function listSubcontractorJobs(): Promise<Job[]> {
+  return sbSelect<Job[]>(
+    "kiw_shop_jobs",
+    `select=*&org_id=eq.${ORG_ID}&is_subcontractor=eq.true&order=job_number.asc`
+  );
+}
+
 export async function getJob(id: string): Promise<Job | null> {
   const rows = await sbSelect<Job[]>(
     "kiw_shop_jobs",

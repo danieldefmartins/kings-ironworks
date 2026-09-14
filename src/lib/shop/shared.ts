@@ -46,12 +46,12 @@ export function canViewOwnerFinancials(worker: {
 // Money fields travel with the job row, so hiding them in the UI is not
 // hiding them — they would still sit in the RSC payload for anyone who opens
 // the network tab. Strip them on the server before the row crosses over.
-export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_amount" | "deposit_note" | "deposit_received_on">>(
+export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_amount" | "deposit_note" | "deposit_received_on" | "subcontractor_amount_paid" | "subcontractor_split_pct">>(
   job: T,
   canSeeMoney: boolean,
 ): T {
   if (canSeeMoney) return job;
-  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null };
+  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null, subcontractor_amount_paid: null, subcontractor_split_pct: null };
 }
 
 // Photo categories the shop can pin an image to. "Installation — Location N"
@@ -221,6 +221,17 @@ export interface Job {
   assigned_worker_id?: string | null;
   fabrication_order?: number | null;
   created_at: string;
+  // Subcontractor jobs — KIW sends the whole job (fabrication AND install) to
+  // an outside sub instead of building it in-house. Still a real job with a
+  // real contract_amount; these fields track what KIW pays the sub, which is
+  // a cost, not the customer-facing contract/deposit ledger.
+  is_subcontractor: boolean;
+  subcontractor_name: string | null;
+  subcontractor_phone: string | null;
+  subcontractor_split_pct: number | string | null;
+  subcontractor_amount_paid: number | string | null; // PostgREST returns numeric as a string
+  subcontractor_paid_on: string | null;
+  subcontractor_notes: string | null;
 }
 
 // A finished article the customer counts — "9 window wells", "14 railing
@@ -308,6 +319,12 @@ export function depositValue(j: Pick<Job, "deposit_amount">): number {
 }
 export function contractValue(j: Pick<Job, "contract_amount">): number {
   return num(j.contract_amount);
+}
+export function subcontractorPaidValue(j: Pick<Job, "subcontractor_amount_paid">): number {
+  return num(j.subcontractor_amount_paid);
+}
+export function subcontractorSplitPct(j: Pick<Job, "subcontractor_split_pct">): number {
+  return num(j.subcontractor_split_pct);
 }
 
 // Longest a single project entry can count for. A still-running entry is

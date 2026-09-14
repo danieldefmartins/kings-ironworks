@@ -39,8 +39,10 @@ export default async function ShopBoard() {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
 
-  // Sales leads live on /shop/leads — the board shows fabrication work only.
-  jobs = jobs.filter((j) => j.current_stage !== "Lead");
+  // Sales leads live on /shop/leads, and jobs sent whole to a subcontractor
+  // live on /shop/admin/subcontractors — the floor board shows only work
+  // KIW is actually fabricating/installing itself.
+  jobs = jobs.filter((j) => j.current_stage !== "Lead" && !j.is_subcontractor);
 
   let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
   if (canSeeMoney) {

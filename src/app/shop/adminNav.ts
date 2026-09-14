@@ -5,6 +5,7 @@ import {
   Boxes,
   Clock3,
   DollarSign,
+  HardHat,
   Settings,
   Users,
   type LucideIcon,
@@ -68,6 +69,14 @@ export const ADMIN_DESTS: AdminDest[] = [
     hintKey: "admNavHistoryHint",
     icon: Archive,
     tone: "text-sky-400",
+  },
+  {
+    group: "money",
+    href: "/shop/admin/subcontractors",
+    key: "admNavSubcontractors",
+    hintKey: "admNavSubcontractorsHint",
+    icon: HardHat,
+    tone: "text-orange-300",
   },
   {
     group: "payroll",

@@ -21,7 +21,7 @@ const job: Job = {
   deposit_note: null, deposit_received_on: null, finish: null, finish_type: null,
   finish_sheen: null, color: null, mounting: null, due_date: null,
   current_stage: "measure", est_number: null, scope: null, notes: null,
-  archived: false, created_at: "2026-08-01T00:00:00.000Z",
+  archived: false, is_subcontractor: false, subcontractor_name: null, subcontractor_phone: null, subcontractor_split_pct: null, subcontractor_amount_paid: null, subcontractor_paid_on: null, subcontractor_notes: null, created_at: "2026-08-01T00:00:00.000Z",
 };
 
 /** A three-flight stair; `measured` says how many of its flights are finished. */
