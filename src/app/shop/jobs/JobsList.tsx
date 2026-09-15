@@ -98,13 +98,13 @@ export default function JobsList({
   return (
     <>
       {canSeeMoney && (
-        <div className="mb-3 flex gap-2">
+        <div className="mb-3 flex gap-1 rounded-2xl border border-neutral-800 bg-neutral-950 p-1">
           <button
             type="button"
             onClick={() => setView("inhouse")}
             aria-pressed={view === "inhouse"}
-            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold ${
-              view === "inhouse" ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-300"
+            className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
+              view === "inhouse" ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "text-neutral-400 hover:text-neutral-200"
             }`}
           >
             {t(lang, "jobsTabInHouse")} · {inHouseCount}
@@ -113,8 +113,8 @@ export default function JobsList({
             type="button"
             onClick={() => setView("subcontractor")}
             aria-pressed={view === "subcontractor"}
-            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold ${
-              view === "subcontractor" ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-300"
+            className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
+              view === "subcontractor" ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "text-neutral-400 hover:text-neutral-200"
             }`}
           >
             {t(lang, "jobsTabSubcontractor")} · {subcontractorCount}
