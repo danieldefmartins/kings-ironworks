@@ -39,10 +39,10 @@ export default async function ShopBoard() {
     error = e instanceof Error ? e.message : "Could not load jobs";
   }
 
-  // Sales leads live on /shop/leads, and jobs sent whole to a subcontractor
-  // live on /shop/admin/subcontractors — the floor board shows only work
-  // KIW is actually fabricating/installing itself.
-  jobs = jobs.filter((j) => j.current_stage !== "Lead" && !j.is_subcontractor);
+  // Sales leads live on /shop/leads. Subcontractor jobs stay on this board too
+  // now, behind the In-House / Subcontractor tab in JobsList — defaulting to
+  // In-House keeps the floor board's default view unchanged.
+  jobs = jobs.filter((j) => j.current_stage !== "Lead");
 
   let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
   if (canSeeMoney) {
@@ -94,9 +94,10 @@ export default async function ShopBoard() {
 
   // Pins for the board map. Only jobs whose cached geocode still matches the
   // address they carry — an address edited after geocoding would otherwise put
-  // a pin on the previous house, which is worse than no pin at all.
+  // a pin on the previous house, which is worse than no pin at all. Subcontractor
+  // jobs are excluded — KIW isn't the one visiting that site.
   const mapJobs = jobs
-    .filter((j) => j.lat != null && j.lng != null && j.address && j.geocoded_address === j.address)
+    .filter((j) => !j.is_subcontractor && j.lat != null && j.lng != null && j.address && j.geocoded_address === j.address)
     .map((j) => ({
       id: j.id,
       jobNumber: j.job_number,

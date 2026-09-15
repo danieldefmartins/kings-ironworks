@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import type { Job } from "@/lib/shop/shared";
-import { contractValue, depositValue, STAGES } from "@/lib/shop/shared";
+import { contractValue, depositValue, subcontractorPaidValue, subcontractorSplitPct, STAGES } from "@/lib/shop/shared";
 import { stageLabel, t } from "@/lib/shop/i18n";
 import { Filter, GripVertical, ListOrdered, X } from "lucide-react";
 
@@ -66,10 +66,16 @@ export default function JobsList({
   const [sort, setSort] = useState("due");
   const [controlsOpen, setControlsOpen] = useState(false);
   const [queueMode, setQueueMode] = useState(false);
+  // Defaults to In-House — subcontractor jobs are a separate tab, not mixed in.
+  const [view, setView] = useState<"inhouse" | "subcontractor">("inhouse");
+
+  const inHouseCount = useMemo(() => jobs.filter((j) => !j.is_subcontractor).length, [jobs]);
+  const subcontractorCount = useMemo(() => jobs.filter((j) => j.is_subcontractor).length, [jobs]);
 
   const filtered = useMemo(
     () =>
       jobs
+        .filter((j) => (view === "subcontractor" ? j.is_subcontractor : !j.is_subcontractor))
         .filter((j) => {
           const q = query.trim().toLowerCase();
           const matches =
@@ -86,11 +92,35 @@ export default function JobsList({
               ? contractValue(b) - contractValue(a)
               : days(a.due_date) - days(b.due_date),
         ),
-    [jobs, query, filter, sort, workingCount],
+    [jobs, view, query, filter, sort, workingCount],
   );
 
   return (
     <>
+      {canSeeMoney && (
+        <div className="mb-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setView("inhouse")}
+            aria-pressed={view === "inhouse"}
+            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold ${
+              view === "inhouse" ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-300"
+            }`}
+          >
+            {t(lang, "jobsTabInHouse")} · {inHouseCount}
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("subcontractor")}
+            aria-pressed={view === "subcontractor"}
+            className={`min-h-11 flex-1 rounded-xl border px-3 text-sm font-semibold ${
+              view === "subcontractor" ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-300"
+            }`}
+          >
+            {t(lang, "jobsTabSubcontractor")} · {subcontractorCount}
+          </button>
+        </div>
+      )}
       <div className="relative mb-4 flex min-w-0 gap-2">
         <input
           value={query}
@@ -227,6 +257,17 @@ export default function JobsList({
                         {t(lang, "depositPaid")} {money(depositValue(j))}
                       </span>
                     )}
+                  </div>
+                )}
+                {canSeeMoney && j.is_subcontractor && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    <span className="rounded-md border border-orange-700 bg-orange-950/60 px-2 py-0.5 font-semibold text-orange-300">
+                      {t(lang, "subSub")}: {j.subcontractor_name || "—"}
+                      {subcontractorSplitPct(j) ? ` (${subcontractorSplitPct(j)}%)` : ""}
+                    </span>
+                    <span className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-0.5 font-semibold text-neutral-300">
+                      {t(lang, "subPaid")} {money(subcontractorPaidValue(j))}
+                    </span>
                   </div>
                 )}
                 <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
