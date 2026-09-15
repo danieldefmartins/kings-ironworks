@@ -46,12 +46,12 @@ export function canViewOwnerFinancials(worker: {
 // Money fields travel with the job row, so hiding them in the UI is not
 // hiding them — they would still sit in the RSC payload for anyone who opens
 // the network tab. Strip them on the server before the row crosses over.
-export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_amount" | "deposit_note" | "deposit_received_on" | "subcontractor_amount_paid" | "subcontractor_split_pct">>(
+export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_amount" | "deposit_note" | "deposit_received_on" | "subcontractor_amount_paid" | "subcontractor_split_pct" | "subcontractor_paid_on" | "subcontractor_notes">>(
   job: T,
   canSeeMoney: boolean,
 ): T {
   if (canSeeMoney) return job;
-  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null, subcontractor_amount_paid: null, subcontractor_split_pct: null };
+  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null, subcontractor_amount_paid: null, subcontractor_split_pct: null, subcontractor_paid_on: null, subcontractor_notes: null };
 }
 
 // Photo categories the shop can pin an image to. "Installation — Location N"

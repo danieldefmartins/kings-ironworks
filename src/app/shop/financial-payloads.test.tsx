@@ -5,7 +5,7 @@ vi.stubGlobal("React", React);
 vi.mock("@/lib/shop/session", () => ({ getSessionWorker: m.worker }));
 vi.mock("next/navigation", () => ({ redirect: () => {throw new Error("redirect");}, notFound: () => {throw new Error("not found");} }));
 vi.mock("@/lib/shop/db", () => ({
-  getJob: async () => ({id:"job",customer_name:"Customer",contract_amount:98765,deposit_amount:12345,deposit_note:"private",subcontractor_amount_paid:555,subcontractor_split_pct:50}),
+  getJob: async () => ({id:"job",customer_name:"Customer",contract_amount:98765,deposit_amount:12345,deposit_note:"private",subcontractor_amount_paid:555,subcontractor_split_pct:50,subcontractor_paid_on:"2026-09-01",subcontractor_notes:"confidential payment terms"}),
   getMeasureSheets: async () => [], getMeasureSheet: async () => ({job_id:"job",data:{}}), getMeasureRevision: async () => ({id:"rev",data:{}}),
   listWorkers: async () => [], getOrgSettings: async () => ({tolerances:{}}), getSheetHistory: async () => [], getCarryover: async () => null, audit: async () => {},
   listCatalog: async () => [{id:"steel",display:"Steel",unit_cost:98765}], listInventory: async () => [], listSupplierPrices: m.prices, signPhotoUrls: async () => new Map(),
@@ -23,7 +23,7 @@ beforeEach(() => {vi.clearAllMocks();m.worker.mockResolvedValue({id:"crew",name:
 it.each([Measures, Editor, Revision])("redacts pricing in measurement client props", async Page => {
   const result = await Page({params:Promise.resolve({id:"job",sheetId:"sheet",revNo:"1"})});
   const payload = JSON.stringify(result, (_key, value) => React.isValidElement(value) ? value.props : value);
-  for (const secret of ["98765", "12345", "private", "555"]) expect(payload).not.toContain(secret);
+  for (const secret of ["98765", "12345", "private", "555", "2026-09-01", "confidential payment terms"]) expect(payload).not.toContain(secret);
   expect(payload).toContain("Customer");
 });
 it("does not fetch supplier pricing or send catalog costs to crew", async () => {
