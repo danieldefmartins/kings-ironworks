@@ -1,7 +1,7 @@
 import ProjectMoney from "./ProjectMoney";
 import { loadProjectMoney } from "@/lib/shop/project-money-db";
 import { redirect } from "next/navigation";
-import { getSessionWorker, randomSeed } from "@/lib/shop/session";
+import { getSessionWorker } from "@/lib/shop/session";
 import {
   listJobs,
   listWorkers,
@@ -12,7 +12,6 @@ import {
 } from "@/lib/shop/db";
 import { t } from "@/lib/shop/i18n";
 import ShopTopBar from "../ShopTopBar";
-import MotivationBanner from "../MotivationBanner";
 import { canViewOwnerFinancials, pieceProgress, redactJobMoney } from "@/lib/shop/shared";
 import JobsList from "./JobsList";
 import JobsBoardMap from "./JobsBoardMap";
@@ -113,10 +112,6 @@ export default async function ShopBoard() {
     <div>
       <ShopTopBar workerName={worker.name} title={t(lang, "activeJobs")} back="/shop" lang={lang} adminLink={canSeeMoney} />
       <div className="mx-auto w-full min-w-0 max-w-5xl overflow-x-hidden p-4">
-        <div className="mb-4">
-          <MotivationBanner lang={lang} seed={randomSeed()} />
-        </div>
-        {canSeeMoney && <ProjectMoney jobs={financialJobs} lang={lang} />}
         {error && (
           <div className="text-red-400 bg-red-950/40 border border-red-800 rounded-lg p-4 mb-4 text-sm">
             {error}
@@ -124,9 +119,6 @@ export default async function ShopBoard() {
         )}
         {jobs.length === 0 && !error && (
           <p className="text-neutral-500 text-center py-16">{t(lang, "noJobs")}</p>
-        )}
-        {mapJobs.length > 0 && (
-          <JobsBoardMap jobs={mapJobs} lang={lang} total={jobs.length} />
         )}
         <JobsList
           jobs={clientJobs}
@@ -138,6 +130,12 @@ export default async function ShopBoard() {
           piecePct={piecePct}
           progress={progress}
         />
+        <div className="mt-8 space-y-4 border-t border-neutral-800 pt-6">
+          {canSeeMoney && <ProjectMoney jobs={financialJobs} lang={lang} />}
+          {mapJobs.length > 0 && (
+            <JobsBoardMap jobs={mapJobs} lang={lang} total={jobs.filter((j) => !j.is_subcontractor).length} />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -13,3 +13,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - After importing a structured estimate, reconcile it as additional scope, already included, or excluded (unsigned/replaced/reference). Never sum every PDF indiscriminately: an invoice can bill an existing estimate. Unresolved scope remains `review` and must be visibly flagged.
 - Done jobs with a known zero balance and no unreviewed estimates archive automatically. Unknown or outstanding balances stay visible. A later correction or unreviewed estimate reopens an automatically archived job; manually archived history stays separate.
 - Keep the Jobs money summary in three columns, including on phones.
+
+## Delivery preference
+
+- Daniel wants app changes deployed after implementation and successful checks. Commit and push the intended changes, run `npm run deploy`, and verify deployment success; do not stop at local changes unless deployment is blocked.

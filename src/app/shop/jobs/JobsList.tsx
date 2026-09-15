@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import type { Job } from "@/lib/shop/shared";
 import { contractValue, depositValue, subcontractorPaidValue, subcontractorSplitPct, STAGES } from "@/lib/shop/shared";
 import { stageLabel, t } from "@/lib/shop/i18n";
-import { Filter, GripVertical, ListOrdered, X } from "lucide-react";
+import { Check, Filter, GripVertical, ListOrdered, Search, X } from "lucide-react";
 
 type Progress = Record<string, { done: number; total: number }>;
 type Crew = { id: string; name: string }[];
@@ -109,62 +109,64 @@ export default function JobsList({
   return (
     <>
       {canSeeMoney && (
-        <div className="mb-3 flex gap-1 rounded-2xl border border-neutral-800 bg-neutral-950 p-1">
-          <button
-            type="button"
-            onClick={() => setView("inhouse")}
-            aria-pressed={view === "inhouse"}
-            className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
-              view === "inhouse" ? "bg-amber-500 text-black" : "text-neutral-400 hover:text-neutral-200"
-            }`}
-          >
-            {t(lang, "jobsTabInHouse")}
-            <span className={`ml-1.5 font-normal ${view === "inhouse" ? "text-black/60" : "text-neutral-600"}`}>{inHouseCount}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("subcontractor")}
-            aria-pressed={view === "subcontractor"}
-            className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
-              view === "subcontractor" ? "bg-amber-500 text-black" : "text-neutral-400 hover:text-neutral-200"
-            }`}
-          >
-            {t(lang, "jobsTabSubcontractor")}
-            <span className={`ml-1.5 font-normal ${view === "subcontractor" ? "text-black/60" : "text-neutral-600"}`}>{subcontractorCount}</span>
-          </button>
+        <div className="mb-6 grid grid-cols-2 gap-3" role="group" aria-label={t(lang, "jobsTeam")}>
+          {(["inhouse", "subcontractor"] as const).map((team) => {
+            const selected = view === team;
+            return (
+              <button
+                key={team}
+                type="button"
+                onClick={() => { setView(team); setQueueMode(false); setFilter("all"); }}
+                aria-pressed={selected}
+                className={`min-w-0 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400 sm:p-4 ${selected ? "border-amber-400 bg-amber-400/10" : "border-neutral-800 bg-neutral-900/50 hover:border-neutral-600"}`}
+              >
+                <span className="mb-3 flex items-center justify-between gap-2">
+                  <span className={`text-2xl font-semibold tabular-nums ${selected ? "text-amber-300" : "text-neutral-300"}`}>
+                    {team === "inhouse" ? inHouseCount : subcontractorCount}
+                  </span>
+                  <span className={`grid h-5 w-5 place-items-center rounded-full border ${selected ? "border-amber-400 bg-amber-400 text-black" : "border-neutral-600"}`}>
+                    {selected && <Check aria-hidden className="h-3.5 w-3.5" />}
+                  </span>
+                </span>
+                <span className="block text-sm font-semibold text-neutral-100 sm:text-base">{t(lang, team === "inhouse" ? "jobsTabInHouse" : "jobsTabSubcontractor")}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-neutral-400">{t(lang, team === "inhouse" ? "jobsInHouseHelp" : "jobsSubcontractorHelp")}</span>
+              </button>
+            );
+          })}
         </div>
       )}
-      <div className="relative mb-4 flex min-w-0 gap-2">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t(lang, "projectSearch")}
-          className="min-h-12 w-full min-w-0 rounded-xl border border-neutral-700 bg-neutral-900 px-4 text-[16px] outline-none focus:border-amber-500"
-        />
-        {canManageQueue && (
-          <button
-            type="button"
-            onClick={() => setQueueMode((v) => !v)}
-            aria-pressed={queueMode}
-            aria-label={t(lang, "queueTitle")}
-            className={`grid min-h-12 w-12 shrink-0 place-items-center rounded-xl border ${
-              queueMode ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-200"
-            }`}
-          >
-            <ListOrdered className="h-5 w-5" />
-          </button>
-        )}
-        <button
+      <div className="relative mb-5 flex min-w-0 flex-wrap items-center gap-2">
+        {!queueMode && <label className="relative block min-w-0 basis-full sm:flex-1 sm:basis-0">
+          <Search aria-hidden className="pointer-events-none absolute left-3.5 top-3.5 h-5 w-5 text-neutral-500" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            aria-label={t(lang, "projectSearch")}
+            placeholder={t(lang, "projectSearch")}
+            className="min-h-12 w-full min-w-0 rounded-xl border border-neutral-800 bg-neutral-900/60 pl-11 pr-4 text-[16px] outline-none focus:border-amber-500"
+          />
+        </label>}
+        {!queueMode && <button
           type="button"
           onClick={() => setControlsOpen((v) => !v)}
           aria-expanded={controlsOpen}
-          aria-label={`${t(lang, "filter")} and ${t(lang, "sort")}`}
-          className={`grid min-h-12 w-12 shrink-0 place-items-center rounded-xl border ${
-            controlsOpen ? "border-amber-500 bg-amber-500/15 text-amber-300" : "border-neutral-700 bg-neutral-900 text-neutral-200"
-          }`}
+          className={`flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm ${controlsOpen || filter !== "all" || sort !== "due" ? "border-amber-500/60 bg-amber-500/10 text-amber-300" : "border-neutral-800 text-neutral-300 hover:bg-neutral-900"}`}
         >
-          <Filter className="h-5 w-5" />
-        </button>
+          <Filter aria-hidden className="h-4 w-4" />
+          {t(lang, "filter")}
+          {(filter !== "all" || sort !== "due") && <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />}
+        </button>}
+        {canManageQueue && view === "inhouse" && (
+          <button
+            type="button"
+            onClick={() => { setQueueMode((v) => !v); setControlsOpen(false); }}
+            aria-pressed={queueMode}
+            className={`ml-auto flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm ${queueMode ? "bg-amber-500/15 text-amber-300" : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"}`}
+          >
+            <ListOrdered aria-hidden className="h-4 w-4" />
+            {t(lang, queueMode ? "queueDone" : "queueTitle")}
+          </button>
+        )}
         {controlsOpen && (
           <div className="absolute right-0 top-[calc(100%+8px)] z-20 w-[min(320px,calc(100vw-32px))] rounded-3xl border border-neutral-700 bg-neutral-950/95 p-4 shadow-2xl backdrop-blur-xl">
             <div className="mb-3 flex items-center justify-between">
@@ -211,11 +213,11 @@ export default function JobsList({
       </div>
 
       {queueMode && canManageQueue ? (
-        <FabricationQueue jobs={jobs} crew={crew} lang={lang} refresh={() => router.refresh()} />
+        <FabricationQueue jobs={jobs.filter((j) => !j.is_subcontractor)} crew={crew} lang={lang} refresh={() => router.refresh()} />
       ) : filtered.length === 0 ? (
         <p className="py-16 text-center text-neutral-500">{t(lang, "noMatchingProjects")}</p>
       ) : (
-        <div className="grid min-w-0 gap-3 sm:grid-cols-2">
+        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
           {filtered.map((j) => {
             const p = progress[j.id] || { done: 0, total: 0 };
             const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
@@ -224,15 +226,15 @@ export default function JobsList({
               <Link
                 key={j.id}
                 href={`/shop/job/${j.id}`}
-                className="block min-w-0 overflow-hidden rounded-xl border border-neutral-800 bg-neutral-900 p-4 transition hover:border-amber-600/60 active:scale-[0.99]"
+                className="block min-w-0 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/60 p-5 transition hover:border-amber-600/60 active:scale-[0.99]"
               >
                 <div className="flex min-w-0 items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     {j.project_type && (
-                      <div className="truncate text-[11px] font-bold uppercase tracking-wide text-amber-500/80">{j.project_type}</div>
+                      <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-neutral-400">{j.project_type}</div>
                     )}
-                    <div className="truncate text-lg font-semibold">{j.customer_name}</div>
-                    <div className="truncate text-xs text-neutral-500">{j.address || "—"}</div>
+                    <div className="text-lg font-semibold leading-snug">{j.customer_name}</div>
+                    <div className="mt-1 text-xs leading-relaxed text-neutral-400">{j.address || "—"}</div>
                   </div>
                   <span className={`max-w-[42%] shrink rounded-full px-2 py-1 text-center text-[11px] font-semibold leading-tight text-white ${color(j.current_stage)}`}>
                     {stageLabel(lang, j.current_stage)}
@@ -277,15 +279,15 @@ export default function JobsList({
                     <span>{t(lang, "subPaid")} <b className="font-bold text-neutral-100">{money(subcontractorPaidValue(j))}</b></span>
                   </div>
                 )}
-                <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
+                <div className="mt-4 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-2 border-t border-neutral-800 pt-3 text-xs">
                   <span className={`min-w-0 rounded-lg px-2.5 py-1 font-bold ${dueBadgeColor(j.due_date)}`}>
                     {t(lang, "due")} {j.due_date || t(lang, "noDue")}
                   </span>
-                  <span className="shrink-0 text-neutral-500">{t(lang, "cutProgress")} {p.done}/{p.total}</span>
+                  {p.total > 0 && <span className="shrink-0 text-neutral-400">{t(lang, "cutProgress")} {p.done}/{p.total}</span>}
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-800">
+                {p.total > 0 && !piecePct[j.id]?.total && <div className="mt-2 h-1 overflow-hidden rounded-full bg-neutral-800">
                   <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
-                </div>
+                </div>}
               </Link>
             );
           })}
