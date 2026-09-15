@@ -18,9 +18,9 @@ it.each([{is_admin:false,can_see_prices:false},{is_admin:true,can_see_prices:fal
   await Page();
   expect(m.money).not.toHaveBeenCalled();
 });
-it("loads the independent financial ledger for an owner", async () => {
+it("keeps the financial summary on Today rather than loading it on Jobs", async () => {
   m.worker.mockResolvedValue({name:"Owner",lang:"en",is_admin:true,can_see_prices:true});
   m.money.mockResolvedValue([]);
   await Page();
-  expect(m.money).toHaveBeenCalledOnce();
+  expect(m.money).not.toHaveBeenCalled();
 });

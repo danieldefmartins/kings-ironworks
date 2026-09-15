@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { getSessionWorker } from "@/lib/shop/session";
 import {
   uploadPhotoObject,
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Price-sensitive category is restricted.
-    if (category === PRICE_CATEGORY && !worker.is_admin) {
+    if ([PRICE_CATEGORY, "Original Estimate"].includes(category) && !canViewOwnerFinancials(worker)) {
       return NextResponse.json(
         { error: "Not allowed to add Approved Estimate photos" },
         { status: 403 }

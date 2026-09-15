@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
 import { getJob, getMeasureSheets, listWorkers, getOrgSettings } from "@/lib/shop/db";
 import ShopTopBar from "../../../ShopTopBar";
 import { normalizeMeasureData } from "@/lib/shop/measure";
@@ -36,7 +36,7 @@ export default async function MeasureListPage({
         lang={lang}
         adminLink={canViewOwnerFinancials(worker)}
       />
-      <MeasureListClient job={job} sheets={normalizedSheets} tolerances={mergeTolerances(settings.tolerances)} lang={lang} nameById={nameById} />
+      <MeasureListClient job={redactJobMoney(job, canViewOwnerFinancials(worker))} sheets={normalizedSheets} tolerances={mergeTolerances(settings.tolerances)} lang={lang} nameById={nameById} />
     </div>
   );
 }

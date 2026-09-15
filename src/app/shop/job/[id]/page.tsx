@@ -116,7 +116,7 @@ export default async function JobTravelerPage({
           myStartedAt={myRunning ? myRunning.started_at : null}
           activeWorkers={othersRunning}
           totalHours={totalHours}
-          catalog={catalog}
+          catalog={catalog.map(item => canSeePrices ? item : { ...item, unit_cost: null })}
         />
       ) : null}
       {v2 ? (

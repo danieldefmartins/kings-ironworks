@@ -1,5 +1,3 @@
-import ProjectMoney from "./ProjectMoney";
-import { loadProjectMoney } from "@/lib/shop/project-money-db";
 import { redirect } from "next/navigation";
 import { getSessionWorker } from "@/lib/shop/session";
 import {
@@ -42,11 +40,6 @@ export default async function ShopBoard() {
   // now, behind the In-House / Subcontractor tab in JobsList — defaulting to
   // In-House keeps the floor board's default view unchanged.
   jobs = jobs.filter((j) => j.current_stage !== "Lead");
-
-  let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
-  if (canSeeMoney) {
-    try { financialJobs = await loadProjectMoney(); } catch { /* Explicit error instead of partial totals. */ }
-  }
 
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
@@ -131,7 +124,6 @@ export default async function ShopBoard() {
           progress={progress}
         />
         <div className="mt-8 space-y-4 border-t border-neutral-800 pt-6">
-          {canSeeMoney && <ProjectMoney jobs={financialJobs} lang={lang} />}
           {mapJobs.length > 0 && (
             <JobsBoardMap jobs={mapJobs} lang={lang} total={jobs.filter((j) => !j.is_subcontractor).length} />
           )}

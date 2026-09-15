@@ -13,9 +13,11 @@ export default async function InventoryPage() {
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
 
-  const [catalog, inventory, prices] = await Promise.all([
-    listCatalog(), listInventory(), listSupplierPrices(),
+  const owner = canViewOwnerFinancials(worker);
+  const [rawCatalog, inventory, prices] = await Promise.all([
+    listCatalog(), listInventory(), owner ? listSupplierPrices() : Promise.resolve([]),
   ]);
+  const catalog = rawCatalog.map(item => owner ? item : { ...item, unit_cost: null });
   // Cheapest per unit first, so the row shows the best price we know of.
   const bestBy = new Map<string, (typeof prices)[number]>();
   for (const p of prices) {
