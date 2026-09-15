@@ -25,6 +25,17 @@ function color(stage: string) {
   return "bg-neutral-600";
 }
 
+// The due-date badge only needs to shout when the date actually demands
+// attention — overdue or imminent. A due date six months out doesn't need
+// the same loud treatment as one due tomorrow.
+function dueBadgeColor(dueDate: string | null) {
+  if (!dueDate) return "bg-neutral-800 text-neutral-500";
+  const d = days(dueDate);
+  if (d < 0) return "bg-rose-600 text-white";
+  if (d <= 3) return "bg-amber-500 text-black";
+  return "border border-neutral-700 bg-neutral-800 text-neutral-300";
+}
+
 // The queue is the order things actually get built. A job that has never been
 // placed sorts after the placed ones, by due date, so a new job lands at the
 // bottom of the list rather than silently jumping the queue.
@@ -104,20 +115,22 @@ export default function JobsList({
             onClick={() => setView("inhouse")}
             aria-pressed={view === "inhouse"}
             className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
-              view === "inhouse" ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "text-neutral-400 hover:text-neutral-200"
+              view === "inhouse" ? "bg-amber-500 text-black" : "text-neutral-400 hover:text-neutral-200"
             }`}
           >
-            {t(lang, "jobsTabInHouse")} · {inHouseCount}
+            {t(lang, "jobsTabInHouse")}
+            <span className={`ml-1.5 font-normal ${view === "inhouse" ? "text-black/60" : "text-neutral-600"}`}>{inHouseCount}</span>
           </button>
           <button
             type="button"
             onClick={() => setView("subcontractor")}
             aria-pressed={view === "subcontractor"}
             className={`min-h-11 flex-1 rounded-xl text-sm font-bold transition-colors ${
-              view === "subcontractor" ? "bg-amber-500 text-black shadow-lg shadow-amber-500/20" : "text-neutral-400 hover:text-neutral-200"
+              view === "subcontractor" ? "bg-amber-500 text-black" : "text-neutral-400 hover:text-neutral-200"
             }`}
           >
-            {t(lang, "jobsTabSubcontractor")} · {subcontractorCount}
+            {t(lang, "jobsTabSubcontractor")}
+            <span className={`ml-1.5 font-normal ${view === "subcontractor" ? "text-black/60" : "text-neutral-600"}`}>{subcontractorCount}</span>
           </button>
         </div>
       )}
@@ -216,7 +229,7 @@ export default function JobsList({
                 <div className="flex min-w-0 items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     {j.project_type && (
-                      <div className="truncate text-[11px] font-bold uppercase tracking-wide text-amber-500">{j.project_type}</div>
+                      <div className="truncate text-[11px] font-bold uppercase tracking-wide text-amber-500/80">{j.project_type}</div>
                     )}
                     <div className="truncate text-lg font-semibold">{j.customer_name}</div>
                     <div className="truncate text-xs text-neutral-500">{j.address || "—"}</div>
@@ -248,33 +261,27 @@ export default function JobsList({
                 )}
                 {crewName && <div className="mt-2 truncate text-xs text-neutral-400">{t(lang, "queueAssign")}: {crewName}</div>}
                 {canSeeMoney && (contractValue(j) > 0 || depositValue(j) > 0) && (
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
-                    <span className="rounded-md border border-amber-700 bg-amber-950/60 px-2 py-0.5 text-amber-300">
-                      {t(lang, "contractPrice")} {money(contractValue(j))}
-                    </span>
+                  <div className="mt-2 flex flex-wrap items-baseline gap-x-3 text-xs text-neutral-500">
+                    <span>{t(lang, "contractPrice")} <b className="font-bold text-neutral-100">{money(contractValue(j))}</b></span>
                     {depositValue(j) > 0 && (
-                      <span className="rounded-md border border-emerald-700 bg-emerald-950/60 px-2 py-0.5 text-emerald-300">
-                        {t(lang, "depositPaid")} {money(depositValue(j))}
-                      </span>
+                      <span>{t(lang, "depositPaid")} <b className="font-bold text-emerald-400">{money(depositValue(j))}</b></span>
                     )}
                   </div>
                 )}
                 {canSeeMoney && j.is_subcontractor && (
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    <span className="rounded-md border border-orange-700 bg-orange-950/60 px-2 py-0.5 font-semibold text-orange-300">
+                  <div className="mt-2 flex flex-wrap items-baseline gap-x-3 text-xs text-neutral-500">
+                    <span className="font-semibold text-orange-400">
                       {t(lang, "subSub")}: {j.subcontractor_name || "—"}
                       {subcontractorSplitPct(j) ? ` (${subcontractorSplitPct(j)}%)` : ""}
                     </span>
-                    <span className="rounded-md border border-neutral-700 bg-neutral-900 px-2 py-0.5 font-semibold text-neutral-300">
-                      {t(lang, "subPaid")} {money(subcontractorPaidValue(j))}
-                    </span>
+                    <span>{t(lang, "subPaid")} <b className="font-bold text-neutral-100">{money(subcontractorPaidValue(j))}</b></span>
                   </div>
                 )}
                 <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
-                  <span className={`min-w-0 rounded-lg px-3 py-2 font-extrabold shadow-sm ${!j.due_date ? "bg-neutral-800 text-neutral-400" : "bg-blue-600 text-white ring-1 ring-blue-400"}`}>
+                  <span className={`min-w-0 rounded-lg px-2.5 py-1 font-bold ${dueBadgeColor(j.due_date)}`}>
                     {t(lang, "due")} {j.due_date || t(lang, "noDue")}
                   </span>
-                  <span className="shrink-0 text-neutral-400">{t(lang, "cutProgress")} {p.done}/{p.total}</span>
+                  <span className="shrink-0 text-neutral-500">{t(lang, "cutProgress")} {p.done}/{p.total}</span>
                 </div>
                 <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-800">
                   <div className="h-full bg-amber-500" style={{ width: `${pct}%` }} />
