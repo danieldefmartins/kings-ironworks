@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, BriefcaseBusiness, MapPin, PackageSearch, Ruler } from "lucide-react";
+import { ArrowRight, Banknote, BriefcaseBusiness, Calculator, Clock3, MapPin, PackageSearch, Ruler, Star } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials, isInFabrication } from "@/lib/shop/shared";
 import {
@@ -78,6 +78,15 @@ export default async function ShopToday() {
     try { financialJobs = await loadProjectMoney(); } catch { /* ProjectMoney shows an explicit load error. */ }
   }
 
+  const favorites = [
+    { href: "/shop/jobs", title: label("Jobs", "Obras", "Proyectos"), icon: BriefcaseBusiness, color: "bg-sky-400/10 text-sky-300" },
+    { href: "/shop/leads", title: t(lang, "navMeasure"), icon: Ruler, color: "bg-violet-400/10 text-violet-300" },
+    { href: "/shop/inventory", title: t(lang, "tileInventory"), icon: PackageSearch, color: "bg-orange-400/10 text-orange-300" },
+    { href: "/shop/time", title: label("My hours", "Minhas horas", "Mis horas"), icon: Clock3, color: "bg-cyan-400/10 text-cyan-300" },
+    { href: "/shop/calc", title: label("Calculator", "Calculadora", "Calculadora"), icon: Calculator, color: "bg-amber-400/10 text-amber-300" },
+    ...(isOwner ? [{ href: "/shop/admin/payroll", title: label("Payroll", "Pagamentos", "Nómina"), icon: Banknote, color: "bg-emerald-400/10 text-emerald-300" }] : []),
+  ];
+
   function jobSection(title: string, rows: Job[], empty: string) {
     return <section className="min-w-0">
       <div className="mb-3 flex items-center justify-between gap-3">
@@ -107,6 +116,15 @@ export default async function ShopToday() {
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{label(isOwner ? "Your shop at a glance" : "Your work today", isOwner ? "Sua oficina em resumo" : "Seu trabalho hoje", isOwner ? "Tu taller de un vistazo" : "Tu trabajo de hoy")}</h1>
           <p className="mt-2 text-sm text-neutral-400">{label("In-house work, deadlines, and what needs your attention.", "Trabalho da equipe KIW, prazos e o que precisa de atenção.", "Trabajo del equipo KIW, plazos y lo que necesita atención.")}</p>
         </header>
+        <nav aria-labelledby="today-favorites">
+          <h2 id="today-favorites" className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-300"><Star aria-hidden className="h-4 w-4 text-amber-300" />{label("Favorites", "Favoritos", "Favoritos")}</h2>
+          <div className={`grid grid-cols-3 gap-2 sm:gap-3 ${isOwner ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}>
+            {favorites.map(({ href, title, icon: Icon, color }) => <Link key={href} href={href} className="group flex min-h-24 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-neutral-800 bg-neutral-900/50 px-2 py-3 text-center transition-colors hover:border-neutral-600 hover:bg-neutral-800/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400">
+              <span className={`grid h-11 w-11 place-items-center rounded-xl ${color}`}><Icon aria-hidden className="h-6 w-6" strokeWidth={1.8} /></span>
+              <span className="text-xs font-medium leading-snug text-neutral-200 sm:text-sm">{title}</span>
+            </Link>)}
+          </div>
+        </nav>
         <dl className="grid grid-cols-3 divide-x divide-neutral-800 rounded-2xl border border-neutral-800 bg-neutral-900/40 py-4">
           {[[label("In fabrication", "Em fabricação", "En fabricación"), inFab.length], [label("Due in 7 days", "Prazo em 7 dias", "Vence en 7 días"), dueSoon.length], [label("Overdue", "Em atraso", "Atrasados"), overdue.length]].map(([title, count], index) => <div key={title} className="px-3 sm:px-5"><dd className={`text-2xl font-semibold tabular-nums ${index === 2 && overdue.length ? "text-rose-300" : "text-neutral-100"}`}>{count}</dd><dt className="mt-1 text-xs leading-relaxed text-neutral-400">{title}</dt></div>)}
         </dl>
@@ -119,9 +137,7 @@ export default async function ShopToday() {
           {jobSection(t(lang, "onTheFloor"), floor, t(lang, "nothingInFab"))}
           {jobSection(label("Deadlines", "Prazos", "Plazos"), upcoming, label("No scheduled deadlines yet.", "Nenhum prazo agendado ainda.", "Todavía no hay plazos programados."))}
         </div>
-        <nav aria-label={label("Shop shortcuts", "Atalhos da oficina", "Accesos del taller")} className="grid gap-2 border-t border-neutral-800 pt-5 sm:grid-cols-3">
-          {[["/shop/jobs", t(lang, "activeJobs"), BriefcaseBusiness], ["/shop/leads", t(lang, "measuresLeads"), Ruler], ["/shop/inventory", t(lang, "tileInventory"), PackageSearch]].map(([href, title, Icon]) => { const ShortcutIcon = Icon as typeof Ruler; return <Link key={href as string} href={href as string} className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm text-neutral-300 hover:bg-neutral-900"><ShortcutIcon aria-hidden className="h-4 w-4 text-neutral-500" />{title as string}<ArrowRight aria-hidden className="ml-auto h-4 w-4 text-neutral-600" /></Link>; })}
-        </nav>
+
       </main>
     </div>
   );
