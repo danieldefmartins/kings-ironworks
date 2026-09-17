@@ -400,6 +400,18 @@ export async function recordShiftEndLocation(workerId: string, shiftId: string, 
   });
 }
 
+// Mirror of recordShiftEndLocation for the start side — see clockIn, which
+// now inserts the shift bare and lets the client attach GPS afterward the
+// same way clockOut does.
+export async function recordShiftStartLocation(workerId: string, shiftId: string, loc: PunchLocation): Promise<void> {
+  await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}&worker_id=eq.${workerId}`, {
+    start_lat: loc.lat,
+    start_lng: loc.lng,
+    start_accuracy_m: loc.accuracy ?? null,
+    start_location_status: loc.status ?? "unknown",
+  });
+}
+
 // Periodic breadcrumb while a payroll shift is open. Location is supporting
 // attendance evidence; it never changes payable hours or geofence eligibility.
 export async function recordShiftLocation(

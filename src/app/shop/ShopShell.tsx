@@ -101,22 +101,23 @@ export default function ShopShell({
     finally { setBusy(false); }
   }
 
-  // Clocking out must never wait on GPS: gps() can take up to 7s, and a
-  // tablet that locks or backgrounds mid-request drops the fetch entirely,
-  // leaving the shift open for hours or days with no signal to the worker
-  // that anything went wrong (this is what actually happened to several crew
-  // members). So the stop is sent bare and immediately; location, if it
-  // resolves at all, is attached afterward as a separate best-effort call
-  // that the clock-out result never depends on.
-  async function clockOut() {
+  // Neither side of the payroll punch may wait on GPS: gps() can take up to
+  // 7s, and a tablet that locks or backgrounds mid-request drops the fetch
+  // entirely — silently leaving a shift stuck open for hours or days (clock
+  // out) or a tap that never registered at all (clock in), with no signal to
+  // the worker that anything went wrong. This is what actually happened to
+  // several crew members. So the punch is sent bare and immediate; location,
+  // if it resolves at all, is attached afterward as a separate best-effort
+  // call that the punch itself never depends on.
+  async function punchNow(type: "shift_start" | "shift_stop", followUpType: "shift_start_location" | "shift_end_location", failMessage: string) {
     setBusy(true); setError("");
     try {
       const res = await fetch("/shop/api/action", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "shift_stop" }),
+        body: JSON.stringify({ type }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Could not clock out");
+      if (!res.ok) throw new Error(data.error || failMessage);
       setOpen(false);
       transition(() => router.refresh());
       const shiftId = data.shiftId;
@@ -125,13 +126,15 @@ export default function ShopShell({
           if (loc.locationStatus === "unavailable" || loc.lat == null || loc.lng == null) return;
           return fetch("/shop/api/action", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "shift_end_location", shiftId, lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }),
+            body: JSON.stringify({ type: followUpType, shiftId, lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }),
           });
         }).catch(() => undefined);
       }
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not clock out"); }
+    } catch (e) { setError(e instanceof Error ? e.message : failMessage); }
     finally { setBusy(false); }
   }
+  const clockIn = () => punchNow("shift_start", "shift_start_location", "Could not clock in");
+  const clockOut = () => punchNow("shift_stop", "shift_end_location", "Could not clock out");
 
   if (!workerName || path === "/shop/login") return <>{children}</>;
 
@@ -207,7 +210,7 @@ export default function ShopShell({
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {error && <p className="mb-3 rounded-xl bg-red-950/60 p-3 text-sm text-red-300">{error}</p>}
             {!shift ? (
-              <button disabled={busy} onClick={() => act("shift_start", true)} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "clockGettingLocation") : t(lang, "clockInLabel")}</button>
+              <button disabled={busy} onClick={clockIn} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockInLabel")}</button>
             ) : onBreak ? (
               <button disabled={busy} onClick={() => act("time_break_end")} className="min-h-16 w-full rounded-2xl bg-amber-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockEndBreak")}</button>
             ) : (

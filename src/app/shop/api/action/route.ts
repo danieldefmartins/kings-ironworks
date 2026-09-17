@@ -9,6 +9,7 @@ import {
   clockIn,
   clockOut,
   recordShiftEndLocation,
+  recordShiftStartLocation,
   recordShiftLocation,
   startBreak,
   endBreak,
@@ -378,11 +379,16 @@ export async function POST(req: NextRequest) {
       }
 
       // Payroll shift. It deliberately has no project: paid presence and job
-      // costing are separate clocks.
+      // costing are separate clocks. Fires immediately with whatever location
+      // (if any) the client already had — never waits on a fresh GPS read.
+      // Both directions of this clock had the same failure mode: a tablet
+      // that locks or backgrounds during the up-to-7s geolocation call drops
+      // the fetch entirely, so clocking in silently never happens either.
       case "shift_start": {
         const loc = punchLocation(body);
-        await clockIn(worker.id, loc);
+        const shift = await clockIn(worker.id, loc);
         await audit("shift_clock_in", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
+        result = { shiftId: shift.id };
         break;
       }
 
@@ -395,6 +401,18 @@ export async function POST(req: NextRequest) {
         const shiftId = await clockOut(worker.id, loc);
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
         result = { shiftId };
+        break;
+      }
+
+      // Best-effort follow-up sent by the client after a shift_start, once
+      // GPS (fetched only after clocking in already succeeded) resolves.
+      // Never required — see shift_start above.
+      case "shift_start_location": {
+        const { shiftId } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) break;
+        const loc = punchLocation(body);
+        if (!loc) break;
+        await recordShiftStartLocation(worker.id, shiftId, loc);
         break;
       }
 
