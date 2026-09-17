@@ -101,6 +101,38 @@ export default function ShopShell({
     finally { setBusy(false); }
   }
 
+  // Clocking out must never wait on GPS: gps() can take up to 7s, and a
+  // tablet that locks or backgrounds mid-request drops the fetch entirely,
+  // leaving the shift open for hours or days with no signal to the worker
+  // that anything went wrong (this is what actually happened to several crew
+  // members). So the stop is sent bare and immediately; location, if it
+  // resolves at all, is attached afterward as a separate best-effort call
+  // that the clock-out result never depends on.
+  async function clockOut() {
+    setBusy(true); setError("");
+    try {
+      const res = await fetch("/shop/api/action", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "shift_stop" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not clock out");
+      setOpen(false);
+      transition(() => router.refresh());
+      const shiftId = data.shiftId;
+      if (shiftId) {
+        void gps().then((loc) => {
+          if (loc.locationStatus === "unavailable" || loc.lat == null || loc.lng == null) return;
+          return fetch("/shop/api/action", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "shift_end_location", shiftId, lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }),
+          });
+        }).catch(() => undefined);
+      }
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not clock out"); }
+    finally { setBusy(false); }
+  }
+
   if (!workerName || path === "/shop/login") return <>{children}</>;
 
   const tabs = [
@@ -181,7 +213,7 @@ export default function ShopShell({
             ) : (
               <div className="space-y-2">
                 <button disabled={busy} onClick={() => act("time_break_start")} className="min-h-14 w-full rounded-2xl bg-neutral-800 font-semibold">{t(lang, "clockStartBreak")}</button>
-                <button disabled={busy} onClick={() => act("shift_stop", true)} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
+                <button disabled={busy} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
               </div>
             )}
             {shift && (

@@ -363,9 +363,13 @@ export async function clockIn(
   return rows[0];
 }
 
-export async function clockOut(workerId: string, loc?: PunchLocation | null): Promise<void> {
+// Returns the closed shift's id (or null if nothing was open) so the caller
+// can attach GPS afterward — see recordShiftEndLocation. Clocking out must
+// never wait on location: a stuck-open shift that silently runs for days is
+// far more expensive than an end-location field left blank.
+export async function clockOut(workerId: string, loc?: PunchLocation | null): Promise<string | null> {
   const shift = await getOpenShift(workerId);
-  if (!shift) return;
+  if (!shift) return null;
   const now = new Date().toISOString();
   // Breaks belong to the shift and close with it. Project time does not:
   // clocking out of payroll is not a statement about which job was being
@@ -380,6 +384,19 @@ export async function clockOut(workerId: string, loc?: PunchLocation | null): Pr
     end_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
     status: "submitted",
     updated_at: now,
+  });
+  return shift.id;
+}
+
+// Best-effort follow-up: attach GPS to a shift that was already closed
+// without it. Scoped to the shift's own worker so one worker's clock-out can
+// never stamp a location onto someone else's shift.
+export async function recordShiftEndLocation(workerId: string, shiftId: string, loc: PunchLocation): Promise<void> {
+  await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}&worker_id=eq.${workerId}`, {
+    end_lat: loc.lat,
+    end_lng: loc.lng,
+    end_accuracy_m: loc.accuracy ?? null,
+    end_location_status: loc.status ?? "unknown",
   });
 }
 

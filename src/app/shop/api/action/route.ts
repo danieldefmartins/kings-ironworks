@@ -8,6 +8,7 @@ import {
   STAGES,
   clockIn,
   clockOut,
+  recordShiftEndLocation,
   recordShiftLocation,
   startBreak,
   endBreak,
@@ -56,6 +57,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
+    // Only shift_stop populates this — it hands back the closed shift's id so
+    // the client can attach GPS in a follow-up call without clocking out ever
+    // waiting on location.
+    let result: Record<string, unknown> | undefined;
 
     switch (type) {
       // Cut list: cycle/clear a member's status (pending -> cut -> welded)
@@ -382,9 +387,26 @@ export async function POST(req: NextRequest) {
       }
 
       case "shift_stop": {
+        // Clocking out is the priority action here: it fires immediately with
+        // whatever location (if any) the client already had in hand, and
+        // never waits on a fresh GPS read. A stuck-open shift running for
+        // days is far more costly than a clock-out missing its coordinates.
         const loc = punchLocation(body);
-        await clockOut(worker.id, loc);
+        const shiftId = await clockOut(worker.id, loc);
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
+        result = { shiftId };
+        break;
+      }
+
+      // Best-effort follow-up sent by the client after a shift_stop, once GPS
+      // (fetched only after the clock-out already succeeded) resolves. Never
+      // required, never blocks pay — see shift_stop above.
+      case "shift_end_location": {
+        const { shiftId } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) break;
+        const loc = punchLocation(body);
+        if (!loc) break;
+        await recordShiftEndLocation(worker.id, shiftId, loc);
         break;
       }
 
@@ -677,7 +699,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Action failed" },
