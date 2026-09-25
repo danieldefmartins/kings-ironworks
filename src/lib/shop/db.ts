@@ -78,6 +78,15 @@ export function sbInsert<T>(table: string, row: unknown): Promise<T> {
     body: JSON.stringify(row),
   });
 }
+// Insert many rows, silently skipping any that hit the unique index named by
+// `onConflict`. Returns only the rows that were actually new.
+export function sbInsertIgnoreDuplicates<T>(table: string, rows: unknown[], onConflict: string): Promise<T> {
+  return rest<T>(`${table}?on_conflict=${onConflict}`, {
+    method: "POST",
+    headers: { Prefer: "resolution=ignore-duplicates,return=representation" },
+    body: JSON.stringify(rows),
+  });
+}
 export function sbUpdate<T>(
   table: string,
   query: string,

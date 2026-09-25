@@ -6,6 +6,7 @@ import {
   Clock3,
   DollarSign,
   HardHat,
+  Landmark,
   Settings,
   Users,
   type LucideIcon,
@@ -45,6 +46,14 @@ export const ADMIN_DESTS: AdminDest[] = [
     hintKey: "timeReviewHint",
     icon: Clock3,
     tone: "text-sky-400",
+  },
+  {
+    group: "money",
+    href: "/shop/admin/finance",
+    key: "admNavFinance",
+    hintKey: "admNavFinanceHint",
+    icon: Landmark,
+    tone: "text-emerald-400",
   },
   {
     group: "money",
