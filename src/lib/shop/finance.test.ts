@@ -63,8 +63,15 @@ describe("autoTag — Daniel's rules", () => {
     // Paying the Home Depot credit card is a card payment, not a purchase.
     expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306).grp).toBe("review");
   });
-  it("customer Zelle payments are revenue", () => {
+  it("money coming in is a customer payment, except our own transfers and fee reversals", () => {
     expect(autoTag("Zelle payment from ADAM S AROESTY 30937395307", 5100)).toMatchObject({ grp: "revenue" });
+    expect(autoTag("DEPOSIT ID NUMBER 449836", 132500)).toMatchObject({ grp: "revenue", category: "Customer payment" });
+    expect(autoTag("ATM CASH DEPOSIT 12/02 702 GRAND UNION BLVD SOMERVILLE MA", 2000)).toMatchObject({ grp: "revenue" });
+    expect(autoTag("Online Transfer from CHK ...1752 transaction#: 30942297120", 300)).toMatchObject({ grp: "transfer" });
+    expect(autoTag("REVERSAL: MONTHLY SERVICE FEE CLAIMID: 9", 15)).toMatchObject({ grp: "transfer" });
+  });
+  it("payments to the Chase business cards are a KIW expense", () => {
+    expect(autoTag("Payment to Chase card ending in 1289 02/12", -1939)).toMatchObject({ grp: "expense", owner: "kiw", category: "Credit card payment" });
   });
   it("Google Ads and GoHighLevel are business marketing", () => {
     expect(autoTag("GOOGLE *ADS572190759 cc@google.com CA 01/12", -500)).toMatchObject({ grp: "expense", category: "Software & marketing" });

@@ -333,14 +333,16 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     return rev(UNCATEGORIZED);
   }
 
+  // Daniel, 2026-09-25: money coming in is always a customer payment. Only
+  // moves between our own accounts and bank fee reversals are not.
   if (!out) {
     if (/reversal|refund|return/.test(d)) return { category: "Refund / reversal", grp: "transfer", owner: null };
-    if (/intuit|real time transfer recd|merch dep|bankcard|stripe|square inc/.test(d)) return { category: "Customer payment", grp: "revenue", owner: null };
-    if (/remote online deposit|mobile deposit|^online deposit|^deposit$/.test(d)) return { category: "Customer payment", grp: "revenue", owner: null };
-    return rev("Customer payment");
+    return { category: "Customer payment", grp: "revenue", owner: null };
   }
 
   if (/tavvy/.test(d)) return rev("Software & marketing");
+  // Daniel, 2026-09-25: paying the Chase business cards is a KIW expense.
+  if (/payment to chase card|chase card ending/.test(d)) return exp("Credit card payment");
   if (CARD_PAYMENT_RE.test(d) || (/orig co name/.test(d) && /home depot|citi|synchrony|comenity|barclays|amex|discover/.test(d))) return rev("Credit card payment");
   if (RESTAURANT_RE.test(d)) return rev("Meals");
   if (HOTEL_RE.test(d)) return rev("Travel");
