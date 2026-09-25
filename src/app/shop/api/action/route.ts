@@ -23,7 +23,10 @@ import {
   getOrgSettings,
   setJobArchived,
 } from "@/lib/shop/db";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
+import { getOpenShift, appendShiftEmployeeNote } from "@/lib/shop/db";
+import { lateNote, resolvePunchAt } from "@/lib/shop/punch";
+import { alertStaleShifts } from "@/lib/shop/stale-alert";
 
 export const runtime = "nodejs";
 
@@ -384,11 +387,29 @@ export async function POST(req: NextRequest) {
       // Both directions of this clock had the same failure mode: a tablet
       // that locks or backgrounds during the up-to-7s geolocation call drops
       // the fetch entirely, so clocking in silently never happens either.
+      //
+      // `clientAt` is the tap time from a phone that had to queue the punch
+      // (see punch.ts). It is honoured only inside strict bounds, every
+      // decision is audited, and a late punch is noted on the shift itself so
+      // the owner sees it at review. `punchId` makes a re-sent punch harmless.
       case "shift_start": {
         const loc = punchLocation(body);
-        const shift = await clockIn(worker.id, loc);
-        await audit("shift_clock_in", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
-        result = { shiftId: shift.id };
+        const receivedAt = Date.now();
+        const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "start" });
+        if (punch.reason === "too_old") {
+          // A queued clock-in from a previous day must not open a shift now.
+          return NextResponse.json({ error: "That clock-in is too old to record — clock in again", final: true }, { status: 409 });
+        }
+        const shift = await clockIn(worker.id, loc, punch.at);
+        const created = shift.started_at === punch.at;
+        if (created && punch.late) await appendShiftEmployeeNote(worker.id, shift.id, lateNote("in", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
+        await audit("shift_clock_in", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: {
+          locationStatus: loc?.status || "unavailable",
+          clientAt: typeof body.clientAt === "string" ? body.clientAt : null,
+          punchAt: punch.at, delaySec: Math.round(punch.delayMs / 1000), reason: punch.reason, late: punch.late,
+          punchId: typeof body.punchId === "string" ? body.punchId : null, alreadyOpen: !created,
+        } });
+        result = { shiftId: shift.id, at: shift.started_at, late: created && punch.late };
         break;
       }
 
@@ -398,9 +419,24 @@ export async function POST(req: NextRequest) {
         // never waits on a fresh GPS read. A stuck-open shift running for
         // days is far more costly than a clock-out missing its coordinates.
         const loc = punchLocation(body);
-        const shiftId = await clockOut(worker.id, loc);
-        await audit("shift_clock_out", { workerId: worker.id, entity: "shift", detail: { locationStatus: loc?.status || "unavailable" } });
-        result = { shiftId };
+        const receivedAt = Date.now();
+        const open = await getOpenShift(worker.id);
+        const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "stop", notBefore: open ? Date.parse(open.started_at) : null });
+        if (open && punch.reason === "before_start") {
+          // A queued clock-out from BEFORE this shift started belongs to a
+          // shift that has since been closed by hand. Closing today's shift
+          // with it would be wrong; refuse it and let the phone drop it.
+          return NextResponse.json({ error: "That clock-out belongs to an earlier shift that is already closed", final: true }, { status: 409 });
+        }
+        const closed = await clockOut(worker.id, loc, punch.at);
+        if (closed && punch.late) await appendShiftEmployeeNote(worker.id, closed.id, lateNote("out", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
+        await audit("shift_clock_out", { workerId: worker.id, entity: "shift", entityId: closed?.id, detail: {
+          locationStatus: loc?.status || "unavailable",
+          clientAt: typeof body.clientAt === "string" ? body.clientAt : null,
+          punchAt: punch.at, delaySec: Math.round(punch.delayMs / 1000), reason: punch.reason, late: punch.late,
+          punchId: typeof body.punchId === "string" ? body.punchId : null, nothingOpen: !closed,
+        } });
+        result = { shiftId: closed?.id ?? null, at: closed?.ended_at ?? null, late: !!closed && punch.late };
         break;
       }
 
@@ -717,6 +753,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown action" }, { status: 400 });
     }
 
+    // Opportunistic, throttled, never awaited: a missed clock-out gets a
+    // Telegram the same evening instead of surfacing as a 24h day at payroll.
+    void alertStaleShifts();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(

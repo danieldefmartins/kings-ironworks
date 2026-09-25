@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
@@ -21,6 +21,56 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
       { enableHighAccuracy: true, timeout: 6500, maximumAge: 30000 }
     );
   });
+}
+
+
+// ---- durable punch outbox (see punchNow) -----------------------------------
+type QueuedPunch = { punchId: string; type: "shift_start" | "shift_stop"; clientAt: string };
+type PunchResult =
+  | { ok: true; shiftId: string | null; at: string | null; late: boolean }
+  | { ok: false; error: string };
+const OUTBOX_KEY = "kiw-punch-outbox";
+// A punch older than this is refused by the server anyway (punch.ts); drop it
+// rather than retry forever.
+const OUTBOX_MAX_AGE_MS = 36 * 3600 * 1000;
+const inFlight = new Set<string>();
+
+function readOutbox(): QueuedPunch[] {
+  try {
+    const raw = window.localStorage.getItem(OUTBOX_KEY);
+    const v = raw ? JSON.parse(raw) : [];
+    return Array.isArray(v) ? v.filter((p) => p && typeof p.punchId === "string" && typeof p.clientAt === "string" && (p.type === "shift_start" || p.type === "shift_stop")) : [];
+  } catch { return []; }
+}
+function writeOutbox(items: QueuedPunch[]) {
+  try {
+    if (items.length) window.localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
+    else window.localStorage.removeItem(OUTBOX_KEY);
+  } catch { /* private mode / storage blocked: the punch still goes out once */ }
+}
+function removeFromOutbox(punchId: string) { writeOutbox(readOutbox().filter((p) => p.punchId !== punchId)); }
+function newPunchId(): string {
+  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+}
+
+// One attempt. Resolves with the server's answer (ok or a final 4xx); throws
+// on a network failure, timeout or 5xx so the caller can retry or keep it
+// queued. keepalive lets the request finish even if the tab is frozen the
+// instant after the tap — the pocket-the-phone case.
+async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), 12000);
+  try {
+    const res = await fetch("/shop/api/action", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: p.type, clientAt: p.clientAt, punchId: p.punchId }),
+      keepalive: true, signal: ctrl.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true, shiftId: typeof data.shiftId === "string" ? data.shiftId : null, at: typeof data.at === "string" ? data.at : null, late: !!data.late };
+    if (res.status >= 500) throw new Error(data.error || `HTTP ${res.status}`);
+    return { ok: false, error: data.error || "Could not update the clock" };
+  } finally { clearTimeout(timer); }
 }
 
 export default function ShopShell({
@@ -43,6 +93,10 @@ export default function ShopShell({
   const [error, setError] = useState("");
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const [lastPing, setLastPing] = useState<number | null>(null);
+  const [queued, setQueued] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | undefined>(undefined);
+  const flushing = useRef(false);
   const onBreak = breaks.some((b) => !b.ended_at);
 
   useEffect(() => {
@@ -103,38 +157,118 @@ export default function ShopShell({
 
   // Neither side of the payroll punch may wait on GPS: gps() can take up to
   // 7s, and a tablet that locks or backgrounds mid-request drops the fetch
-  // entirely — silently leaving a shift stuck open for hours or days (clock
-  // out) or a tap that never registered at all (clock in), with no signal to
-  // the worker that anything went wrong. This is what actually happened to
-  // several crew members. So the punch is sent bare and immediate; location,
-  // if it resolves at all, is attached afterward as a separate best-effort
-  // call that the punch itself never depends on.
-  async function punchNow(type: "shift_start" | "shift_stop", followUpType: "shift_start_location" | "shift_end_location", failMessage: string) {
-    setBusy(true); setError("");
-    try {
-      const res = await fetch("/shop/api/action", {
+  // entirely. That fix (9/17) was not enough on its own: on 9/23 and 9/24 the
+  // server log shows Kaio's phone loading shop pages at clock-out time and no
+  // punch ever arriving — the request was lost between the tap and the
+  // network, and the worker walked off believing he was clocked out.
+  //
+  // So a punch is now durable on the phone:
+  //   1. It is written to localStorage BEFORE the request is sent.
+  //   2. It is sent with keepalive (survives the tab being frozen) and
+  //      retried a few times on network failure.
+  //   3. If it still cannot leave, it stays queued and is re-sent on the next
+  //      open / when the connection returns / every 20s, carrying the ORIGINAL
+  //      tap time so pay is right even when it lands the next morning.
+  //   4. Nothing is shown as done until the server confirms; then a green
+  //      "Clocked out at 6:45 PM" toast says exactly what was recorded.
+  // Location is still attached afterward, best-effort, never blocking.
+  function attachLocation(type: "shift_start" | "shift_stop", shiftId: string) {
+    const followUpType = type === "shift_start" ? "shift_start_location" : "shift_end_location";
+    void gps().then((loc) => {
+      if (loc.locationStatus === "unavailable" || loc.lat == null || loc.lng == null) return;
+      return fetch("/shop/api/action", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify({ type: followUpType, shiftId, lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || failMessage);
+    }).catch(() => undefined);
+  }
+
+  function confirmPunch(type: "shift_start" | "shift_stop", at: string | null, late: boolean) {
+    const text = type === "shift_start"
+      ? t(lang, "punchConfirmedIn", { time: at ? fmtTime(at, lang) : "" })
+      : at ? t(lang, "punchConfirmedOut", { time: fmtTime(at, lang) }) : t(lang, "punchConfirmedOutNone");
+    setToast(late ? `${text} · ${t(lang, "punchLate")}` : text);
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+  }
+
+  // Sends every queued punch, oldest first, stopping at the first network
+  // failure (the rest would fail the same way). Safe to call often.
+  const flushOutbox = useCallback(async () => {
+    if (flushing.current) return;
+    flushing.current = true;
+    try {
+      for (const p of readOutbox()) {
+        if (inFlight.has(p.punchId)) continue;
+        if (Date.now() - Date.parse(p.clientAt) > OUTBOX_MAX_AGE_MS) { removeFromOutbox(p.punchId); continue; }
+        inFlight.add(p.punchId);
+        try {
+          const r = await sendPunch(p);
+          removeFromOutbox(p.punchId);
+          if (r.ok) {
+            confirmPunch(p.type, r.at, r.late);
+            if (r.shiftId) attachLocation(p.type, r.shiftId);
+            transition(() => router.refresh());
+          }
+        } catch {
+          break;
+        } finally {
+          inFlight.delete(p.punchId);
+        }
+      }
+    } finally {
+      flushing.current = false;
+      setQueued(readOutbox().length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang, router]);
+
+  useEffect(() => {
+    // flushOutbox() ends by publishing the queue length, so no setState here.
+    void flushOutbox();
+    const onVisible = () => { if (document.visibilityState === "visible") void flushOutbox(); };
+    const onOnline = () => void flushOutbox();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onOnline);
+    const id = window.setInterval(() => void flushOutbox(), 20000);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onOnline);
+      window.clearInterval(id);
+    };
+  }, [flushOutbox]);
+
+  async function punchNow(type: "shift_start" | "shift_stop", failMessage: string) {
+    const p: QueuedPunch = { punchId: newPunchId(), type, clientAt: new Date().toISOString() };
+    setBusy(true); setError("");
+    writeOutbox([...readOutbox(), p]);
+    setQueued(readOutbox().length);
+    inFlight.add(p.punchId);
+    try {
+      let result: PunchResult | null = null;
+      for (let attempt = 0; attempt < 3 && !result; attempt++) {
+        try { result = await sendPunch(p); }
+        catch { await new Promise((r) => window.setTimeout(r, 1500 * (attempt + 1))); }
+      }
+      if (!result) {
+        // Still on the phone. Say so, loudly, and keep the sheet open.
+        setError(t(lang, "punchQueued"));
+        return;
+      }
+      removeFromOutbox(p.punchId);
+      if (!result.ok) { setError(result.error || failMessage); return; }
+      confirmPunch(type, result.at, result.late);
       setOpen(false);
       transition(() => router.refresh());
-      const shiftId = data.shiftId;
-      if (shiftId) {
-        void gps().then((loc) => {
-          if (loc.locationStatus === "unavailable" || loc.lat == null || loc.lng == null) return;
-          return fetch("/shop/api/action", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: followUpType, shiftId, lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy }),
-          });
-        }).catch(() => undefined);
-      }
-    } catch (e) { setError(e instanceof Error ? e.message : failMessage); }
-    finally { setBusy(false); }
+      if (result.shiftId) attachLocation(type, result.shiftId);
+    } finally {
+      inFlight.delete(p.punchId);
+      setQueued(readOutbox().length);
+      setBusy(false);
+    }
   }
-  const clockIn = () => punchNow("shift_start", "shift_start_location", "Could not clock in");
-  const clockOut = () => punchNow("shift_stop", "shift_end_location", "Could not clock out");
+  const clockIn = () => punchNow("shift_start", "Could not clock in");
+  const clockOut = () => punchNow("shift_stop", "Could not clock out");
 
   if (!workerName || path === "/shop/login") return <>{children}</>;
 
@@ -157,6 +291,16 @@ export default function ShopShell({
 
   return (
     <div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">
+      {queued > 0 && (
+        <div className="fixed inset-x-0 top-0 z-[70] bg-amber-400 px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] text-center text-sm font-semibold text-black">
+          {t(lang, "punchQueuedBanner", { n: String(queued) })}
+        </div>
+      )}
+      {toast && (
+        <div role="status" className="fixed inset-x-4 top-[max(12px,env(safe-area-inset-top))] z-[70] rounded-2xl bg-emerald-500 px-4 py-3 text-center text-base font-bold text-black shadow-2xl">
+          ✓ {toast}
+        </div>
+      )}
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">
@@ -208,15 +352,15 @@ export default function ShopShell({
             </div>
             {shift && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
-            {error && <p className="mb-3 rounded-xl bg-red-950/60 p-3 text-sm text-red-300">{error}</p>}
+            {error && <p className={`mb-3 rounded-xl p-3 text-sm ${error === t(lang, "punchQueued") ? "border border-amber-500/40 bg-amber-500/10 text-amber-200" : "bg-red-950/60 text-red-300"}`}>{error}</p>}
             {!shift ? (
-              <button disabled={busy} onClick={clockIn} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockInLabel")}</button>
+              <button disabled={busy} onClick={clockIn} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockInLabel")}</button>
             ) : onBreak ? (
               <button disabled={busy} onClick={() => act("time_break_end")} className="min-h-16 w-full rounded-2xl bg-amber-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockEndBreak")}</button>
             ) : (
               <div className="space-y-2">
                 <button disabled={busy} onClick={() => act("time_break_start")} className="min-h-14 w-full rounded-2xl bg-neutral-800 font-semibold">{t(lang, "clockStartBreak")}</button>
-                <button disabled={busy} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300">{t(lang, "clockOutLabel")}</button>
+                <button disabled={busy} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300 disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockOutLabel")}</button>
               </div>
             )}
             {shift && (

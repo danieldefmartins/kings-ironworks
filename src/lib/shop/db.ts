@@ -341,11 +341,14 @@ export async function listCorrections(): Promise<TimeCorrection[]> {
 
 export async function clockIn(
   workerId: string,
-  loc?: PunchLocation | null
+  loc?: PunchLocation | null,
+  at?: string
 ): Promise<TimeShift> {
   const current = await getOpenShift(workerId);
   if (current) return current;
-  const now = new Date().toISOString();
+  // `at` is the worker's tap time when the phone queued the punch and sent it
+  // late; the route bounds it (see punch.ts) before it gets here.
+  const now = at ?? new Date().toISOString();
   const payRate = await getWorkerRate(workerId);
   const rows = await sbInsert<TimeShift[]>("kiw_shop_shifts", {
     org_id: ORG_ID,
@@ -367,10 +370,12 @@ export async function clockIn(
 // can attach GPS afterward — see recordShiftEndLocation. Clocking out must
 // never wait on location: a stuck-open shift that silently runs for days is
 // far more expensive than an end-location field left blank.
-export async function clockOut(workerId: string, loc?: PunchLocation | null): Promise<string | null> {
+export async function clockOut(workerId: string, loc?: PunchLocation | null, at?: string): Promise<TimeShift | null> {
   const shift = await getOpenShift(workerId);
   if (!shift) return null;
-  const now = new Date().toISOString();
+  // `at` is the worker's tap time for a punch the phone sent late; the route
+  // has already checked it falls inside this shift.
+  const now = at && Date.parse(at) > Date.parse(shift.started_at) ? at : new Date().toISOString();
   // Breaks belong to the shift and close with it. Project time does not:
   // clocking out of payroll is not a statement about which job was being
   // worked, and silently stopping the job clock would quietly rewrite the
@@ -383,9 +388,23 @@ export async function clockOut(workerId: string, loc?: PunchLocation | null): Pr
     end_accuracy_m: loc?.accuracy ?? null,
     end_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
     status: "submitted",
-    updated_at: now,
+    updated_at: new Date().toISOString(),
   });
-  return shift.id;
+  return { ...shift, ended_at: now, status: "submitted" };
+}
+
+// Append to a shift's employee note (the worker-side note the owner sees in
+// review). Scoped to the worker so it can never annotate someone else's shift.
+export async function appendShiftEmployeeNote(workerId: string, shiftId: string, note: string): Promise<void> {
+  const rows = await sbSelect<Pick<TimeShift, "employee_note">[]>(
+    "kiw_shop_shifts",
+    `select=employee_note&org_id=eq.${ORG_ID}&id=eq.${shiftId}&worker_id=eq.${workerId}&limit=1`
+  );
+  if (!rows.length) return;
+  const prev = rows[0].employee_note?.trim();
+  await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}&worker_id=eq.${workerId}`, {
+    employee_note: prev ? `${prev}\n${note}` : note,
+  });
 }
 
 // Best-effort follow-up: attach GPS to a shift that was already closed
