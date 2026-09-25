@@ -51,9 +51,17 @@ describe("autoTag — Daniel's rules", () => {
     expect(reviewKind({ description: "ASPIRE MASTERCARD 855-802-5572 GA", amount: -95 })).toBe("cards");
     expect(reviewKind({ description: "TST* T.G.I. FRIDAY'S", amount: -90 })).toBe("restaurants");
   });
-  it("online purchases wait for an owner decision", () => {
-    expect(autoTag("AMAZON MKTPL*ZX12 Amzn.com/bill WA", -40).grp).toBe("review");
-    expect(reviewKind({ description: "AMAZON MKTPL*ZX12 Amzn.com/bill WA", amount: -40 })).toBe("online");
+  it("online purchases wait for an owner decision, except Amazon which is supplies", () => {
+    expect(autoTag("ADOBE *CREATIVE CLOUD 408-536-6000 CA", -60).grp).toBe("review");
+    expect(reviewKind({ description: "ADOBE *CREATIVE CLOUD", amount: -60 })).toBe("online");
+    expect(autoTag("AMAZON MKTPL*ZX12 Amzn.com/bill WA", -40)).toMatchObject({ grp: "expense", owner: "kiw", category: "Supplies" });
+  });
+  it("Home Depot, Lowe's, Ace and Harbor Freight share one category", () => {
+    for (const d of ["THE HOME DEPOT #2688 - EVERETT MA", "LOWE'S #1979 SEABROOK NH", "ACE HARDWARE MALDEN MA", "HARBOR FREIGHT TOOLS U MEDFORD MA"]) {
+      expect(autoTag(d, -50)).toMatchObject({ grp: "expense", category: "Home Depot & hardware stores" });
+    }
+    // Paying the Home Depot credit card is a card payment, not a purchase.
+    expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306).grp).toBe("review");
   });
   it("customer Zelle payments are revenue", () => {
     expect(autoTag("Zelle payment from ADAM S AROESTY 30937395307", 5100)).toMatchObject({ grp: "revenue" });

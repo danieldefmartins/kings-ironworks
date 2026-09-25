@@ -55,6 +55,8 @@ export const OWNER_LABEL: Record<FinOwner, string> = { kiw: "KIW", daniel: "Dani
 
 export const EXPENSE_CATEGORIES = [
   "Materials & steel",
+  "Home Depot & hardware stores",
+  "Supplies",
   "Labor & subcontractors",
   "Tools & equipment",
   "Shop supplies & gas",
@@ -344,8 +346,11 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (HOTEL_RE.test(d)) return rev("Travel");
 
   if (/google \*ads|highlevel|gohighlevel/.test(d)) return exp("Software & marketing");
-  if (/\bsteel\b|architectural iron|metal|boulter plywood|db national|home depot|lowe'?s|ace hardware|fastenal|grainger/.test(d)) return exp("Materials & steel");
-  if (/harbor freight|tractor supply|northern tool/.test(d)) return exp("Tools & equipment");
+  // Daniel, 2026-09-25: Home Depot, Lowe's, Ace and Harbor Freight are one category; Amazon is supplies.
+  if (/home depot|lowe'?s|ace hardware|ace hdw|harbor freight/.test(d)) return exp("Home Depot & hardware stores");
+  if (/amazon|amzn/.test(d)) return exp("Supplies");
+  if (/\bsteel\b|architectural iron|metal|boulter plywood|db national|fastenal|grainger/.test(d)) return exp("Materials & steel");
+  if (/tractor supply|northern tool/.test(d)) return exp("Tools & equipment");
   if (/middlesex gases|airgas|welding/.test(d)) return exp("Shop supplies & gas");
   if (/magna finance|hartford|thrust insurance|geico|progressive|liberty mutual/.test(d)) return exp("Insurance");
   if (/dept of rev|\bdor\b|mass dor|irs\b|secretary of state|town of|city of/.test(d)) return exp("Taxes & licenses");
