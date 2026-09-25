@@ -24,6 +24,9 @@ export default async function InventoryPage() {
     const cur = bestBy.get(p.catalog_id);
     if (!cur || (p.preferred && !cur.preferred)) bestBy.set(p.catalog_id, p);
   }
+  // Material costs are owner-only. Crew still get the supplier, link and pack
+  // size so they can order, but no price ever reaches their device.
+  if (!owner) for (const [k, p] of bestBy) bestBy.set(k, { ...p, pack_price: null, unit_price: null, notes: null });
   const byId = new Map(catalog.map((c) => [c.id, c]));
   // Only rows whose catalog item still exists and is active — a retired SKU
   // should drop off the count rather than linger as a mystery line.

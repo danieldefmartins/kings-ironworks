@@ -51,7 +51,35 @@ export function redactJobMoney<T extends Pick<Job, "contract_amount" | "deposit_
   canSeeMoney: boolean,
 ): T {
   if (canSeeMoney) return job;
-  return { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null, subcontractor_amount_paid: null, subcontractor_split_pct: null, subcontractor_paid_on: null, subcontractor_notes: null };
+  const out: T = { ...job, contract_amount: null, deposit_amount: null, deposit_note: null, deposit_received_on: null, subcontractor_amount_paid: null, subcontractor_split_pct: null, subcontractor_paid_on: null, subcontractor_notes: null };
+  // Free text is written by the office and often carries prices ("Price is
+  // FIRM at $14,500", "staircase @ $3,000"). Crew never see job notes, so drop
+  // them; scope is the fabrication description crew need, so keep the work and
+  // remove the money.
+  const rec = out as unknown as Record<string, unknown>;
+  if ("notes" in rec) rec.notes = null;
+  if (typeof rec.scope === "string") rec.scope = scrubMoneyText(rec.scope);
+  return out;
+}
+
+const MONEY_SENTENCE = /\b(deposit|balance|payments?|paid|owed|price[ds]?|pricing|contract|invoice[ds]?|discount(ed)?|refund|collected|received|lump sum|sales tax|50\/50|per cent|percent)\b|\d+\s?%/i;
+const MONEY_AMOUNT = /\s*@\s*\$\s?[\d,]+(?:\.\d+)?|\s*\(\s*\$\s?[\d,]+(?:\.\d+)?[^)]*\)|\$\s?[\d,]+(?:\.\d+)?k?(?:\s*(?:each|ea\.?|per \w+|\/\w+))?/gi;
+
+/** Remove prices from office-written text so it is safe to show the crew. */
+export function scrubMoneyText(text: string): string {
+  return text
+    .split("\n")
+    .map((line) =>
+      line
+        .split(/(?<=[.;!?])\s+/)
+        .filter((sentence) => !(MONEY_SENTENCE.test(sentence) && /\$|\d/.test(sentence)))
+        .map((sentence) => sentence.replace(MONEY_AMOUNT, "").replace(/\s+([,;.])/g, "$1").replace(/ {2,}/g, " "))
+        .join(" ")
+        .trimEnd()
+    )
+    .filter((line, i, all) => line.trim() !== "" || (i > 0 && all[i - 1].trim() !== ""))
+    .join("\n")
+    .trim();
 }
 
 // Photo categories the shop can pin an image to. "Installation — Location N"
