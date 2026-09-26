@@ -69,6 +69,7 @@ export const EXPENSE_CATEGORIES = [
   "Commissions",
   "Management & marketing (Daniel)",
   "Software & marketing",
+  "Overseas marketing",
   "Meals",
   "Travel",
   "Bank & card fees",
@@ -259,6 +260,8 @@ const ZELLE_EXPENSE: Record<string, string> = {
   "miguel rodrigues": "Labor & subcontractors", leticia: "Labor & subcontractors",
   "ananias de lima": "Labor & subcontractors", "mayra santiago s": "Labor & subcontractors",
   "joelio xavierdearagao": "Labor & subcontractors", // electrician (Daniel, 2026-09-25)
+  // Former workers, not on the current payroll list (Daniel, 2026-09-25).
+  "valteir king iron group": "Labor & subcontractors", "samuel soldador": "Labor & subcontractors",
   "grace rent office": "Rent & utilities", "jorge silva family church": "Rent & utilities", cleaning: "Rent & utilities",
   "kevin ribeiro arquiteto amigo ma": "Professional services", "davi lazzaroto": "Professional services",
   "what to wear inc": "Professional services",
@@ -328,6 +331,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     if (/village|laester/.test(name)) return own("reginaldo", "Investment");
     if (LAWYER_RE.test(name)) return own("reginaldo", "Attorney");
     if (ZELLE_EXPENSE[name]) return exp(ZELLE_EXPENSE[name]);
+    if (/\b(valteir|samuel|alessandra|alexandra|teo)\b/.test(name)) return exp("Labor & subcontractors");
     if (ZELLE_OWNER[name]) return own(ZELLE_OWNER[name][0], ZELLE_OWNER[name][1]);
     return rev("Labor & subcontractors");
   }
@@ -374,6 +378,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (HOTEL_RE.test(d)) return rev("Travel");
 
   if (/google \*ads|highlevel|gohighlevel/.test(d)) return exp("Software & marketing");
+  // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
+  if (/wuvisaaft|western union/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
   if (/united rentals|u-?haul|sunbelt rentals|herc rentals|tool rental|penske|ryder truck|budget truck|nes rentals|equipment rental/.test(d)) return exp("Equipment & truck rental");
   // Daniel, 2026-09-25: Home Depot, Lowe's, Ace and Harbor Freight are one category; Amazon is supplies.

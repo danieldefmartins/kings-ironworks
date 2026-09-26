@@ -120,6 +120,12 @@ describe("Daniel's rules, round 2", () => {
     expect(autoTag("Zelle payment to Aparecido Ramos. Village JPM99", -790)).toMatchObject({ owner: "reginaldo", category: "Investment" });
     expect(autoTag("TST* VILLAGE BAR & GRIL EVERETT MA 09/11", -60).grp).toBe("review");
   });
+  it("former workers are KIW labor and Western Union is overseas marketing", () => {
+    expect(autoTag("Zelle payment to Valteir King iron Group JPM99bo9d50u", -600)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
+    expect(autoTag("Zelle payment to Samuel Soldador JPM99cobyofs", -900)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
+    expect(autoTag("Zelle payment to Teo Santos JPM99", -900)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
+    expect(autoTag("WUVISAAFT 800-325-6000 CO 09/23 (...9016)", -455.99)).toMatchObject({ grp: "expense", owner: "kiw", category: "Overseas marketing" });
+  });
   it("equipment and truck rentals are KIW, and United Rentals is not United Airlines", () => {
     expect(autoTag("UNITED RENTALS 617-387-9545 MA 08/08", -1360.42)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
     expect(autoTag("U-HAUL CENTER MALDEN 800-789-3638 MA 09/19", -159.95)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
