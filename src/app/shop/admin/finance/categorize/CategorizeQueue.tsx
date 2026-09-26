@@ -1,11 +1,11 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
-import { EXPENSE_CATEGORIES, UNCATEGORIZED } from "@/lib/shop/finance";
+import { EXPENSE_CATEGORIES, NEEDS_CATEGORY } from "@/lib/shop/finance";
 import { L, shortDate, usd } from "../ui";
 
 export type CatItem = { id: string; account: string; posted_on: string; description: string; amount: number; vendor: string };
 
-const CHOICES = EXPENSE_CATEGORIES.filter((c) => c !== UNCATEGORIZED);
+const CHOICES = EXPENSE_CATEGORIES.filter((c) => !(NEEDS_CATEGORY as readonly string[]).includes(c));
 
 function Row({ t, lang, sameVendor, onSaved }: { t: CatItem; lang: string; sameVendor: number; onSaved: (whole: boolean) => void }) {
   const [busy, setBusy] = useState(false);

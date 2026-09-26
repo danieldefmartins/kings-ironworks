@@ -76,8 +76,13 @@ export const EXPENSE_CATEGORIES = [
   "Loan & financing",
   "Credit card payment",
   "Office & other",
+  "Check",
   "Uncategorized",
 ] as const;
+/** Checks are KIW expenses whose category is filled in later (Daniel, 2026-09-25). */
+export const CHECK_CATEGORY = "Check";
+/** Categories that still need an owner to pick the real category ("Add category" tab). */
+export const NEEDS_CATEGORY = ["Uncategorized", "Check"] as const;
 /** Business expense whose category is not known yet — shows in the "Add category" tab. */
 export const UNCATEGORIZED = "Uncategorized";
 
@@ -95,6 +100,7 @@ export const OWNER_CATEGORIES = [
   "Attorney",
   "Kids' school",
   "Personal taxes",
+  "Loan payment",
   "Haircut",
   "Transfer to personal account",
   "PayPal",
@@ -327,6 +333,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     }
     // Daniel, 2026-09-25: anything to Gabriela Satiro, and any lawyer, is Kayky's (Reginaldo) personal.
     if (/satiro/.test(name)) return own("reginaldo", "Personal (other)");
+    // Daniel, 2026-09-25: Erika Chelsey is Daniel's personal loan payment.
+    if (/erika chelsey/.test(name)) return own("daniel", "Loan payment");
     // Daniel, 2026-09-25: Village / Laester payments are Kayky's personal investment.
     if (/village|laester/.test(name)) return own("reginaldo", "Investment");
     if (LAWYER_RE.test(name)) return own("reginaldo", "Attorney");
@@ -356,7 +364,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (chk) {
     const k = KNOWN_CHECKS[chk[1]];
     if (k) return k[0] === "owner" ? own(k[1] as FinOwner, k[2]) : exp(k[2]);
-    return rev(UNCATEGORIZED);
+    return exp(CHECK_CATEGORY);
   }
 
   // Daniel, 2026-09-25: money coming in is always a customer payment. Only
@@ -371,6 +379,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/tavvy/.test(d)) return rev("Software & marketing");
   // Weekly loan payments to Direct Merchants (plus its daily collection debit).
   if (/dirct mer col|direct merch/.test(d)) return exp("Loan & financing");
+  // Daniel, 2026-09-25: the Home Depot credit card only buys KIW supplies.
+  if (/orig co name:\s*home depot/.test(d)) return exp("Home Depot & hardware stores");
   // Daniel, 2026-09-25: paying the Chase business cards is a KIW expense.
   if (/payment to chase card|chase card ending/.test(d)) return exp("Credit card payment");
   if (CARD_PAYMENT_RE.test(d) || (/orig co name/.test(d) && /home depot|citi|synchrony|comenity|barclays|amex|discover/.test(d))) return rev("Credit card payment");

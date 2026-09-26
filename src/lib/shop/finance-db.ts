@@ -148,7 +148,7 @@ export async function getFinTransaction(id: string): Promise<FinTx | null> {
 
 /** Business expenses that still need a category ("Add category" tab). */
 export function listNeedsCategory(): Promise<FinTx[]> {
-  return pages(`&grp=eq.expense&category=eq.Uncategorized`, "posted_on.desc,id.asc");
+  return pages(`&grp=eq.expense&category=in.(Uncategorized,Check)`, "posted_on.desc,id.asc");
 }
 
 async function countWhere(filter: string): Promise<number> {
@@ -163,7 +163,7 @@ async function countWhere(filter: string): Promise<number> {
 
 /** Badge counts for the finance tabs. */
 export async function financeCounts(): Promise<{ review: number; uncategorized: number }> {
-  const [review, uncategorized] = await Promise.all([countWhere("&grp=eq.review"), countWhere("&grp=eq.expense&category=eq.Uncategorized")]);
+  const [review, uncategorized] = await Promise.all([countWhere("&grp=eq.review"), countWhere("&grp=eq.expense&category=in.(Uncategorized,Check)")]);
   return { review, uncategorized };
 }
 

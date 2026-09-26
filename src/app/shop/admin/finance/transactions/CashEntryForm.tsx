@@ -51,7 +51,7 @@ export default function CashEntryForm({ lang, today }: { lang: string; today: st
   const whoOptions: [Who, string][] = direction === "out"
     ? [["kiw", "KIW"], ...(danielOk ? [["daniel", "Daniel"] as [Who, string]] : []), ["reginaldo", "Reginaldo"]]
     : [["customer", L(lang, "Customer payment", "Pagamento de cliente", "Pago de cliente")], ...(danielOk ? [["daniel", L(lang, "Daniel put in", "Daniel colocou", "Daniel aportó")] as [Who, string]] : []), ["reginaldo", L(lang, "Reginaldo put in", "Reginaldo colocou", "Reginaldo aportó")]];
-  const cats = who === "kiw" ? EXPENSE_CATEGORIES.filter((c) => c !== UNCATEGORIZED) : OWNER_CATEGORIES;
+  const cats = who === "kiw" ? EXPENSE_CATEGORIES.filter((c) => c !== UNCATEGORIZED && c !== "Check") : OWNER_CATEGORIES;
 
   if (!open) return (
     <button onClick={() => setOpen(true)} className="min-h-11 rounded-xl border border-amber-500/40 px-4 text-sm font-semibold text-amber-300">

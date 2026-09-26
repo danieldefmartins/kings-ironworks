@@ -60,8 +60,8 @@ describe("autoTag — Daniel's rules", () => {
     for (const d of ["THE HOME DEPOT #2688 - EVERETT MA", "LOWE'S #1979 SEABROOK NH", "ACE HARDWARE MALDEN MA", "HARBOR FREIGHT TOOLS U MEDFORD MA"]) {
       expect(autoTag(d, -50)).toMatchObject({ grp: "expense", category: "Home Depot & hardware stores" });
     }
-    // Paying the Home Depot credit card is a card payment, not a purchase.
-    expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306).grp).toBe("review");
+    // Paying the Home Depot credit card is KIW too (Daniel, 2026-09-25).
+    expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306).grp).toBe("expense");
   });
   it("money coming in is a customer payment, except our own transfers and fee reversals", () => {
     expect(autoTag("Zelle payment from ADAM S AROESTY 30937395307", 5100)).toMatchObject({ grp: "revenue" });
@@ -78,7 +78,7 @@ describe("autoTag — Daniel's rules", () => {
     expect(autoTag("HIGHLEVEL AGENCY SUB GOHIGHLEVEL.C TX 05/28", -97)).toMatchObject({ grp: "expense" });
   });
   it("business expenses with an unknown kind land in Uncategorized, not a guess", () => {
-    expect(autoTag("CHECK 149", -4000)).toMatchObject({ grp: "review", category: "Uncategorized" });
+    expect(autoTag("CHECK 149", -4000)).toMatchObject({ grp: "expense", owner: "kiw", category: "Check" });
   });
   it("steel suppliers are business materials", () => {
     expect(autoTag("GRANT STEEL 781-767-0505 MA 06/12", -1420)).toMatchObject({ grp: "expense", category: "Materials & steel" });
@@ -92,7 +92,7 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("Zelle payment to TIAGO ALVES DE SENA JPM99cxi7vt0", -2371.93, [], "2026-09-23", workers)).toMatchObject({ grp: "expense", owner: "kiw", category: "Labor & subcontractors" });
     expect(tagTransaction("Zelle payment to ANDREADERSON ROCHA DE ALMEIDA JPM99cxi6hyo", -1327.08, [], "2026-09-23", workers).grp).toBe("expense");
     expect(tagTransaction("Zelle payment to Jairo Abenoado JPM99", -500, [], "2026-09-21", workers).grp).toBe("expense");
-    expect(tagTransaction("Zelle payment to Erika Chelsey 29862009331", -500, [], "2026-09-02", workers).grp).toBe("review");
+    expect(tagTransaction("Zelle payment to Neto Contractor JPM99", -500, [], "2026-07-03", workers).grp).toBe("review");
   });
   it("Zelle straight to Daniel or Kayky is personal; Aline's are Daniel's", () => {
     expect(tagTransaction("Zelle payment to Daniel De Freitas Martins JPM99cxibscm", -200, [], "2026-09-23")).toMatchObject({ grp: "owner", owner: "daniel" });
@@ -125,6 +125,10 @@ describe("Daniel's rules, round 2", () => {
     expect(autoTag("Zelle payment to Samuel Soldador JPM99cobyofs", -900)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
     expect(autoTag("Zelle payment to Teo Santos JPM99", -900)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
     expect(autoTag("WUVISAAFT 800-325-6000 CO 09/23 (...9016)", -455.99)).toMatchObject({ grp: "expense", owner: "kiw", category: "Overseas marketing" });
+  });
+  it("Erika Chelsey is Daniel's loan payment; the Home Depot card is KIW", () => {
+    expect(tagTransaction("Zelle payment to Erika Chelsey 29862009331", -500, [], "2026-07-02")).toMatchObject({ grp: "owner", owner: "daniel", category: "Loan payment" });
+    expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306)).toMatchObject({ grp: "expense", owner: "kiw", category: "Home Depot & hardware stores" });
   });
   it("equipment and truck rentals are KIW, and United Rentals is not United Airlines", () => {
     expect(autoTag("UNITED RENTALS 617-387-9545 MA 08/08", -1360.42)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
