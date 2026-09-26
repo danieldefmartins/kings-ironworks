@@ -401,6 +401,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
 
   // Daniel, 2026-09-25: everything Google is KIW marketing; GoHighLevel is the marketing CRM.
   if (/google|highlevel|gohighlevel/.test(d)) return exp("Marketing");
+  // Daniel, 2026-09-25: Railway, Supabase, GoDaddy, Anthropic/Claude, Apple and Manus are KIW marketing.
+  if (/railway|supabase|godaddy|anthropic|claude\.ai|apple\.com|apple store|itunes|manus ai|\bmanus\b/.test(d) && !/cinema/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
   if (/wuvisaaft|western union|wu digital/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
@@ -488,6 +490,11 @@ export function tagTransaction(description: string, amount: number, rules: FinRu
   else if (direction === "out" && vendor.startsWith("zelle to ") && isPayrollWorker(vendor.slice(9), workerNames))
     tag = { category: "Labor & subcontractors", grp: "expense", owner: "kiw", tag_source: "auto", rule_id: null };
   else tag = { ...(postedOn ? applyHistory(autoTag(description, amount), description, amount, postedOn) : autoTag(description, amount)), tag_source: "auto", rule_id: null };
+  // Daniel, 2026-09-25: anything carrying ALINE MARTINS is Daniel's personal spending.
+  if (direction === "out" && /aline martins/i.test(description) && !(tag.grp === "owner" && tag.owner === "daniel")) {
+    tag = { ...tag, grp: "owner", owner: "daniel", rule_id: null, tag_source: "auto",
+      category: /card|mission lane|credit|discover|mastercard|capital one/i.test(description) ? "Credit card" : "Personal (other)" };
+  }
   if (tag.owner === "daniel" && !canBeDaniel(postedOn)) {
     tag = DANIEL_PAYEE.test(vendor) ? { ...tag, grp: "expense", owner: "kiw", category: "Management & marketing (Daniel)" } : { ...tag, owner: "reginaldo" };
   }

@@ -154,6 +154,16 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 07/01", -389, [], "2026-07-01")).toMatchObject({ owner: "reginaldo", category: "Gym" });
     expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 05/01", -649, [], "2026-05-01")).toMatchObject({ owner: "reginaldo" });
   });
+  it("Railway, Supabase, GoDaddy, Anthropic, Apple and Manus are marketing — not Apple Cinemas", () => {
+    for (const d of ["RAILWAY RAILWAY.COM CA 03/26", "SUPABASE PRO SUPABASE.COM", "DNH*GODADDY 480-505-8855 AZ 03/31", "ANTHROPIC ANTHROPIC.COM CA 04/25", "CLAUDE.AI SUBSCRIPTI ANTHROPIC.COM CA 04/07", "APPLE.COM/BILL 866-712-7753 CA 09/24", "MANUS AI SINGAPORE 02/18"]) {
+      expect(autoTag(d, -20)).toMatchObject({ grp: "expense", category: "Marketing" });
+    }
+    expect(autoTag("APPLE CINEMAS - HOOKSET HOOKSETT NH 05/11", -30).category).not.toBe("Marketing");
+  });
+  it("anything carrying ALINE MARTINS is Daniel's", () => {
+    expect(tagTransaction("ORIG CO NAME:WELLS FARGO CARD ORIG ID:3411650794 IND NAME:ALINE MARTINS", -110, [], "2026-05-18")).toMatchObject({ grp: "owner", owner: "daniel", category: "Credit card" });
+    expect(tagTransaction("ORIG CO NAME:T-MOBILE TEL ORIG ID:0000450304 IND NAME:ALINE MARTINS", -267.62, [], "2026-08-24")).toMatchObject({ grp: "owner", owner: "daniel" });
+  });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
     expect(autoTag("ORIG CO NAME:EVOLUTION TAX SE ORIG ID:1800948598 DESC DATE:", -460)).toMatchObject({ grp: "expense", category: "Professional services" });
