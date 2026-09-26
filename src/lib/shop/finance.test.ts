@@ -152,6 +152,7 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("LTFITNESS PRODUCT/SVC 888-284-0048 MN 06/03", -649, [], "2026-06-03")).toMatchObject({ grp: "owner", owner: "daniel", category: "Gym" });
     expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 07/01", -679, [], "2026-07-01")).toMatchObject({ owner: "daniel" });
     expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 07/01", -389, [], "2026-07-01")).toMatchObject({ owner: "reginaldo", category: "Gym" });
+    expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 05/01", -649, [], "2026-05-01")).toMatchObject({ owner: "reginaldo" });
   });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });

@@ -454,6 +454,8 @@ function applyHistory(tag: Omit<FinTag, "tag_source" | "rule_id">, description: 
     return { category: "Restaurants", grp: "owner" as const, owner: "reginaldo" as const };
   if (tag.grp === "review" && kind === "hotels" && postedOn < "2026-07-01")
     return postedOn < DANIEL_START ? { category: "Travel", grp: "expense" as const, owner: "kiw" as const } : { category: "Travel / hotels", grp: "owner" as const, owner: "reginaldo" as const };
+  // Daniel joined Life Time in June 2026; earlier gym charges are Kayky's (Reginaldo).
+  if (tag.category === "Gym" && tag.owner === "daniel" && postedOn < "2026-06-01") return { ...tag, owner: "reginaldo" as const };
   if (tag.category === "Haircut" && postedOn >= "2026-05-01") return { category: "Haircut", grp: "review" as const, owner: null };
   if (tag.grp === "review" && postedOn < DANIEL_START && PERSONAL_RE.test(d))
     return { category: "Personal (other)", grp: "owner" as const, owner: "reginaldo" as const };
