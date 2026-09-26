@@ -308,6 +308,9 @@ export const HOTEL_RE = /priceln|staybridge|expedia|booking\.com|marriott|hilton
 export const CARD_PAYMENT_RE = /payment to chase card|chase card ending|aspire mastercard|applecard|capital one.*pymt|amex epayment|discover e-payment|citi (card|autopay)|synchrony|cardmember/i;
 export const ONLINE_RE = /amazon|amzn|walmart|wal-mart|target|staples|nutrafol|adobe|facebk|facebook|godaddy|spotify|google (?!\*workspace)|openai|anthropic|claude\.ai|canva|mailchimp|hostinger|squarespace|wix|namecheap|apple\.com|experian|netflix|hulu|paramount|disney|youtube|ebay|etsy|temu|shein|best buy|homegoods|tj ?maxx|marshalls|ross stores/i;
 
+// Clearly personal purchases (clothing, gym, pharmacy, entertainment, beauty).
+const PERSONAL_RE = /zara|macy|tj ?maxx|marshalls|burlington|gap us|aldo|express#|tnf |north face|sunglass|nordstrom|ross stores|life ?time|ltf\*|ltfitness|planet fitness|cvs|walgreens|nutrafol|cinema|amc |netflix|spotify|hulu|disney|luxury boxx|salon|spa |nails|barber/i;
+
 const LAWYER_RE = /attorney|lawyer|law office|law firm|law group|\besq\b|legal (services|group|aid)|advogad|silva braga|braga & scherr|scherr|margarida|\bbraga\b/i;
 
 const rev = (category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "review", owner: null });
@@ -361,6 +364,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/capital one|capitalone|\bcof\b/.test(d)) return own("daniel", "Car");
   if (/sparrow card/.test(d)) return own("daniel", "Credit card");
   if (/paypal/.test(d) && out) return own("reginaldo", "PayPal");
+  if (/thousand trails/.test(d)) return own("daniel", "Personal (other)");
+  if (/golden money|gmt-brazu|brazuka/.test(d) && out) return own("reginaldo", "Personal (other)");
   if (/venmo/.test(d) && /rodrigues regi/.test(d) && !out) return own("reginaldo", "Owner money in");
 
   const chk = d.match(/^check\s*#?\s*(\d+)/);
@@ -393,11 +398,21 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   // Daniel, 2026-09-25: everything Google is KIW marketing; GoHighLevel is the marketing CRM.
   if (/google|highlevel|gohighlevel/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
-  if (/wuvisaaft|western union/.test(d)) return exp("Overseas marketing");
+  if (/wuvisaaft|western union|wu digital/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
   if (/united rentals|u-?haul|sunbelt rentals|herc rentals|tool rental|penske|ryder truck|budget truck|nes rentals|equipment rental/.test(d)) return exp("Equipment & truck rental");
+  // Daniel, 2026-09-25 — named KIW: Home Decor, McNichols, Regus, any printing, Target, Costco.
+  if (/mcnichols|home decor|new england building|northeastern fence|king architectural|buyrailings|anderson mcquaid|unihydro|metals? (depot|supermarket)|online metals/.test(d)) return exp("Materials & steel");
+  if (/regus|iwgplc/.test(d)) return exp("Rent & utilities");
+  if (/print/.test(d)) return exp("Marketing");
+  if (/target|costco|wal-?mart|wm supercenter|bj'?s wholesale|sam'?s club|staples|office depot/.test(d)) return exp("Supplies");
+  if (/comcast|xfinity|national grid|eversource|verizon|t-mobile|at&t|starlink|disposal/.test(d)) return exp("Rent & utilities");
+  if (/sec of ma|sec of state|secretary of (the )?commonwealth|secretary of state/.test(d)) return exp("Taxes & licenses");
+  if (/kelley & ryan/.test(d)) return exp("Insurance");
+  if (/coreldraw|autodesk|sketchup/.test(d)) return exp("Software & subscriptions");
+  if (/petrola|nouria|mobil|gulf|sunoco|citgo|irving|speedway|marathon|valero|exxon|\bshell\b|cumberland farms/.test(d)) return exp("Vehicles & fuel");
   // Daniel, 2026-09-25: Home Depot, Lowe's, Ace and Harbor Freight are one category; Amazon is supplies.
-  if (/home depot|lowe'?s|ace hardware|ace hdw|harbor freight/.test(d)) return exp("Home Depot & hardware stores");
+  if (/home ?depot|lowe'?s|ace hardware|ace hdw|harbor freight/.test(d)) return exp("Home Depot & hardware stores");
   if (/amazon|amzn/.test(d)) return exp("Supplies");
   if (/\bsteel\b|architectural iron|metal|boulter plywood|db national|fastenal|grainger/.test(d)) return exp("Materials & steel");
   if (/tractor supply|northern tool/.test(d)) return exp("Tools & equipment");
@@ -408,7 +423,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/monthly service fee|overdraft|service charge|atm fee|nsf|returned item|quickbooks payments|intuit/.test(d)) return exp("Bank & card fees");
   if (/ipostal/.test(d)) return exp("Office & other");
   if (/speedway|gulf |shell |mobil|exxon|sunoco| bp |citgo|chevron|valero|irving|cumberland farms|\bgas\b/.test(d)) return exp("Vehicles & fuel");
-  if (/car wash|sparkling image|autozone|o.?reilly|jiffy|ez ?pass|toll|parking|rmv|registry/.test(d)) return exp("Vehicles & fuel");
+  if (/car ?wash|sparkling image|autozone|o.?reilly|jiffy|e-?z ?pass|toll|parking|rmv|registry|vioc|valvoline|auto glass|auto tire|tire repai|midas|meineke/.test(d)) return exp("Vehicles & fuel");
 
   if (ONLINE_RE.test(d)) return rev(/adobe|facebk|facebook|godaddy|google|openai|anthropic|canva|mailchimp|hostinger|squarespace|wix|namecheap|experian/.test(d) ? "Software & subscriptions" : UNCATEGORIZED);
   if (/stop & shop|market basket|costco|dollar general|whole foods|trader joe/.test(d)) return rev(UNCATEGORIZED);
@@ -436,6 +451,8 @@ function applyHistory(tag: Omit<FinTag, "tag_source" | "rule_id">, description: 
   if (tag.grp === "review" && kind === "hotels" && postedOn < "2026-07-01")
     return postedOn < DANIEL_START ? { category: "Travel", grp: "expense" as const, owner: "kiw" as const } : { category: "Travel / hotels", grp: "owner" as const, owner: "reginaldo" as const };
   if (tag.category === "Haircut" && postedOn >= "2026-05-01") return { category: "Haircut", grp: "review" as const, owner: null };
+  if (tag.grp === "review" && postedOn < DANIEL_START && PERSONAL_RE.test(d))
+    return { category: "Personal (other)", grp: "owner" as const, owner: "reginaldo" as const };
   return tag;
 }
 

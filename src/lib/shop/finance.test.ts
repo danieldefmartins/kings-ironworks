@@ -136,6 +136,18 @@ describe("Daniel's rules, round 2", () => {
     }
     expect(tagTransaction("Zelle payment to Neto Contractor JPM99", -500, [], "2026-07-03")).toMatchObject({ grp: "owner", owner: "daniel" });
   });
+  it("common sense: obvious business merchants are KIW", () => {
+    const kiw = ["MCNICHOLS COMPANY 800-367-5817 FL 03/27", "HOME DECOR GROUP-LYNN LYNN MA 03/09", "Regus Management Group iwgplc.com TX 08/24",
+      "CUCKOO PRINTING SIGNS EVERETT MA 09/12", "TARGET 00023259 HAVERHILL MA 05/02", "COSTCO WHSE #0301 DANVERS MA 05/03",
+      "HOMEDEPOT.COM 800-430-3376 GA 09/29", "E-ZPass MA 877-6277745 MA 01/06", "CARWASHCLUB 833-363-67 844-3504359 MA 03/05",
+      "COMCAST / XFINITY 800-266-2278 NH 02/17", "SEC OF MA EXPEDITED FE 617-7279640 VA 04/28", "NOURIA STORE 104 SAGAMORE BEAC MA", "WU DIGITAL USA AFT 8003256000 CA 04/30"];
+    for (const d of kiw) expect(autoTag(d, -100)).toMatchObject({ grp: "expense", owner: "kiw" });
+  });
+  it("Thousand Trails is Daniel's; clearly personal buys before March are Reginaldo's", () => {
+    expect(tagTransaction("THOUSAND TRAILS DUES 480-998-7585 IL 05/06", -321, [], "2026-05-06")).toMatchObject({ grp: "owner", owner: "daniel" });
+    expect(tagTransaction("ZARA 16548 CAMBRIDGE MA 01/08", -300, [], "2026-01-08")).toMatchObject({ grp: "owner", owner: "reginaldo" });
+    expect(tagTransaction("ZARA 16548 CAMBRIDGE MA 05/08", -300, [], "2026-05-08").grp).toBe("review");
+  });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
     expect(autoTag("ORIG CO NAME:EVOLUTION TAX SE ORIG ID:1800948598 DESC DATE:", -460)).toMatchObject({ grp: "expense", category: "Professional services" });
