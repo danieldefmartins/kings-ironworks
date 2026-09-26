@@ -304,15 +304,15 @@ const KNOWN_CHECKS: Record<string, [FinGroup, FinOwner | null, string]> = {
 // accounts (HIGH SCHOOL CHECKING, PREMIER PLUS CKG, PLAT BUS CHECKING). Daniel, 2026-09-25.
 const REGINALDO_ACCOUNTS = new Set(["8706", "1487", "7961"]);
 
-export const RESTAURANT_RE = /\btst\*|toast|restaurant|popeye|dryft|mineirao|comida|doordash|uber ?eats|grubhub|dunkin|starbucks|mcdonald|chipotle|pizza|lanche|padaria|bakery|bakeh|coffee|cafe|grill|steakhouse|sushi|taco|burger|panera|santanas|romeu|mooyah|friday|temazcal|wendy|subway|chick-fil|kfc|diner|bistro|kitchen/i;
+export const RESTAURANT_RE = /\btst\*|toast|restaurant|popeye|dryft|mineirao|comida|doordash|uber ?eats|grubhub|dunkin|starbucks|mcdonald|chipotle|pizza|lanche|padaria|bakery|bakeh|coffee|cafe|grill|steakhouse|sushi|taco|burger|panera|santanas|romeu|mooyah|friday|temazcal|wendy|subway|chick-fil|kfc|diner|bistro|kitchen|cheesecake|roast beef|domino|\bcava\b|shake shack|raising cane|five guys|5guys|sweetgreen|texas roadhouse|applebee|chili'?s|bertucci|jersey mike|auntie anne|sarku|coldstone|gelat|ice c(ream)?|bolay|pollo|hot dog|waffle|java room|bedford farms|kimball farm|frosty|chill-n|famous roast|nyajoes|don'?t tell aunty|family rest|flavors baker|american food|tutti|tropical island|el tipico|panela|pan'?e dolci|\bwonder\b/i;
 export const HOTEL_RE = /priceln|staybridge|expedia|booking\.com|marriott|hilton|hyatt|\bsuites\b|resort|airbnb|hotel|motel|\binn\b|holiday inn|jetblue|delta air|american air|united air|spirit air|southwest/i;
 export const CARD_PAYMENT_RE = /payment to chase card|chase card ending|aspire mastercard|applecard|capital one.*pymt|amex epayment|discover e-payment|citi (card|autopay)|synchrony|cardmember/i;
 export const ONLINE_RE = /amazon|amzn|walmart|wal-mart|target|staples|nutrafol|adobe|facebk|facebook|godaddy|spotify|google (?!\*workspace)|openai|anthropic|claude\.ai|canva|mailchimp|hostinger|squarespace|wix|namecheap|apple\.com|experian|netflix|hulu|paramount|disney|youtube|ebay|etsy|temu|shein|best buy|homegoods|tj ?maxx|marshalls|ross stores/i;
 
 // Clearly personal purchases (clothing, gym, pharmacy, entertainment, beauty).
-const PERSONAL_RE = /zara|macy|tj ?maxx|marshalls|burlington|gap us|aldo|express#|tnf |north face|sunglass|nordstrom|ross stores|life ?time|ltf\*|ltfitness|planet fitness|cvs|walgreens|nutrafol|cinema|amc |netflix|spotify|hulu|disney|luxury boxx|salon|spa |nails|barber/i;
+const PERSONAL_RE = /liquor|beer wine|bowl|great wolf|jewel|it'?sugar|tilly|dicks sporting|escape|adventure park|beauty|aesthetic|livraria|marketstreet|csp\*teg|fit n go|marines reis|lauderdale|laud by sea|deerfield bea|greenacres|pspt |ryzesuperfoods|skylardeals|milanolegacy|boozzybaby|toda gloria|\bpr erica|zara|macy|tj ?maxx|marshalls|burlington|gap us|aldo|express#|tnf |north face|sunglass|nordstrom|ross stores|life ?time|ltf\*|ltfitness|planet fitness|cvs|walgreens|nutrafol|cinema|amc |netflix|spotify|hulu|disney|luxury boxx|salon|spa |nails|barber/i;
 
-const LAWYER_RE = /attorney|lawyer|law office|law firm|law group|\besq\b|legal (services|group|aid)|advogad|silva braga|braga & scherr|scherr|margarida|\bbraga\b/i;
+const LAWYER_RE = /attorney|lawyer|law office|law firm|law group|\besq\b|legal (services|group|aid)|advogad|silva braga|braga & scherr|scherr|margarida|\bbraga\b|\bllp\b|geller benjamin/i;
 
 const rev = (category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "review", owner: null });
 const exp = (category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "expense", owner: "kiw" });
@@ -346,7 +346,9 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     if (/village|laester/.test(name)) return own("reginaldo", "Investment");
     if (LAWYER_RE.test(name)) return own("reginaldo", "Attorney");
     if (ZELLE_EXPENSE[name]) return exp(ZELLE_EXPENSE[name]);
-    if (/\b(valteir|samuel|alessandra|alexandra|teo)\b/.test(name)) return exp("Labor & subcontractors");
+    if (/\b(valteir|samuel|alessandra|alexandra|teo)\b/.test(name) || /pintor|edson iron|\biron\b/.test(name)) return exp("Labor & subcontractors");
+    if (/mecanico|mechanic/.test(name)) return exp("Vehicles & fuel");
+    if (/delivery and shipping/.test(name)) return exp("Office & other");
     if (ZELLE_OWNER[name]) return own(ZELLE_OWNER[name][0], ZELLE_OWNER[name][1]);
     return rev("Labor & subcontractors");
   }
@@ -412,6 +414,19 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/wuvisaaft|western union|wu digital/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
   if (/united rentals|u-?haul|sunbelt rentals|herc rentals|tool rental|penske|ryder truck|budget truck|nes rentals|equipment rental/.test(d)) return exp("Equipment & truck rental");
+  // Analogy pass (Daniel, 2026-09-25: "move as much as you can based on the ones we already did").
+  if (/facebk|facebook|openai|chatgpt|adobe|canva|sqsp|squarespace|abacus\.ai|remini|cloudflare|bluehost|mailsuite|capcut|\btavvy\b/.test(d)) return exp("Marketing");
+  if (/wave pro|waveapps/.test(d)) return exp("Software & subscriptions");
+  if (/sherwin|tri-state fasteners|metropolitan pipe|floor and decor|next day moulding|woodcraft|hardware/.test(d)) return exp(/hardware/.test(d) ? "Home Depot & hardware stores" : "Materials & steel");
+  if (/garage|pkg massport|tpke|photo enfor|platepass|driveezmd|violat|mydmvportal|city hall systems|ici\*fee|onstar|sullivan tire|nucar|tire gauge|wash depot|7-eleven|circle k|petro|fuel|racetrac|pump & pantry|speedy mart|a\.l prime|\bbp#/.test(d)) return exp("Vehicles & fuel");
+  if (/energy north/.test(d)) return exp("Shop supplies & gas");
+  if (/wire fee|foreign exchange rate adjustment|ic service fee|repay cci|iso processin/.test(d)) return exp("Bank & card fees");
+  if (/usps|computer repair|arlo technologies/.test(d)) return exp("Office & other");
+  if (/orig co name:\s*commonwealth ma/.test(d)) return exp("Taxes & licenses");
+  if (/dollar general|homegoods/.test(d)) return exp("Supplies");
+  if (/ipeptide|hotmart/.test(d)) return own("daniel", "Personal (other)");
+  if (/spotify|nutrafol|orig co name:\s*duomo/.test(d)) return own("reginaldo", "Personal (other)");
+  if (/ind name:\s*reginaldo|rodrigues regi/.test(d)) return own("reginaldo", "Personal (other)");
   // Daniel, 2026-09-25 — named KIW: Home Decor, McNichols, Regus, any printing, Target, Costco.
   if (/mcnichols|home decor|new england building|northeastern fence|king architectural|buyrailings|anderson mcquaid|unihydro|metals? (depot|supermarket)|online metals/.test(d)) return exp("Materials & steel");
   if (/regus|iwgplc/.test(d)) return exp("Rent & utilities");

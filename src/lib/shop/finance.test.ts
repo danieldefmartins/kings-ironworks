@@ -52,8 +52,8 @@ describe("autoTag — Daniel's rules", () => {
     expect(reviewKind({ description: "TST* T.G.I. FRIDAY'S", amount: -90 })).toBe("restaurants");
   });
   it("online purchases wait for an owner decision, except Amazon which is supplies", () => {
-    expect(autoTag("ADOBE *CREATIVE CLOUD 408-536-6000 CA", -60).grp).toBe("review");
-    expect(reviewKind({ description: "ADOBE *CREATIVE CLOUD", amount: -60 })).toBe("online");
+    expect(autoTag("ETSY.COM - SHOP123 BROOKLYN NY", -60).grp).toBe("review");
+    expect(reviewKind({ description: "ETSY.COM - SHOP123 BROOKLYN NY", amount: -60 })).toBe("online");
     expect(autoTag("AMAZON MKTPL*ZX12 Amzn.com/bill WA", -40)).toMatchObject({ grp: "expense", owner: "kiw", category: "Supplies" });
   });
   it("Home Depot, Lowe's, Ace and Harbor Freight share one category", () => {
@@ -114,7 +114,8 @@ describe("Daniel's rules, round 2", () => {
     expect(autoTag("SILVA BRAGA & SCHERR MELROSE MA 559593 03/27", -1000)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Attorney" });
     expect(autoTag("Zelle payment to Margarida attorney JPM99", -1000)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Attorney" });
     expect(autoTag("ORIG CO NAME:CHASEHOMEFINANCE IND NAME:SATIRO GABRIELA", -4253.84)).toMatchObject({ owner: "reginaldo", category: "Mortgage" });
-    expect(autoTag("Zelle payment to Rosa Gabriela Mecanico JPM99", -1700).grp).toBe("review");
+    // "Rosa Gabriela Mecanico" is not Gabriela Satiro — she is the mechanic (KIW vehicles).
+    expect(autoTag("Zelle payment to Rosa Gabriela Mecanico JPM99", -1700)).toMatchObject({ owner: "kiw", category: "Vehicles & fuel" });
     expect(autoTag("LEGAL SEA FOODS BOSTON MA", -80).owner).not.toBe("reginaldo");
     expect(autoTag("Zelle payment to village laester 26200789863", -1200)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Investment" });
     expect(autoTag("Zelle payment to Aparecido Ramos. Village JPM99", -790)).toMatchObject({ owner: "reginaldo", category: "Investment" });
@@ -231,5 +232,27 @@ describe("rangeBounds", () => {
     expect(rangeBounds("6m", "2026-09-25")).toEqual({ from: "2026-04-01", to: "2026-09-25" });
     expect(rangeBounds("6m", "2026-03-10")).toEqual({ from: "2025-10-01", to: "2026-03-10" });
     expect(rangeBounds("all", "2026-09-25")).toEqual({ from: null, to: null });
+  });
+});
+
+describe("analogy pass over the review queue", () => {
+  it("files obvious merchants the way similar ones were decided", () => {
+    const cases: [string, string, string][] = [
+      ["FACEBK *26QVS55VY2 650-5434800 DE 10/16", "kiw", "Marketing"],
+      ["OPENAI *CHATGPT SUBSCR OPENAI.COM CA 01/21", "kiw", "Marketing"],
+      ["SQSP* INV#217740766 SQUARESPACE.C NY 01/13", "kiw", "Marketing"],
+      ["SHERWIN-WILLIAMS705365 Medford MA 06/07", "kiw", "Materials & steel"],
+      ["PI ALLEY GARAGE BOSTON MA 05/21", "kiw", "Vehicles & fuel"],
+      ["OnStar, LLC 888-4667827 MI 06/05", "kiw", "Vehicles & fuel"],
+      ["ONLINE DOMESTIC WIRE FEE", "kiw", "Bank & card fees"],
+      ["IPEPTIDE 360FORBUSINES FL 07/15", "daniel", "Personal (other)"],
+      ["ORIG CO NAME:Artemas ORIG ID:1752788861 IND NAME:Reginaldo Rodrigues 980-215-8422", "reginaldo", "Personal (other)"],
+      ["GELLER BENJAMIN, LLP GELLERBENJAMI MA 02/19", "reginaldo", "Attorney"],
+    ];
+    for (const [d, owner, category] of cases) expect(autoTag(d, -50)).toMatchObject({ owner, category });
+    expect(autoTag("Zelle payment to Gislaine Edson Iron JPM99cos5r0p", -900)).toMatchObject({ owner: "kiw", category: "Labor & subcontractors" });
+    expect(autoTag("Zelle payment to Rosa Gabriela Mecanico JPM99cq36kud", -1700)).toMatchObject({ owner: "kiw", category: "Vehicles & fuel" });
+    expect(reviewKind({ description: "CHEESECAKE CAMBRIDGE CAMBRIDGE MA 06/25", amount: -120 })).toBe("restaurants");
+    expect(tagTransaction("LAND OF LIQUOR REVERE MA 01/10", -30, [], "2026-01-12")).toMatchObject({ owner: "reginaldo" });
   });
 });
