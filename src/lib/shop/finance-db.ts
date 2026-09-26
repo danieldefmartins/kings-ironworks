@@ -1,6 +1,6 @@
 // Company finance — server-only data access. Owner-only callers (checked in
 // the pages and the API route); everything is scoped to this deployment's org.
-import { ORG_ID, audit, sbInsert, sbInsertIgnoreDuplicates, sbSelect, sbUpdate } from "./db";
+import { ORG_ID, audit, listWorkers, sbInsert, sbInsertIgnoreDuplicates, sbSelect, sbUpdate } from "./db";
 import { DANIEL_START, parseChaseCsv, tagTransaction, vendorKey, type FinGroup, type FinOwner, type FinRule, type FinTx } from "./finance";
 
 const TX_FIELDS = "id,account,posted_on,description,amount,bank_type,balance,check_no,fingerprint,vendor,category,grp,owner,tag_source,rule_id,note";
@@ -67,9 +67,11 @@ export interface ImportResult { parsed: number; added: number; duplicates: numbe
 /** Parse a Chase CSV, tag every row, and add only the rows we have not seen before. */
 export async function importChaseCsv(account: string, csv: string, workerId: string | null): Promise<ImportResult> {
   const parsed = parseChaseCsv(csv, account);
-  const rules = await listFinRules();
+  const [rules, workers] = await Promise.all([listFinRules(), listWorkers()]);
+  // Owners are never "payroll": a Zelle to Daniel or Kayky is personal money.
+  const workerNames = workers.filter((w) => !(w.is_admin && w.can_see_prices)).map((w) => w.name);
   const rows = parsed.rows.map((r) => {
-    const tag = tagTransaction(r.description, r.amount, rules, r.posted_on);
+    const tag = tagTransaction(r.description, r.amount, rules, r.posted_on, workerNames);
     return { ...r, ...tag, org_id: ORG_ID, vendor: vendorKey(r.description) };
   });
   let added = 0, toReview = 0;

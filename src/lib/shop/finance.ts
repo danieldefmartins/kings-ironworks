@@ -58,6 +58,7 @@ export const EXPENSE_CATEGORIES = [
   "Home Depot & hardware stores",
   "Supplies",
   "Labor & subcontractors",
+  "Equipment & truck rental",
   "Tools & equipment",
   "Shop supplies & gas",
   "Rent & utilities",
@@ -80,6 +81,7 @@ export const EXPENSE_CATEGORIES = [
 export const UNCATEGORIZED = "Uncategorized";
 
 export const OWNER_CATEGORIES = [
+  "Zelle to owner",
   "Personal (other)",
   "Restaurants",
   "Travel / hotels",
@@ -223,6 +225,8 @@ export function vendorKey(description: string): string {
   if (xfer) return `transfer ${xfer[1]} ${xfer[2]}`;
   const chk = low.match(/^check\s*#?\s*(\d+)/);
   if (chk) return `check ${chk[1]}`;
+  if (/united rentals/.test(low)) return "united rentals";
+  if (/u-?haul/.test(low)) return "u-haul";
   const card = low.match(/payment to chase card ending in (\d{4})/);
   if (card) return `chase card ${card[1]}`;
   const star = low.match(/^(google|amazon|apple\.com|paypal|sq|tst)\s*\*\s*([a-z]+)/);
@@ -252,13 +256,17 @@ const ZELLE_EXPENSE: Record<string, string> = {
   "fabiano santos": "Labor & subcontractors", "new england trust painting and carp": "Labor & subcontractors",
   "miguel rodrigues": "Labor & subcontractors", leticia: "Labor & subcontractors",
   "ananias de lima": "Labor & subcontractors", "mayra santiago s": "Labor & subcontractors",
+  "joelio xavierdearagao": "Labor & subcontractors", // electrician (Daniel, 2026-09-25)
   "grace rent office": "Rent & utilities", "jorge silva family church": "Rent & utilities", cleaning: "Rent & utilities",
   "kevin ribeiro arquiteto amigo ma": "Professional services", "davi lazzaroto": "Professional services",
   "what to wear inc": "Professional services",
-  // Daniel's payments are a management/marketing fee, not a draw (QBO decision 2026-09-14).
-  "daniel de freitas martins": "Management & marketing (Daniel)", "360 for business llc": "Management & marketing (Daniel)",
+  // 360 For Business is Daniel's agency — a KIW expense, not a payment to Daniel himself.
+  "360 for business llc": "Management & marketing (Daniel)", "360forbusiness": "Management & marketing (Daniel)",
 };
+// Daniel, 2026-09-25: Zelle straight to Daniel or Kayky (Reginaldo) is personal; Aline's are Daniel's.
 const ZELLE_OWNER: Record<string, [FinOwner, string]> = {
+  "daniel de freitas martins": ["daniel", "Zelle to owner"], "kayky designer": ["reginaldo", "Zelle to owner"],
+  "great rock church": ["reginaldo", "Kids' school"],
   "daniel partner group": ["daniel", "Personal (other)"], "aline martins": ["daniel", "Personal (other)"],
   "bash construction group llc": ["daniel", "Personal (other)"],
   "camila alvez": ["reginaldo", "Personal (other)"], "raquel hebreia": ["reginaldo", "Personal (other)"],
@@ -337,10 +345,14 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   // moves between our own accounts and bank fee reversals are not.
   if (!out) {
     if (/reversal|refund|return/.test(d)) return { category: "Refund / reversal", grp: "transfer", owner: null };
+    // Daniel, 2026-09-25: Direct Merchants is a loan — the money it sent is not revenue.
+    if (/direct merch|dirct mer/.test(d)) return { category: "Loan received", grp: "transfer", owner: null };
     return { category: "Customer payment", grp: "revenue", owner: null };
   }
 
   if (/tavvy/.test(d)) return rev("Software & marketing");
+  // Weekly loan payments to Direct Merchants (plus its daily collection debit).
+  if (/dirct mer col|direct merch/.test(d)) return exp("Loan & financing");
   // Daniel, 2026-09-25: paying the Chase business cards is a KIW expense.
   if (/payment to chase card|chase card ending/.test(d)) return exp("Credit card payment");
   if (CARD_PAYMENT_RE.test(d) || (/orig co name/.test(d) && /home depot|citi|synchrony|comenity|barclays|amex|discover/.test(d))) return rev("Credit card payment");
@@ -348,6 +360,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (HOTEL_RE.test(d)) return rev("Travel");
 
   if (/google \*ads|highlevel|gohighlevel/.test(d)) return exp("Software & marketing");
+  // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
+  if (/united rentals|u-?haul|sunbelt rentals|herc rentals|tool rental|penske|ryder truck|budget truck|nes rentals|equipment rental/.test(d)) return exp("Equipment & truck rental");
   // Daniel, 2026-09-25: Home Depot, Lowe's, Ace and Harbor Freight are one category; Amazon is supplies.
   if (/home depot|lowe'?s|ace hardware|ace hdw|harbor freight/.test(d)) return exp("Home Depot & hardware stores");
   if (/amazon|amzn/.test(d)) return exp("Supplies");
@@ -366,7 +380,6 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/stop & shop|market basket|costco|dollar general|whole foods|trader joe/.test(d)) return rev(UNCATEGORIZED);
   if (/silva braga|braga & scherr|attorney|law office|legal/.test(d)) return rev("Professional services");
   if (/church|ministry|igreja|tithe/.test(d)) return own("reginaldo", "Church / donations");
-  if (/dirct mer col|direct merchants/.test(d)) return rev("Loan & financing");
   if (/stellantis|santander|ally |gm financial/.test(d)) return rev("Loan & financing");
   return rev(UNCATEGORIZED);
 }
@@ -393,14 +406,35 @@ function applyHistory(tag: Omit<FinTag, "tag_source" | "rule_id">, description: 
   return tag;
 }
 
-export function tagTransaction(description: string, amount: number, rules: FinRule[], postedOn?: string): FinTag {
+/** True when a Zelle recipient is one of our payroll workers (names from the shop's worker list). */
+export function isPayrollWorker(zelleRecipient: string, workerNames: string[]): boolean {
+  const z = zelleRecipient.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+  if (!z) return false;
+  return workerNames.some((raw) => {
+    const w = raw.toLowerCase().replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+    if (!w || /^(office|helper( \d+)?)$/.test(w)) return false;
+    const parts = w.split(" ");
+    // Full names must match all their words; a single-name worker matches the first name.
+    return parts.length > 1 ? parts.every((p) => z.split(" ").includes(p)) : z.split(" ")[0] === w;
+  });
+}
+
+// Payees who are Daniel. Before he joined (March 2026) a payment to him was a
+// KIW service fee, not anybody's personal spending.
+const DANIEL_PAYEE = /zelle to (daniel de freitas martins|daniel partner group|aline martins|bash construction group llc)$/;
+
+export function tagTransaction(description: string, amount: number, rules: FinRule[], postedOn?: string, workerNames: string[] = []): FinTag {
   const vendor = vendorKey(description);
   const direction = amount < 0 ? "out" : "in";
   const rule = rules.find((r) => r.active && r.pattern === vendor && r.direction === direction);
-  let tag: FinTag = rule
-    ? { category: rule.category, grp: rule.grp, owner: rule.owner, tag_source: "rule", rule_id: rule.id }
-    : { ...(postedOn ? applyHistory(autoTag(description, amount), description, amount, postedOn) : autoTag(description, amount)), tag_source: "auto", rule_id: null };
-  if (tag.owner === "daniel" && !canBeDaniel(postedOn)) tag = { ...tag, owner: "reginaldo" };
+  let tag: FinTag;
+  if (rule) tag = { category: rule.category, grp: rule.grp, owner: rule.owner, tag_source: "rule", rule_id: rule.id };
+  else if (direction === "out" && vendor.startsWith("zelle to ") && isPayrollWorker(vendor.slice(9), workerNames))
+    tag = { category: "Labor & subcontractors", grp: "expense", owner: "kiw", tag_source: "auto", rule_id: null };
+  else tag = { ...(postedOn ? applyHistory(autoTag(description, amount), description, amount, postedOn) : autoTag(description, amount)), tag_source: "auto", rule_id: null };
+  if (tag.owner === "daniel" && !canBeDaniel(postedOn)) {
+    tag = DANIEL_PAYEE.test(vendor) ? { ...tag, grp: "expense", owner: "kiw", category: "Management & marketing (Daniel)" } : { ...tag, owner: "reginaldo" };
+  }
   return tag;
 }
 

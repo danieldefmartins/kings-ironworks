@@ -18,6 +18,9 @@ async function rest(path, init = {}) {
 }
 
 const rules = await rest(`kiw_fin_rules?select=id,pattern,direction,category,grp,owner,active&org_id=eq.${ORG}&active=is.true`);
+// Payroll workers (never the owners) — a Zelle to one of them is KIW labor.
+const workerNames = (await rest(`kiw_shop_workers?select=name,is_admin,can_see_prices&org_id=eq.${ORG}`))
+  .filter((w) => !(w.is_admin && w.can_see_prices)).map((w) => w.name);
 const rows = [];
 for (let offset = 0; ; offset += 1000) {
   const page = await rest(`kiw_fin_transactions?select=id,posted_on,description,amount,vendor,category,grp,owner,tag_source,rule_id&org_id=eq.${ORG}&order=id&limit=1000&offset=${offset}`);
@@ -34,7 +37,7 @@ for (const r of rows) {
     if (r.owner !== "daniel" || canBeDaniel(r.posted_on)) continue;
     next = { vendor: r.vendor, category: r.category, grp: r.grp, owner: "reginaldo", tag_source: "manual", rule_id: r.rule_id };
   } else {
-    const t = tagTransaction(r.description, amount, rules, r.posted_on);
+    const t = tagTransaction(r.description, amount, rules, r.posted_on, workerNames);
     next = { vendor: vendorKey(r.description), category: t.category, grp: t.grp, owner: t.owner, tag_source: t.tag_source, rule_id: t.rule_id };
   }
   const same = next.vendor === r.vendor && next.category === r.category && next.grp === r.grp && next.owner === r.owner && next.tag_source === r.tag_source && next.rule_id === r.rule_id;

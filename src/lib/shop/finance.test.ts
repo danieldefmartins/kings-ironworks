@@ -86,6 +86,35 @@ describe("autoTag — Daniel's rules", () => {
   });
 });
 
+describe("Daniel's rules, round 2", () => {
+  const workers = ["Tiago Alves de Sena", "Andreaderson Rocha de Almeida", "Jairo", "Kaio Prates", "Office", "Helper 1"];
+  it("Zelle to anyone on payroll is KIW labor", () => {
+    expect(tagTransaction("Zelle payment to TIAGO ALVES DE SENA JPM99cxi7vt0", -2371.93, [], "2026-09-23", workers)).toMatchObject({ grp: "expense", owner: "kiw", category: "Labor & subcontractors" });
+    expect(tagTransaction("Zelle payment to ANDREADERSON ROCHA DE ALMEIDA JPM99cxi6hyo", -1327.08, [], "2026-09-23", workers).grp).toBe("expense");
+    expect(tagTransaction("Zelle payment to Jairo Abenoado JPM99", -500, [], "2026-09-21", workers).grp).toBe("expense");
+    expect(tagTransaction("Zelle payment to Erika Chelsey 29862009331", -500, [], "2026-09-02", workers).grp).toBe("review");
+  });
+  it("Zelle straight to Daniel or Kayky is personal; Aline's are Daniel's", () => {
+    expect(tagTransaction("Zelle payment to Daniel De Freitas Martins JPM99cxibscm", -200, [], "2026-09-23")).toMatchObject({ grp: "owner", owner: "daniel" });
+    expect(tagTransaction("Zelle payment to Kayky Designer JPM99bmvxvtq", -1000, [], "2025-09-11")).toMatchObject({ grp: "owner", owner: "reginaldo" });
+    expect(tagTransaction("Zelle payment to Aline Martins JPM99", -500, [], "2026-04-03")).toMatchObject({ grp: "owner", owner: "daniel" });
+  });
+  it("a payment to Daniel before he joined is a KIW fee, not Reginaldo's", () => {
+    expect(tagTransaction("Zelle payment to Daniel Partner Group JPM99c6psl8i", -500, [], "2026-02-23")).toMatchObject({ grp: "expense", owner: "kiw", category: "Management & marketing (Daniel)" });
+  });
+  it("Direct Merchants is a loan: the money in is not revenue, the weekly payments are KIW financing", () => {
+    expect(autoTag("FEDWIRE CREDIT VIA: OPTIMUMBANK/067015096 B/O: DIRECT MERCHANTS FUNDING", 62800)).toMatchObject({ grp: "transfer", category: "Loan received" });
+    expect(autoTag("ORIG CO NAME:Direct Merchants ORIG ID:0000141316 DESC DATE:", -2140)).toMatchObject({ grp: "expense", category: "Loan & financing" });
+    expect(autoTag("ORIG CO NAME:DIRCT MER COL DB ORIG ID:3471820616 CO ENTRY DESCR:PAYMENT", -20)).toMatchObject({ grp: "expense", category: "Loan & financing" });
+    expect(autoTag("Zelle payment to JOELIO XAVIERDEARAGAO JPM99codn3mg", -1300)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
+  });
+  it("equipment and truck rentals are KIW, and United Rentals is not United Airlines", () => {
+    expect(autoTag("UNITED RENTALS 617-387-9545 MA 08/08", -1360.42)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
+    expect(autoTag("U-HAUL CENTER MALDEN 800-789-3638 MA 09/19", -159.95)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
+    expect(vendorKey("UNITED RENTALS #16155 704-636-8002 MA")).not.toBe(vendorKey("UNITED 01621152156 UNITED.COM TX"));
+  });
+});
+
 describe("rules", () => {
   it("an owner-taught rule beats the built-in guess for that merchant only", () => {
     const rules: FinRule[] = [{ id: "r1", pattern: vendorKey("STARBUCKS 8007827282 WA 09/24"), direction: "out", category: "Restaurants", grp: "owner", owner: "daniel", active: true }];

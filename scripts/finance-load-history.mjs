@@ -21,6 +21,9 @@ async function rest(path, init = {}) {
 }
 
 const rules = await rest(`kiw_fin_rules?select=id,pattern,direction,category,grp,owner,active&org_id=eq.${ORG}&active=is.true`);
+// Payroll workers (never the owners) — a Zelle to one of them is KIW labor.
+const workerNames = (await rest(`kiw_shop_workers?select=name,is_admin,can_see_prices&org_id=eq.${ORG}`))
+  .filter((w) => !(w.is_admin && w.can_see_prices)).map((w) => w.name);
 let total = 0, added = 0;
 const newest = {};
 
@@ -29,7 +32,7 @@ for (const arg of process.argv.slice(2)) {
   const account = forced || accountFromFileName(basename(file));
   if (!account) throw new Error(`No account for ${file}`);
   const parsed = parseChaseCsv(readFileSync(file, "utf8"), account);
-  const rows = parsed.rows.map((r) => ({ ...r, ...tagTransaction(r.description, r.amount, rules, r.posted_on), vendor: vendorKey(r.description), org_id: ORG }));
+  const rows = parsed.rows.map((r) => ({ ...r, ...tagTransaction(r.description, r.amount, rules, r.posted_on, workerNames), vendor: vendorKey(r.description), org_id: ORG }));
   let fileAdded = 0;
   for (let i = 0; i < rows.length; i += 500) {
     const ins = await rest(`kiw_fin_transactions?on_conflict=org_id,fingerprint`, {
