@@ -68,7 +68,8 @@ export const EXPENSE_CATEGORIES = [
   "Professional services",
   "Commissions",
   "Management & marketing (Daniel)",
-  "Software & marketing",
+  "Marketing",
+  "Software & subscriptions",
   "Overseas marketing",
   "Meals",
   "Travel",
@@ -336,6 +337,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     if (/satiro/.test(name)) return own("reginaldo", "Personal (other)");
     // Daniel, 2026-09-25: Erika Chelsey is Daniel's personal loan payment.
     if (/erika chelsey/.test(name)) return own("daniel", "Loan payment");
+    if (/neto contractor/.test(name)) return own("daniel", "Personal (other)");
     // Daniel, 2026-09-25: Village / Laester payments are Kayky's personal investment.
     if (/village|laester/.test(name)) return own("reginaldo", "Investment");
     if (LAWYER_RE.test(name)) return own("reginaldo", "Attorney");
@@ -377,7 +379,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     return { category: "Customer payment", grp: "revenue", owner: null };
   }
 
-  if (/tavvy/.test(d)) return rev("Software & marketing");
+  if (/tavvy/.test(d)) return rev("Software & subscriptions");
   // Weekly loan payments to Direct Merchants (plus its daily collection debit).
   if (/dirct mer col|direct merch/.test(d)) return exp("Loan & financing");
   // Daniel, 2026-09-25: the Home Depot credit card only buys KIW supplies.
@@ -388,7 +390,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (RESTAURANT_RE.test(d)) return rev("Meals");
   if (HOTEL_RE.test(d)) return rev("Travel");
 
-  if (/google \*ads|highlevel|gohighlevel/.test(d)) return exp("Software & marketing");
+  // Daniel, 2026-09-25: everything Google is KIW marketing; GoHighLevel is the marketing CRM.
+  if (/google|highlevel|gohighlevel/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
   if (/wuvisaaft|western union/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
@@ -403,11 +406,11 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/dept of rev|\bdor\b|mass dor|irs\b|secretary of state|town of|city of/.test(d)) return exp("Taxes & licenses");
   if (/adp |payroll|gusto|evolution tax/.test(d)) return exp("Professional services");
   if (/monthly service fee|overdraft|service charge|atm fee|nsf|returned item|quickbooks payments|intuit/.test(d)) return exp("Bank & card fees");
-  if (/google \*workspace|ipostal/.test(d)) return exp("Software & marketing");
+  if (/ipostal/.test(d)) return exp("Office & other");
   if (/speedway|gulf |shell |mobil|exxon|sunoco| bp |citgo|chevron|valero|irving|cumberland farms|\bgas\b/.test(d)) return exp("Vehicles & fuel");
   if (/car wash|sparkling image|autozone|o.?reilly|jiffy|ez ?pass|toll|parking|rmv|registry/.test(d)) return exp("Vehicles & fuel");
 
-  if (ONLINE_RE.test(d)) return rev(/adobe|facebk|facebook|godaddy|google|openai|anthropic|canva|mailchimp|hostinger|squarespace|wix|namecheap|experian/.test(d) ? "Software & marketing" : UNCATEGORIZED);
+  if (ONLINE_RE.test(d)) return rev(/adobe|facebk|facebook|godaddy|google|openai|anthropic|canva|mailchimp|hostinger|squarespace|wix|namecheap|experian/.test(d) ? "Software & subscriptions" : UNCATEGORIZED);
   if (/stop & shop|market basket|costco|dollar general|whole foods|trader joe/.test(d)) return rev(UNCATEGORIZED);
   if (/church|ministry|igreja|tithe/.test(d)) return own("reginaldo", "Church / donations");
   if (/stellantis|santander|ally |gm financial/.test(d)) return rev("Loan & financing");

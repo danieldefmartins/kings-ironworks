@@ -74,7 +74,7 @@ describe("autoTag — Daniel's rules", () => {
     expect(autoTag("Payment to Chase card ending in 1289 02/12", -1939)).toMatchObject({ grp: "expense", owner: "kiw", category: "Credit card payment" });
   });
   it("Google Ads and GoHighLevel are business marketing", () => {
-    expect(autoTag("GOOGLE *ADS572190759 cc@google.com CA 01/12", -500)).toMatchObject({ grp: "expense", category: "Software & marketing" });
+    expect(autoTag("GOOGLE *ADS572190759 cc@google.com CA 01/12", -500)).toMatchObject({ grp: "expense", category: "Marketing" });
     expect(autoTag("HIGHLEVEL AGENCY SUB GOHIGHLEVEL.C TX 05/28", -97)).toMatchObject({ grp: "expense" });
   });
   it("business expenses with an unknown kind land in Uncategorized, not a guess", () => {
@@ -92,7 +92,7 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("Zelle payment to TIAGO ALVES DE SENA JPM99cxi7vt0", -2371.93, [], "2026-09-23", workers)).toMatchObject({ grp: "expense", owner: "kiw", category: "Labor & subcontractors" });
     expect(tagTransaction("Zelle payment to ANDREADERSON ROCHA DE ALMEIDA JPM99cxi6hyo", -1327.08, [], "2026-09-23", workers).grp).toBe("expense");
     expect(tagTransaction("Zelle payment to Jairo Abenoado JPM99", -500, [], "2026-09-21", workers).grp).toBe("expense");
-    expect(tagTransaction("Zelle payment to Neto Contractor JPM99", -500, [], "2026-07-03", workers).grp).toBe("review");
+    expect(tagTransaction("Zelle payment to Francisco Portillo JPM99", -150, [], "2026-09-16", workers).grp).toBe("review");
   });
   it("Zelle straight to Daniel or Kayky is personal; Aline's are Daniel's", () => {
     expect(tagTransaction("Zelle payment to Daniel De Freitas Martins JPM99cxibscm", -200, [], "2026-09-23")).toMatchObject({ grp: "owner", owner: "daniel" });
@@ -129,6 +129,12 @@ describe("Daniel's rules, round 2", () => {
   it("Erika Chelsey is Daniel's loan payment; the Home Depot card is KIW", () => {
     expect(tagTransaction("Zelle payment to Erika Chelsey 29862009331", -500, [], "2026-07-02")).toMatchObject({ grp: "owner", owner: "daniel", category: "Loan payment" });
     expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306)).toMatchObject({ grp: "expense", owner: "kiw", category: "Home Depot & hardware stores" });
+  });
+  it("all Google is KIW marketing; Neto Contractor is Daniel's", () => {
+    for (const d of ["GOOGLE *ADS572190759 cc@google.com CA 01/12", "GOOGLE *Workspace_ki cc@google.com CA 09/23 (...9016)", "GOOGLE *YouTube Premium g.co/helppay# CA"]) {
+      expect(autoTag(d, -30)).toMatchObject({ grp: "expense", owner: "kiw", category: "Marketing" });
+    }
+    expect(tagTransaction("Zelle payment to Neto Contractor JPM99", -500, [], "2026-07-03")).toMatchObject({ grp: "owner", owner: "daniel" });
   });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
