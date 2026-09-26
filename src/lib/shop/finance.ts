@@ -586,8 +586,8 @@ export function summarize(txs: Pick<FinTx, "posted_on" | "amount" | "grp" | "own
 
 // ---------------------------------------------------------------- periods
 
-export type FinRange = "month" | "lastmonth" | "90d" | "ytd" | "12m" | "all";
-export const FIN_RANGES: FinRange[] = ["month", "lastmonth", "90d", "ytd", "12m", "all"];
+export type FinRange = "month" | "lastmonth" | "90d" | "6m" | "ytd" | "12m" | "all";
+export const FIN_RANGES: FinRange[] = ["month", "lastmonth", "90d", "6m", "ytd", "12m", "all"];
 
 /** Inclusive YYYY-MM-DD bounds for a named period, relative to `today` (YYYY-MM-DD, shop time). */
 export function rangeBounds(range: FinRange, today: string): { from: string | null; to: string | null } {
@@ -604,6 +604,11 @@ export function rangeBounds(range: FinRange, today: string): { from: string | nu
       const d = new Date(`${today}T12:00:00Z`);
       d.setUTCDate(d.getUTCDate() - 89);
       return { from: d.toISOString().slice(0, 10), to: today };
+    }
+    case "6m": {
+      // This month plus the 5 before it.
+      const back = m - 5, fy = back <= 0 ? y - 1 : y, fm = back <= 0 ? back + 12 : back;
+      return { from: `${fy}-${pad(fm)}-01`, to: today };
     }
     case "ytd": return { from: `${y}-01-01`, to: today };
     case "12m": {

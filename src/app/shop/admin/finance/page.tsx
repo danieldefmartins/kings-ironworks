@@ -14,8 +14,9 @@ export const dynamic = "force-dynamic";
 const RANGE_LABEL: Record<FinRange, [string, string, string]> = {
   month: ["This month", "Este mês", "Este mes"],
   lastmonth: ["Last month", "Mês passado", "Mes pasado"],
-  "90d": ["Last 90 days", "Últimos 90 dias", "Últimos 90 días"],
-  ytd: ["This year", "Este ano", "Este año"],
+  "90d": ["Last 3 months", "Últimos 3 meses", "Últimos 3 meses"],
+  "6m": ["Last 6 months", "Últimos 6 meses", "Últimos 6 meses"],
+  ytd: ["This year", "Este ano", "Este año"], // shown as the year number, e.g. "2026"
   "12m": ["Last 12 months", "Últimos 12 meses", "Últimos 12 meses"],
   all: ["All time", "Tudo", "Todo"],
 };
@@ -97,7 +98,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
         {error && <div role="alert" className="rounded-2xl border border-red-800 bg-red-950/40 p-4 text-sm text-red-300">{error}</div>}
 
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
-          {FIN_RANGES.map((r) => <Link key={r} href={href({ range: r })} className={chip(r === range)}>{L(lang, ...RANGE_LABEL[r])}</Link>)}
+          {FIN_RANGES.map((r) => <Link key={r} href={href({ range: r })} className={chip(r === range)}>{r === "ytd" ? today.slice(0, 4) : L(lang, ...RANGE_LABEL[r])}</Link>)}
           <span className="mx-1 w-px shrink-0 bg-white/10" />
           <Link href={href({ acct: null })} className={chip(!account)}>{L(lang, "Both accounts", "Ambas as contas", "Ambas cuentas")}</Link>
           <Link href={href({ acct: "1752" })} className={chip(account === "1752")}>LLC …1752</Link>

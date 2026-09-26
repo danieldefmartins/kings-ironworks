@@ -218,6 +218,8 @@ describe("rangeBounds", () => {
     expect(rangeBounds("lastmonth", "2026-01-10")).toEqual({ from: "2025-12-01", to: "2025-12-31" });
     expect(rangeBounds("ytd", "2026-09-25")).toEqual({ from: "2026-01-01", to: "2026-09-25" });
     expect(rangeBounds("12m", "2026-09-25")).toEqual({ from: "2025-10-01", to: "2026-09-25" });
+    expect(rangeBounds("6m", "2026-09-25")).toEqual({ from: "2026-04-01", to: "2026-09-25" });
+    expect(rangeBounds("6m", "2026-03-10")).toEqual({ from: "2025-10-01", to: "2026-03-10" });
     expect(rangeBounds("all", "2026-09-25")).toEqual({ from: null, to: null });
   });
 });
