@@ -402,7 +402,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   // Daniel, 2026-09-25: everything Google is KIW marketing; GoHighLevel is the marketing CRM.
   if (/google|highlevel|gohighlevel/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Railway, Supabase, GoDaddy, Anthropic/Claude, Apple and Manus are KIW marketing.
-  if (/railway|supabase|godaddy|anthropic|claude\.ai|apple\.com|apple store|itunes|manus ai|\bmanus\b/.test(d) && !/cinema/.test(d)) return exp("Marketing");
+  if (/railway|supabase|godaddy|\bwix\b|wix\.com|anthropic|claude\.ai|apple\.com|apple store|itunes|manus ai|\bmanus\b/.test(d) && !/cinema/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
   if (/wuvisaaft|western union|wu digital/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.

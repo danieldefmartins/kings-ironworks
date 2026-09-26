@@ -155,7 +155,7 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 05/01", -649, [], "2026-05-01")).toMatchObject({ owner: "reginaldo" });
   });
   it("Railway, Supabase, GoDaddy, Anthropic, Apple and Manus are marketing — not Apple Cinemas", () => {
-    for (const d of ["RAILWAY RAILWAY.COM CA 03/26", "SUPABASE PRO SUPABASE.COM", "DNH*GODADDY 480-505-8855 AZ 03/31", "ANTHROPIC ANTHROPIC.COM CA 04/25", "CLAUDE.AI SUBSCRIPTI ANTHROPIC.COM CA 04/07", "APPLE.COM/BILL 866-712-7753 CA 09/24", "MANUS AI SINGAPORE 02/18"]) {
+    for (const d of ["RAILWAY RAILWAY.COM CA 03/26", "SUPABASE PRO SUPABASE.COM", "DNH*GODADDY 480-505-8855 AZ 03/31", "ANTHROPIC ANTHROPIC.COM CA 04/25", "CLAUDE.AI SUBSCRIPTI ANTHROPIC.COM CA 04/07", "APPLE.COM/BILL 866-712-7753 CA 09/24", "MANUS AI SINGAPORE 02/18", "WIX.COM 1219258111 WWW.WIX.COM CA 01/16"]) {
       expect(autoTag(d, -20)).toMatchObject({ grp: "expense", category: "Marketing" });
     }
     expect(autoTag("APPLE CINEMAS - HOOKSET HOOKSETT NH 05/11", -30).category).not.toBe("Marketing");
