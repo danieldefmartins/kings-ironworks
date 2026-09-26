@@ -366,6 +366,8 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/sparrow card/.test(d)) return own("daniel", "Credit card");
   if (/paypal/.test(d) && out) return own("reginaldo", "PayPal");
   if (/thousand trails/.test(d)) return own("daniel", "Personal (other)");
+  // Daniel's personal credit accounts (Daniel, 2026-09-25 — same accounts as those in Aline's name).
+  if (/wells fargo card|mission lane|concora credit|orig co name:\s*elan|orig co name:\s*discover|discover cap one|orig co name:\s*mastercard|premier bankcard/.test(d) && out) return own("daniel", "Credit card");
   // Daniel, 2026-09-25: Life Time gym — the big membership ($649, now $679) is Daniel's,
   // the smaller dues and extras are Kayky's (Reginaldo).
   if (/life ?time|ltf\*|ltfitness/.test(d) && out) return Math.abs(amount) >= 600 ? own("daniel", "Gym") : own("reginaldo", "Gym");
@@ -388,6 +390,9 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
     return { category: "Customer payment", grp: "revenue", owner: null };
   }
 
+  // Bank fees name the purchase that caused them ("overdraft fee for a card purchase - details: TST*...").
+  // Classify the fee itself, never the merchant mentioned inside it.
+  if (/overdraft|monthly service fee|service charge|nsf fee|returned item fee|insufficient funds/.test(d)) return exp("Bank & card fees");
   if (/tavvy/.test(d)) return rev("Software & subscriptions");
   // Weekly loan payments to Direct Merchants (plus its daily collection debit).
   if (/dirct mer col|direct merch/.test(d)) return exp("Loan & financing");
@@ -402,7 +407,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   // Daniel, 2026-09-25: everything Google is KIW marketing; GoHighLevel is the marketing CRM.
   if (/google|highlevel|gohighlevel/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Railway, Supabase, GoDaddy, Anthropic/Claude, Apple and Manus are KIW marketing.
-  if (/railway|supabase|godaddy|\bwix\b|wix\.com|anthropic|claude\.ai|apple\.com|apple store|itunes|manus ai|\bmanus\b/.test(d) && !/cinema/.test(d)) return exp("Marketing");
+  if (/higgsfield|railway|supabase|godaddy|\bwix\b|wix\.com|anthropic|claude\.ai|apple\.com|apple store|itunes|manus ai|\bmanus\b/.test(d) && !/cinema/.test(d)) return exp("Marketing");
   // Daniel, 2026-09-25: Western Union (WUVISAAFT) transfers pay for overseas marketing.
   if (/wuvisaaft|western union|wu digital/.test(d)) return exp("Overseas marketing");
   // Daniel, 2026-09-25: equipment and truck rentals are always KIW.
@@ -425,7 +430,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/middlesex gases|airgas|welding/.test(d)) return exp("Shop supplies & gas");
   if (/magna finance|hartford|thrust insurance|geico|progressive|liberty mutual/.test(d)) return exp("Insurance");
   if (/dept of rev|\bdor\b|mass dor|irs\b|secretary of state|town of|city of/.test(d)) return exp("Taxes & licenses");
-  if (/adp |payroll|gusto|evolution tax/.test(d)) return exp("Professional services");
+  if (/adp |payroll|gusto|evolution ?tax/.test(d)) return exp("Professional services");
   if (/monthly service fee|overdraft|service charge|atm fee|nsf|returned item|quickbooks payments|intuit/.test(d)) return exp("Bank & card fees");
   if (/ipostal/.test(d)) return exp("Office & other");
   if (/speedway|gulf |shell |mobil|exxon|sunoco| bp |citgo|chevron|valero|irving|cumberland farms|\bgas\b/.test(d)) return exp("Vehicles & fuel");

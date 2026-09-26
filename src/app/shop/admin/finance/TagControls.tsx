@@ -35,7 +35,10 @@ export default function TagControls({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
-  const [wholeVendor, setWholeVendor] = useState(false);
+  // Daniel, 2026-09-25: one answer should move every transaction from the same merchant —
+  // except restaurants and hotels, which are decided one by one.
+  const perTransaction = ["restaurants", "hotels"].includes(reviewKind(tx));
+  const [wholeVendor, setWholeVendor] = useState(!perTransaction);
   const [expenseCat, setExpenseCat] = useState(expenseDefault(tx));
   const [ownerCat, setOwnerCat] = useState(out ? ownerDefault(tx) : "Owner money in");
   const lock = useRef(false);

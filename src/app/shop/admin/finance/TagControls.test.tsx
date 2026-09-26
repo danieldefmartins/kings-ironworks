@@ -25,6 +25,11 @@ describe("TagControls", () => {
     expect(body.applyToVendor).toBe(false);
   });
 
+  it("restaurants start with 'same for all' unticked", () => {
+    render(<TagControls tx={base} lang="en" sameVendorCount={3} onSaved={() => {}} />);
+    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(false);
+  });
+
   it("hides Daniel for transactions before he joined in March 2026", () => {
     render(<TagControls tx={{ ...base, posted_on: "2026-02-14" }} lang="en" onSaved={() => {}} />);
     expect(screen.queryByRole("button", { name: "Daniel" })).toBeNull();
@@ -36,7 +41,8 @@ describe("TagControls", () => {
     const f = mockFetch();
     const onSaved = vi.fn();
     render(<TagControls tx={{ ...base, description: "US CABINET DEPOT 470-7958808 GA", category: "Uncategorized", vendor: "us cabinet" }} lang="en" sameVendorCount={1} onSaved={onSaved} />);
-    fireEvent.click(screen.getByRole("checkbox"));
+    // "Same for all from this merchant" starts ticked for non-restaurant merchants.
+    expect((screen.getByRole("checkbox") as HTMLInputElement).checked).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "KIW" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith({ vendor: "us cabinet", out: true, wholeVendor: true }));
     const body = JSON.parse((f.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);

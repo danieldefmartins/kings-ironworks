@@ -164,6 +164,16 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("ORIG CO NAME:WELLS FARGO CARD ORIG ID:3411650794 IND NAME:ALINE MARTINS", -110, [], "2026-05-18")).toMatchObject({ grp: "owner", owner: "daniel", category: "Credit card" });
     expect(tagTransaction("ORIG CO NAME:T-MOBILE TEL ORIG ID:0000450304 IND NAME:ALINE MARTINS", -267.62, [], "2026-08-24")).toMatchObject({ grp: "owner", owner: "daniel" });
   });
+  it("overdraft fees are bank fees, whatever purchase they mention", () => {
+    expect(autoTag("OVERDRAFT FEE FOR A $19.55 CARD PURCHASE - DETAILS: 0918TST*COMMONGROUND COFFEE Everett MA", -34)).toMatchObject({ grp: "expense", category: "Bank & card fees" });
+    expect(autoTag("OVERDRAFT FEE FOR A $617.06 CARD PURCHASE WITH PIN - DETAILS: THE HOME DEPOT #2688", -34)).toMatchObject({ category: "Bank & card fees" });
+  });
+  it("Daniel's card accounts and spelling variants are recognized", () => {
+    expect(autoTag("ORIG CO NAME:EVOLUTIONTAX-BKP ORIG ID:1800948598 DESC DATE:", -150)).toMatchObject({ category: "Professional services" });
+    expect(tagTransaction("ORIG CO NAME:WELLS FARGO CARD ORIG ID:3411650794 IND NAME:DANIEL", -139, [], "2026-09-17")).toMatchObject({ owner: "daniel", category: "Credit card" });
+    expect(tagTransaction("ORIG CO NAME:DISCOVER CAP ONE ORIG ID:9541719375", -67, [], "2026-07-01")).toMatchObject({ owner: "daniel" });
+    expect(autoTag("HIGGSFIELD INC. WWW.HIGGSFIEL CA 04/29", -129)).toMatchObject({ category: "Marketing" });
+  });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
     expect(autoTag("ORIG CO NAME:EVOLUTION TAX SE ORIG ID:1800948598 DESC DATE:", -460)).toMatchObject({ grp: "expense", category: "Professional services" });
