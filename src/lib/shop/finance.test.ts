@@ -148,6 +148,11 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("ZARA 16548 CAMBRIDGE MA 01/08", -300, [], "2026-01-08")).toMatchObject({ grp: "owner", owner: "reginaldo" });
     expect(tagTransaction("ZARA 16548 CAMBRIDGE MA 05/08", -300, [], "2026-05-08").grp).toBe("review");
   });
+  it("Life Time: the big membership is Daniel's, smaller charges are Kayky's", () => {
+    expect(tagTransaction("LTFITNESS PRODUCT/SVC 888-284-0048 MN 06/03", -649, [], "2026-06-03")).toMatchObject({ grp: "owner", owner: "daniel", category: "Gym" });
+    expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 07/01", -679, [], "2026-07-01")).toMatchObject({ owner: "daniel" });
+    expect(tagTransaction("LTF*LIFE TIME MO DUE LIFETIME.LIFE MN 07/01", -389, [], "2026-07-01")).toMatchObject({ owner: "reginaldo", category: "Gym" });
+  });
   it("Evolution Tax is our accountant", () => {
     expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
     expect(autoTag("ORIG CO NAME:EVOLUTION TAX SE ORIG ID:1800948598 DESC DATE:", -460)).toMatchObject({ grp: "expense", category: "Professional services" });

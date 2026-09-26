@@ -103,6 +103,7 @@ export const OWNER_CATEGORIES = [
   "Personal taxes",
   "Loan payment",
   "Haircut",
+  "Gym",
   "Transfer to personal account",
   "PayPal",
   "Church / donations",
@@ -365,6 +366,9 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/sparrow card/.test(d)) return own("daniel", "Credit card");
   if (/paypal/.test(d) && out) return own("reginaldo", "PayPal");
   if (/thousand trails/.test(d)) return own("daniel", "Personal (other)");
+  // Daniel, 2026-09-25: Life Time gym — the big membership ($649, now $679) is Daniel's,
+  // the smaller dues and extras are Kayky's (Reginaldo).
+  if (/life ?time|ltf\*|ltfitness/.test(d) && out) return Math.abs(amount) >= 600 ? own("daniel", "Gym") : own("reginaldo", "Gym");
   if (/golden money|gmt-brazu|brazuka/.test(d) && out) return own("reginaldo", "Personal (other)");
   if (/venmo/.test(d) && /rodrigues regi/.test(d) && !out) return own("reginaldo", "Owner money in");
 
