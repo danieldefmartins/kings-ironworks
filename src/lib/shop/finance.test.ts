@@ -130,6 +130,10 @@ describe("Daniel's rules, round 2", () => {
     expect(tagTransaction("Zelle payment to Erika Chelsey 29862009331", -500, [], "2026-07-02")).toMatchObject({ grp: "owner", owner: "daniel", category: "Loan payment" });
     expect(autoTag("ORIG CO NAME:HOME DEPOT ORIG ID:CITIGPUFDR DESC DATE:260923 CO ENTRY DESCR:PAYMENT", -306)).toMatchObject({ grp: "expense", owner: "kiw", category: "Home Depot & hardware stores" });
   });
+  it("Evolution Tax is our accountant", () => {
+    expect(autoTag("Zelle payment to Evolution Tax Services JPM99", -1000)).toMatchObject({ grp: "expense", category: "Professional services" });
+    expect(autoTag("ORIG CO NAME:EVOLUTION TAX SE ORIG ID:1800948598 DESC DATE:", -460)).toMatchObject({ grp: "expense", category: "Professional services" });
+  });
   it("equipment and truck rentals are KIW, and United Rentals is not United Airlines", () => {
     expect(autoTag("UNITED RENTALS 617-387-9545 MA 08/08", -1360.42)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
     expect(autoTag("U-HAUL CENTER MALDEN 800-789-3638 MA 09/19", -159.95)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });

@@ -270,6 +270,7 @@ const ZELLE_EXPENSE: Record<string, string> = {
   "valteir king iron group": "Labor & subcontractors", "samuel soldador": "Labor & subcontractors",
   "grace rent office": "Rent & utilities", "jorge silva family church": "Rent & utilities", cleaning: "Rent & utilities",
   "kevin ribeiro arquiteto amigo ma": "Professional services", "davi lazzaroto": "Professional services",
+  "evolution tax services": "Professional services", // accountant (Daniel, 2026-09-25)
   "what to wear inc": "Professional services",
   // 360 For Business is Daniel's agency — a KIW expense, not a payment to Daniel himself.
   "360 for business llc": "Management & marketing (Daniel)", "360forbusiness": "Management & marketing (Daniel)",
@@ -400,7 +401,7 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/middlesex gases|airgas|welding/.test(d)) return exp("Shop supplies & gas");
   if (/magna finance|hartford|thrust insurance|geico|progressive|liberty mutual/.test(d)) return exp("Insurance");
   if (/dept of rev|\bdor\b|mass dor|irs\b|secretary of state|town of|city of/.test(d)) return exp("Taxes & licenses");
-  if (/adp |payroll|gusto/.test(d)) return exp("Professional services");
+  if (/adp |payroll|gusto|evolution tax/.test(d)) return exp("Professional services");
   if (/monthly service fee|overdraft|service charge|atm fee|nsf|returned item|quickbooks payments|intuit/.test(d)) return exp("Bank & card fees");
   if (/google \*workspace|ipostal/.test(d)) return exp("Software & marketing");
   if (/speedway|gulf |shell |mobil|exxon|sunoco| bp |citgo|chevron|valero|irving|cumberland farms|\bgas\b/.test(d)) return exp("Vehicles & fuel");
