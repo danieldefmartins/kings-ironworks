@@ -98,6 +98,8 @@ export const OWNER_CATEGORIES = [
   "Transfer to personal account",
   "PayPal",
   "Church / donations",
+  "Cash withdrawal",
+  "Investment",
   "Owner money in",
 ] as const;
 
@@ -295,6 +297,8 @@ export const HOTEL_RE = /priceln|staybridge|expedia|booking\.com|marriott|hilton
 export const CARD_PAYMENT_RE = /payment to chase card|chase card ending|aspire mastercard|applecard|capital one.*pymt|amex epayment|discover e-payment|citi (card|autopay)|synchrony|cardmember/i;
 export const ONLINE_RE = /amazon|amzn|walmart|wal-mart|target|staples|nutrafol|adobe|facebk|facebook|godaddy|spotify|google (?!\*workspace)|openai|anthropic|claude\.ai|canva|mailchimp|hostinger|squarespace|wix|namecheap|apple\.com|experian|netflix|hulu|paramount|disney|youtube|ebay|etsy|temu|shein|best buy|homegoods|tj ?maxx|marshalls|ross stores/i;
 
+const LAWYER_RE = /attorney|lawyer|law office|law firm|law group|\besq\b|legal (services|group|aid)|advogad|silva braga|braga & scherr|scherr|margarida|\bbraga\b/i;
+
 const rev = (category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "review", owner: null });
 const exp = (category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "expense", owner: "kiw" });
 const own = (owner: FinOwner, category: string): Omit<FinTag, "tag_source" | "rule_id"> => ({ category, grp: "owner", owner });
@@ -318,6 +322,11 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
       if (ZELLE_SELF.has(name)) return { category: "Between KIW accounts", grp: "transfer", owner: null };
       return { category: "Customer payment", grp: "revenue", owner: null };
     }
+    // Daniel, 2026-09-25: anything to Gabriela Satiro, and any lawyer, is Kayky's (Reginaldo) personal.
+    if (/satiro/.test(name)) return own("reginaldo", "Personal (other)");
+    // Daniel, 2026-09-25: Village / Laester payments are Kayky's personal investment.
+    if (/village|laester/.test(name)) return own("reginaldo", "Investment");
+    if (LAWYER_RE.test(name)) return own("reginaldo", "Attorney");
     if (ZELLE_EXPENSE[name]) return exp(ZELLE_EXPENSE[name]);
     if (ZELLE_OWNER[name]) return own(ZELLE_OWNER[name][0], ZELLE_OWNER[name][1]);
     return rev("Labor & subcontractors");
@@ -327,6 +336,11 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
   if (/chasehomefinance|ln pmt/.test(d)) return own("reginaldo", "Mortgage");
   if (/ysi\*|the revere/.test(d)) return own("reginaldo", "Apartment rent");
   if (/usataxpymt/.test(d)) return own("reginaldo", "Personal taxes");
+  if (/satiro/.test(d)) return own("reginaldo", "Personal (other)");
+  if (/laester/.test(d)) return own("reginaldo", "Investment");
+  if (LAWYER_RE.test(d)) return own("reginaldo", "Attorney");
+  // Daniel, 2026-09-25: ATM withdrawals are all Kayky's (Reginaldo).
+  if (/atm withdrawal|atm cash withdrawal/.test(d)) return own("reginaldo", "Cash withdrawal");
   if (/great rock chur/.test(d)) return own("reginaldo", "Kids' school");
   if (/stellantis/.test(d)) return own("daniel", "Car");
   if (/capital one|capitalone|\bcof\b/.test(d)) return own("daniel", "Car");
@@ -378,7 +392,6 @@ export function autoTag(description: string, amount: number): Omit<FinTag, "tag_
 
   if (ONLINE_RE.test(d)) return rev(/adobe|facebk|facebook|godaddy|google|openai|anthropic|canva|mailchimp|hostinger|squarespace|wix|namecheap|experian/.test(d) ? "Software & marketing" : UNCATEGORIZED);
   if (/stop & shop|market basket|costco|dollar general|whole foods|trader joe/.test(d)) return rev(UNCATEGORIZED);
-  if (/silva braga|braga & scherr|attorney|law office|legal/.test(d)) return rev("Professional services");
   if (/church|ministry|igreja|tithe/.test(d)) return own("reginaldo", "Church / donations");
   if (/stellantis|santander|ally |gm financial/.test(d)) return rev("Loan & financing");
   return rev(UNCATEGORIZED);

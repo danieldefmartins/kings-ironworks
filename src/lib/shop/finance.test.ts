@@ -108,6 +108,18 @@ describe("Daniel's rules, round 2", () => {
     expect(autoTag("ORIG CO NAME:DIRCT MER COL DB ORIG ID:3471820616 CO ENTRY DESCR:PAYMENT", -20)).toMatchObject({ grp: "expense", category: "Loan & financing" });
     expect(autoTag("Zelle payment to JOELIO XAVIERDEARAGAO JPM99codn3mg", -1300)).toMatchObject({ grp: "expense", category: "Labor & subcontractors" });
   });
+  it("ATM withdrawals, Gabriela Satiro and any lawyer are Kayky's (Reginaldo)", () => {
+    expect(autoTag("ATM WITHDRAWAL 000286 06/12702 GRAND", -500)).toMatchObject({ grp: "owner", owner: "reginaldo" });
+    expect(autoTag("Zelle payment to Gabriela Satiro JPM99x", -300)).toMatchObject({ grp: "owner", owner: "reginaldo" });
+    expect(autoTag("SILVA BRAGA & SCHERR MELROSE MA 559593 03/27", -1000)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Attorney" });
+    expect(autoTag("Zelle payment to Margarida attorney JPM99", -1000)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Attorney" });
+    expect(autoTag("ORIG CO NAME:CHASEHOMEFINANCE IND NAME:SATIRO GABRIELA", -4253.84)).toMatchObject({ owner: "reginaldo", category: "Mortgage" });
+    expect(autoTag("Zelle payment to Rosa Gabriela Mecanico JPM99", -1700).grp).toBe("review");
+    expect(autoTag("LEGAL SEA FOODS BOSTON MA", -80).owner).not.toBe("reginaldo");
+    expect(autoTag("Zelle payment to village laester 26200789863", -1200)).toMatchObject({ grp: "owner", owner: "reginaldo", category: "Investment" });
+    expect(autoTag("Zelle payment to Aparecido Ramos. Village JPM99", -790)).toMatchObject({ owner: "reginaldo", category: "Investment" });
+    expect(autoTag("TST* VILLAGE BAR & GRIL EVERETT MA 09/11", -60).grp).toBe("review");
+  });
   it("equipment and truck rentals are KIW, and United Rentals is not United Airlines", () => {
     expect(autoTag("UNITED RENTALS 617-387-9545 MA 08/08", -1360.42)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
     expect(autoTag("U-HAUL CENTER MALDEN 800-789-3638 MA 09/19", -159.95)).toMatchObject({ grp: "expense", category: "Equipment & truck rental" });
