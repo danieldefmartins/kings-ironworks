@@ -23,22 +23,28 @@ const RANGE_LABEL: Record<FinRange, [string, string, string]> = {
 
 type Row = { name: string; amount: number; count: number };
 
-function BarList({ rows, total, color, empty }: { rows: Row[]; total: number; color: string; empty: string }) {
+function BarList({ rows, total, color, empty, link }: { rows: Row[]; total: number; color: string; empty: string; link?: (name: string) => string }) {
   if (!rows.length) return <p className="py-6 text-center text-sm text-neutral-500">{empty}</p>;
   const max = Math.max(...rows.map((r) => r.amount));
   return (
     <ul className="space-y-2">
       {rows.map((r) => (
         <li key={r.name}>
+          <LinkOrDiv href={link?.(r.name)}>
           <div className="flex items-baseline justify-between gap-3 text-sm">
             <span className="min-w-0 truncate text-neutral-200">{r.name}</span>
             <span className="shrink-0 tabular-nums font-semibold text-neutral-100">{usd(r.amount)}<span className="ml-2 text-xs font-normal text-neutral-500">{total > 0 ? `${Math.round((r.amount / total) * 100)}%` : ""}</span></span>
           </div>
           <div className="mt-1 h-1.5 rounded-full bg-white/5"><div className="h-1.5 rounded-full" style={{ width: `${Math.max(2, (r.amount / max) * 100)}%`, background: color }} /></div>
+          </LinkOrDiv>
         </li>
       ))}
     </ul>
   );
+}
+
+function LinkOrDiv({ href, children }: { href?: string; children: React.ReactNode }) {
+  return href ? <Link href={href} className="-mx-2 block rounded-lg px-2 py-1 hover:bg-white/5">{children}</Link> : <div>{children}</div>;
 }
 
 function Card({ title, children, right }: { title: string; children: React.ReactNode; right?: React.ReactNode }) {
@@ -83,6 +89,10 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     const qs = q.toString();
     return `/shop/admin/finance${qs ? `?${qs}` : ""}`;
   };
+  const txLink = (p: Record<string, string>) => {
+    const q = new URLSearchParams({ ...(from ? { from } : {}), ...(to ? { to } : {}), ...p });
+    return `/shop/admin/finance/transactions?${q.toString()}`;
+  };
   const chip = (on: boolean) => `flex min-h-10 shrink-0 items-center rounded-full border px-3 text-sm ${on ? "border-amber-400 bg-amber-400/15 text-amber-200" : "border-white/15 text-neutral-400"}`;
 
   return (
@@ -120,8 +130,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
           <Kpi label={L(lang, "Business spending", "Gastos da empresa", "Gastos de la empresa")} value={usd(s.expenses)} tone="text-orange-300" />
           <Kpi label={L(lang, "Profit", "Lucro", "Ganancia")} value={usd(s.profit)} tone={s.profit < 0 ? "text-red-300" : "text-emerald-300"} sub={s.margin !== null ? `${Math.round(s.margin * 100)}% ${L(lang, "margin", "de margem", "de margen")}` : undefined} />
           <Kpi label={L(lang, "Cash in the bank", "Dinheiro no banco", "Dinero en el banco")} value={usd(cash)} tone="text-neutral-100" sub={accounts.map((a) => `…${a.account} ${usd(a.balance ?? 0)}`).join(" · ")} />
-          <Kpi href="/shop/admin/finance/transactions?owner=daniel" label={L(lang, "Daniel — personal", "Daniel — pessoal", "Daniel — personal")} value={usd(s.draws.daniel)} tone="text-sky-200" />
-          <Kpi href="/shop/admin/finance/transactions?owner=reginaldo" label={L(lang, "Reginaldo — personal", "Reginaldo — pessoal", "Reginaldo — personal")} value={usd(s.draws.reginaldo)} tone="text-rose-200" />
+          <Kpi href={txLink({ owner: "daniel", view: "cat" })} label={L(lang, "Daniel — personal", "Daniel — pessoal", "Daniel — personal")} value={usd(s.draws.daniel)} tone="text-sky-200" />
+          <Kpi href={txLink({ owner: "reginaldo", view: "cat" })} label={L(lang, "Kayky — personal", "Kayky — pessoal", "Kayky — personal")} value={usd(s.draws.reginaldo)} tone="text-rose-200" />
         </div>
 
         <Card title={L(lang, "Month by month", "Mês a mês", "Mes a mes")}>
@@ -130,7 +140,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
 
         <div className="grid gap-4 lg:grid-cols-2">
           <Card title={L(lang, "Where the money goes", "Para onde vai o dinheiro", "A dónde va el dinero")} right={<span className="text-sm text-neutral-400">{usd(s.expenses)}</span>}>
-            <BarList rows={s.byCategory} total={s.expenses} color="#d95926" empty={L(lang, "No business spending tagged yet.", "Nenhum gasto marcado ainda.", "Ningún gasto marcado aún.")} />
+            <BarList rows={s.byCategory} total={s.expenses} color="#d95926" link={(c) => txLink({ owner: "kiw", category: c })} empty={L(lang, "No business spending tagged yet.", "Nenhum gasto marcado ainda.", "Ningún gasto marcado aún.")} />
           </Card>
           <Card title={L(lang, "Top suppliers & payees", "Maiores fornecedores", "Principales proveedores")}>
             <BarList rows={s.topVendors} total={s.expenses} color="#d95926" empty="—" />
@@ -142,8 +152,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
             <div className="space-y-5">
               {(["daniel", "reginaldo"] as const).map((o) => (
                 <div key={o}>
-                  <p className="mb-2 flex justify-between text-sm font-semibold"><span className={o === "daniel" ? "text-sky-200" : "text-rose-200"}>{o === "daniel" ? "Daniel" : "Reginaldo"}</span><span className="tabular-nums">{usd(s.draws[o])}</span></p>
-                  <BarList rows={s.ownerCategories[o]} total={Math.max(s.draws[o], 0)} color="#199e70" empty="—" />
+                  <p className="mb-2 flex justify-between text-sm font-semibold"><span className={o === "daniel" ? "text-sky-200" : "text-rose-200"}>{o === "daniel" ? "Daniel" : "Kayky"}</span><span className="tabular-nums">{usd(s.draws[o])}</span></p>
+                  <BarList rows={s.ownerCategories[o]} total={Math.max(s.draws[o], 0)} color="#199e70" empty="—" link={(c) => txLink({ owner: o, category: c })} />
                 </div>
               ))}
             </div>

@@ -18,7 +18,7 @@ describe("TagControls", () => {
     const f = mockFetch();
     const onSaved = vi.fn();
     render(<TagControls tx={base} lang="en" onSaved={onSaved} />);
-    fireEvent.click(screen.getByRole("button", { name: "Reginaldo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Kayky" }));
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     const body = JSON.parse((f.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
     expect(body.tag).toEqual({ grp: "owner", owner: "reginaldo", category: "Restaurants" });
@@ -33,7 +33,7 @@ describe("TagControls", () => {
   it("hides Daniel for transactions before he joined in March 2026", () => {
     render(<TagControls tx={{ ...base, posted_on: "2026-02-14" }} lang="en" onSaved={() => {}} />);
     expect(screen.queryByRole("button", { name: "Daniel" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Reginaldo" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Kayky" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "KIW" })).toBeTruthy();
   });
 

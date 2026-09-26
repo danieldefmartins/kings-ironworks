@@ -34,23 +34,53 @@ export function listReviewQueue(): Promise<FinTx[]> {
   return pages("&grp=eq.review", "posted_on.desc,id.asc");
 }
 
-export async function searchFinTransactions(opts: {
-  q?: string; grp?: string; owner?: string; account?: string; month?: string; limit?: number; offset?: number;
-}): Promise<FinTx[]> {
+export interface FinFilter {
+  q?: string; grp?: string; owner?: string; account?: string; month?: string;
+  from?: string; to?: string; category?: string;
+}
+
+function filterQuery(opts: FinFilter): string {
   let f = "";
   const q = (opts.q || "").replace(/[*,()]/g, " ").trim();
   if (q) f += `&description=ilike.${encodeURIComponent(`*${q}*`)}`;
   if (opts.grp && /^(revenue|expense|owner|transfer|review)$/.test(opts.grp)) f += `&grp=eq.${opts.grp}`;
   if (opts.owner && /^(kiw|daniel|reginaldo)$/.test(opts.owner)) f += `&owner=eq.${opts.owner}`;
-  if (opts.account && /^\d{4}$/.test(opts.account)) f += `&account=eq.${opts.account}`;
+  if (opts.account && /^(\d{4}|cash)$/.test(opts.account)) f += `&account=eq.${opts.account}`;
+  if (opts.category && opts.category.length <= 80) f += `&category=eq.${encodeURIComponent(opts.category)}`;
   if (opts.month && /^\d{4}-\d{2}$/.test(opts.month)) {
     const [y, m] = opts.month.split("-").map(Number);
     const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
     f += `&posted_on=gte.${opts.month}-01&posted_on=lt.${next}`;
   }
+  if (opts.from && /^\d{4}-\d{2}-\d{2}$/.test(opts.from)) f += `&posted_on=gte.${opts.from}`;
+  if (opts.to && /^\d{4}-\d{2}-\d{2}$/.test(opts.to)) f += `&posted_on=lte.${opts.to}`;
+  return f;
+}
+
+export async function searchFinTransactions(opts: FinFilter & { limit?: number; offset?: number }): Promise<FinTx[]> {
   const limit = Math.min(Math.max(opts.limit ?? 100, 1), 500);
-  const rows = await sbSelect<FinTx[]>("kiw_fin_transactions", `select=${TX_FIELDS}&org_id=eq.${ORG_ID}${f}&order=posted_on.desc,id.asc&limit=${limit}&offset=${Math.max(opts.offset ?? 0, 0)}`);
+  const rows = await sbSelect<FinTx[]>("kiw_fin_transactions", `select=${TX_FIELDS}&org_id=eq.${ORG_ID}${filterQuery(opts)}&order=posted_on.desc,id.asc&limit=${limit}&offset=${Math.max(opts.offset ?? 0, 0)}`);
   return rows.map(toTx);
+}
+
+export interface FinTotals { count: number; total: number; byCategory: { name: string; count: number; total: number }[] }
+
+/** Count, net total and per-category totals for EVERYTHING matching the filter (not just one page). */
+export async function totalsFinTransactions(opts: FinFilter): Promise<FinTotals> {
+  const cats = new Map<string, { name: string; count: number; total: number }>();
+  let count = 0, total = 0;
+  for (let offset = 0; offset < 50000; offset += PAGE) {
+    const page = await sbSelect<{ amount: string | number; category: string }[]>("kiw_fin_transactions", `select=amount,category&org_id=eq.${ORG_ID}${filterQuery(opts)}&order=id&limit=${PAGE}&offset=${offset}`);
+    for (const r of page) {
+      const a = Number(r.amount);
+      count++; total += a;
+      const c = cats.get(r.category) || { name: r.category, count: 0, total: 0 };
+      c.count++; c.total += a; cats.set(r.category, c);
+    }
+    if (page.length < PAGE) break;
+  }
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return { count, total: round(total), byCategory: [...cats.values()].map((c) => ({ ...c, total: round(c.total) })).sort((a, b) => Math.abs(b.total) - Math.abs(a.total)) };
 }
 
 export async function listFinRules(): Promise<FinRule[]> {

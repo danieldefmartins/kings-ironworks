@@ -72,13 +72,13 @@ export default function TagControls({
           <>
             <button disabled={busy} onClick={() => save({ grp: "expense", owner: "kiw", category: expenseCat })} className={`${btn} border-emerald-500/40 bg-emerald-500/10 text-emerald-200${ring("expense", "kiw")}`}>KIW</button>
             {danielOk && <button disabled={busy} onClick={() => save({ grp: "owner", owner: "daniel", category: ownerCat })} className={`${btn} border-sky-500/40 bg-sky-500/10 text-sky-200${ring("owner", "daniel")}`}>Daniel</button>}
-            <button disabled={busy} onClick={() => save({ grp: "owner", owner: "reginaldo", category: ownerCat })} className={`${btn} border-rose-500/40 bg-rose-500/10 text-rose-200${ring("owner", "reginaldo")}`}>Reginaldo</button>
+            <button disabled={busy} onClick={() => save({ grp: "owner", owner: "reginaldo", category: ownerCat })} className={`${btn} border-rose-500/40 bg-rose-500/10 text-rose-200${ring("owner", "reginaldo")}`}>Kayky</button>
           </>
         ) : (
           <>
             <button disabled={busy} onClick={() => save({ grp: "revenue", owner: null, category: "Customer payment" })} className={`${btn} border-emerald-500/40 bg-emerald-500/10 text-emerald-200${ring("revenue", null)}`}>{L(lang, "Customer payment", "Pagamento de cliente", "Pago de cliente")}</button>
             {danielOk && <button disabled={busy} onClick={() => save({ grp: "owner", owner: "daniel", category: "Owner money in" })} className={`${btn} border-sky-500/40 bg-sky-500/10 text-sky-200${ring("owner", "daniel")}`}>{L(lang, "Daniel put in", "Daniel colocou", "Daniel aportó")}</button>}
-            <button disabled={busy} onClick={() => save({ grp: "owner", owner: "reginaldo", category: "Owner money in" })} className={`${btn} border-rose-500/40 bg-rose-500/10 text-rose-200${ring("owner", "reginaldo")}`}>{L(lang, "Reginaldo put in", "Reginaldo colocou", "Reginaldo aportó")}</button>
+            <button disabled={busy} onClick={() => save({ grp: "owner", owner: "reginaldo", category: "Owner money in" })} className={`${btn} border-rose-500/40 bg-rose-500/10 text-rose-200${ring("owner", "reginaldo")}`}>{L(lang, "Kayky put in", "Kayky colocou", "Kayky aportó")}</button>
           </>
         )}
         <button disabled={busy} onClick={() => save({ grp: "transfer", owner: null, category: out ? "Not income / ignore" : "Not income / ignore" })} className={`${btn} border-white/15 text-neutral-300${ring("transfer", null)}`}>{L(lang, "Ignore", "Ignorar", "Ignorar")}</button>

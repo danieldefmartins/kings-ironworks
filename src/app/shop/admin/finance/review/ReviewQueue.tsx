@@ -30,6 +30,12 @@ export default function ReviewQueue({ items, lang }: { items: ReviewItem[]; lang
     for (const t of withKind) c[t.kind] = (c[t.kind] || 0) + 1;
     return c;
   }, [withKind]);
+  // Dollar total per filter (money out shown as a positive amount).
+  const sums = useMemo(() => {
+    const s: Record<string, number> = { all: 0 };
+    for (const t of withKind) { const a = Math.abs(t.amount); s.all += a; s[t.kind] = (s[t.kind] || 0) + a; }
+    return s;
+  }, [withKind]);
   const vendorCounts = useMemo(() => {
     const m = new Map<string, number>();
     for (const t of list) { const k = `${t.vendor}|${t.amount < 0}`; m.set(k, (m.get(k) || 0) + 1); }
@@ -62,14 +68,19 @@ export default function ReviewQueue({ items, lang }: { items: ReviewItem[]; lang
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4">
         {KINDS.filter((k) => k.id === "all" || counts[k.id]).map((k) => (
           <button key={k.id} onClick={() => { setKind(k.id); setShown(40); }} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-3 text-sm ${kind === k.id ? "border-amber-400 bg-amber-400/15 text-amber-200" : "border-white/15 text-neutral-400"}`}>
-            {L(lang, ...k.label)} <span className="text-xs opacity-70">{counts[k.id] || 0}</span>
+            {L(lang, ...k.label)} <span className="text-xs opacity-70">{counts[k.id] || 0} · {usd(sums[k.id] || 0)}</span>
           </button>
         ))}
       </div>
-      <div className="flex gap-2 text-sm">
-        <button onClick={() => setSort("big")} className={sort === "big" ? "font-semibold text-amber-300" : "text-neutral-500"}>{L(lang, "Biggest first", "Maiores primeiro", "Mayores primero")}</button>
-        <span className="text-neutral-600">·</span>
-        <button onClick={() => setSort("new")} className={sort === "new" ? "font-semibold text-amber-300" : "text-neutral-500"}>{L(lang, "Newest first", "Mais recentes", "Más recientes")}</button>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+        <div className="flex gap-2">
+          <button onClick={() => setSort("big")} className={sort === "big" ? "font-semibold text-amber-300" : "text-neutral-500"}>{L(lang, "Biggest first", "Maiores primeiro", "Mayores primero")}</button>
+          <span className="text-neutral-600">·</span>
+          <button onClick={() => setSort("new")} className={sort === "new" ? "font-semibold text-amber-300" : "text-neutral-500"}>{L(lang, "Newest first", "Mais recentes", "Más recientes")}</button>
+        </div>
+        <span className="text-neutral-400" aria-live="polite">
+          {counts[kind] || 0} · <span className="text-lg font-semibold tabular-nums text-neutral-100">{usd(sums[kind] || 0, true)}</span>
+        </span>
       </div>
       <ul className="space-y-3">
         {visible.slice(0, shown).map((t) => (

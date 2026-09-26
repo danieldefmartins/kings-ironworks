@@ -23,7 +23,7 @@ export default function TxList({ items, lang }: { items: TxItem[]; lang: string 
               <span className="mt-1 block text-xs text-neutral-500">
                 {shortDate(t.posted_on)} · {t.account === "cash" ? L(lang, "Cash", "Dinheiro", "Efectivo") : `…${t.account}`} ·{" "}
                 <span className={t.owner ? OWNER_TONE[t.owner] : t.grp === "revenue" ? "text-sky-300" : t.grp === "review" ? "text-amber-300" : "text-neutral-400"}>
-                  {L(lang, ...GROUP_LABEL[t.grp])}{t.owner && t.owner !== "kiw" ? ` · ${t.owner === "daniel" ? "Daniel" : "Reginaldo"}` : ""} · {t.category}
+                  {L(lang, ...GROUP_LABEL[t.grp])}{t.owner && t.owner !== "kiw" ? ` · ${t.owner === "daniel" ? "Daniel" : "Kayky"}` : ""} · {t.category}
                 </span>
                 {t.tag_source === "rule" && <span className="ml-1 text-neutral-600">({L(lang, "merchant rule", "regra do fornecedor", "regla del comercio")})</span>}
               </span>

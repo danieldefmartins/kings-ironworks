@@ -64,7 +64,10 @@ export default function CategorizeQueue({ items, lang }: { items: CatItem[]; lan
   if (!list.length) return <p className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center text-emerald-200">{L(lang, "Every business expense has a category.", "Todas as despesas da empresa têm categoria.", "Todos los gastos de la empresa tienen categoría.")}</p>;
   return (
     <div className="space-y-4">
-      <p className="text-sm text-neutral-400">{L(lang, "These are KIW business expenses. Pick what kind of expense each one is.", "Estas são despesas da KIW. Escolha o tipo de cada uma.", "Estos son gastos de KIW. Elige el tipo de cada uno.")}</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-sm text-neutral-400">{L(lang, "These are KIW business expenses. Pick what kind of expense each one is.", "Estas são despesas da KIW. Escolha o tipo de cada uma.", "Estos son gastos de KIW. Elige el tipo de cada uno.")}</p>
+        <span className="text-sm text-neutral-400">{list.length} · <span className="text-lg font-semibold tabular-nums text-neutral-100">{usd(list.reduce((a, t) => a + Math.abs(t.amount), 0), true)}</span></span>
+      </div>
       <ul className="space-y-3">
         {sorted.slice(0, shown).map((t) => (
           <Row key={t.id} t={t} lang={lang} sameVendor={(vendorCounts.get(t.vendor) || 1) - 1}
