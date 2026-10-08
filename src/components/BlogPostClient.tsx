@@ -51,7 +51,7 @@ export default function BlogPostClient({ post, categoryLabel, relatedPosts }: Bl
             </span>
           </Link>
           <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
-            <span className="px-2 py-0.5 md:px-3 md:py-1 bg-accent text-accent-foreground text-[10px] md:text-xs font-display font-bold tracking-wider">
+            <span className="px-2 py-0.5 md:px-3 md:py-1 bg-accent text-accent-foreground text-[11px] md:text-xs font-display font-bold tracking-wider">
               {categoryLabel}
             </span>
           </div>
@@ -94,7 +94,7 @@ export default function BlogPostClient({ post, categoryLabel, relatedPosts }: Bl
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 md:px-3 py-0.5 md:py-1 bg-accent/10 text-accent text-[10px] md:text-xs font-display font-bold tracking-wider uppercase border-2 border-accent/30"
+                    className="px-2 md:px-3 py-0.5 md:py-1 bg-accent/10 text-accent text-[11px] md:text-xs font-display font-bold tracking-wider uppercase border-2 border-accent/30"
                   >
                     {tag}
                   </span>

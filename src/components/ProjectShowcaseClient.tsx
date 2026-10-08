@@ -480,7 +480,7 @@ export default function ProjectShowcaseClient({ projectSlug }: { projectSlug: st
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-5">
-                    <div className="inline-block px-2 py-0.5 bg-accent/90 text-accent-foreground text-[10px] font-display font-bold tracking-wider uppercase mb-2">
+                    <div className="inline-block px-2 py-0.5 bg-accent/90 text-accent-foreground text-[11px] font-display font-bold tracking-wider uppercase mb-2">
                       Design rendering · {opt.style}
                     </div>
                     <h3 className="text-display text-xl text-white mb-2">{opt.name}</h3>

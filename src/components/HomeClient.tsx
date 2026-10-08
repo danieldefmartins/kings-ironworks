@@ -249,7 +249,7 @@ export default function HomeClient() {
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute top-4 left-4 bg-accent/90 text-accent-foreground px-3 py-1 text-[10px] font-display font-bold tracking-wider uppercase">
+                  <div className="absolute top-4 left-4 bg-accent/90 text-accent-foreground px-3 py-1 text-[11px] font-display font-bold tracking-wider uppercase">
                     From Sketch to Reality
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-6">

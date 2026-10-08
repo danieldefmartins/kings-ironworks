@@ -619,7 +619,7 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
                   }`}
                 >
                   {cat.label}
-                  {count > 0 && !isActive && <span className="ml-1 text-[10px] text-muted-foreground/50">{count}</span>}
+                  {count > 0 && !isActive && <span className="ml-1 text-[11px] text-muted-foreground/50">{count}</span>}
                 </button>
               );
             })}
@@ -655,7 +655,7 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
                     }`}
                   >
                     {sub.label}
-                    <span className="ml-1 text-[10px] opacity-50">{sub.count}</span>
+                    <span className="ml-1 text-[11px] opacity-50">{sub.count}</span>
                   </button>
                 );
               })}

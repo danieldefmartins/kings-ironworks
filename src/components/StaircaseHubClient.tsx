@@ -51,7 +51,7 @@ function StructureSelector({
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(201,169,110,0.05)_0%,_transparent_70%)]" />
         <div className="relative z-10 text-center px-6 max-w-3xl">
           <motion.p
-            className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mb-4"
+            className="text-[11px] font-semibold tracking-[5px] uppercase text-accent/50 mb-4"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
@@ -131,7 +131,7 @@ function StructureSelector({
               transition={{ duration: 0.8 }}
               viewport={{ once: true, amount: 0.3 }}
             >
-              <p className="text-[10px] font-semibold tracking-[4px] uppercase text-accent/60 mb-3">
+              <p className="text-[11px] font-semibold tracking-[4px] uppercase text-accent/60 mb-3">
                 {String(i + 1).padStart(2, "0")} / {String(STRUCTURES.length).padStart(2, "0")}
               </p>
               <h2 className="font-display text-4xl md:text-6xl font-black tracking-tight text-white mb-2">
@@ -172,12 +172,12 @@ function TierSelector({
       <div className="pt-20 lg:pt-24 px-6 lg:px-16 pb-8">
         <button
           onClick={onBack}
-          className="text-[10px] font-semibold tracking-[3px] uppercase text-accent/50 hover:text-accent transition-colors mb-6 cursor-pointer"
+          className="text-[11px] font-semibold tracking-[3px] uppercase text-accent/50 hover:text-accent transition-colors mb-6 cursor-pointer"
         >
           &larr; Back to Structures
         </button>
         <StepIndicator current={1} total={3} />
-        <p className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mt-6 mb-3">
+        <p className="text-[11px] font-semibold tracking-[5px] uppercase text-accent/50 mt-6 mb-3">
           Step 2 of 3 &mdash; {structure.name} Staircase
         </p>
         <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-white mb-3">
@@ -273,12 +273,12 @@ function RailingSelector({
       <div className="pt-20 lg:pt-24 px-6 lg:px-16 pb-8">
         <button
           onClick={onBack}
-          className="text-[10px] font-semibold tracking-[3px] uppercase text-accent/50 hover:text-accent transition-colors mb-6 cursor-pointer"
+          className="text-[11px] font-semibold tracking-[3px] uppercase text-accent/50 hover:text-accent transition-colors mb-6 cursor-pointer"
         >
           &larr; Back to Finish Level
         </button>
         <StepIndicator current={2} total={3} />
-        <p className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mt-6 mb-3">
+        <p className="text-[11px] font-semibold tracking-[5px] uppercase text-accent/50 mt-6 mb-3">
           Step 3 of 3 &mdash; {structure.name} &middot; {tier.name}
         </p>
         <h2 className="font-display text-3xl md:text-5xl font-black tracking-tight text-white mb-3">
@@ -349,7 +349,7 @@ function Summary({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <p className="text-[10px] font-semibold tracking-[5px] uppercase text-accent/50 mb-6">
+          <p className="text-[11px] font-semibold tracking-[5px] uppercase text-accent/50 mb-6">
             Your Dream Staircase
           </p>
           <h2 className="font-display text-4xl md:text-6xl font-black tracking-tight text-white mb-8">

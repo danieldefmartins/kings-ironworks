@@ -47,7 +47,7 @@ export default function BlogClient() {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3 md:px-5 py-1.5 md:py-2 text-[10px] md:text-xs font-display font-bold tracking-wider whitespace-nowrap transition-all border-2 md:border-4 flex-shrink-0 ${
+                className={`px-3 md:px-5 py-1.5 md:py-2 text-[11px] md:text-xs font-display font-bold tracking-wider whitespace-nowrap transition-all border-2 md:border-4 flex-shrink-0 ${
                   activeCategory === cat.id
                     ? "bg-accent text-accent-foreground border-accent"
                     : "bg-transparent text-foreground/60 border-border hover:border-accent/50 hover:text-foreground"
@@ -78,7 +78,7 @@ export default function BlogClient() {
                       />
                     </div>
                     <div className="p-3 md:p-6 flex flex-col flex-1 min-w-0">
-                      <span className="self-start px-2 py-0.5 md:px-3 md:py-1 bg-accent/10 text-accent text-[10px] md:text-xs font-display font-bold tracking-wider uppercase mb-1.5 md:mb-3">
+                      <span className="self-start px-2 py-0.5 md:px-3 md:py-1 bg-accent/10 text-accent text-[11px] md:text-xs font-display font-bold tracking-wider uppercase mb-1.5 md:mb-3">
                         {BLOG_CATEGORIES.find((c) => c.id === post.category)
                           ?.label || post.category}
                       </span>
@@ -89,7 +89,7 @@ export default function BlogClient() {
                         {post.excerpt}
                       </p>
                       <div className="flex items-center justify-between md:pt-4 md:border-t md:border-border">
-                        <div className="flex items-center gap-2 md:gap-4 text-[10px] md:text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 md:gap-4 text-[11px] md:text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3 md:w-3.5 md:h-3.5" />
                             {formatDate(post.publishedDate)}
