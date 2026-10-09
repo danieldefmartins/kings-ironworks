@@ -149,9 +149,9 @@ export default function PhotosV2({
         <div className="mt-3 grid grid-cols-3 gap-2">
           {visible.map((p) => (
             <div key={p.id} className="overflow-hidden rounded-xl border border-neutral-800">
-              {p.url ? (
+              {p.signedUrl ? (
                 <Image
-                  src={p.url}
+                  src={p.signedUrl}
                   alt={p.category || ""}
                   width={200}
                   height={200}

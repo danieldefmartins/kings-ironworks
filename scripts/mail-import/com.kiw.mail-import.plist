@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Mac mini ONLY. Installed by scripts/mail-import/install-mini.sh; never load on the laptop. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kiw.mail-import</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/opt/homebrew/bin/node</string>
+        <string>/Users/danielmartins/Agents-Operation/kiw-mail-import/scripts/mail-import/import-mail.mjs</string>
+        <string>--env</string>
+        <string>/Users/danielmartins/Projects/tavvy-review-agent/.env</string>
+        <string>--state</string>
+        <string>/Users/danielmartins/Agents-Operation/kiw-mail-import/state.json</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/danielmartins/Agents-Operation/kiw-mail-import</string>
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>StandardOutPath</key>
+    <string>/Users/danielmartins/Agents-Operation/kiw-mail-import/logs/import.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/danielmartins/Agents-Operation/kiw-mail-import/logs/import.err.log</string>
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

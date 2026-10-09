@@ -6,6 +6,7 @@ import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 import ShopTopBar from "../ShopTopBar";
 import MenuDirectory from "../MenuDirectory";
+import ImportCustomerFiles from "./ImportCustomerFiles";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,7 @@ export default async function AdminHub() {
         </header>
 
         <Link href="/shop/admin/actions" className="mb-6 block rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5 hover:bg-amber-500/15"><span className="block text-xl font-semibold text-amber-300">{t(lang, "actionsTitle")} →</span><span className="mt-1 block text-sm text-neutral-300">{t(lang, "actionsNavHint")}</span></Link>
+        <ImportCustomerFiles lang={lang} />
         <MenuDirectory scope="admin" lang={lang} />
       </main>
     </div>

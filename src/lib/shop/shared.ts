@@ -92,6 +92,7 @@ export const PHOTO_CATEGORIES = [
   "Measurements",
   "Existing",
   "Inspiration",
+  "Customer Photos",
   "Installation — Location 1",
   "Installation — Location 2",
   "Installation — Location 3",
@@ -202,6 +203,32 @@ export interface Photo {
   uploaded_at: string;
   signedUrl?: string;
   uploaderName?: string;
+  // Imported customer files (GoHighLevel, the info@ mailbox). Rows uploaded in
+  // the app have no source and are 'approved'. Absent on databases that have
+  // not run the customer-files migration — treated as approved.
+  source?: string | null;
+  source_ref?: string | null;
+  review_status?: "pending" | "approved" | "rejected" | null;
+  source_note?: string | null;
+  source_at?: string | null;
+}
+
+// A customer's own words about the job ("we'll go with option B"), imported
+// with money already redacted and shown to the crew only once an owner keeps it.
+export interface CustomerNote {
+  id: string;
+  job_id: string;
+  source: string;
+  source_ref: string;
+  body: string;
+  author_direction: string;
+  message_at: string | null;
+  review_status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
+
+export function isApprovedAttachment(p: Pick<Photo, "review_status">): boolean {
+  return (p.review_status ?? "approved") === "approved";
 }
 
 // PDFs may contain prices even when their category was entered incorrectly.
@@ -209,10 +236,17 @@ export function isJobDocument(photo: Pick<Photo, "kind" | "url">): boolean {
   return photo.kind === "document" || photo.kind === "pdf" || /\.pdf(?:[?#]|$)/i.test(photo.url);
 }
 
+// Imported customer files waiting for an owner (pending) or turned down
+// (rejected) never reach anyone's photo grid; owners get the pending ones
+// separately for the review card. Crew rows also lose the import metadata.
 export function partitionJobAttachments(photos: Photo[], owner: boolean) {
+  const live = photos.filter(isApprovedAttachment);
   return {
-    photos: photos.filter(p => !isJobDocument(p) && (owner || (p.category !== PRICE_CATEGORY && p.category !== "Original Estimate"))),
-    documents: owner ? photos.filter(isJobDocument) : [],
+    photos: live
+      .filter(p => !isJobDocument(p) && (owner || (p.category !== PRICE_CATEGORY && p.category !== "Original Estimate")))
+      .map(p => (owner ? p : { ...p, source_ref: null, source_note: null })),
+    documents: owner ? live.filter(isJobDocument) : [],
+    pending: owner ? photos.filter(p => p.review_status === "pending" && !isJobDocument(p)) : [],
   };
 }
 

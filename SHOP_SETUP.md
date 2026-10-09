@@ -136,3 +136,60 @@ Approval is atomic (`kiw_shop_approve_measure_sheet` Postgres function,
 `supabase/migrations/`), admin-only, and the person who submitted a sheet can
 never approve it. Approval snapshots an immutable revision viewable at
 `/shop/job/<job>/measure/<sheet>/rev/<n>` — the printout's QR points there.
+
+## Customer files (photos + approvals from GoHighLevel and email)
+
+Each job shows the crew what the customer sent and what they approved, in a
+**Customer & approved design** section at the top of the traveler. Imports
+always land **pending**; only Daniel and Kayky (`canViewOwnerFinancials`) see
+the **Review customer files** card on the job page and choose **Keep** (file
+under Customer Photos / Design / Inspiration / Existing) or **Reject**. The
+server drops pending and rejected items from every crew payload.
+
+Price rules: outbound messages (our estimates) are never imported, PDFs are
+never imported, and every customer note is stored with money replaced by
+`[price removed]` (`src/lib/shop/customer-files.ts`, `redactMoney`) — and
+re-redacted when sent to the crew.
+
+Schema: `supabase/migrations/20261009000001_kiw_customer_files.sql` (adds
+`source`, `source_ref`, `review_status`, `source_note`, `source_at` to
+`kiw_shop_photos`; creates `kiw_shop_customer_notes`). Until it is applied the
+app keeps working and imports report an error.
+
+### GoHighLevel
+- Railway var `GHL_PIT_TOKEN` (KIW location private integration token).
+- Job page → **Pull from GHL** imports that job; Admin → **Import customer
+  files for all active jobs** runs every active job. Contacts are matched only
+  on exact phone digits or email — never names. Inbound image attachments and
+  inbound approval texts ("approved", "go with option B", "pode fazer"…).
+
+### Email (info@kingsironworks.com, via the Mac mini)
+GHL does not sync the info@ mailbox. The Mac mini runs Apple Mail with that
+account, so a launchd job there reads the local mail store every 30 minutes:
+
+- Script: `scripts/mail-import/import-mail.mjs` (+ `emlx.mjs`; shares the rules
+  in `src/lib/shop/customer-files.ts`). Installed to
+  `~/Agents-Operation/kiw-mail-import/` on the mini by
+  `bash scripts/mail-import/install-mini.sh` (run on the laptop; it copies the
+  files and loads `com.kiw.mail-import` **on the mini only**).
+- Reads `[Gmail].mbox/All Mail.mbox` of the KIW account
+  (`~/Library/Mail/V10/989E6E2D-…`). For each active job with an email:
+  inbound messages (not from @kingsironworks.com) where that address is the
+  sender or on To/Cc. Image attachments (signature logos and images repeated
+  across 3+ messages skipped; HEIC converted to JPEG with `sips`) and approval
+  text become pending items. Dedupe: photos by content hash
+  (`source_ref = email:sha1:…`), notes by Message-ID.
+- Credentials: `--env ~/Projects/tavvy-review-agent/.env` (SUPABASE_URL +
+  SUPABASE_SERVICE_ROLE_KEY on the mini). Never commit it.
+- State: `~/Agents-Operation/kiw-mail-import/state.json` (header index +
+  processed message IDs per job). Logs: `…/logs/import.{out,err}.log`. Each run
+  writes a `customer_import_email` audit row; the review card shows
+  "Email last checked".
+- **One-time on the mini:** System Settings → Privacy & Security → Full Disk
+  Access → **+** → ⌘⇧G `/opt/homebrew/Cellar/node/26.0.0/bin/node` → enable.
+  launchd jobs cannot read `~/Library/Mail` without it (the script exits with
+  "grant Full Disk Access" in `import.err.log`). Re-add after a Node upgrade
+  changes that path.
+- Manual run / test: `node scripts/mail-import/import-mail.mjs --env
+  ~/Projects/tavvy-review-agent/.env --dry-run` (prints what it would import,
+  writes nothing).

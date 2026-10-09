@@ -19,6 +19,8 @@ import {
   listCatalog,
 } from "@/lib/shop/db";
 import JobDocuments from "./JobDocuments";
+import CustomerFilesReview from "./CustomerFilesReview";
+import { listCustomerNotes, listCrewCustomerNotes, lastEmailSync } from "@/lib/shop/customer-import";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import PiecesPanel from "./PiecesPanel";
@@ -70,6 +72,15 @@ export default async function JobTravelerPage({
     try { ledger = await getJobMoneyLedger(id); } catch { /* Explicit load error in owner controls. */ }
   }
 
+  // Customer notes: owners get pending + approved (pending feed the review
+  // card); crew get approved only, re-redacted, filtered in the query itself.
+  const [notes, emailSyncedAt] = await Promise.all([
+    canSeePrices ? listCustomerNotes(id, true) : listCrewCustomerNotes(id),
+    canSeePrices ? lastEmailSync() : Promise.resolve(null),
+  ]);
+  const approvedNotes = notes.filter((n) => n.review_status === "approved");
+  const pendingNotes = canSeePrices ? notes.filter((n) => n.review_status === "pending") : [];
+
   const nameById = new Map(workers.map((w) => [w.id, w.name]));
 
   // Time clock state for this worker + the whole job
@@ -82,14 +93,19 @@ export default async function JobTravelerPage({
   const totalHours = timeEntries.reduce((sum, e) => sum + entryHours(e), 0);
 
   // Hide price-sensitive photos from workers without access, then sign URLs.
-  const { photos: visible, documents } = partitionJobAttachments(rawPhotos, canSeePrices);
-  const photos: Photo[] = await Promise.all(
-    visible.map(async (p) => ({
-      ...p,
-      signedUrl: (await signPhotoUrl(p.url)) || undefined,
-      uploaderName: p.uploaded_by ? nameById.get(p.uploaded_by) : undefined,
-    }))
-  );
+  // Pending/rejected customer imports are dropped here for everyone; owners
+  // get the pending ones back separately for review.
+  const { photos: visible, documents, pending } = partitionJobAttachments(rawPhotos, canSeePrices);
+  const sign = async (p: Photo): Promise<Photo> => ({
+    ...p,
+    signedUrl: (await signPhotoUrl(p.url)) || undefined,
+    uploaderName: p.uploaded_by ? nameById.get(p.uploaded_by) : undefined,
+  });
+  const [photos, pendingPhotos] = await Promise.all([
+    Promise.all(visible.map(sign)),
+    Promise.all(pending.map(sign)),
+  ]);
+  const keptImports = visible.filter((p) => p.source).length + approvedNotes.length;
 
   return (
     <div>
@@ -103,6 +119,16 @@ export default async function JobTravelerPage({
       <JobEstimateDetails estimates={estimates} job={job} owner={canSeePrices} lang={lang} />
       {canSeePrices && <JobMoneyManager jobId={id} ledger={ledger} lang={lang} />}
       {canSeePrices && <JobDocuments documents={documents} lang={lang} />}
+      {canSeePrices && (
+        <CustomerFilesReview
+          jobId={job.id}
+          pending={pendingPhotos}
+          notes={pendingNotes}
+          keptCount={keptImports}
+          lastEmailSync={emailSyncedAt}
+          lang={lang}
+        />
+      )}
       {v2 ? (
         <TravelerV2
           job={job}
@@ -117,6 +143,7 @@ export default async function JobTravelerPage({
           activeWorkers={othersRunning}
           totalHours={totalHours}
           catalog={catalog.map(item => canSeePrices ? item : { ...item, unit_cost: null })}
+          customerNotes={approvedNotes}
         />
       ) : null}
       {v2 ? (

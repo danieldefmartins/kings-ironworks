@@ -22,8 +22,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Job, CutItem, Material, QcCheck, Photo, CatalogItem } from "@/lib/shop/shared";
-import { STAGES, hoursToHm } from "@/lib/shop/shared";
+import type { Job, CutItem, Material, QcCheck, Photo, CatalogItem, CustomerNote } from "@/lib/shop/shared";
+import { STAGES, hoursToHm, fmtDateTime } from "@/lib/shop/shared";
+import { CREW_REFERENCE_CATEGORIES } from "@/lib/shop/customer-files";
 import { t, stageLabel } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import MaterialKit from "./MaterialKit";
@@ -39,12 +40,13 @@ import {
 
 export default function TravelerV2({
   job, cut, materials, qc, photos, canSeePrices, isAdmin = false, lang,
-  myStartedAt, activeWorkers, totalHours, catalog,
+  myStartedAt, activeWorkers, totalHours, catalog, customerNotes = [],
 }: {
   job: Job; cut: CutItem[]; materials: Material[]; qc: QcCheck[]; photos: Photo[];
   canSeePrices: boolean; isAdmin?: boolean; lang: string;
   myStartedAt: string | null; activeWorkers: string[]; totalHours: number;
   catalog: CatalogItem[];
+  customerNotes?: CustomerNote[];
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -149,6 +151,12 @@ export default function TravelerV2({
         myStartedAt={myStartedAt}
         activeWorkers={activeWorkers}
         totalHours={totalHours}
+      />
+
+      <CustomerReference
+        lang={lang}
+        photos={photos.filter((p) => CREW_REFERENCE_CATEGORIES.includes(p.category || ""))}
+        notes={customerNotes}
       />
 
       {/* ── What this job needs now, at the stage it is actually at. ── */}
@@ -523,5 +531,39 @@ function Icon({ name }: { name: "photo" | "steel" | "check" | "spec" | "rule" })
       stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {d.split(" M").map((seg, i) => <path key={i} d={(i ? "M" : "") + seg} />)}
     </svg>
+  );
+}
+
+// What the customer sent and what they approved — so the fabricator sees what
+// the project is about before cutting anything. The server only ever sends
+// approved items here, with money already removed.
+function CustomerReference({ photos, notes, lang }: { photos: Photo[]; notes: CustomerNote[]; lang: string }) {
+  if (!photos.length && !notes.length) return null;
+  return (
+    <section className="mb-4 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-[0.15em] text-amber-500">{t(lang, "customerRef")}</div>
+      {photos.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {photos.map((p) =>
+            p.signedUrl ? (
+              <a key={p.id} href={p.signedUrl} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-xl border border-neutral-800 active:opacity-80">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.signedUrl} alt={p.category || ""} className="h-40 w-full object-cover" loading="lazy" />
+              </a>
+            ) : null
+          )}
+        </div>
+      )}
+      {notes.length > 0 && (
+        <ul className={`space-y-2.5 ${photos.length ? "mt-3" : ""}`}>
+          {notes.map((n) => (
+            <li key={n.id}>
+              <blockquote className="whitespace-pre-line border-l-2 border-amber-500/60 pl-3 text-[15px] leading-relaxed text-neutral-200">{n.body}</blockquote>
+              {n.message_at && <p className="mt-0.5 pl-3 text-[12px] text-neutral-500">{fmtDateTime(n.message_at, lang)}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
