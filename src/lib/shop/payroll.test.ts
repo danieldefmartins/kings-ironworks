@@ -58,3 +58,19 @@ it("keeps every daily clock pair, including rejected and open shifts, with net d
   const daily = calculatePayroll(workers, [shift({ ended_at: "2026-09-08T06:00:00Z" })], [], { ...week, start: payrollMidnight("2026-09-08"), end: payrollMidnight("2026-09-09") }, now)[1];
   expect(daily.punches?.[0]).toMatchObject({ startedAt: "2026-09-07T12:00:00Z", hours: 2 });
 });
+
+it("quarantines a multiweek missing clock-out without losing the punch or inventing hours", () => {
+  const stale = shift({ started_at: "2026-08-25T12:00:00Z", ended_at: null, status: "open" });
+  const row = calc([stale]);
+  expect(row.hours).toBe(0);
+  expect(row.basePay).toBe(0);
+  expect(row.reviewShifts).toBe(1);
+  expect(row.punches?.[0]).toMatchObject({ startedAt: stale.started_at, endedAt: null, needsReview: true });
+  expect(stale.ended_at).toBeNull();
+});
+it("does not turn a runaway shift into wages just because someone taps out now", () => {
+  const stale = shift({ started_at: "2026-09-07T12:00:00Z", ended_at: "2026-09-10T12:00:00Z", status: "submitted" });
+  expect(calc([stale]).basePay).toBe(0);
+  expect(calc([{ ...stale, status: "approved" }]).basePay).toBe(72 * 25);
+  expect(calc([{ ...stale, ended_at: "2026-09-07T20:00:00Z" }]).basePay).toBe(200);
+});

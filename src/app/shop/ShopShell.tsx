@@ -7,7 +7,7 @@ import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, LayoutGrid, X }
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { fmtTime, hoursToHm, shiftHours } from "@/lib/shop/shared";
 import { ShopAccess, isMeasuringPath } from "./ShopAccess";
-import { calculatePayroll, payrollWeek } from "@/lib/shop/payroll";
+import { calculatePayroll, payrollWeek, needsClockReview } from "@/lib/shop/payroll";
 import { t } from "@/lib/shop/i18n";
 import { useShopAppearance } from "./ShopAppearance";
 import "./shop-ui.css";
@@ -258,7 +258,8 @@ export default function ShopShell({
   const hours = shift ? shiftHours(shift, breaks, now) : 0;
   // The crew are contractors, so pay is straight time at their own rate — no
   // 40-hour split, no multiplier.
-  const earnings = hourlyRate == null ? null : hours * hourlyRate;
+  const clockNeedsReview = !!shift && needsClockReview(shift, now);
+  const earnings = hourlyRate == null || clockNeedsReview ? null : hours * hourlyRate;
   // Week-to-date, ticking: everything already closed this week plus whatever
   // the open shift has accrued as of this render. Shown clocked in or out,
   // because "what have I earned this week" is asked most often on the way home.
@@ -314,7 +315,7 @@ export default function ShopShell({
               <div><div className="text-xl font-semibold">{t(lang, "payrollClock")}</div><div className="text-sm text-neutral-500">{workerName}</div></div>
               <button onClick={() => setOpen(false)} className="grid h-9 w-9 place-items-center rounded-full bg-neutral-800"><X className="h-5 w-5" /></button>
             </div>
-            {shift && <div className="mb-3 grid grid-cols-2 gap-3 text-center"><div className="rounded-2xl bg-neutral-800 p-4"><div className="text-3xl font-semibold tabular-nums">{hoursToHm(hours)}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockPaidHours")}</div></div><div className="rounded-2xl bg-emerald-950/50 p-4"><div className="text-3xl font-semibold tabular-nums text-emerald-300">{earnings == null ? "—" : `$${earnings.toFixed(2)}`}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockGrossEarnings")}</div></div></div>}
+            {shift && <div className="mb-3 grid grid-cols-2 gap-3 text-center"><div className="rounded-2xl bg-neutral-800 p-4"><div className="text-3xl font-semibold tabular-nums">{hoursToHm(hours)}</div><div className="mt-1 text-xs text-neutral-500">{clockNeedsReview ? (lang === "pt" ? "Tempo decorrido · revisar" : lang === "es" ? "Tiempo transcurrido · revisar" : "Elapsed time · needs review") : t(lang, "clockPaidHours")}</div></div><div className="rounded-2xl bg-emerald-950/50 p-4"><div className="text-3xl font-semibold tabular-nums text-emerald-300">{earnings == null ? "—" : `$${earnings.toFixed(2)}`}</div><div className="mt-1 text-xs text-neutral-500">{t(lang, "clockGrossEarnings")}</div></div></div>}
             <div className="mb-5 rounded-2xl border border-white/10 bg-neutral-800/50 p-4">
               <div className="flex items-baseline justify-between">
                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">{t(lang, "weekToDate")}</span>
@@ -331,7 +332,8 @@ export default function ShopShell({
                 </div>
               </div>
             </div>
-            {shift && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
+            {clockNeedsReview && <p role="alert" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{lang === "pt" ? "Ponto aberto há mais de 24 horas. Excluído da estimativa de pagamento até confirmar a saída real com o escritório." : lang === "es" ? "Turno abierto por más de 24 horas. Excluido de la estimación de pago hasta confirmar la salida real con la oficina." : "This punch has been open for over 24 hours. It is excluded from estimated pay until the office confirms the actual clock-out."}</p>}
+            {shift && !clockNeedsReview && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {error && <p className={`mb-3 rounded-xl p-3 text-sm ${error === t(lang, "punchQueued") ? "border border-amber-500/40 bg-amber-500/10 text-amber-200" : "bg-red-950/60 text-red-300"}`}>{error}</p>}
             {!shift ? (

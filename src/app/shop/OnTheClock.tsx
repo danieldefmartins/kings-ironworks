@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Clock } from "lucide-react";
 import { AlertTriangle, LogOut } from "lucide-react";
 import { fmtTime, fromShopInput, hoursToHm, shiftHours, toShopInput, type TimeBreak } from "@/lib/shop/shared";
+import { needsClockReview } from "@/lib/shop/payroll";
 import { t } from "@/lib/shop/i18n";
 
 export interface OnClockRow {
@@ -102,6 +103,7 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
             const runningHours = shiftHours(
               { started_at: r.startedAt, ended_at: null }, r.breaks, now
             );
+            const needsReview = needsClockReview({ started_at: r.startedAt, ended_at: null }, now);
             const runaway = runningHours >= RUNAWAY_HOURS;
             return (
             <div key={r.workerId} className="border-b border-white/5 last:border-0">
@@ -141,8 +143,9 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
               </div>
               <div className="shrink-0 text-right">
                 <div className={`text-lg font-semibold tabular-nums ${runaway ? "text-amber-400" : ""}`}>
-                  {hoursToHm(runningHours)}
+                  {needsReview ? (lang === "pt" ? "Revisar ponto" : lang === "es" ? "Revisar turno" : "Needs review") : hoursToHm(runningHours)}
                 </div>
+                {needsReview && <div className="text-xs text-neutral-500">{hoursToHm(runningHours)} · {lang === "pt" ? "tempo decorrido" : lang === "es" ? "tiempo transcurrido" : "elapsed"}</div>}
                 {r.onBreak && (
                   <div className="text-xs font-medium text-amber-400">{t(lang, "onBreakNow")}</div>
                 )}

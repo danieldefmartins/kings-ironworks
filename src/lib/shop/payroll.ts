@@ -25,8 +25,16 @@ export function payrollMidnight(day: string): string {
     return new Date(instant).toISOString();
 }
 
+// Review safeguard, not a limit on payable work: retain the original punch
+// and resume calculation once an owner confirms the actual clock-out.
+export function needsClockReview(shift: { started_at: string; ended_at: string | null; status?: string }, now = Date.now()) {
+  if (shift.ended_at && shift.status === "approved") return false;
+  return (shift.ended_at ? Date.parse(shift.ended_at) : now) - Date.parse(shift.started_at) > 24 * 3600000;
+}
+
 export type PayrollRow = {
-  punches?: { id: string; startedAt: string; endedAt: string | null; hours: number; rejected: boolean }[];
+  reviewShifts?: number;
+  punches?: { id: string; startedAt: string; endedAt: string | null; hours: number; rejected: boolean; needsReview?: boolean }[];
   id: string; name: string; active: boolean; hours: number; regular: number; overtime: number;
   basePay: number; approvedHours: number; pendingHours: number; rejectedHours: number;
   openHours: number; openShifts: number; missingRateHours: number; shifts: number;
@@ -50,8 +58,9 @@ export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">
     for (const [a, b] of intervals) { unpaid += Math.max(0, b - Math.max(a, cursor)); cursor = Math.max(cursor, b); }
     const hours = Math.max(0, end - start - unpaid) / 3600000;
     row.shifts++;
-    (row.punches ??= []).push({ id: shift.id, startedAt: shift.started_at, endedAt: shift.ended_at, hours, rejected: shift.status === "rejected" });
+    (row.punches ??= []).push({ id: shift.id, startedAt: shift.started_at, endedAt: shift.ended_at, hours, rejected: shift.status === "rejected", needsReview: needsClockReview(shift, now) });
     if (shift.status === "rejected") { row.rejectedHours += hours; continue; }
+    if (needsClockReview(shift, now)) { row.reviewShifts = (row.reviewShifts ?? 0) + 1; continue; }
     row.hours += hours;
     if (shift.status === "approved" && shift.ended_at) row.approvedHours += hours;
     else row.pendingHours += hours;
