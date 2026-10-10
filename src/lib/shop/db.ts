@@ -643,7 +643,7 @@ export async function getRunningEntries(): Promise<TimeEntry[]> {
 export async function listWorkersWithRates(): Promise<Worker[]> {
   return sbSelect<Worker[]>(
     "kiw_shop_workers",
-    `select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate,address&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
+    `select=id,name,role,active,can_see_prices,lang,is_admin,hourly_rate,address,payroll_excluded&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
   );
 }
 

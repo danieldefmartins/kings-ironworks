@@ -109,6 +109,7 @@ export interface Worker {
   can_see_prices?: boolean;
   lang?: string;
   hourly_rate?: number | null;
+  payroll_excluded?: boolean;
   is_admin?: boolean;
   phone?: string | null;
   email?: string | null;
