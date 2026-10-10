@@ -2,6 +2,7 @@ import { flightWalls, normalizeMeasureData, type MeasureData } from './measure';
 import { stairGeometry } from './measure-geometry';
 import { drawingIssues, drawingPosts } from './measure-drawing';
 import { landingConnections, landingConnectionGeometry } from './measure-landings';
+import { siteMeshes } from './measure-site';
 
 export type DrawingRequest = {
   id: string; org_id: string; sheet_id: string; job_id: string;
@@ -36,5 +37,6 @@ export function blenderPayload(request: DrawingRequest) {
     }),
     // Preserve field records alongside geometry for the shop reviewer.
     measurements: data,
+    site: {datum: data.site?.datum || '', objects: data.site?.objects || [], meshes: siteMeshes(data.site)},
   };
 }

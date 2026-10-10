@@ -16,6 +16,9 @@ import {
 import ShopDrawingSubmission from "../ShopDrawingSubmission";
 import DrawingSvg from "../DrawingSvg";
 import DrawingReport from "../DrawingReport";
+import SiteDrawing from '../SiteDrawing';
+import { siteIssues } from '@/lib/shop/measure-site';
+import { siteLabels } from '@/lib/shop/measure-site-i18n';
 import { stairGeometry } from "@/lib/shop/measure-geometry";
 import type { Job } from "@/lib/shop/shared";
 import type { SaveState } from "../useSheetSync";
@@ -83,6 +86,11 @@ export default function ReviewSection({
   const hasDrawing=!!stairGeometry(data);
   return (
     <>
+      {!!data.site?.objects.length&&<Card stage="review" title={siteLabels(lang).title}>
+        <p className="mb-3 text-sm">{data.site.datum}</p>
+        <SiteDrawing data={data}/>
+        {siteIssues(data.site).map(issue=><p key={issue} className="mt-2 text-sm text-amber-600">{mt(lang,issue)}</p>)}
+      </Card>}
       {history.length > 0 && (
         <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>
           {sheet.created_by && (

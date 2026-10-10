@@ -33,10 +33,12 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
     x,y,w,h=box
     surfaces=[s for s in payload['surfaces'] if segment is None or s['segment']==segment]
     members=[m for m in assembly['members'] if segment is None or m['segment']==segment]
+    site_meshes=payload.get('site',{}).get('meshes',[]) if segment is None else []
     heading=0
     if segment is not None and surfaces:
         a,b=surfaces[0]['corners'][:2];heading=math.atan2(b['y']-a['y'],b['x']-a['x'])
     coords=[p for s in surfaces for p in s['corners']]+[p for m in members for p in (m['vertices'] or [m['a'],m['b']])]
+    coords += [p for m in site_meshes for p in m['vertices']]
     if not coords:page.text(x+15,y+30,'No measured geometry for this view.',10);return
     pts=[project(p,view,heading) for p in coords];minx=min(p[0] for p in pts);maxx=max(p[0] for p in pts);miny=min(p[1] for p in pts);maxy=max(p[1] for p in pts)
     fit=min((w-90)/max(1,maxx-minx),(h-115)/max(1,maxy-miny))
@@ -45,6 +47,12 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
     ox=x+(w-(maxx-minx)*scale)/2;oy=y+35+(h-110-(maxy-miny)*scale)/2
     def xy(p):
         a,b=project(p,view,heading);return ox+(a-minx)*scale,oy+(b-miny)*scale
+    for m in site_meshes:
+        edges=set()
+        for face in m['faces']:
+            for a,b in zip(face,face[1:]+face[:1]):edges.add(tuple(sorted((a,b))))
+        for a,b in edges:page.line([xy(m['vertices'][a]),xy(m['vertices'][b])],'#b45309' if m['provisional'] else '#94a3b8',.5)
+        p=xy(m['vertices'][len(m['vertices'])//2]);page.text(p[0]+3,p[1]-7,m['label']+(' / VERIFY' if m['provisional'] else ''),8)
     for s in surfaces:
         a,b,c,d=s['corners']
         if view=='side':page.line([xy(dict(a,z=a['z']-s.get('riseDepth',0))),xy(a),xy(b)],'#a3a3a3',.6)
@@ -291,6 +299,26 @@ def generate(payload,output):
     for section in ('spiral','well','fire','gate','fence','balcony','deck','plan'):
         if data.get(section):spec_rows.extend((section,key,value) for key,value in fields(data[section]))
     table_pages(spec_rows,['SECTION','PROPERTY','RECORDED SPECIFICATION'],[140,190,638],'Project specifications','S',pages)
+    site=payload.get('site',{})
+    if site.get('objects'):
+        p=Page();pages.append((p,'Existing site / reference','SITE-01'))
+        p.text(42,53,'EXISTING SITE / RAILING CONTEXT',16)
+        wrapped(p,48,80,'REFERENCE POINT: '+(site.get('datum') or 'VERIFY'),140,10)
+        draw_view(p,payload,assembly,'plan',(36,115,480,590),'01 / SITE PLAN')
+        draw_view(p,payload,assembly,'iso',(526,115,490,590),'02 / SITE ASSEMBLY')
+        rows=[]
+        notes=[]
+        for o in site['objects']:
+            dims=' x '.join(str(o.get(k) or 'VERIFY') for k in ('length','depth','height'))
+            if o.get('section')=='round':dims='DIA '+str(o.get('length') or 'VERIFY')+' x HT '+str(o.get('height') or 'VERIFY')
+            rows.append((o['label']+' / '+o['kind'], ' / '.join(str(o.get(k) or 'VERIFY') for k in ('x','y','z')),dims,str(o.get('rotation',0))+' deg',o.get('source','unknown')+' / '+('FIELD VERIFIED' if o.get('verified') else 'VERIFY')))
+            detail=o.get('notes','')
+            if o['kind']=='slab':detail+=' | TOP RISE X: '+o.get('riseX','?')+' / Y: '+o.get('riseY','?')
+            if o.get('photoPaths'):detail+=' | '+str(len(o['photoPaths']))+' linked photos (see measurement snapshot)'
+            if o['kind']=='opening':detail+=' | CLEARANCE REFERENCE, not a boolean wall opening'
+            if detail:notes.append((o['label'],detail))
+        table_pages(rows,['EXISTING OBJECT','X / Y / Z (IN)','L x D x H (IN)','ROTATION','SOURCE / VERIFICATION'],[210,175,230,100,253],'Site object dimensions / near-left bottom origin','SITE-D',pages)
+        table_pages(notes,['OBJECT','RECORDED SITE DETAILS'],[210,758],'Site notes and slope references','SITE-N',pages)
     table_pages([(f'{i+1:02d}',issue) for i,issue in enumerate(assembly['issues'])],['ITEM','RESOLVE BEFORE FABRICATION'],[65,903],'Open items / fabrication review','V',pages)
     for i,(page,title,mark) in enumerate(pages,1):frame(page,payload,title,mark,i,len(pages));page.save_svg(output/f'sheet-{i:02d}.svg')
     save_pdf([p for p,_,_ in pages],output/'shop-drawings.pdf')

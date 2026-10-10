@@ -39,6 +39,13 @@ def main():
     scene['request_id']=payload['id'];scene['draft']=True;scene['source_updated_at']=payload.get('sourceUpdatedAt','')
     measured=material('Measured surfaces',(.55,.65,.72));verify=material('VERIFY - unresolved dimensions',(.95,.45,.08));steel=material('Rail and post centerline references',(.12,.16,.2))
     text=bpy.data.texts.new('KIW measurement snapshot.json');text.write(json.dumps(payload,indent=2))
+    for item in payload.get('site',{}).get('meshes',[]):
+        mesh=bpy.data.meshes.new('Site '+item['label'])
+        mesh.from_pydata([point(p) for p in item['vertices']],[],item['faces']);mesh.update()
+        obj=bpy.data.objects.new('Site '+item['label'],mesh);scene.collection.objects.link(obj)
+        obj.data.materials.append(verify if item['provisional'] else measured)
+        obj['site_object_id']=item['id'];obj['existing_site']=True;obj['provisional']=item['provisional']
+        if item['kind']=='opening':obj.display_type='WIRE';obj.hide_render=True
     for s in payload['surfaces']:
         vertices=[point(p) for p in s['corners']];faces=[(0,1,2),(0,2,3)]
         if s.get('riseDepth',0)>0:
@@ -64,6 +71,7 @@ def main():
         if obj.get('reference_only'):obj.hide_render=True
     for i,w in enumerate(payload.get('walls',[])):line(f'Wall boundary {i+1}',[point(p) for p in w['points']],measured)
     coords=[Vector(point(p)) for s in payload['surfaces'] for p in s['corners']]+[Vector(point(p['top'])) for p in payload['posts']]
+    coords += [Vector(point(p)) for m in payload.get('site',{}).get('meshes',[]) for p in m['vertices']]
     if not coords:coords=[Vector((0,0,0)),Vector((1,1,1))]
     low=Vector(tuple(min(p[i] for p in coords) for i in range(3)));high=Vector(tuple(max(p[i] for p in coords) for i in range(3)));center=(low+high)/2;extent=max(50,(high-low).length)
     for name,direction in [('ISO',(1,-1,1)),('Plan',(0,0,1)),('Side',(0,-1,0))]:

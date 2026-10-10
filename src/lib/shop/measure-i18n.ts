@@ -6,6 +6,9 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    siteDatumOpen: "Define the site reference point before fabrication release.",
+    siteDimensionsOpen: "Complete the dimensions and positions of all site objects.",
+    siteVerificationOpen: "Verify the site measurements and record their source.",
     showDrawingReport: "View technical report",
     hideDrawingReport: "Hide technical report",
     drawingReportHint: "For shop review: materials, posts and connections.",
@@ -1429,6 +1432,9 @@ const STR: Record<Lang, Dict> = {
   },
 
   pt: {
+    siteDatumOpen: "Defina o ponto de referência do local antes da liberação.",
+    siteDimensionsOpen: "Complete as dimensões e posições dos objetos do local.",
+    siteVerificationOpen: "Verifique as medidas do local e registre a origem.",
     showDrawingReport: "Ver relatório técnico",
     hideDrawingReport: "Ocultar relatório técnico",
     drawingReportHint: "Para revisão na oficina: materiais, postes e conexões.",
@@ -2847,6 +2853,9 @@ const STR: Record<Lang, Dict> = {
   },
 
   es: {
+    siteDatumOpen: "Defina el punto de referencia antes de liberar la fabricación.",
+    siteDimensionsOpen: "Complete las dimensiones y posiciones de los objetos.",
+    siteVerificationOpen: "Verifique las medidas y registre su origen.",
     showDrawingReport: "Ver informe técnico",
     hideDrawingReport: "Ocultar informe técnico",
     drawingReportHint: "Para revisión del taller: materiales, postes y conexiones.",

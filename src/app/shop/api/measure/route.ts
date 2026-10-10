@@ -25,6 +25,7 @@ import {
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { drawingIssues } from "@/lib/shop/measure-drawing";
+import { SiteModelSchema } from '@/lib/shop/measure-site';
 import { runChecks, submitBlockers, mergeTolerances } from "@/lib/shop/measure-checks";
 
 export const runtime = "nodejs";
@@ -435,6 +436,7 @@ const SpanSchema = z.object({
 });
 
 const MeasureDataSchema = z.object({
+  site: SiteModelSchema.optional(),
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
     .max(12),
@@ -648,6 +650,11 @@ export async function POST(req: NextRequest) {
         const parsed = MeasureDataSchema.safeParse(body.data);
         if (!parsed.success) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
+        }
+        // An older tab/client must not silently remove the additive site layer.
+        if (!parsed.data.site) {
+          const existing = await loadSheet(body.id, jobOk);
+          if (existing?.data.site) parsed.data.site = existing.data.site;
         }
         const baseFilter = sheetFilter(body.id, jobOk);
         const base = typeof body.baseUpdatedAt === "string" ? body.baseUpdatedAt : null;

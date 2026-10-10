@@ -3,6 +3,8 @@
 // in a JSONB payload so shapes can evolve without migrations. All measurements
 // are free-text strings ("23 3/4") because crews work in inches + fractions.
 
+import type { SiteModel } from './measure-site';
+
 export type MeasureShape =
   | "straight"
   | "stair_platform"
@@ -1204,6 +1206,8 @@ export type Units = "in" | "ftin";
 export type SheetStatus = "in_progress" | "submitted" | "approved";
 
 export interface MeasureData {
+  /** Independent existing-site objects, in the same inch coordinates as the stair. */
+  site?: SiteModel;
   landingTransitions?: LandingTransition[];
   /** Set only in an immutable revision by the release transaction. */
   drawingReleaseVersion?: number;
@@ -1630,6 +1634,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
   const d = (raw || {}) as Partial<MeasureData>;
   return {
     drawingReleaseVersion: d.drawingReleaseVersion,
+    site: d.site,
     landingTransitions: (d.landingTransitions || []).map(t=>({...blankLandingTransition(t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx,t.side),...t})),
     units: d.units === "ftin" ? "ftin" : "in",
     segments: (d.segments || []).map((seg) => {

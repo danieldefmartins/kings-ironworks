@@ -14,6 +14,12 @@ for post in payload['posts']:
         assert (Vector(vertex.co[:3])-Vector((expected['x'],expected['y'],expected['z']))).length<.0001
 assert {'ISO','Plan','Side'}.issubset(bpy.data.scenes.keys())
 assert abs(bpy.data.scenes['ISO'].unit_settings.scale_length-.0254)<.00001
+for item in payload.get('site',{}).get('meshes',[]):
+    obj=next(o for o in bpy.data.objects if o.get('site_object_id')==item['id'])
+    assert obj['existing_site'] is True
+    assert len(obj.data.vertices)==len(item['vertices'])
+    for vertex,expected in zip(obj.data.vertices,item['vertices']):
+        assert (vertex.co-Vector((expected['x'],expected['y'],expected['z']))).length<.0001
 print('PASS: saved Blender geometry, post references, cameras and inch units match the measuring payload')
 
 import sys

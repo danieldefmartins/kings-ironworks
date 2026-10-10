@@ -30,7 +30,10 @@ function show(steps = 6) {
     created_by: "w1", updated_by: "w1", created_at: "2026-08-01T00:00:00.000Z",
     updated_at: "2026-08-01T00:00:00.000Z",
   };
-  return { data, ...render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="T" />) };
+  const rendered=render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="T" />);
+  expect(screen.getByRole("heading",{name:"Build the job site"})).toBeTruthy();
+  fireEvent.click(screen.getByRole("button",{name:"2. Railing",exact:true}));
+  return {data,...rendered};
 }
 /** The transparent hit targets the sketch lays over each tread, in order. */
 const treads = () => Array.from(document.querySelectorAll("svg rect[style*='cursor']"));

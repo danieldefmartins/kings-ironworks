@@ -7,6 +7,7 @@ vi.mock('@/lib/shop/session',()=>({getSessionWorker:mocks.worker,touchSession:vi
 vi.mock('@/lib/shop/db',()=>({sbSelect:mocks.select,sbUpdate:mocks.update,sbRpc:mocks.rpc,audit:mocks.audit,ORG_ID:'org',getOrgSettings:async()=>({rules:{allowSelfApproval:false},tolerances:{}})}));
 vi.mock('@/lib/shop/measure-checks',async(importOriginal)=>({...await importOriginal<object>(),runChecks:mocks.checks,submitBlockers:mocks.blockers}));
 import {POST} from './route';
+import {porchSiteFixture} from '@/lib/shop/measure-site.fixture';
 const id='a0000000-0000-4000-8000-000000000001',stamp='2026-09-07T12:00:00.000Z';
 let data:ReturnType<typeof newMeasureData>;
 const request=(extra:Record<string,unknown>={})=>POST(new NextRequest('http://localhost/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'approve',id,releaseDrawing:true,ackDrawing:true,expectedUpdatedAt:stamp,...extra})}));
@@ -28,6 +29,22 @@ describe('fabrication release endpoint',()=>{
 });
 
 describe('measurement persistence',()=>{
+  it('persists the site layer alongside the existing sheet data',async()=>{
+    data.site=porchSiteFixture().site;
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.site).toEqual(data.site);
+  });
+  it('preserves the server site model when an older client omits it',async()=>{
+    const legacy=structuredClone(data);data.site=porchSiteFixture().site;
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.site).toEqual(data.site);
+  });
+  it('rejects invalid site versions before mutating data',async()=>{
+    expect((await request({type:'update',data:{...data,site:{version:99,objects:[]}}})).status).toBe(400);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
   it('keeps joint details, landing transitions, side setbacks and flight wall references on save',async()=>{
     data.joints=[{...blankJoint(0),method:'weld',gap:'1/8',offsetV:'8',offsetH:'3 1/2',angleChange:'90',carriedBy:'upper'}];
     data.rail.sideSetback='3 1/2';(data.segments[0] as FlightSegment).wallSide='left';

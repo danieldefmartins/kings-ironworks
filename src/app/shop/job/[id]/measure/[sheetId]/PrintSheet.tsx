@@ -27,6 +27,7 @@ import DrawingSvg from "./DrawingSvg";
 import DrawingDetails from "./DrawingDetails";
 import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { sketchViews } from "./Sketch";
+import SitePrint from './SitePrint';
 
 const GOLD = "#b8860b";
 
@@ -1059,6 +1060,7 @@ export default function PrintSheet({
         {approved ? mt(lang, "approvedBadge") : mt(lang, "notApprovedMark")} ·{" "}
         {data.photos.length} 📷
       </div>
+      <SitePrint data={data} lang={lang} revision={sheet.current_rev||0}/>
     </div>
   );
 }

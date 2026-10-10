@@ -170,3 +170,48 @@ submission gates remain unchanged.
 
 Regression tests verify a five-flight workspace never exposes the placeholder
 report and that reviewers can open and close it deliberately. All 130 tests pass.
+
+## Site-first workspace — October 10, 2026
+
+The measuring editor now opens on **Site → Railing → Fabrication**. The existing
+field workflow, post placement, detailed fabrication fields, photos and review
+remain accessible. The site canvas shares inch coordinates with the measured
+stair assembly; it does not replace its source measurements.
+
+`MeasureData.site` is an optional version-1 layer. It stores independently
+positioned walls, rectangular/round columns and existing posts, sloped slabs,
+clearance openings and obstacles. Coordinates are signed feet/inches or
+fractions, rotation is degrees, and each object has source, field verification,
+notes and photo references. X follows the first flight, Y goes across to its
+right and Z goes up. Rectangular objects use the near-left bottom corner;
+round objects use the bounding square's equivalent corner. Openings are
+reference volumes, not boolean cuts in walls.
+
+The canvas has plan/front/isometric views, zoom, corner positioning and
+point-to-point/plan/elevation comparisons. Snapping copies the selected point's
+coordinates; it is not a live attachment constraint. Incomplete objects remain
+in the object list and are omitted from geometry rather than receiving invented
+dimensions. Editing an object invalidates its verification. Changing the site
+reference invalidates every object's verification. Stairs, landings and ramps
+are inserted into the existing measured assembly, preserving its post/joint
+reindexing and individual step measurements.
+
+Site data uses the existing local outbox, optimistic save and immutable
+revision/queue snapshot. The API validates limits, unique IDs and schema
+version. Older clients that omit the site field preserve the stored site layer.
+No migration or customer-record rewrite is required. Site dimensions, datum and
+verification are additional fabrication-release checks when site objects exist.
+
+The web revision printout and Blender package include site views, coordinate
+and dimension schedules, slopes and notes. Blender imports site meshes as
+existing-site objects. They do not enter the metal member/cut schedules. The
+current supported fabrication geometry and its limitations remain unchanged:
+this release does not add arbitrary hosted railing paths, curve/spiral cut
+solvers, automatic collision/structural checks, CNC exports or LiDAR capture.
+
+Validation includes API persistence/backward compatibility, rotated and sloped
+geometry, fractional coordinates, verification invalidation, full measuring
+navigation regression tests, and a synthetic porch generated/reopened in
+Blender. The synthetic case contains four site objects, five measured surfaces,
+two railing assemblies, 18 cap/bottom-rail/picket cut records and four post cut
+details. All generated packages still require the existing shop review.

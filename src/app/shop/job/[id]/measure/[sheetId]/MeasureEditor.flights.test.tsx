@@ -45,7 +45,9 @@ function sheetWith(measured: number): MeasureSheet {
 
 function show(measured: number) {
   installFetch();
-  return render(<MeasureEditor job={job} sheet={sheetWith(measured)} lang="en" workerName="Tester" />);
+  const rendered=render(<MeasureEditor job={job} sheet={sheetWith(measured)} lang="en" workerName="Tester" />);
+  fireEvent.click(screen.getByRole("button",{name:"2. Railing",exact:true}));
+  return rendered;
 }
 
 const click = (name: RegExp) => act(() => { fireEvent.click(screen.getByRole("button", { name })); });
