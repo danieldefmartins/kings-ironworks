@@ -22,3 +22,15 @@ export function porchSiteFixture() {
   ];
   return data;
 }
+
+/** Attached panel between a porch column and wall; still a layout, not cut geometry. */
+export function attachedPorchFixture() {
+  const data=porchSiteFixture();
+  data.site!.rails=[{
+    id:'panel-1',label:'Porch side railing',
+    start:{objectId:'column-1',face:'right',along:.5,angle:0,elevation:'0',connection:'Bracket to column; anchor selection requires shop detail'},
+    end:{objectId:'wall-1',face:'left',along:4/96,angle:0,elevation:'0',connection:'Wall return bracket; confirm substrate and anchors'},
+    height:'36',bottomClearance:'2',infill:'pickets',profiles:'Steel; top 1-1/2 x 3/8 flat bar, bottom 1 inch square tube, 1/2 inch square pickets',notes:'Verify clear opening and end gaps before shop detailing',checkedSignature:'',
+  }];
+  return data;
+}

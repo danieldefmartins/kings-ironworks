@@ -3,6 +3,7 @@ import type { MeasureData } from './measure';
 import { orderedPosts } from './measure-checks';
 import { parseMeas } from './measure-parse';
 import { stairGeometry, surfacePoint, type Point3 } from './measure-geometry';
+import { siteRailProblems } from './measure-site-rails';
 import { siteIssues } from './measure-site';
 
 export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<typeof stairGeometry>>) {
@@ -21,8 +22,9 @@ export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<ty
 /** Drawing completeness is separate from the existing field submission gate. */
 export function drawingIssues(data: MeasureData): string[] {
   const model=stairGeometry(data);
-  if(!model)return ['drawingNoGeometry', ...siteIssues(data.site)];
-  const issues:string[]=siteIssues(data.site);
+  const attachedIssues=[...new Set((data.site?.rails||[]).flatMap(r=>siteRailProblems(data.site,r)))];
+  if(!model)return ['drawingNoGeometry', ...siteIssues(data.site), ...attachedIssues];
+  const issues:string[]=[...siteIssues(data.site),...attachedIssues];
   if(landingConnections(data).some(t=>!landingConnectionComplete(data,t)))issues.push("landingDrawingOpen");
   if(model.provisional)issues.push('drawingGeometryOpen');
   const posts=drawingPosts(data,model).filter(p=>p.post.pointType==='railing_post');

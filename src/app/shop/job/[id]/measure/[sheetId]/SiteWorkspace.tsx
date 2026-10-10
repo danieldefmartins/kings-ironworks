@@ -7,6 +7,7 @@ import { editSiteObject, newSiteModel, newSiteObject, pointDistance, siteIssues,
 import { formatIn } from '@/lib/shop/measure-parse';
 import { mt } from '@/lib/shop/measure-i18n';
 import { siteLabels } from '@/lib/shop/measure-site-i18n';
+import AttachedRails from './AttachedRails';
 import SketchZoom from './SketchZoom';
 import { useDrawingPinch } from './useDrawingPinch';
 import SiteDrawing, { siteAnchors, type SiteView } from './SiteDrawing';
@@ -59,6 +60,7 @@ export default function SiteWorkspace({data,set,lang,onContinue,onMeasure,onDeta
           <p className="px-2 pt-2 text-xs text-slate-500">{mt(lang,"drawingPanHint")}</p>
           <p className="px-2 py-2 text-xs text-slate-500">{l.existing}</p>
         </div>
+        <AttachedRails data={data} set={set} lang={lang}/>
         {measure&&<div className="mt-3 rounded-2xl bg-white p-4 shadow-sm"><div className="grid gap-2 sm:grid-cols-2">{[0,1].map(i=><label key={i} className="text-sm">{l.endpoint} {i+1}<select className={fieldClass} value={ends[i]||''} onChange={e=>{const next=[...ends];next[i]=e.target.value;setEnds(next);}}><option value="">{l.choose}</option>{anchors.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}</select></label>)}</div>{distance&&<div className="mt-3 grid grid-cols-3 gap-2">{[[l.horizontal,distance.horizontal],[l.vertical,distance.vertical],[l.distance,distance.distance]].map(([label,value])=><div key={label} className="rounded-xl bg-indigo-50 p-2"><span className="block text-xs text-indigo-700">{label}</span><strong className="text-base">{Number(value)<0?'−':''}{formatIn(Math.abs(Number(value)))}</strong></div>)}</div>}<p className="mt-2 text-xs text-slate-500">{l.calculated}</p></div>}
         <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm"><h3 className="mb-3 font-bold">{l.objects} <span className="text-slate-400">{site.objects.length}</span></h3>{!site.objects.length&&<p className="text-sm text-slate-500">{l.empty}</p>}<div className="grid gap-2 sm:grid-cols-2">{site.objects.map(o=><button key={o.id} type="button" className={`rounded-xl border p-3 text-left ${selected===o.id?'border-indigo-400 bg-indigo-50':'border-slate-200'}`} onClick={()=>{select(o.id);setMove(false);}}><span className="block font-semibold">{o.label}</span><span className={`text-xs ${o.verified&&!siteObjectProblems(o).length?'text-emerald-700':'text-amber-700'}`}>{o.verified&&!siteObjectProblems(o).length?l.checked:l.needs}</span></button>)}</div>{removed&&<button className={`${buttonClass} mt-3`} disabled={site.objects.length>=100} onClick={()=>{set(d=>{d.site??=newSiteModel();d.site.objects.push(removed);});select(removed.id);setRemoved(null);}}>{l.restore}: {removed.label}</button>}</div>
         {siteIssues(site).length>0&&<ul className="mt-4 space-y-1 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{siteIssues(site).map(issue=><li key={issue}>{mt(lang,issue)}</li>)}</ul>}

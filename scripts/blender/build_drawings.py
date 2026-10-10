@@ -46,6 +46,15 @@ def main():
         obj.data.materials.append(verify if item['provisional'] else measured)
         obj['site_object_id']=item['id'];obj['existing_site']=True;obj['provisional']=item['provisional']
         if item['kind']=='opening':obj.display_type='WIRE';obj.hide_render=True
+    for record in payload.get('site',{}).get('rails',[]):
+        item=record.get('layout')
+        if not item:continue
+        mesh=bpy.data.meshes.new('Attached railing layout '+item['label'])
+        mesh.from_pydata([point(p) for p in item['vertices']],[(0,1),(1,2),(2,3),(3,0)],[]);mesh.update()
+        obj=bpy.data.objects.new('Attached railing layout '+item['label'],mesh);scene.collection.objects.link(obj)
+        obj['attached_rail_id']=item['id'];obj['reference_only']=True;obj['shop_detailing_required']=True
+        obj['field_verified']=bool(record.get('verified'));obj['connection_records']=json.dumps(record['source'])
+        obj.data.materials.append(steel)
     for s in payload['surfaces']:
         vertices=[point(p) for p in s['corners']];faces=[(0,1,2),(0,2,3)]
         if s.get('riseDepth',0)>0:
@@ -72,6 +81,7 @@ def main():
     for i,w in enumerate(payload.get('walls',[])):line(f'Wall boundary {i+1}',[point(p) for p in w['points']],measured)
     coords=[Vector(point(p)) for s in payload['surfaces'] for p in s['corners']]+[Vector(point(p['top'])) for p in payload['posts']]
     coords += [Vector(point(p)) for m in payload.get('site',{}).get('meshes',[]) for p in m['vertices']]
+    coords += [Vector(point(p)) for r in payload.get('site',{}).get('rails',[]) if r.get('layout') for p in r['layout']['vertices']]
     if not coords:coords=[Vector((0,0,0)),Vector((1,1,1))]
     low=Vector(tuple(min(p[i] for p in coords) for i in range(3)));high=Vector(tuple(max(p[i] for p in coords) for i in range(3)));center=(low+high)/2;extent=max(50,(high-low).length)
     for name,direction in [('ISO',(1,-1,1)),('Plan',(0,0,1)),('Side',(0,-1,0))]:

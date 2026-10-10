@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SiteRailSchema } from './measure-site-rails-schema';
 import type { Point3 } from './measure-geometry';
 import { parseMeas } from './measure-parse';
 
@@ -22,7 +23,10 @@ export const SiteModelSchema = z.object({
   version: z.literal(1),
   datum: z.string().max(300),
   objects: z.array(SiteObjectSchema).max(100),
+  rails: z.array(SiteRailSchema).max(100).optional(),
 }).superRefine((site, ctx) => {
+  if (new Set((site.rails||[]).map(r => r.id)).size !== (site.rails||[]).length)
+    ctx.addIssue({code:'custom',message:'Attached railing IDs must be unique',path:['rails']});
   if (new Set(site.objects.map(o => o.id)).size !== site.objects.length)
     ctx.addIssue({code: 'custom', message: 'Site object IDs must be unique', path: ['objects']});
 });
@@ -94,4 +98,11 @@ export function editSiteObject(o: SiteObject, patch: Partial<SiteObject>): SiteO
 }
 export function pointDistance(a: Point3, b: Point3) {
   return {horizontal:Math.hypot(b.x-a.x,b.y-a.y),vertical:b.z-a.z,distance:Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z)};
+}
+
+/** Old clients omit new optional fields. An explicit [] still means intentional removal. */
+export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:SiteModel|undefined):SiteModel|undefined {
+  if(!incoming)return existing;
+  if(incoming.rails===undefined&&existing?.rails!==undefined)return {...incoming,rails:existing.rails};
+  return incoming;
 }

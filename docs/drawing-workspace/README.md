@@ -215,3 +215,34 @@ navigation regression tests, and a synthetic porch generated/reopened in
 Blender. The synthetic case contains four site objects, five measured surfaces,
 two railing assemblies, 18 cap/bottom-rail/picket cut records and four post cut
 details. All generated packages still require the existing shop review.
+
+## Attached railing layout phase — October 10, 2026
+
+`site.rails` adds straight panel envelopes tied to stable wall/column/existing-post
+IDs. Each end records a local face position (or actual round circumference angle),
+measured floor elevation relative to the structure bottom, and connection notes.
+Height and bottom clearance remain explicit measurements. Host translation,
+rotation, and resizing resolve the layout again; missing/deleted/incomplete hosts
+leave an unresolved record instead of silently choosing another support.
+
+A canonical verification signature includes the datum, supporting geometry,
+measurement sources and connection specifications. Changes invalidate the field
+check even when a host is subsequently reverified. Older clients that omit
+`site.rails` retain the stored references; an explicit empty array remains an
+intentional edit. Existing JSONB autosave and immutable snapshots carry the new
+records without a migration or customer-data rewrite.
+
+The Site workspace includes a collapsed-by-default railing list and connection
+editor, calculated horizontal/sloping spans and elevations, and SR reference
+marks in the shared plan/front/3D sketch. The web printout and worker PDF include
+both end references and connection notes. Blender stores separate reference-only
+wire envelopes, excluded from member schedules and cut lists. New pending-item
+messages are human readable in the shop sheets, and reference labels avoid each
+other.
+
+This is an attached-layout phase, not a new fabrication solver. All attached
+panels add a fabrication-release blocker until connection hardware, joints and
+actual member cut geometry are implemented. Spans are explicitly not saw-cut
+lengths. Automatic collision analysis, structural checks, curved/spiral attached
+paths and CAD/CNC exports remain future work. Existing native stair fabrication
+solvers are unchanged.

@@ -14,6 +14,14 @@ for post in payload['posts']:
         assert (Vector(vertex.co[:3])-Vector((expected['x'],expected['y'],expected['z']))).length<.0001
 assert {'ISO','Plan','Side'}.issubset(bpy.data.scenes.keys())
 assert abs(bpy.data.scenes['ISO'].unit_settings.scale_length-.0254)<.00001
+for record in payload.get('site',{}).get('rails',[]):
+    item=record.get('layout')
+    if not item:continue
+    obj=next(o for o in bpy.data.objects if o.get('attached_rail_id')==item['id'])
+    assert obj['reference_only'] is True and obj['shop_detailing_required'] is True
+    assert len(obj.data.vertices)==len(item['vertices'])
+    for actual,expected in zip(obj.data.vertices,item['vertices']):
+        assert all(abs(actual.co[i]-expected[k])<1e-4 for i,k in enumerate(('x','y','z')))
 for item in payload.get('site',{}).get('meshes',[]):
     obj=next(o for o in bpy.data.objects if o.get('site_object_id')==item['id'])
     assert obj['existing_site'] is True

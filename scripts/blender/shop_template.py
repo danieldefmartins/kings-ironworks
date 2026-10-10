@@ -6,6 +6,17 @@ from drawing_sheets import Page, project, save_pdf
 from assembly import build_assembly, fmt, inches, mix
 
 
+def attached_issue(issue):
+    return {
+        'siteRailGeometryOpen':'Complete structure references, floor elevations, height and bottom clearance',
+        'siteRailVerifyOpen':'Verify layout against current site measurements',
+        'siteRailConnectionsOpen':'Record mounting details at both ends',
+        'siteRailProfilesOpen':'Record member profiles, material and infill',
+        'siteRailSupportOpen':'Railing exceeds supporting structure height; check connections',
+        'siteRailFabricationOpen':'Shop connection details and cut geometry are not yet resolved',
+    }.get(issue,issue)
+
+
 def wrapped(page,x,y,text,width=28,size=9):
     lines=textwrap.wrap(str(text),width) or ['']
     for line in lines:page.text(x,y,line,size);y+=size+4
@@ -34,11 +45,13 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
     surfaces=[s for s in payload['surfaces'] if segment is None or s['segment']==segment]
     members=[m for m in assembly['members'] if segment is None or m['segment']==segment]
     site_meshes=payload.get('site',{}).get('meshes',[]) if segment is None else []
+    attached=[r['layout'] for r in payload.get('site',{}).get('rails',[]) if r.get('layout')] if segment is None else []
     heading=0
     if segment is not None and surfaces:
         a,b=surfaces[0]['corners'][:2];heading=math.atan2(b['y']-a['y'],b['x']-a['x'])
     coords=[p for s in surfaces for p in s['corners']]+[p for m in members for p in (m['vertices'] or [m['a'],m['b']])]
     coords += [p for m in site_meshes for p in m['vertices']]
+    coords += [p for r in attached for p in r['vertices']]
     if not coords:page.text(x+15,y+30,'No measured geometry for this view.',10);return
     pts=[project(p,view,heading) for p in coords];minx=min(p[0] for p in pts);maxx=max(p[0] for p in pts);miny=min(p[1] for p in pts);maxy=max(p[1] for p in pts)
     fit=min((w-90)/max(1,maxx-minx),(h-115)/max(1,maxy-miny))
@@ -47,12 +60,28 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
     ox=x+(w-(maxx-minx)*scale)/2;oy=y+35+(h-110-(maxy-miny)*scale)/2
     def xy(p):
         a,b=project(p,view,heading);return ox+(a-minx)*scale,oy+(b-miny)*scale
+    label_boxes=[];placed_labels=[]
+    def reference_label(at,text):
+        text=text if len(text)<=36 else text[:33]+'...'
+        width=len(text)*4.4
+        left=min(max(x+8,at[0]+3),x+w-width-8)
+        top=at[1]-8
+        for offset in [0]+[v for i in range(1,70) for v in (-i*12,i*12)]:
+            candidate=top+offset
+            if candidate<y+14 or candidate>y+h-50:continue
+            box=(left,candidate-8,left+width,candidate+2)
+            if not any(box[0]<b[2]+3 and box[2]>b[0]-3 and box[1]<b[3]+3 and box[3]>b[1]-3 for b in label_boxes):
+                label_boxes.append(box)
+                placed_labels.append((at,left,candidate,width,text,offset));return
     for m in site_meshes:
         edges=set()
         for face in m['faces']:
             for a,b in zip(face,face[1:]+face[:1]):edges.add(tuple(sorted((a,b))))
         for a,b in edges:page.line([xy(m['vertices'][a]),xy(m['vertices'][b])],'#b45309' if m['provisional'] else '#94a3b8',.5)
-        p=xy(m['vertices'][len(m['vertices'])//2]);page.text(p[0]+3,p[1]-7,m['label']+(' / VERIFY' if m['provisional'] else ''),8)
+        p=xy(m['vertices'][len(m['vertices'])//2]);reference_label(p,m['label']+(' / VERIFY' if m['provisional'] else ''))
+    for r in attached:
+        page.line([xy(p) for p in r['vertices']+[r['vertices'][0]]],'#2563eb',1)
+        at=xy(r['vertices'][3]);reference_label(at,r.get('mark',r['label'])+' / LAYOUT')
     for s in surfaces:
         a,b,c,d=s['corners']
         if view=='side':page.line([xy(dict(a,z=a['z']-s.get('riseDepth',0))),xy(a),xy(b)],'#a3a3a3',.6)
@@ -89,6 +118,10 @@ def draw_view(page,payload,assembly,view,box,title,segment=None):
                 if along is not None and run:
                     edge=mix(a,b,along/run)
                     page.dimension(xy(edge),xy(post['base']),(source.get('fromEdge') or 'VERIFY')+' in',50)
+    for at,left,baseline,width,text,offset in placed_labels:
+        if offset:page.line([at,(left,baseline+2)],'#94a3b8',.3)
+        page.line([(left-1,baseline-9),(left+width+1,baseline-9),(left+width+1,baseline+2),(left-1,baseline+2)],'#ffffff',0,fill='#ffffff')
+        page.text(left,baseline,text,8)
     page.text(x+12,y+h-30,title,12);page.text(x+12,y+h-14,f'SCALE 1:{denominator} | '+('AXONOMETRIC REFERENCE' if view=='iso' else 'DIMENSIONS IN INCHES'),8)
 
 
@@ -319,7 +352,23 @@ def generate(payload,output):
             if detail:notes.append((o['label'],detail))
         table_pages(rows,['EXISTING OBJECT','X / Y / Z (IN)','L x D x H (IN)','ROTATION','SOURCE / VERIFICATION'],[210,175,230,100,253],'Site object dimensions / near-left bottom origin','SITE-D',pages)
         table_pages(notes,['OBJECT','RECORDED SITE DETAILS'],[210,758],'Site notes and slope references','SITE-N',pages)
-    table_pages([(f'{i+1:02d}',issue) for i,issue in enumerate(assembly['issues'])],['ITEM','RESOLVE BEFORE FABRICATION'],[65,903],'Open items / fabrication review','V',pages)
+    table_pages([(f'{i+1:02d}',attached_issue(issue)) for i,issue in enumerate(assembly['issues'])],['ITEM','RESOLVE BEFORE FABRICATION'],[65,903],'Open items / fabrication review','V',pages)
+    if site.get('rails'):
+        hosts={o['id']:o for o in site.get('objects',[])}
+        rows=[]
+        for index,record in enumerate(site['rails'],1):
+            rail=record['source'];g=record.get('layout');name='SR'+str(index)+' / '+rail['label']
+            rows.append((name,'STATUS','LAYOUT REFERENCE ONLY - NOT A CUT LENGTH / '+('FIELD LAYOUT VERIFIED' if record.get('verified') else 'VERIFY LAYOUT')))
+            for side in ('start','end'):
+                e=rail[side];host=hosts.get(e['objectId']);position=str(e['angle'])+' deg' if e['face']=='radial' else str(round(e['along']*100,2))+'%'
+                rows.append((name,side.upper()+' REFERENCE',(host['label'] if host else 'MISSING STRUCTURE')+' / '+e['face']+' / '+position+' / floor above host bottom: '+(e['elevation'] or 'VERIFY')))
+                rows.append((name,side.upper()+' CONNECTION',e.get('connection') or 'SHOP DETAIL REQUIRED'))
+            rows.append((name,'HEIGHT / BOTTOM CLEARANCE',(rail.get('height') or 'VERIFY')+' / '+(rail.get('bottomClearance') or 'VERIFY')))
+            if g:rows.append((name,'CALCULATED SPANS','Horizontal: '+fmt(g['horizontal'])+' / slope span: '+fmt(g['length'])+' / rise: '+fmt(g['rise'])+' / pitch: '+str(round(g['pitch'],2))+' deg. NOT CUT LENGTHS.'))
+            rows.append((name,'PROFILES / INFILL',(rail.get('profiles') or 'VERIFY')+' / '+(rail.get('infill') or 'VERIFY')))
+            if rail.get('notes'):rows.append((name,'SHOP NOTES',rail['notes']))
+            rows.append((name,'OPEN ITEMS','; '.join(attached_issue(issue) for issue in record.get('issues',[]))))
+        table_pages(rows,['RAILING','DETAIL','RECORDED / CALCULATED REFERENCE'],[160,200,608],'Attached railing layouts / shop detailing required','SAR',pages)
     for i,(page,title,mark) in enumerate(pages,1):frame(page,payload,title,mark,i,len(pages));page.save_svg(output/f'sheet-{i:02d}.svg')
     save_pdf([p for p,_,_ in pages],output/'shop-drawings.pdf')
     import json,csv
