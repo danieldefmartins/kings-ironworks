@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
 import {
@@ -24,7 +25,7 @@ import {
   setJobArchived,
 } from "@/lib/shop/db";
 import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
-import { getOpenShift, appendShiftEmployeeNote } from "@/lib/shop/db";
+import { getOpenShift, getWorkerShift, appendShiftEmployeeNote } from "@/lib/shop/db";
 import { lateNote, resolvePunchAt } from "@/lib/shop/punch";
 import { alertStaleShifts } from "@/lib/shop/stale-alert";
 
@@ -61,6 +62,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
+    if ((type === "shift_start" || type === "shift_stop") && body.workerId != null && body.workerId !== worker.id) {
+      return NextResponse.json({ error: "Sign in as the worker who recorded this punch", retry: true }, { status: 409 });
+    }
     // Only shift_stop populates this — it hands back the closed shift's id so
     // the client can attach GPS in a follow-up call without clocking out ever
     // waiting on location.
@@ -394,13 +398,20 @@ export async function POST(req: NextRequest) {
       // the owner sees it at review. `punchId` makes a re-sent punch harmless.
       case "shift_start": {
         const loc = punchLocation(body);
+        // Stable, worker-scoped shift identity makes a lost response safe to retry,
+        // even if that shift has since closed. No historical rows are changed.
+        const hash = typeof body.punchId === "string" && body.punchId.length <= 200
+          ? createHash("sha256").update(`${ORG_ID}:${worker.id}:${body.punchId}`).digest("hex") : null;
+        const id = hash ? `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}` : undefined;
+        const saved = id ? await getWorkerShift(worker.id, id) : null;
+        if (saved) { result = { shiftId: saved.id, at: saved.started_at, late: false }; break; }
         const receivedAt = Date.now();
         const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "start" });
         if (punch.reason === "too_old") {
           // A queued clock-in from a previous day must not open a shift now.
           return NextResponse.json({ error: "That clock-in is too old to record — clock in again", final: true }, { status: 409 });
         }
-        const shift = await clockIn(worker.id, loc, punch.at);
+        const shift = await clockIn(worker.id, loc, punch.at, id);
         const created = shift.started_at === punch.at;
         if (created && punch.late) await appendShiftEmployeeNote(worker.id, shift.id, lateNote("in", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
         await audit("shift_clock_in", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: {
@@ -420,15 +431,21 @@ export async function POST(req: NextRequest) {
         // days is far more costly than a clock-out missing its coordinates.
         const loc = punchLocation(body);
         const receivedAt = Date.now();
-        const open = await getOpenShift(worker.id);
+        if (body.shiftId != null && (typeof body.shiftId !== "string" || !UUID_RE.test(body.shiftId))) {
+          return NextResponse.json({ error: "Invalid shift", final: true }, { status: 400 });
+        }
+        const open = body.shiftId ? await getWorkerShift(worker.id, body.shiftId) : await getOpenShift(worker.id);
+        if (body.shiftId && !open) return NextResponse.json({ error: "Shift not found. Ask the office to review this punch.", final: true }, { status: 409 });
+        if (open?.ended_at) { result = { shiftId: open.id, at: open.ended_at, late: false }; break; }
         const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "stop", notBefore: open ? Date.parse(open.started_at) : null });
+        if (punch.reason === "too_old") return NextResponse.json({ error: "This clock-out is too old to save automatically. Ask the office to review it.", final: true }, { status: 409 });
         if (open && punch.reason === "before_start") {
           // A queued clock-out from BEFORE this shift started belongs to a
           // shift that has since been closed by hand. Closing today's shift
           // with it would be wrong; refuse it and let the phone drop it.
           return NextResponse.json({ error: "That clock-out belongs to an earlier shift that is already closed", final: true }, { status: 409 });
         }
-        const closed = await clockOut(worker.id, loc, punch.at);
+        const closed = open ? await clockOut(worker.id, loc, punch.at, open.id) : null;
         if (closed && punch.late) await appendShiftEmployeeNote(worker.id, closed.id, lateNote("out", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", entityId: closed?.id, detail: {
           locationStatus: loc?.status || "unavailable",

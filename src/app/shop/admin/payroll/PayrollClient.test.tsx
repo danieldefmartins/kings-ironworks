@@ -10,7 +10,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const worker: PayrollRow = { id: "w", name: "Tiago", active: true, hours: 10, regular: 10, overtime: 0, basePay: 250, approvedHours: 10, pendingHours: 0, rejectedHours: 0, openHours: 0, openShifts: 0, missingRateHours: 0, shifts: 2 };
 const props = {
   rows: [worker, { ...worker, id: "w2", name: "Kayky", hours: 5, basePay: 125 }],
-  days: [{ date: "2026-09-07", rows: [{ ...worker, hours: 6, basePay: 150 }] }, { date: "2026-09-08", rows: [{ ...worker, hours: 4, basePay: 100 }] }],
+  days: [{ date: "2026-09-07", rows: [{ ...worker, hours: 6, basePay: 150, punches: [{ id: "p1", startedAt: "2026-09-07T12:00:00Z", endedAt: "2026-09-07T18:00:00Z", hours: 6, rejected: false }] }] }, { date: "2026-09-08", rows: [{ ...worker, hours: 4, basePay: 100 }] }],
   weeks: ["2026-09-07", "2026-08-31"], selected: "2026-09-07", sunday: "2026-09-13", lang: "en",
 };
 describe("payroll interaction", () => {
@@ -26,6 +26,10 @@ describe("payroll interaction", () => {
     expect(within(details).getByText("$150.00")).toBeDefined();
     expect(within(details).getByText("Tue, Sep 8")).toBeDefined();
     expect(within(details).getByText("$100.00")).toBeDefined();
+    expect(within(details).getByText("Clock in")).toBeDefined();
+    expect(within(details).getByText("Clock out")).toBeDefined();
+    expect(within(details).getByText(/Daily hours: 6h/)).toBeDefined();
+    expect(within(details).getByText(/Weekly hours: 10h/)).toBeDefined();
     fireEvent.click(summary);
     expect(details.open).toBe(false);
   });

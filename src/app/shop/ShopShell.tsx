@@ -24,59 +24,14 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 }
 
 
-// ---- durable punch outbox (see punchNow) -----------------------------------
-type QueuedPunch = { punchId: string; type: "shift_start" | "shift_stop"; clientAt: string };
-type PunchResult =
-  | { ok: true; shiftId: string | null; at: string | null; late: boolean }
-  | { ok: false; error: string };
-const OUTBOX_KEY = "kiw-punch-outbox";
-// A punch older than this is refused by the server anyway (punch.ts); drop it
-// rather than retry forever.
-const OUTBOX_MAX_AGE_MS = 36 * 3600 * 1000;
-const inFlight = new Set<string>();
-
-function readOutbox(): QueuedPunch[] {
-  try {
-    const raw = window.localStorage.getItem(OUTBOX_KEY);
-    const v = raw ? JSON.parse(raw) : [];
-    return Array.isArray(v) ? v.filter((p) => p && typeof p.punchId === "string" && typeof p.clientAt === "string" && (p.type === "shift_start" || p.type === "shift_stop")) : [];
-  } catch { return []; }
-}
-function writeOutbox(items: QueuedPunch[]) {
-  try {
-    if (items.length) window.localStorage.setItem(OUTBOX_KEY, JSON.stringify(items));
-    else window.localStorage.removeItem(OUTBOX_KEY);
-  } catch { /* private mode / storage blocked: the punch still goes out once */ }
-}
-function removeFromOutbox(punchId: string) { writeOutbox(readOutbox().filter((p) => p.punchId !== punchId)); }
-function newPunchId(): string {
-  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
-}
-
-// One attempt. Resolves with the server's answer (ok or a final 4xx); throws
-// on a network failure, timeout or 5xx so the caller can retry or keep it
-// queued. keepalive lets the request finish even if the tab is frozen the
-// instant after the tap — the pocket-the-phone case.
-async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
-  const ctrl = new AbortController();
-  const timer = window.setTimeout(() => ctrl.abort(), 12000);
-  try {
-    const res = await fetch("/shop/api/action", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: p.type, clientAt: p.clientAt, punchId: p.punchId }),
-      keepalive: true, signal: ctrl.signal,
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) return { ok: true, shiftId: typeof data.shiftId === "string" ? data.shiftId : null, at: typeof data.at === "string" ? data.at : null, late: !!data.late };
-    if (res.status >= 500) throw new Error(data.error || `HTTP ${res.status}`);
-    return { ok: false, error: data.error || "Could not update the clock" };
-  } finally { clearTimeout(timer); }
-}
+import { readOutbox, writeOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, type QueuedPunch } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, workerName, lang, shift, breaks, hourlyRate, weekHoursBeforeShift,
+  children, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, clockReady,
 }: {
   children: React.ReactNode;
+  workerId: string | null;
+  clockReady: boolean;
   workerName: string | null;
   lang: string;
   shift: TimeShift | null;
@@ -87,6 +42,12 @@ export default function ShopShell({
   const path = usePathname();
   const router = useRouter();
   const [, transition] = useTransition();
+  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours });
+  const { shift, breaks, hourlyRate, weekHoursBeforeShift } = clock;
+  const [ready, setReady] = useState(clockReady);
+  const [review, setReview] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const clockVersion = useRef(0);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -149,6 +110,7 @@ export default function ShopShell({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Could not update the clock");
+      await reloadClock();
       setOpen(false);
       transition(() => router.refresh());
     } catch (e) { setError(e instanceof Error ? e.message : "Could not update the clock"); }
@@ -192,83 +154,89 @@ export default function ShopShell({
     toastTimer.current = window.setTimeout(() => setToast(null), 6000);
   }
 
-  // Sends every queued punch, oldest first, stopping at the first network
-  // failure (the rest would fail the same way). Safe to call often.
-  const flushOutbox = useCallback(async () => {
-    if (flushing.current) return;
-    flushing.current = true;
+  const reloadClock = useCallback(async () => {
+    const version = ++clockVersion.current;
     try {
-      for (const p of readOutbox()) {
-        if (inFlight.has(p.punchId)) continue;
-        if (Date.now() - Date.parse(p.clientAt) > OUTBOX_MAX_AGE_MS) { removeFromOutbox(p.punchId); continue; }
-        inFlight.add(p.punchId);
+      const response = await fetch("/shop/api/clock", { cache: "no-store", signal: AbortSignal.timeout(12000) });
+      if (response.status === 401) { setNeedsLogin(true); return; }
+      if (!response.ok) return;
+      const data = await response.json();
+      if (version !== clockVersion.current || data.workerId !== workerId) return;
+      setClock(data); setReady(true); setNeedsLogin(false); setNow(Date.now());
+    } catch { /* Keep the last confirmed clock; the queue remains visible. */ }
+  }, [workerId]);
+
+  // A single ordered sender handles taps and background retries. Never skip an
+  // in-flight start to send its stop, or discard an authentication failure.
+  const flushOutbox = useCallback(async () => {
+    if (!workerId || flushing.current || path === "/shop/login") return;
+    flushing.current = true;
+    clockVersion.current++;
+    if (pendingPunches(workerId).length) setBusy(true);
+    try {
+      for (const p of pendingPunches(workerId)) {
         try {
-          const r = await sendPunch(p);
-          removeFromOutbox(p.punchId);
-          if (r.ok) {
-            confirmPunch(p.type, r.at, r.late);
-            if (r.shiftId) attachLocation(p.type, r.shiftId);
-            transition(() => router.refresh());
+          const result = await sendPunch(p);
+          if (!result.ok) {
+            setError(result.error); setOpen(true); setNeedsLogin(result.signIn);
+            if (result.final) flagPunch(p.punchId, result.error);
+            break;
           }
+          setReady(false);
+          removeFromOutbox(p.punchId);
+          setError("");
+          confirmPunch(p.type, result.at, result.late);
+          if (result.shiftId) attachLocation(p.type, result.shiftId);
+          transition(() => router.refresh());
         } catch {
+          setError(t(lang, "punchQueued"));
           break;
-        } finally {
-          inFlight.delete(p.punchId);
         }
       }
+      await reloadClock();
     } finally {
       flushing.current = false;
-      setQueued(readOutbox().length);
+      setBusy(false);
+      setQueued(pendingPunches(workerId).length);
+      setReview(readOutbox().some(p => !p.workerId || (p.workerId === workerId && !!p.review)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang, router]);
+  }, [workerId, path, lang, router, reloadClock]);
 
   useEffect(() => {
-    // flushOutbox() ends by publishing the queue length, so no setState here.
-    void flushOutbox();
+    if (!workerId || path === "/shop/login") return;
+    const initialSync = window.setTimeout(() => void flushOutbox(), 0);
     const onVisible = () => { if (document.visibilityState === "visible") void flushOutbox(); };
     const onOnline = () => void flushOutbox();
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", onOnline);
-    const id = window.setInterval(() => void flushOutbox(), 20000);
+    window.addEventListener("pageshow", onOnline);
+    const id = window.setInterval(() => { if (document.visibilityState === "visible") void flushOutbox(); }, 20000);
     return () => {
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", onOnline);
+      window.removeEventListener("pageshow", onOnline);
       window.clearInterval(id);
+      window.clearTimeout(initialSync);
     };
-  }, [flushOutbox]);
+  }, [workerId, path, flushOutbox]);
 
-  async function punchNow(type: "shift_start" | "shift_stop", failMessage: string) {
-    const p: QueuedPunch = { punchId: newPunchId(), type, clientAt: new Date().toISOString() };
-    setBusy(true); setError("");
-    writeOutbox([...readOutbox(), p]);
-    setQueued(readOutbox().length);
-    inFlight.add(p.punchId);
-    try {
-      let result: PunchResult | null = null;
-      for (let attempt = 0; attempt < 3 && !result; attempt++) {
-        try { result = await sendPunch(p); }
-        catch { await new Promise((r) => window.setTimeout(r, 1500 * (attempt + 1))); }
-      }
-      if (!result) {
-        // Still on the phone. Say so, loudly, and keep the sheet open.
-        setError(t(lang, "punchQueued"));
-        return;
-      }
-      removeFromOutbox(p.punchId);
-      if (!result.ok) { setError(result.error || failMessage); return; }
-      confirmPunch(type, result.at, result.late);
-      setOpen(false);
-      transition(() => router.refresh());
-      if (result.shiftId) attachLocation(type, result.shiftId);
-    } finally {
-      inFlight.delete(p.punchId);
-      setQueued(readOutbox().length);
-      setBusy(false);
+  async function punchNow(type: "shift_start" | "shift_stop") {
+    if (!workerId || flushing.current) return;
+    // Reuse an unsent tap instead of creating a second punch on repeated taps.
+    if (pendingPunches(workerId).length) { await flushOutbox(); return; }
+    const p: QueuedPunch = { punchId: crypto.randomUUID(), workerId, type, clientAt: new Date().toISOString(), ...(type === "shift_stop" && shift ? { shiftId: shift.id } : {}) };
+    setError("");
+    if (!writeOutbox([...readOutbox(), p])) {
+      // Without durable storage, do not claim an offline punch has been saved.
+      setError(lang === "pt" ? "Não foi possível salvar o ponto neste aparelho. Ative o armazenamento e tente novamente." : lang === "es" ? "No se pudo guardar el registro en este dispositivo. Habilita el almacenamiento e inténtalo de nuevo." : "Could not save the punch on this device. Enable browser storage and try again.");
+      return;
     }
+    setQueued(pendingPunches(workerId).length);
+    await flushOutbox();
   }
-  const clockIn = () => punchNow("shift_start", "Could not clock in");
-  const clockOut = () => punchNow("shift_stop", "Could not clock out");
+  const clockIn = () => punchNow("shift_start");
+  const clockOut = () => punchNow("shift_stop");
 
   if (!workerName || path === "/shop/login") return <>{children}</>;
 
@@ -301,6 +269,9 @@ export default function ShopShell({
           ✓ {toast}
         </div>
       )}
+      {(review || needsLogin || !ready) && <div role="alert" className="mx-4 my-3 rounded-xl border border-amber-500/40 bg-amber-950 p-3 text-sm text-amber-200">
+        {needsLogin ? <Link className="underline" href="/shop/login">{lang === "pt" ? "Entre novamente para sincronizar seu ponto salvo." : lang === "es" ? "Inicia sesión para sincronizar tu registro guardado." : "Sign in again to sync your saved punch."}</Link> : !ready ? (lang === "pt" ? "Carregando o ponto. Aguarde antes de registrar." : lang === "es" ? "Cargando el reloj. Espera antes de registrar." : "Clock status unavailable. Waiting to reconnect.") : <Link className="underline" href="/shop/time">{lang === "pt" ? "Um ponto salvo precisa de revisão. Peça ajuda ao escritório; o registro foi preservado neste aparelho." : lang === "es" ? "Un registro guardado necesita revisión. Pide ayuda a la oficina; se conservó en este dispositivo." : "A saved punch needs review. Ask the office for help; the record is preserved on this device."}</Link>}
+      </div>}
       {children}
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">
@@ -354,13 +325,13 @@ export default function ShopShell({
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {error && <p className={`mb-3 rounded-xl p-3 text-sm ${error === t(lang, "punchQueued") ? "border border-amber-500/40 bg-amber-500/10 text-amber-200" : "bg-red-950/60 text-red-300"}`}>{error}</p>}
             {!shift ? (
-              <button disabled={busy} onClick={clockIn} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockInLabel")}</button>
+              <button disabled={busy || !ready || needsLogin} onClick={clockIn} className="min-h-16 w-full rounded-2xl bg-emerald-500 text-lg font-bold text-black disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockInLabel")}</button>
             ) : onBreak ? (
-              <button disabled={busy} onClick={() => act("time_break_end")} className="min-h-16 w-full rounded-2xl bg-amber-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockEndBreak")}</button>
+              <div className="space-y-2"><button disabled={busy || !ready || needsLogin} onClick={() => act("time_break_end")} className="min-h-16 w-full rounded-2xl bg-amber-500 text-lg font-bold text-black disabled:opacity-50">{t(lang, "clockEndBreak")}</button><button disabled={busy || !ready || needsLogin} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300 disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockOutLabel")}</button></div>
             ) : (
               <div className="space-y-2">
-                <button disabled={busy} onClick={() => act("time_break_start")} className="min-h-14 w-full rounded-2xl bg-neutral-800 font-semibold">{t(lang, "clockStartBreak")}</button>
-                <button disabled={busy} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300 disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockOutLabel")}</button>
+                <button disabled={busy || !ready || needsLogin} onClick={() => act("time_break_start")} className="min-h-14 w-full rounded-2xl bg-neutral-800 font-semibold">{t(lang, "clockStartBreak")}</button>
+                <button disabled={busy || !ready || needsLogin} onClick={clockOut} className="min-h-14 w-full rounded-2xl border border-red-500/40 bg-red-950/40 font-semibold text-red-300 disabled:opacity-50">{busy ? t(lang, "punchSending") : t(lang, "clockOutLabel")}</button>
               </div>
             )}
             {shift && (

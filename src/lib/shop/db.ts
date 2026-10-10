@@ -351,15 +351,20 @@ export async function listCorrections(): Promise<TimeCorrection[]> {
 export async function clockIn(
   workerId: string,
   loc?: PunchLocation | null,
-  at?: string
+  at?: string,
+  punchId?: string
 ): Promise<TimeShift> {
+  const saved = punchId ? await getWorkerShift(workerId, punchId) : null;
+  if (saved) return saved;
   const current = await getOpenShift(workerId);
   if (current) return current;
   // `at` is the worker's tap time when the phone queued the punch and sent it
   // late; the route bounds it (see punch.ts) before it gets here.
   const now = at ?? new Date().toISOString();
   const payRate = await getWorkerRate(workerId);
-  const rows = await sbInsert<TimeShift[]>("kiw_shop_shifts", {
+  let rows: TimeShift[];
+  try { rows = await sbInsert<TimeShift[]>("kiw_shop_shifts", {
+    ...(punchId ? { id: punchId } : {}),
     org_id: ORG_ID,
     worker_id: workerId,
     pay_rate: payRate,
@@ -369,6 +374,12 @@ export async function clockIn(
     start_accuracy_m: loc?.accuracy ?? null,
     start_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
   });
+  } catch (error) {
+    // A retry or another tab may win the unique insert while we await it.
+    const winner = (punchId ? await getWorkerShift(workerId, punchId) : null) || await getOpenShift(workerId);
+    if (winner) return winner;
+    throw error;
+  }
   // Nothing here touches project time. The two clocks answer different
   // questions and are kept apart on purpose — see the note above
   // startProjectEntry.
@@ -379,27 +390,27 @@ export async function clockIn(
 // can attach GPS afterward — see recordShiftEndLocation. Clocking out must
 // never wait on location: a stuck-open shift that silently runs for days is
 // far more expensive than an end-location field left blank.
-export async function clockOut(workerId: string, loc?: PunchLocation | null, at?: string): Promise<TimeShift | null> {
-  const shift = await getOpenShift(workerId);
+export async function getWorkerShift(workerId: string, shiftId: string): Promise<TimeShift | null> {
+  const rows = await sbSelect<TimeShift[]>("kiw_shop_shifts", `select=*&org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&id=eq.${shiftId}&limit=1`);
+  return rows[0] || null;
+}
+
+export async function clockOut(workerId: string, loc?: PunchLocation | null, at?: string, shiftId?: string): Promise<TimeShift | null> {
+  const shift = shiftId ? await getWorkerShift(workerId, shiftId) : await getOpenShift(workerId);
   if (!shift) return null;
-  // `at` is the worker's tap time for a punch the phone sent late; the route
-  // has already checked it falls inside this shift.
-  const now = at && Date.parse(at) > Date.parse(shift.started_at) ? at : new Date().toISOString();
-  // Breaks belong to the shift and close with it. Project time does not:
-  // clocking out of payroll is not a statement about which job was being
-  // worked, and silently stopping the job clock would quietly rewrite the
-  // job-cost number the owner reads profit from.
+  if (shift.ended_at) return shift;
+  const now = at && Date.parse(at) >= Date.parse(shift.started_at) ? at : new Date().toISOString();
+  // Never re-read "the current shift" after validating a different shift.
+  // Conditional writes also prevent a retry overwriting an owner's correction.
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: now });
-  await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shift.id}`, {
+  const rows = await sbUpdate<TimeShift[]>("kiw_shop_shifts", `org_id=eq.${ORG_ID}&worker_id=eq.${workerId}&id=eq.${shift.id}&ended_at=is.null`, {
     ended_at: now,
-    end_lat: loc?.lat ?? null,
-    end_lng: loc?.lng ?? null,
+    end_lat: loc?.lat ?? null, end_lng: loc?.lng ?? null,
     end_accuracy_m: loc?.accuracy ?? null,
     end_location_status: loc?.status ?? (loc ? "unknown" : "unavailable"),
-    status: "submitted",
-    updated_at: new Date().toISOString(),
+    status: "submitted", updated_at: new Date().toISOString(),
   });
-  return { ...shift, ended_at: now, status: "submitted" };
+  return rows[0] || await getWorkerShift(workerId, shift.id);
 }
 
 // Append to a shift's employee note (the worker-side note the owner sees in

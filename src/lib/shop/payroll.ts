@@ -26,13 +26,14 @@ export function payrollMidnight(day: string): string {
 }
 
 export type PayrollRow = {
+  punches?: { id: string; startedAt: string; endedAt: string | null; hours: number; rejected: boolean }[];
   id: string; name: string; active: boolean; hours: number; regular: number; overtime: number;
   basePay: number; approvedHours: number; pendingHours: number; rejectedHours: number;
   openHours: number; openShifts: number; missingRateHours: number; shifts: number;
 };
 
 export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">[], shifts: TimeShift[], breaks: TimeBreak[], week: ReturnType<typeof payrollWeek>, now = Date.now()): PayrollRow[] {
-  const rows = new Map(workers.map(w => [w.id, { ...w, hours: 0, regular: 0, overtime: 0, basePay: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0, openHours: 0, openShifts: 0, missingRateHours: 0, shifts: 0 }]));
+  const rows = new Map<string, PayrollRow>(workers.map(w => [w.id, { ...w, hours: 0, regular: 0, overtime: 0, basePay: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0, openHours: 0, openShifts: 0, missingRateHours: 0, shifts: 0 }]));
   const byShift = new Map<string, TimeBreak[]>();
   for (const b of breaks) byShift.set(b.shift_id, [...(byShift.get(b.shift_id) || []), b]);
   for (const shift of shifts) {
@@ -49,6 +50,7 @@ export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">
     for (const [a, b] of intervals) { unpaid += Math.max(0, b - Math.max(a, cursor)); cursor = Math.max(cursor, b); }
     const hours = Math.max(0, end - start - unpaid) / 3600000;
     row.shifts++;
+    (row.punches ??= []).push({ id: shift.id, startedAt: shift.started_at, endedAt: shift.ended_at, hours, rejected: shift.status === "rejected" });
     if (shift.status === "rejected") { row.rejectedHours += hours; continue; }
     row.hours += hours;
     if (shift.status === "approved" && shift.ended_at) row.approvedHours += hours;

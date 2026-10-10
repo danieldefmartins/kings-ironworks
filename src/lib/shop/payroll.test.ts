@@ -50,3 +50,11 @@ describe("weekly payroll", () => {
     expect(row.hours).toBe(48); expect(row.regular).toBe(40); expect(row.overtime).toBe(8); expect(row.basePay).toBe(1200);
   });
 });
+it("keeps every daily clock pair, including rejected and open shifts, with net daily hours", () => {
+  const row = calc([shift(), shift({ id: "second", started_at: "2026-09-07T21:00:00Z", ended_at: "2026-09-07T22:00:00Z" }), shift({ id: "rejected", status: "rejected" })], [br()]);
+  expect(row.punches).toHaveLength(3);
+  expect(row.punches?.[0]).toMatchObject({ startedAt: "2026-09-07T12:00:00Z", endedAt: "2026-09-07T20:00:00Z", hours: 7.5 });
+  expect(row.punches?.[2].rejected).toBe(true);
+  const daily = calculatePayroll(workers, [shift({ ended_at: "2026-09-08T06:00:00Z" })], [], { ...week, start: payrollMidnight("2026-09-08"), end: payrollMidnight("2026-09-09") }, now)[1];
+  expect(daily.punches?.[0]).toMatchObject({ startedAt: "2026-09-07T12:00:00Z", hours: 2 });
+});
