@@ -161,3 +161,16 @@
 .shop-ui .shop-menu-group > summary::-webkit-details-marker { display: none; }
 .shop-ui :where([class*="divide-neutral-"]) > :not(:last-child) { border-color: var(--shop-line); }
 .shop-ui :where(.text-white[class*="bg-neutral-"]) { color: var(--shop-fg); }
+
+/* Owner money totals: distinct, high-contrast surfaces in both appearances. */
+.shop-ui .shop-money-card {
+  background: var(--money-bg); color: var(--money-fg);
+  border-color: var(--money-border);
+  box-shadow: 0 2px 5px #172b4d08, inset 0 1px 0 #ffffff50;
+}
+.shop-ui [data-money-tone="total"] { --money-bg: #dbeafe; --money-fg: #173f83; --money-border: #b4cff6; }
+.shop-ui [data-money-tone="received"] { --money-bg: #d1fae5; --money-fg: #07583e; --money-border: #9be0bc; }
+.shop-ui [data-money-tone="balance"] { --money-bg: #fef3c7; --money-fg: #784208; --money-border: #efd58a; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="total"] { --money-bg: #193758; --money-fg: #dcecff; --money-border: #315b87; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="received"] { --money-bg: #123e32; --money-fg: #cdffe5; --money-border: #296c54; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="balance"] { --money-bg: #483513; --money-fg: #ffedb5; --money-border: #80642b; }
