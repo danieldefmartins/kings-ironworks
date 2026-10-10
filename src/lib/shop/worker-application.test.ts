@@ -14,3 +14,11 @@ it("requires owner-provided role, pay rate and PIN to approve, and a reason to d
  expect(applicationReviewSchema.safeParse({ id, decision: "approved", role: "Welder", hourlyRate: 25, pin: "012345" }).success).toBe(true);
  expect(applicationReviewSchema.safeParse({ id, decision: "declined", note: "" }).success).toBe(false);
 });
+it("accepts optional Zelle contacts and keeps older applications valid", () => {
+  expect(applicationSchema.parse({ ...sampleApplication, zelleContact: undefined, zelleName: undefined }).zelleContact).toBe("");
+  for (const zelleContact of ["pay@example.test", "(617) 555-0100", "+1 617 555 0100"]) {
+    expect(applicationSchema.safeParse({ ...sampleApplication, zelleContact, zelleName: "Test Applicant" }).success).toBe(true);
+  }
+  expect(applicationSchema.safeParse({ ...sampleApplication, zelleContact: "not a phone or email", zelleName: "Test Applicant" }).success).toBe(false);
+  expect(applicationSchema.safeParse({ ...sampleApplication, zelleContact: "6175550100", zelleName: "" }).success).toBe(false);
+});

@@ -15,8 +15,10 @@ export const applicationSchema = z.object({
   experience: required(2000), previousEmployer: optional(150), previousRole: optional(100),
   referenceName: optional(120), referencePhone: optional(40),
   availableStart: z.iso.date(), availability: required(500), transportation: z.enum(["yes", "no", "discuss"]),
+  zelleContact: optional(160).refine(v => !v || z.email().safeParse(v).success || (/^[+()0-9 .-]+$/.test(v) && /^(1)?\d{10}$/.test(v.replace(/\D/g, ""))), "Enter the US phone number or email registered with Zelle."),
+  zelleName: optional(120),
   notes: optional(2000), consent: z.literal(true, { error: "Confirm your information before submitting." }),
-});
+}).refine(d => !d.zelleContact || !!d.zelleName, { message: "Enter the name registered on the Zelle account.", path: ["zelleName"] });
 export type WorkerApplicationData = z.infer<typeof applicationSchema>;
 export type WorkerApplication = { id: string; full_name: string; email: string; phone: string; status: "pending" | "approved" | "declined"; data: WorkerApplicationData; created_at: string; reviewed_at: string | null; review_note: string | null; worker_id: string | null };
 export const applicationReviewSchema = z.discriminatedUnion("decision", [
