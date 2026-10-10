@@ -113,7 +113,7 @@ export default async function ShopToday() {
     <div>
       <ShopTopBar workerName={worker.name} title={t(lang, "navToday")} lang={lang} adminLink={isOwner} />
       <main className="mx-auto max-w-5xl space-y-6 px-4 pb-28 pt-5 sm:px-6">
-        {isOwner && <ProjectMoney jobs={financialJobs} lang={lang} />}
+        {isOwner && <ProjectMoney jobs={financialJobs} lang={lang} layout="stacked" />}
         <header>
           <p className="text-sm text-neutral-400">{t(lang, "welcomeBack", { name: worker.name.split(" ")[0] })}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{label(isOwner ? "Your shop at a glance" : "Your work today", isOwner ? "Sua oficina em resumo" : "Seu trabalho hoje", isOwner ? "Tu taller de un vistazo" : "Tu trabajo de hoy")}</h1>

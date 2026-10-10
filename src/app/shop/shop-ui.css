@@ -174,3 +174,11 @@
 .shop-ui[data-shop-theme="dark"] [data-money-tone="total"] { --money-bg: #193758; --money-fg: #dcecff; --money-border: #315b87; }
 .shop-ui[data-shop-theme="dark"] [data-money-tone="received"] { --money-bg: #123e32; --money-fg: #cdffe5; --money-border: #296c54; }
 .shop-ui[data-shop-theme="dark"] [data-money-tone="balance"] { --money-bg: #483513; --money-fg: #ffedb5; --money-border: #80642b; }
+
+/* Home: two totals above a full-width balance, with room for larger amounts. */
+.shop-ui [data-money-layout="stacked"] > dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.shop-ui [data-money-layout="stacked"] .shop-money-card { padding: 16px 10px; container-type: inline-size; }
+.shop-ui [data-money-layout="stacked"] .shop-money-card dt { min-height: 0; font-size: 12px; line-height: 1.4; }
+.shop-ui [data-money-layout="stacked"] .shop-money-card dd { margin-top: 10px; font-size: clamp(12px, 13cqi, 32px); line-height: 1.2; }
+.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] { grid-column: 1 / -1; padding: 18px 16px; }
+.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] dd { font-size: clamp(24px, 11cqi, 40px); }

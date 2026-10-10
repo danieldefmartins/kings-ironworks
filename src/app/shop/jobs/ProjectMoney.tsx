@@ -2,14 +2,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { projectMoney, type MoneyJob, type MoneyScope } from "@/lib/shop/project-money";
-export default function ProjectMoney({ jobs, lang }: { jobs: MoneyJob[] | null; lang: string }) {
+export default function ProjectMoney({ jobs, lang, layout = "columns" }: { jobs: MoneyJob[] | null; lang: string; layout?: "columns" | "stacked" }) {
   const [scope, setScope] = useState<MoneyScope>("current");
   const label = (en: string, pt: string, es: string) => lang === "pt" ? pt : lang === "es" ? es : en;
   const money = (n: number | null) => n === null ? "—" : n.toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es-US" : "en-US", { style: "currency", currency: "USD" });
   if (!jobs) return <div role="alert" className="mb-4 rounded-2xl border border-amber-700 bg-amber-950/30 p-4">{label("Could not load project money. Refresh to try again.", "Não foi possível carregar os valores. Atualize para tentar novamente.", "No se pudieron cargar los importes. Actualiza para intentarlo de nuevo.")}</div>;
   const summary = projectMoney(jobs, scope);
   const labels = { current: label("All current jobs", "Todas as obras atuais", "Todos los proyectos actuales"), active: label("Active only", "Somente ativas", "Solo activos"), archived: label("Archived records", "Registros arquivados", "Registros archivados") };
-  return <section className="mb-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4" aria-label={label("Project money", "Valores das obras", "Importes de proyectos")}>
+  return <section data-money-layout={layout} className="mb-4 rounded-2xl border border-white/10 bg-white/[0.025] p-4" aria-label={label("Project money", "Valores das obras", "Importes de proyectos")}>
     <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-sm font-semibold text-sky-200">{label("Project money", "Valores das obras", "Importes de proyectos")}</h2><select aria-label={label("Money summary scope", "Abrangência do resumo", "Alcance del resumen")} value={scope} onChange={e => setScope(e.target.value as MoneyScope)} className="min-h-12 max-w-full rounded-xl border border-white/15 bg-neutral-950 px-3 text-sm">{Object.entries(labels).map(([key, value]) => <option key={key} value={key}>{value}</option>)}</select></div>
     <dl className="mt-4 grid grid-cols-3 gap-1.5 sm:gap-3">{[
       { name: label("Project total", "Total das obras", "Total de proyectos"), value: summary.total, tone: "total" },
