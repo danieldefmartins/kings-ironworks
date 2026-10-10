@@ -48,8 +48,8 @@ export default function MenuDirectory({ scope, lang, onNavigate, compact = false
     </div>
     {groups.length === 0 && <p role="status" className="py-6 text-center text-neutral-400">{t(lang, "menuEmpty")}</p>}
     <nav aria-label={t(lang, scope === "admin" ? "admHubTitle" : "menuCrew")} className={simple && !compact ? "grid items-start gap-6 md:grid-cols-2" : "space-y-5"}>
-      {groups.map(group => <section key={group.id} aria-label={group.title}>
-        <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-neutral-400">{group.title}</h2>
+      {groups.map(group => { const Group = simple && compact ? "details" : "section"; return <Group key={`${group.id}-${query ? "search" : "browse"}`} open={simple && compact ? !!query || group.id === "daily" : undefined} aria-label={group.title} className={simple && compact ? "shop-menu-group" : undefined}>
+        {simple && compact ? <summary className="flex min-h-12 cursor-pointer items-center justify-between text-sm font-semibold">{group.title}<ChevronRight aria-hidden className="h-4 w-4" /></summary> : <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-neutral-400">{group.title}</h2>}
         <div className={simple ? "overflow-hidden rounded-2xl border border-white/10 bg-white/[0.025]" : compact ? "space-y-2" : "grid gap-3 sm:grid-cols-2"}>
           {group.items.map(d => <Link key={d.href} href={d.href} onClick={onNavigate}
             aria-current={pathname === d.href ? "page" : undefined}
@@ -59,7 +59,7 @@ export default function MenuDirectory({ scope, lang, onNavigate, compact = false
             <ChevronRight aria-hidden className="h-4 w-4 shrink-0 text-neutral-500" />
           </Link>)}
         </div>
-      </section>)}
+      </Group>; })}
     </nav>
   </div>;
 }

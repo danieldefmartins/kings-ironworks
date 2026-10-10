@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { useShopAppearance } from "./ShopAppearance";
 import { Menu } from "lucide-react";
 
 // Radix handles focus trapping, Escape, scroll locking and focus restoration.
@@ -10,12 +11,13 @@ export default function MoreMenu({ label, closeLabel, children, align = "right",
   children: (close: () => void) => React.ReactNode;
   align?: "left" | "right"; visibleLabel?: boolean;
 }) {
+  const appearance = useShopAppearance();
   const [open, setOpen] = useState(false);
   return <Dialog.Root open={open} onOpenChange={setOpen}>
     <Dialog.Trigger asChild><button type="button" className={`flex min-h-12 min-w-12 items-center justify-center rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-neutral-200 ${align === "left" ? "mr-auto" : ""}`}><Menu aria-hidden className="h-6 w-6" /><span className={visibleLabel ? "ml-2 text-sm font-medium" : "sr-only"}>{label}</span></button></Dialog.Trigger>
     <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-50 bg-black/75" />
-      <Dialog.Content aria-describedby={undefined} className="fixed bottom-4 left-1/2 z-[51] max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))] text-neutral-100 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2">
+      <Dialog.Content data-shop-theme={visibleLabel ? appearance : undefined} aria-describedby={undefined} className={`${visibleLabel ? "shop-ui shop-dialog" : ""} fixed bottom-4 left-1/2 z-[51] max-h-[85dvh] w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 overflow-y-auto rounded-2xl border border-neutral-700 bg-neutral-900 p-4 pb-[max(16px,env(safe-area-inset-bottom))] text-neutral-100 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2`}>
         <div className="mb-3 flex items-center justify-between gap-3"><Dialog.Title className="text-lg font-bold">{label}</Dialog.Title><Dialog.Close className="min-h-12 rounded-xl border border-neutral-700 px-3 font-semibold">{closeLabel}</Dialog.Close></div>
         <div className="space-y-4">{children(() => setOpen(false))}</div>
       </Dialog.Content>

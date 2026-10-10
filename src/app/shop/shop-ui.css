@@ -1,0 +1,163 @@
+/* Scoped to the shop shell; measuring routes retain their existing appearance. */
+.shop-ui {
+ --shop-bg: #f3f4f7; --shop-card: #fff; --shop-inset: #edf0f5;
+ --shop-fg: #1d2027; --shop-secondary: #535e70; --shop-muted: #647084;
+ --shop-line: #dce1e9; --shop-shadow: 0 2px 4px #24334c05, 0 10px 28px #24334c09;
+ --shop-glass: #fffffff0; color-scheme: light;
+ color: var(--shop-fg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+ -webkit-font-smoothing: antialiased;
+}
+.shop-ui[data-shop-theme="dark"] {
+ --shop-bg: #101216; --shop-card: #1c2027; --shop-inset: #272d37;
+ --shop-fg: #f4f6fa; --shop-secondary: #c0c9d7; --shop-muted: #9ca8ba;
+ --shop-line: #353d4a; --shop-shadow: 0 2px 4px #0002, 0 12px 32px #0003;
+ --shop-glass: #1c2027f0; color-scheme: dark;
+}
+.shop-app { background: var(--shop-bg); }
+.shop-ui :where(input,select,textarea) { color: var(--shop-fg); }
+.shop-ui :where(input,textarea)::placeholder { color: var(--shop-muted); }
+.shop-ui :where(button,a,input,select,textarea,summary):focus-visible { outline: 3px solid #4087ed; outline-offset: 3px; }
+.shop-ui :where(main) { padding-top: 28px; }
+.shop-ui :where(h1,h2,h3) { letter-spacing: -.025em; }
+.shop-ui :where([class~="bg-neutral-200"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-600"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-700"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-700/60"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-800"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-800/40"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-800/50"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-800/60"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-800/70"]) { background-color: var(--shop-inset); }
+.shop-ui :where([class~="bg-neutral-900"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/40"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/50"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/60"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/70"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/85"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-900/95"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/40"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/50"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/60"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/85"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/90"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-neutral-950/95"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-white/10"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-white/5"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="bg-white/[0.025]"]) { background-color: var(--shop-card); }
+.shop-ui :where([class~="border-neutral-400"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-neutral-600"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-neutral-700"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-neutral-800"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-neutral-950"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white/10"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white/15"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white/20"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white/5"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="border-white/[0.06]"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="divide-neutral-800"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="divide-white/10"]) { border-color: var(--shop-line); }
+.shop-ui :where([class~="text-neutral-100"]) { color: var(--shop-fg); }
+.shop-ui :where([class~="text-neutral-200"]) { color: var(--shop-fg); }
+.shop-ui :where([class~="text-neutral-300"]) { color: var(--shop-secondary); }
+.shop-ui :where([class~="text-neutral-400"]) { color: var(--shop-secondary); }
+.shop-ui :where([class~="text-neutral-500"]) { color: var(--shop-muted); }
+.shop-ui :where([class~="text-neutral-600"]) { color: var(--shop-muted); }
+.shop-ui :where([class~="text-neutral-950"]) { color: var(--shop-muted); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-400/15"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-400/5"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-500/10"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-500/15"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-500/5"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-500/60"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-500/90"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-950"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-950/20"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-950/30"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-amber-950/40"]) { background-color: color-mix(in srgb, #8a5100 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-blue-600/20"]) { background-color: color-mix(in srgb, #245dc4 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-emerald-500/10"]) { background-color: color-mix(in srgb, #087653 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-emerald-950/20"]) { background-color: color-mix(in srgb, #087653 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-emerald-950/40"]) { background-color: color-mix(in srgb, #087653 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-emerald-950/50"]) { background-color: color-mix(in srgb, #087653 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-green-600/10"]) { background-color: color-mix(in srgb, #217338 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-green-600/20"]) { background-color: color-mix(in srgb, #217338 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-green-950/25"]) { background-color: color-mix(in srgb, #217338 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-green-950/30"]) { background-color: color-mix(in srgb, #217338 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-green-950/40"]) { background-color: color-mix(in srgb, #217338 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-red-600/20"]) { background-color: color-mix(in srgb, #b32c35 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-red-950/30"]) { background-color: color-mix(in srgb, #b32c35 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-red-950/40"]) { background-color: color-mix(in srgb, #b32c35 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-red-950/50"]) { background-color: color-mix(in srgb, #b32c35 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-red-950/60"]) { background-color: color-mix(in srgb, #b32c35 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-rose-500/10"]) { background-color: color-mix(in srgb, #b02751 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-sky-500/10"]) { background-color: color-mix(in srgb, #086a99 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-sky-500/15"]) { background-color: color-mix(in srgb, #086a99 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-sky-950/20"]) { background-color: color-mix(in srgb, #086a99 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-sky-950/30"]) { background-color: color-mix(in srgb, #086a99 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="bg-sky-950/40"]) { background-color: color-mix(in srgb, #086a99 9%, white); }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-100"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-200"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-200/80"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-300"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-300/80"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-400"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-400/80"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-50"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-500"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-500/60"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-500/80"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-amber-500/90"]) { color: #8a5100; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-blue-200"]) { color: #245dc4; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-blue-400"]) { color: #245dc4; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-emerald-100"]) { color: #087653; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-emerald-200"]) { color: #087653; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-emerald-300"]) { color: #087653; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-emerald-400"]) { color: #087653; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-green-200"]) { color: #217338; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-green-300"]) { color: #217338; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-green-400"]) { color: #217338; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-orange-300"]) { color: #a2480b; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-orange-400"]) { color: #a2480b; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-red-100"]) { color: #b32c35; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-red-200"]) { color: #b32c35; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-red-300"]) { color: #b32c35; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-red-400"]) { color: #b32c35; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-red-500"]) { color: #b32c35; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-rose-200"]) { color: #b02751; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-rose-300"]) { color: #b02751; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-sky-200"]) { color: #086a99; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-sky-300"]) { color: #086a99; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-sky-300/90"]) { color: #086a99; }
+.shop-ui[data-shop-theme="light"] :where([class~="text-sky-400"]) { color: #086a99; }
+
+.shop-ui :where(.rounded-2xl.border,.rounded-3xl.border) { box-shadow: var(--shop-shadow); }
+.shop-ui :where(.rounded-2xl.border) { border-radius: 20px; }
+.shop-ui :where(details[open]) { background: var(--shop-card); }
+.shop-ui :where(summary) { touch-action: manipulation; }
+.shop-ui .shop-topbar, .shop-ui .shop-tabbar { background: var(--shop-glass); border-color: var(--shop-line); }
+.shop-ui .shop-topbar { box-shadow: 0 2px 16px #24334c05; }
+.shop-ui .shop-tabbar { box-shadow: 0 -4px 24px #10182809; }
+.shop-ui .shop-brand { background: #202329; border-radius: 12px; padding: 3px 5px; }
+.shop-dialog { background: var(--shop-card); color: var(--shop-fg); border-color: var(--shop-line); box-shadow: 0 24px 100px #0005; }
+.shop-ui .shop-appearance button[aria-pressed="true"] { background: var(--shop-card); color: var(--shop-fg); box-shadow: 0 2px 8px #0002; }
+.shop-ui .shop-payroll-day { background: color-mix(in srgb, var(--day-color) 9%, var(--shop-card)); border-color: color-mix(in srgb, var(--day-color) 25%, var(--shop-line)); border-left: 4px solid var(--day-color); box-shadow: 0 3px 10px #18243804; }
+.shop-ui [data-payroll-day="0"] { --day-color: #5284ce; }
+.shop-ui [data-payroll-day="1"] { --day-color: #8c6dce; }
+.shop-ui [data-payroll-day="2"] { --day-color: #26947d; }
+.shop-ui [data-payroll-day="3"] { --day-color: #c38d31; }
+.shop-ui [data-payroll-day="4"] { --day-color: #c9668f; }
+.shop-ui [data-payroll-day="5"] { --day-color: #479bad; }
+.shop-ui [data-payroll-day="6"] { --day-color: #bf7854; }
+.shop-ui .shop-payroll-day > div:first-child { align-items: baseline; }
+.shop-ui .shop-payroll-day > div:first-child > span:nth-child(2) { margin-left: auto; }
+.shop-ui .shop-payroll-day > div:first-child > span:last-child { width: 100%; font-size: 1.4rem; font-weight: 600; letter-spacing: -.03em; }
+@media (min-width: 640px) { .shop-ui .shop-payroll-day > div:first-child > span:last-child { width: auto; margin-left: 20px; } }
+
+.shop-ui .shop-menu-group { border-bottom: 1px solid var(--shop-line); padding-bottom: 8px; }
+.shop-ui .shop-menu-group[open] > summary > svg { transform: rotate(90deg); }
+.shop-ui .shop-menu-group > summary { list-style: none; }
+.shop-ui .shop-menu-group > summary::-webkit-details-marker { display: none; }
+.shop-ui :where([class*="divide-neutral-"]) > :not(:last-child) { border-color: var(--shop-line); }
+.shop-ui :where(.text-white[class*="bg-neutral-"]) { color: var(--shop-fg); }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { t } from "@/lib/shop/i18n";
 import { isMeasuringPath, useShopOwner } from "./ShopAccess";
+import ShopAppearance from "./ShopAppearance";
 import AdminMenu from "./AdminMenu";
 import MenuDirectory from "./MenuDirectory";
 import MoreMenu, { MoreItem } from "./MoreMenu";
@@ -42,7 +43,7 @@ export default function ShopTopBar({
     router.refresh();
   }
   return (
-    <div className={measuring ? "sticky top-0 z-10 grid min-h-[64px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-3 backdrop-blur-xl" : "sticky top-0 z-10 grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/[0.06] bg-[#09090b]/95 px-4 backdrop-blur-xl sm:px-6"}>
+    <div className={measuring ? "sticky top-0 z-10 grid min-h-[64px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-3 backdrop-blur-xl" : "shop-topbar sticky top-0 z-10 grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/[0.06] bg-[#09090b]/95 px-4 backdrop-blur-xl sm:px-6"}>
       <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link
@@ -56,7 +57,7 @@ export default function ShopTopBar({
         <Link
           href="/shop"
           aria-label="King Iron Works"
-          className="flex h-10 w-[66px] shrink-0 items-center justify-center"
+          className={`${measuring ? "" : "shop-brand"} flex h-10 w-[66px] shrink-0 items-center justify-center`}
         >
           <Image src="/images/logo-white-transparent.png" alt="King Iron Works" width={1536} height={1024} className="h-auto w-full" priority />
         </Link>
@@ -68,6 +69,7 @@ export default function ShopTopBar({
         <MoreMenu label={measuring ? t(lang, "menuCrew") : toolsLabel} visibleLabel={!measuring} closeLabel={t(lang, "close")}>
           {(close) => (
             <>
+              {!measuring && <ShopAppearance lang={lang} />}
               <MenuDirectory scope={!measuring && (owner || adminLink) ? "all" : "crew"} lang={lang} compact simple={!measuring} onNavigate={close} />
               <div className="text-[11px] uppercase tracking-widest text-neutral-500">
                 {t(lang, "language")}
