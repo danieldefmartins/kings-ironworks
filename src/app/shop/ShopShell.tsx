@@ -3,9 +3,10 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, X } from "lucide-react";
+import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, LayoutGrid, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { fmtTime, hoursToHm, shiftHours } from "@/lib/shop/shared";
+import { ShopAccess, isMeasuringPath } from "./ShopAccess";
 import { t } from "@/lib/shop/i18n";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
@@ -27,9 +28,10 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 import { readOutbox, writeOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, type QueuedPunch } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, clockReady,
+  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, clockReady,
 }: {
   children: React.ReactNode;
+  isOwner?: boolean;
   workerId: string | null;
   clockReady: boolean;
   workerName: string | null;
@@ -240,12 +242,13 @@ export default function ShopShell({
 
   if (!workerName || path === "/shop/login") return <>{children}</>;
 
+  const measuring = isMeasuringPath(path);
   const tabs = [
     { href: "/shop", label: t(lang, "navToday"), icon: House, exact: true },
     { href: "/shop/jobs", label: t(lang, "jobs"), icon: BriefcaseBusiness },
     { clock: true, label: shift ? (onBreak ? t(lang, "clockBreak") : t(lang, "clockWorking")) : t(lang, "clockInLabel"), icon: Clock3 },
     { href: "/shop/leads", label: t(lang, "navMeasure"), icon: Ruler },
-    { href: "/shop/inventory", label: t(lang, "tileInventory"), icon: PackageSearch },
+    measuring ? { href: "/shop/inventory", label: t(lang, "tileInventory"), icon: PackageSearch } : { href: "/shop/more", label: lang === "pt" ? "Mais" : lang === "es" ? "Más" : "More", icon: LayoutGrid },
   ];
   const hours = shift ? shiftHours(shift, breaks, now) : 0;
   // The crew are contractors, so pay is straight time at their own rate — no
@@ -258,7 +261,7 @@ export default function ShopShell({
   const weekEarnings = hourlyRate == null ? null : weekHours * hourlyRate;
 
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">
+    <ShopAccess.Provider value={isOwner}><div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">
       {queued > 0 && (
         <div className="fixed inset-x-0 top-0 z-[70] bg-amber-400 px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] text-center text-sm font-semibold text-black">
           {t(lang, "punchQueuedBanner", { n: String(queued) })}
@@ -274,7 +277,7 @@ export default function ShopShell({
       </div>}
       {children}
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl">
+      <nav aria-label={lang === "pt" ? "Navegação principal" : lang === "es" ? "Navegación principal" : "Main navigation"} className={measuring ? "fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl" : "fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#111215]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] backdrop-blur-2xl"}>
         <div className="mx-auto grid h-[76px] max-w-2xl grid-cols-5">
           {tabs.map((tab) => {
             const { label, icon: Icon } = tab;
@@ -289,7 +292,7 @@ export default function ShopShell({
             const { href, exact } = tab;
             const shownPath = pendingPath || path;
             const active = exact ? shownPath === href : shownPath.startsWith(href);
-            return <Link prefetch href={href} key={label} onPointerDown={() => setPendingPath(href)} onClick={() => window.setTimeout(() => setPendingPath(null), 800)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-amber-300" : "text-neutral-500"}`}>
+            return <Link prefetch href={href} key={label} aria-current={active ? "page" : undefined} onPointerDown={() => setPendingPath(href)} onClick={() => window.setTimeout(() => setPendingPath(null), 800)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-amber-300" : "text-neutral-500"}`}>
               <span className={`grid h-10 w-12 place-items-center rounded-2xl ${active ? "bg-amber-400/15" : ""}`}><Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.4 : 1.9} /></span>
               <span className={active ? "font-semibold" : ""}>{label}</span>
             </Link>;
@@ -350,6 +353,6 @@ export default function ShopShell({
           </section>
         </div>
       )}
-    </div>
+    </div></ShopAccess.Provider>
   );
 }

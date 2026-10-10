@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import type { Job } from "@/lib/shop/shared";
 import { contractValue, depositValue, subcontractorPaidValue, subcontractorSplitPct, STAGES } from "@/lib/shop/shared";
 import { stageLabel, t } from "@/lib/shop/i18n";
-import { Check, Filter, GripVertical, ListOrdered, Search, X } from "lucide-react";
+import { Filter, GripVertical, ListOrdered, Search, X } from "lucide-react";
 
 type Progress = Record<string, { done: number; total: number }>;
 type Crew = { id: string; name: string }[];
@@ -109,30 +109,13 @@ export default function JobsList({
   return (
     <>
       {canSeeMoney && (
-        <div className="mb-6 grid grid-cols-2 gap-3" role="group" aria-label={t(lang, "jobsTeam")}>
-          {(["inhouse", "subcontractor"] as const).map((team) => {
-            const selected = view === team;
-            return (
-              <button
-                key={team}
-                type="button"
-                onClick={() => { setView(team); setQueueMode(false); setFilter("all"); }}
-                aria-pressed={selected}
-                className={`min-w-0 rounded-2xl border p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-400 sm:p-4 ${selected ? "border-amber-400 bg-amber-400/10" : "border-neutral-800 bg-neutral-900/50 hover:border-neutral-600"}`}
-              >
-                <span className="mb-3 flex items-center justify-between gap-2">
-                  <span className={`text-2xl font-semibold tabular-nums ${selected ? "text-amber-300" : "text-neutral-300"}`}>
-                    {team === "inhouse" ? inHouseCount : subcontractorCount}
-                  </span>
-                  <span className={`grid h-5 w-5 place-items-center rounded-full border ${selected ? "border-amber-400 bg-amber-400 text-black" : "border-neutral-600"}`}>
-                    {selected && <Check aria-hidden className="h-3.5 w-3.5" />}
-                  </span>
-                </span>
-                <span className="block text-sm font-semibold text-neutral-100 sm:text-base">{t(lang, team === "inhouse" ? "jobsTabInHouse" : "jobsTabSubcontractor")}</span>
-                <span className="mt-1 block text-xs leading-relaxed text-neutral-400">{t(lang, team === "inhouse" ? "jobsInHouseHelp" : "jobsSubcontractorHelp")}</span>
-              </button>
-            );
-          })}
+        <div className="mb-5">
+          <div className="grid grid-cols-2 gap-1 rounded-2xl border border-white/10 bg-white/[0.025] p-1" role="group" aria-label={t(lang, "jobsTeam")}>
+            {(["inhouse", "subcontractor"] as const).map(team => <button key={team} type="button" onClick={() => { setView(team); setQueueMode(false); setFilter("all"); }} aria-pressed={view === team} className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-xl px-2 text-sm font-medium transition focus-visible:outline-2 focus-visible:outline-amber-400 ${view === team ? "bg-neutral-700/60 text-white shadow-sm" : "text-neutral-400 hover:text-neutral-200"}`}>
+              <span>{t(lang, team === "inhouse" ? "jobsTabInHouse" : "jobsTabSubcontractor")}</span><span className="rounded-lg bg-white/5 px-2 py-0.5 text-xs tabular-nums">{team === "inhouse" ? inHouseCount : subcontractorCount}</span>
+            </button>)}
+          </div>
+          <p className="mt-2 px-1 text-xs leading-relaxed text-neutral-500">{t(lang, view === "inhouse" ? "jobsInHouseHelp" : "jobsSubcontractorHelp")}</p>
         </div>
       )}
       <div className="relative mb-5 flex min-w-0 flex-wrap items-center gap-2">

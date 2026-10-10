@@ -16,7 +16,7 @@ export default function FinanceNav({ lang, active, reviewCount, categoryCount }:
           key={t.id}
           href={t.href}
           aria-current={active === t.id ? "page" : undefined}
-          className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-semibold ${active === t.id ? "border-amber-400 bg-amber-400 text-neutral-950" : "border-white/15 text-neutral-300"}`}
+          className={`flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-medium ${active === t.id ? "border-white/15 bg-neutral-700/60 text-white" : "border-transparent text-neutral-400 hover:bg-white/5 hover:text-neutral-200"}`}
         >
           {t.label}
           {"badge" in t && t.badge ? <span className={`rounded-full px-2 py-0.5 text-xs ${active === t.id ? "bg-neutral-950 text-amber-300" : "bg-amber-400 text-neutral-950"}`}>{t.badge}</span> : null}

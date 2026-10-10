@@ -24,10 +24,10 @@ it.each([{is_admin:false,can_see_prices:false},{is_admin:true,can_see_prices:fal
   expect(screen.queryByText("Crew activity")).toBeNull();
   expect(screen.getByRole("heading", { name: /Assigned to you/ })).toBeTruthy();
   expect(screen.queryByText("Subcontractor job")).toBeNull();
-  const favorites = within(screen.getByRole("navigation", { name: "Favorites" }));
-  expect(favorites.getByRole("link", { name: "Calculator" }).getAttribute("href")).toBe("/shop/calc");
+  const favorites = within(screen.getByRole("navigation", { name: "Quick access" }));
+  expect(favorites.getByRole("link", { name: "All tools" }).getAttribute("href")).toBe("/shop/more");
   expect(favorites.getByRole("link", { name: "My hours" }).getAttribute("href")).toBe("/shop/time");
-  expect(favorites.getAllByRole("link")).toHaveLength(5);
+  expect(favorites.getAllByRole("link")).toHaveLength(3);
   expect(screen.queryByRole("link", { name: "Payroll" })).toBeNull();
 });
 it.each(["Daniel Martins", "Kayky"])("puts Project Money first on Today for %s", async name => {
@@ -36,10 +36,10 @@ it.each(["Daniel Martins", "Kayky"])("puts Project Money first on Today for %s",
   expect(m.money).toHaveBeenCalledOnce();
   expect(screen.getByRole("main").firstElementChild).toBe(screen.getByRole("region",{name:"Project money"}));
   expect(screen.getByText("Crew activity")).toBeTruthy();
-  const favorites = within(screen.getByRole("navigation", { name: "Favorites" }));
+  const favorites = within(screen.getByRole("navigation", { name: "Quick access" }));
   expect(favorites.getByRole("link", { name: "Payroll" }).getAttribute("href")).toBe("/shop/admin/payroll");
-  expect(favorites.getByRole("link", { name: "Calculator" }).getAttribute("href")).toBe("/shop/calc");
-  expect(favorites.getAllByRole("link")).toHaveLength(6);
+  expect(favorites.getByRole("link", { name: "All tools" }).getAttribute("href")).toBe("/shop/more");
+  expect(favorites.getAllByRole("link")).toHaveLength(3);
 });
 it("shows a load error instead of false zero balances", async () => {
   m.worker.mockResolvedValue({id:"owner",name:"Daniel",is_admin:true,can_see_prices:true});

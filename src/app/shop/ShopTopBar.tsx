@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
 import Image from "next/image";
 import { t } from "@/lib/shop/i18n";
+import { isMeasuringPath, useShopOwner } from "./ShopAccess";
 import AdminMenu from "./AdminMenu";
 import MenuDirectory from "./MenuDirectory";
 import MoreMenu, { MoreItem } from "./MoreMenu";
@@ -24,6 +25,9 @@ export default function ShopTopBar({
   adminLink?: boolean;
 }) {
   const router = useRouter();
+  const measuring = isMeasuringPath(usePathname());
+  const owner = useShopOwner();
+  const toolsLabel = lang === "pt" ? "Menu" : lang === "es" ? "Menú" : "Menu";
   async function logout() {
     // Anything still queued belongs to the worker signing out. A shop tablet
     // is shared, so it must not follow them into the next worker's session.
@@ -38,7 +42,7 @@ export default function ShopTopBar({
     router.refresh();
   }
   return (
-    <div className="sticky top-0 z-10 grid min-h-[64px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-3 backdrop-blur-xl">
+    <div className={measuring ? "sticky top-0 z-10 grid min-h-[64px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/10 bg-neutral-950/85 px-3 backdrop-blur-xl" : "sticky top-0 z-10 grid min-h-[72px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-white/[0.06] bg-[#09090b]/95 px-4 backdrop-blur-xl sm:px-6"}>
       <div className="flex min-w-0 items-center gap-2">
         {back ? (
           <Link
@@ -59,12 +63,12 @@ export default function ShopTopBar({
       </div>
       <h1 className="min-w-0 truncate text-center text-base font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>
       <div className="col-start-3 flex items-center justify-end gap-2">
-        {adminLink && <AdminMenu lang={lang} />}
+        {measuring && adminLink && <AdminMenu lang={lang} />}
         <span className="hidden max-w-24 truncate text-sm text-neutral-300 lg:inline">{workerName}</span>
-        <MoreMenu label={t(lang, "menuCrew")} closeLabel={t(lang, "close")}>
+        <MoreMenu label={measuring ? t(lang, "menuCrew") : toolsLabel} visibleLabel={!measuring} closeLabel={t(lang, "close")}>
           {(close) => (
             <>
-              <MenuDirectory scope="crew" lang={lang} compact onNavigate={close} />
+              <MenuDirectory scope={!measuring && (owner || adminLink) ? "all" : "crew"} lang={lang} compact simple={!measuring} onNavigate={close} />
               <div className="text-[11px] uppercase tracking-widest text-neutral-500">
                 {t(lang, "language")}
               </div>
@@ -92,7 +96,7 @@ export default function ShopTopBar({
                   </button>
                 ))}
               </div>
-              <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {t(lang, "menuCrew")}</MoreItem>
+              <MoreItem href="/shop/more"><UserRound className="mr-3 h-5 w-5" /> {measuring ? t(lang, "menuCrew") : lang === "pt" ? "Todas as ferramentas" : lang === "es" ? "Todas las herramientas" : "All tools"}</MoreItem>
               <MoreItem
                 onClick={() => {
                   close();

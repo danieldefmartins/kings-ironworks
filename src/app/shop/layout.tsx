@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { getSessionWorker } from "@/lib/shop/session";
 import { loadClockState } from "@/lib/shop/clock-state";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import ShopShell from "./ShopShell";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0 }; }
   return (
     <div className="min-h-screen bg-[#09090b] text-neutral-100 font-body select-none">
-      <ShopShell key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock}>
+      <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock}>
         {children}
       </ShopShell>
     </div>

@@ -40,3 +40,18 @@ describe("shop menus", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+it("keeps every tool in the unified owner menu, without duplicate destinations", () => {
+  const crew = render(<MenuDirectory scope="crew" lang="en" />);
+  const paths = screen.getAllByRole("link").map(a => a.getAttribute("href"));
+  crew.unmount();
+  const admin = render(<MenuDirectory scope="admin" lang="en" />);
+  paths.push(...screen.getAllByRole("link").map(a => a.getAttribute("href")));
+  admin.unmount();
+  render(<MenuDirectory scope="all" lang="en" simple />);
+  const actual = screen.getAllByRole("link").map(a => a.getAttribute("href"));
+  expect(new Set(actual)).toEqual(new Set([...paths, "/shop/admin"]));
+  expect(actual.length).toBe(new Set(actual).size);
+  fireEvent.change(screen.getByRole("searchbox"), { target: { value: "payroll" } });
+  expect(screen.getByRole("link", { name: /^Payroll/ })).toBeTruthy();
+});
