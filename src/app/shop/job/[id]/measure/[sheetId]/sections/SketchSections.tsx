@@ -29,6 +29,7 @@ import {
 } from "../fields";
 import { useState } from "react";
 import DrawingWorkspace from "../DrawingWorkspace";
+import SketchZoom from "../SketchZoom";
 import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { type SketchView } from "../Sketch";
 
@@ -111,15 +112,9 @@ export default function SketchSections({
         <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
           <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
           <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
+            <SketchZoom zoom={zoom} onChange={setZoom} lang={lang}/>
             {viewList.length > 1 && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="ml-auto flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-1">
-                  <button type="button" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.25).toFixed(2)))}
-                    aria-label="-" className="h-9 w-9 text-lg font-bold text-neutral-300">−</button>
-                  <span className="w-10 text-center text-[11px] font-bold text-neutral-400">{Math.round(zoom * 100)}%</span>
-                  <button type="button" onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
-                    aria-label="+" className="h-9 w-9 text-lg font-bold text-neutral-300">+</button>
-                </span>
                 {viewList.map(([vw, key]) => (
                   <button key={vw} type="button" onClick={() => setView(vw)}
                     className={`min-h-[44px] shrink-0 rounded-full border px-3 text-xs font-bold ${view === vw ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-400"}`}>
@@ -251,18 +246,8 @@ export default function SketchSections({
         {/* View chips and the zoom, on the drawing a measurer actually works
             on. The zoom controls existed, but only on the site-conditions
             card — the drawing everybody uses had no way to get closer. */}
+        <SketchZoom zoom={zoom} onChange={setZoom} lang={lang}/>
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-1 rounded-full border border-neutral-700 bg-neutral-800 px-1">
-            <button type="button" onClick={() => setZoom((z) => Math.max(0.6, +(z - 0.25).toFixed(2)))}
-              aria-label="Zoom out" className="h-10 w-10 text-xl font-bold text-neutral-300">−</button>
-            <span className="w-11 text-center text-[11px] font-bold text-neutral-400">{Math.round(zoom * 100)}%</span>
-            <button type="button" onClick={() => setZoom((z) => Math.min(4, +(z + 0.25).toFixed(2)))}
-              aria-label="Zoom in" className="h-10 w-10 text-xl font-bold text-neutral-300">+</button>
-            {zoom !== 1 && (
-              <button type="button" onClick={() => setZoom(1)} aria-label="Reset zoom"
-                className="h-10 rounded-full px-2 text-[11px] font-bold text-neutral-400">↺</button>
-            )}
-          </span>
           {viewList.length > 1 &&
             viewList.map(([vw, key]) => (
               <button

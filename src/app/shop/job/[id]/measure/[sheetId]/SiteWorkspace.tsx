@@ -7,6 +7,8 @@ import { editSiteObject, newSiteModel, newSiteObject, pointDistance, siteIssues,
 import { formatIn } from '@/lib/shop/measure-parse';
 import { mt } from '@/lib/shop/measure-i18n';
 import { siteLabels } from '@/lib/shop/measure-site-i18n';
+import SketchZoom from './SketchZoom';
+import { useDrawingPinch } from './useDrawingPinch';
 import SiteDrawing, { siteAnchors, type SiteView } from './SiteDrawing';
 
 const fieldClass='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
@@ -20,6 +22,8 @@ export default function SiteWorkspace({data,set,lang,onContinue,onMeasure,onDeta
   const inspector=useRef<HTMLDivElement>(null),canvas=useRef<HTMLDivElement>(null),previousSelection=useRef(selected);
   useEffect(()=>{if(previousSelection.current!==selected&&selected&&window.matchMedia?.('(max-width: 1279px)')?.matches)inspector.current?.scrollIntoView({behavior:'smooth',block:'start'});previousSelection.current=selected;},[selected]);
   const [view,setView]=useState<SiteView>('iso'),[zoom,setZoom]=useState(1);
+  const viewport=useRef<HTMLDivElement>(null),drawing=useRef<HTMLDivElement>(null);
+  useDrawingPinch(viewport,drawing,zoom,setZoom);
   const [measure,setMeasure]=useState(false),[move,setMove]=useState(false),[ends,setEnds]=useState<string[]>([]);
   const [removed,setRemoved]=useState<SiteObject|null>(null);
   const [piece,setPiece]=useState<'flight'|'platform'|'ramp'|null>(null),[at,setAt]=useState(data.segments.length),[count,setCount]=useState(3);
@@ -48,9 +52,11 @@ export default function SiteWorkspace({data,set,lang,onContinue,onMeasure,onDeta
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className="min-w-0" ref={canvas}>
         <div className="rounded-2xl bg-white p-2 shadow-sm">
-          <div className="mb-2 flex flex-wrap items-center gap-2">{(['plan','front','iso'] as const).map(v=><button key={v} type="button" aria-pressed={view===v} className={`${buttonClass} ${view===v?'!border-indigo-400 !bg-indigo-50 !text-indigo-700':''}`} onClick={()=>{setView(v);setMove(false);}}>{l[v]}</button>)}<button className={buttonClass} aria-pressed={measure} onClick={()=>{setMeasure(!measure);setMove(false);setEnds([]);}}>{l.measure}</button><button className={buttonClass} onClick={()=>setZoom(1)}>{l.fit}</button><label className="ml-auto flex items-center gap-2 text-xs text-slate-500">Zoom<input aria-label="Zoom" type="range" min={1} max={3} step={.25} value={zoom} onChange={e=>setZoom(Number(e.target.value))}/></label></div>
+          <div className="mb-2 flex flex-wrap items-center gap-2">{(['plan','front','iso'] as const).map(v=><button key={v} type="button" aria-pressed={view===v} className={`${buttonClass} ${view===v?'!border-indigo-400 !bg-indigo-50 !text-indigo-700':''}`} onClick={()=>{setView(v);setMove(false);}}>{l[v]}</button>)}<button className={buttonClass} aria-pressed={measure} onClick={()=>{setMeasure(!measure);setMove(false);setEnds([]);}}>{l.measure}</button></div>
+          <SketchZoom zoom={zoom} onChange={setZoom} lang={lang} light onFit={()=>{if(viewport.current){viewport.current.scrollLeft=0;viewport.current.scrollTop=0;}}}/>
           {move&&<p role="status" className="mb-2 rounded-xl bg-indigo-50 p-3 text-sm text-indigo-800">{l.moveHint}</p>}
-          <div className="max-h-[65vh] overflow-auto"><SiteDrawing data={data} view={view} selected={selected} zoom={zoom} onSelect={id=>{select(id);setMove(false);}} onSurface={measure?undefined:onMeasure} measure={measure} anchorIds={ends} onAnchor={id=>setEnds(prev=>prev.length>=2?[id]:[...prev,id])} move={move} onMove={(x,y)=>{update({x:String(x),y:String(y)});setMove(false);}}/></div>
+          <div ref={viewport} data-site-viewport style={{touchAction:"pan-x pan-y"}} className="max-h-[65dvh] overflow-auto overscroll-contain"><div ref={drawing} style={{width:`${zoom*100}%`}}><SiteDrawing data={data} view={view} selected={selected} onSelect={id=>{select(id);setMove(false);}} onSurface={measure?undefined:onMeasure} measure={measure} anchorIds={ends} onAnchor={id=>setEnds(prev=>prev.length>=2?[id]:[...prev,id])} move={move} onMove={(x,y)=>{update({x:String(x),y:String(y)});setMove(false);}}/></div></div>
+          <p className="px-2 pt-2 text-xs text-slate-500">{mt(lang,"drawingPanHint")}</p>
           <p className="px-2 py-2 text-xs text-slate-500">{l.existing}</p>
         </div>
         {measure&&<div className="mt-3 rounded-2xl bg-white p-4 shadow-sm"><div className="grid gap-2 sm:grid-cols-2">{[0,1].map(i=><label key={i} className="text-sm">{l.endpoint} {i+1}<select className={fieldClass} value={ends[i]||''} onChange={e=>{const next=[...ends];next[i]=e.target.value;setEnds(next);}}><option value="">{l.choose}</option>{anchors.map(a=><option key={a.id} value={a.id}>{a.label}</option>)}</select></label>)}</div>{distance&&<div className="mt-3 grid grid-cols-3 gap-2">{[[l.horizontal,distance.horizontal],[l.vertical,distance.vertical],[l.distance,distance.distance]].map(([label,value])=><div key={label} className="rounded-xl bg-indigo-50 p-2"><span className="block text-xs text-indigo-700">{label}</span><strong className="text-base">{Number(value)<0?'−':''}{formatIn(Math.abs(Number(value)))}</strong></div>)}</div>}<p className="mt-2 text-xs text-slate-500">{l.calculated}</p></div>}

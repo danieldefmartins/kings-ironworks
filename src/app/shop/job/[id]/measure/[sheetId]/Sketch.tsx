@@ -4,6 +4,8 @@
 // value box on every step/field — entered numbers show in gold, missing ones
 // as "—" — and lets the crew tap a tread to place a post.
 
+import { useLayoutEffect, useRef } from "react";
+
 import type {
   CurveSegment,
   FlightSegment,
@@ -153,15 +155,18 @@ export default function Sketch({
    *  hunting for the right tread among forty; while one flight is being
    *  measured, the drawing shows that flight. */
   focusSeg?: number;
-  /** Multiplies the height cap. Placing a post by thumb needs a bigger
-   *  target than reading the drawing does. */
+  /** Enlarge the drawing itself while keeping its viewport scrollable. */
   zoom?: number;
 }) {
   const p = light ? LIGHT : DARK;
+  const staticZoom = (drawing: React.ReactNode) => <ZoomBox zoom={zoom} maxHeight={560}>
+    <div data-specialty-zoom style={{width:`${zoom*100}%`}} className="[&>svg]:max-h-none! [&>svg]:h-auto!">{drawing}</div>
+  </ZoomBox>;
 
   if (shape === "custom" || shape === "deck")
     return (
       <CustomPlanSketch
+        zoom={zoom}
         data={data}
         p={p}
         lang={lang}
@@ -171,37 +176,37 @@ export default function Sketch({
         onHoldPost={onHoldPost}
       />
     );
-  if (shape === "gate") return <GateSketch gate={data.gate} p={p} lang={lang} />;
-  if (shape === "fence") return <FenceSketch fence={data.fence} p={p} lang={lang} />;
+  if (shape === "gate") return staticZoom(<GateSketch gate={data.gate} p={p} lang={lang} />);
+  if (shape === "fence") return staticZoom(<FenceSketch fence={data.fence} p={p} lang={lang} />);
   if (shape === "balcony")
     return view === "front" ? (
-      <BalconyElevationSketch bal={data.balcony} p={p} lang={lang} />
+      staticZoom(<BalconyElevationSketch bal={data.balcony} p={p} lang={lang} />)
     ) : (
-      <BalconySectionSketch bal={data.balcony} p={p} lang={lang} />
+      staticZoom(<BalconySectionSketch bal={data.balcony} p={p} lang={lang} />)
     );
   if (shape === "fire_escape")
     return view === "plan" ? (
-      <FirePlanSketch fire={data.fire} p={p} lang={lang} />
+      staticZoom(<FirePlanSketch fire={data.fire} p={p} lang={lang} />)
     ) : (
-      <FireElevationSketch fire={data.fire} p={p} lang={lang} />
+      staticZoom(<FireElevationSketch fire={data.fire} p={p} lang={lang} />)
     );
   if (shape === "window_well")
     return view === "plan" ? (
-      <WellPlanSketch well={data.well} p={p} lang={lang} />
+      staticZoom(<WellPlanSketch well={data.well} p={p} lang={lang} />)
     ) : (
-      <WellSectionSketch well={data.well} p={p} lang={lang} />
+      staticZoom(<WellSectionSketch well={data.well} p={p} lang={lang} />)
     );
   if (shape === "spiral")
     return view === "front" ? (
-      <SpiralSketch spiral={data.spiral} p={p} lang={lang} />
+      staticZoom(<SpiralSketch spiral={data.spiral} p={p} lang={lang} />)
     ) : (
-      <SpiralSideSketch spiral={data.spiral} p={p} lang={lang} />
+      staticZoom(<SpiralSideSketch spiral={data.spiral} p={p} lang={lang} />)
     );
   if (shape === "level_run")
     return view === "front" ? (
-      <LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} onHoldPlatform={onHoldPlatform} />
+      staticZoom(<LevelSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} onHoldPlatform={onHoldPlatform} />)
     ) : (
-      <LevelSectionSketch data={data} p={p} lang={lang} />
+      staticZoom(<LevelSectionSketch data={data} p={p} lang={lang} />)
     );
   if (view === "plan")
     return (
@@ -221,9 +226,9 @@ export default function Sketch({
         onToggleWallSide={onToggleWallSide}
       />
     );
-  if (view === "front") return <FrontSketch data={data} p={p} lang={lang} />;
+  if (view === "front") return staticZoom(<FrontSketch data={data} p={p} lang={lang} />);
   if (shape === "ramp")
-    return <RampSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />;
+    return staticZoom(<RampSketch data={data} p={p} lang={lang} onTapPlatform={onTapPlatform} />);
   return (
     <StairSketch
       focusSeg={focusSeg}
@@ -896,8 +901,15 @@ function ZoomBox({
   maxHeight: number;
   children: React.ReactNode;
 }) {
+  const viewport = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (zoom === 1 && viewport.current) {
+      viewport.current.scrollLeft = 0;
+      viewport.current.scrollTop = 0;
+    }
+  }, [zoom]);
   return (
-    <div className="w-full overflow-auto overscroll-contain" style={{ maxHeight }}>
+    <div ref={viewport} className="w-full overflow-auto overscroll-contain" style={{ maxHeight }}>
       {children}
     </div>
   );

@@ -6,6 +6,7 @@ import { stairGeometry } from '@/lib/shop/measure-geometry';
 import { useDrawingPinch } from './useDrawingPinch';
 import AssemblyLayout from './AssemblyLayout';
 import DrawingSvg from './DrawingSvg';
+import SketchZoom from './SketchZoom';
 import { mt } from '@/lib/shop/measure-i18n';
 
 type View = 'side' | 'plan' | 'iso';
@@ -100,16 +101,10 @@ export default function DrawingWorkspace({ data, lang, focusSeg, onMeasureStep, 
       </div></details>
       {view==='iso' && <div className="mb-2 flex gap-2"><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a-90)}>↶ {mt(lang,'assemblyRotateLeft')}</button><button type="button" className="min-h-11 flex-1 rounded-xl border border-neutral-700 px-3 text-sm" onClick={()=>setAzimuth(a=>a+90)}>{mt(lang,'assemblyRotateRight')} ↷</button></div>}
       {selected===undefined && model.provisional && <p className="mb-2 text-sm text-amber-200">{mt(lang,'assemblyUnresolved')}</p>}
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span className={`text-xs ${model.provisional ? 'text-amber-200' : 'text-emerald-300'}`}>{mt(lang, model.provisional ? 'drawingProvisional' : 'drawingMeasured')}</span>
-        <div className="flex shrink-0 items-center rounded-xl border border-neutral-700">
-          <button type="button" aria-label={mt(lang, 'drawingZoomOut')} onClick={() => setZoom(z => Math.max(1, z - 0.5))} disabled={zoom === 1} className="h-11 w-11 text-xl disabled:opacity-30">−</button>
-          <button type="button" aria-label={mt(lang, 'drawingReset')} onClick={() => setZoom(1)} className="h-11 min-w-12 text-xs">{Math.round(zoom * 100)}%</button>
-          <button type="button" aria-label={mt(lang, 'drawingZoomIn')} onClick={() => setZoom(z => Math.min(4, z + 0.5))} disabled={zoom === 4} className="h-11 w-11 text-xl disabled:opacity-30">+</button>
-        </div>
-      </div>
+      <p className={`mb-2 text-xs ${model.provisional ? 'text-amber-200' : 'text-emerald-300'}`}>{mt(lang, model.provisional ? 'drawingProvisional' : 'drawingMeasured')}</p>
+      <SketchZoom zoom={zoom} onChange={setZoom} lang={lang} onFit={()=>{if(viewportRef.current){viewportRef.current.scrollLeft=0;viewportRef.current.scrollTop=0;}}}/>
       <div ref={viewportRef} data-drawing-viewport style={{touchAction:"pan-x pan-y"}} className={`overflow-auto overscroll-contain rounded-xl border border-neutral-800 bg-neutral-900 ${expanded ? 'min-h-0 flex-1' : 'max-h-[65dvh]'}`}>
-        <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:view==='iso'?0:Math.max(340,model.treads.length*64)*zoom}}>
+        <div ref={drawingRef} style={{width:`${zoom*100}%`,height:expanded&&view==='iso'&&zoom===1?'100%':undefined,minWidth:0}}>
           <DrawingSvg data={data} lang={lang} focusSeg={selected} view={view} azimuth={azimuth} details={true} style={{height:expanded&&view==='iso'&&zoom===1?'100%':undefined}} onMeasureStep={wallMode ? (segIdx,stepIdx)=>setWallLocation({segIdx,stepIdx}) : postMode && onPlaceStep ? onPlaceStep : onMeasureStep} onTapPost={onTapPost} onTapPlatform={wallMode ? segIdx=>setWallLocation({segIdx,stepIdx:null}) : postMode ? onTapPlatform : undefined}/>
         </div>
       </div>
