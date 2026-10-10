@@ -22,7 +22,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   let clock;
   let clockReady = true;
   try { clock = await loadClockState(worker); }
-  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0 }; }
+  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null }; }
   return (
     <div className="min-h-screen bg-[#09090b] text-neutral-100 font-body select-none">
       <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock}>

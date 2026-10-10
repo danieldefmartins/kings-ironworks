@@ -62,6 +62,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
+    // Old browser queues have no worker identity and can belong to someone
+    // else on a shared tablet. A retryable response preserves their local
+    // copy until refresh, where unowned punches are retained for review.
+    if ((type === "shift_start" || type === "shift_stop") && !body.workerId) {
+      return NextResponse.json({ error: "Refresh the app before clocking in or out. Your unsent punch is preserved for review.", refreshRequired: true }, { status: 503 });
+    }
     if ((type === "shift_start" || type === "shift_stop") && body.workerId != null && body.workerId !== worker.id) {
       return NextResponse.json({ error: "Sign in as the worker who recorded this punch", retry: true }, { status: 409 });
     }

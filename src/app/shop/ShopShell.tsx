@@ -7,6 +7,7 @@ import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, LayoutGrid, X }
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { fmtTime, hoursToHm, shiftHours } from "@/lib/shop/shared";
 import { ShopAccess, isMeasuringPath } from "./ShopAccess";
+import { calculatePayroll, payrollWeek } from "@/lib/shop/payroll";
 import { t } from "@/lib/shop/i18n";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
@@ -28,7 +29,7 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 import { readOutbox, writeOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, type QueuedPunch } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, clockReady,
+  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady,
 }: {
   children: React.ReactNode;
   isOwner?: boolean;
@@ -40,11 +41,12 @@ export default function ShopShell({
   breaks: TimeBreak[];
   hourlyRate: number | null;
   weekHoursBeforeShift: number;
+  weekEarningsBeforeShift: number | null;
 }) {
   const path = usePathname();
   const router = useRouter();
   const [, transition] = useTransition();
-  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours });
+  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings });
   const { shift, breaks, hourlyRate, weekHoursBeforeShift } = clock;
   const [ready, setReady] = useState(clockReady);
   const [review, setReview] = useState(false);
@@ -257,8 +259,10 @@ export default function ShopShell({
   // Week-to-date, ticking: everything already closed this week plus whatever
   // the open shift has accrued as of this render. Shown clocked in or out,
   // because "what have I earned this week" is asked most often on the way home.
-  const weekHours = weekHoursBeforeShift + hours;
-  const weekEarnings = hourlyRate == null ? null : weekHours * hourlyRate;
+  const currentWeek = calculatePayroll([], shift ? [shift] : [], breaks, payrollWeek(undefined, now), now)[0];
+  const weekHours = weekHoursBeforeShift + (currentWeek?.hours ?? 0);
+  const weekEarnings = clock.weekEarningsBeforeShift == null || currentWeek?.missingRateHours
+    ? null : clock.weekEarningsBeforeShift + (currentWeek?.basePay ?? 0);
 
   return (
     <ShopAccess.Provider value={isOwner}><div className="min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]">

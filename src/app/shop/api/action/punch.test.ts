@@ -21,13 +21,20 @@ it("does not turn an expired clock-out into a clock-out at the current time", as
 });
 it("replays the original start receipt even after it is too old to create a shift", async () => {
   m.get.mockResolvedValue({ id, started_at: "2026-01-01T12:00:00Z", ended_at: "2026-01-01T20:00:00Z" });
-  const response = await POST(request({ type: "shift_start", punchId: "stable-punch", clientAt: "2026-01-01T12:00:00Z" }));
+  const response = await POST(request({ type: "shift_start", workerId: "worker", punchId: "stable-punch", clientAt: "2026-01-01T12:00:00Z" }));
   expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ at: "2026-01-01T12:00:00Z" });
   expect(m.start).not.toHaveBeenCalled();
 });
 it("replays the original stop receipt without closing a different current shift", async () => {
   m.get.mockResolvedValue({ id, started_at: "2026-01-01T12:00:00Z", ended_at: "2026-01-01T20:00:00Z" });
-  const response = await POST(request({ type: "shift_stop", shiftId: id, clientAt: "2026-01-01T20:00:00Z" }));
+  const response = await POST(request({ type: "shift_stop", workerId: "worker", shiftId: id, clientAt: "2026-01-01T20:00:00Z" }));
   expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ at: "2026-01-01T20:00:00Z" });
   expect(m.stop).not.toHaveBeenCalled(); expect(m.open).not.toHaveBeenCalled();
+});
+
+it("does not attribute an unowned legacy queue entry to the currently signed-in worker", async () => {
+  const response = await POST(request({ type: "shift_start", punchId: "old-browser-queue" }));
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({ refreshRequired: true });
+  expect(m.start).not.toHaveBeenCalled(); expect(m.get).not.toHaveBeenCalled();
 });

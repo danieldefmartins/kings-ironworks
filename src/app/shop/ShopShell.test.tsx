@@ -8,14 +8,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => router, usePathname: () => 
 import ShopShell from "./ShopShell";
 vi.stubGlobal("React", React);
 const shift = { id: "12345678-1234-4123-8123-123456789012", started_at: "2026-10-10T12:00:00Z", ended_at: null } as TimeShift;
-const props = { children: <p>Today</p>, workerId: "worker", workerName: "Worker", lang: "en", shift: null as TimeShift | null, breaks: [] as TimeBreak[], hourlyRate: 25, weekHoursBeforeShift: 0, clockReady: true };
+const props = { children: <p>Today</p>, workerId: "worker", workerName: "Worker", lang: "en", shift: null as TimeShift | null, breaks: [] as TimeBreak[], hourlyRate: 25, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0, clockReady: true };
 let active: TimeShift | null;
 let fetcher: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   const storage = new Map<string, string>();
   vi.stubGlobal("localStorage", { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) }); active = null;
   fetcher = vi.fn(async (url: string, options?: RequestInit) => {
-    if (url === "/shop/api/clock") return new Response(JSON.stringify({ workerId: "worker", shift: active, breaks: [], hourlyRate: 25, weekHoursBeforeShift: 0 }));
+    if (url === "/shop/api/clock") return new Response(JSON.stringify({ workerId: "worker", shift: active, breaks: [], hourlyRate: 25, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0 }));
     const body = JSON.parse(options!.body as string);
     active = body.type === "shift_start" ? shift : null;
     return new Response(JSON.stringify({ ok: true, shiftId: shift.id, at: new Date().toISOString() }));
@@ -51,7 +51,7 @@ it("does not send another worker's pending punch", async () => {
 });
 it("allows clock-out while on break", async () => {
   active = shift;
-  fetcher.mockImplementation(async () => new Response(JSON.stringify({ workerId: "worker", shift, breaks: [{ id: "break", ended_at: null }], hourlyRate: 25, weekHoursBeforeShift: 0 })));
+  fetcher.mockImplementation(async () => new Response(JSON.stringify({ workerId: "worker", shift, breaks: [{ id: "break", ended_at: null }], hourlyRate: 25, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0 })));
   render(<ShopShell {...props} shift={shift} breaks={[{ id: "break", ended_at: null } as TimeBreak]} />);
   fireEvent.click(screen.getByRole("button", { name: /break/i }));
   expect(screen.getByRole("button", { name: "Clock out" })).toBeDefined();
