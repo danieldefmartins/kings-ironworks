@@ -29,6 +29,7 @@ export interface AdminDest {
 }
 
 export const ADMIN_DESTS: AdminDest[] = [
+  { group: "payroll", href: "/shop/admin/applications", key: "workerApplications", hintKey: "workerApplicationsHint", icon: Users, tone: "text-sky-400" },
   { group: "business", href: "/shop/admin/actions", key: "actionsTitle", hintKey: "actionsNavHint", icon: LayoutDashboard, tone: "text-amber-400" },
   { group: "business", href: "/shop/admin/labor#archived", key: "archivedJobs", hintKey: "menuArchivedHint", icon: Archive, tone: "text-neutral-400" },
   {

@@ -9,6 +9,8 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    workerApplications: "Worker applications",
+    workerApplicationsHint: "Review applications and approve new workers",
     actionsTitle: "Action dashboard",
     actionsHint: "See what needs attention and open the record to take action. A job may appear in more than one section.",
     actionsTimezone: "Shop time · New York",
@@ -303,6 +305,8 @@ const STR: Record<Lang, Dict> = {
     timeReview: "Time review", timeReviewHint: "Daily hours, weekly overtime, GPS punches and corrections.", running: "Running",
   },
   pt: {
+    workerApplications: "Candidaturas",
+    workerApplicationsHint: "Revisar candidaturas e aprovar novos funcionários",
     actionsTitle: "Painel de ações",
     actionsHint: "Veja o que precisa de atenção e abra o registro para agir. Uma obra pode aparecer em mais de uma seção.",
     actionsTimezone: "Horário da oficina · Nova York",
@@ -598,6 +602,8 @@ const STR: Record<Lang, Dict> = {
     timeReview: "Revisão de horas", timeReviewHint: "Horas diárias, extras semanais, GPS e correções.", running: "Em andamento",
   },
   es: {
+    workerApplications: "Solicitudes de empleo",
+    workerApplicationsHint: "Revisar solicitudes y aprobar nuevos trabajadores",
     actionsTitle: "Panel de acciones",
     actionsHint: "Revisa lo que necesita atención y abre el registro para actuar. Un proyecto puede aparecer en varias secciones.",
     actionsTimezone: "Hora del taller · Nueva York",

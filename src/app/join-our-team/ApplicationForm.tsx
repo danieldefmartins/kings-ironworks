@@ -1,0 +1,44 @@
+"use client";
+import Link from "next/link";
+import { useRef, useState } from "react";
+import { APPLICATION_ROLES, APPLICATION_SKILLS, applicationSchema } from "@/lib/shop/worker-application";
+const input = "mt-2 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+function Field({ name, label, required = false, type = "text", autoComplete, maxLength = 120 }: { name: string; label: string; required?: boolean; type?: string; autoComplete?: string; maxLength?: number }) {
+  return <label className="block text-sm font-medium text-slate-700">{label}{required && " *"}<input className={input} name={name} type={type} required={required} autoComplete={autoComplete} maxLength={maxLength} /></label>;
+}
+function Area({ name, label, required = false, maxLength = 2000 }: { name: string; label: string; required?: boolean; maxLength?: number }) {
+  return <label className="block text-sm font-medium text-slate-700">{label}{required && " *"}<textarea name={name} required={required} maxLength={maxLength} rows={3} className={input} /></label>;
+}
+function Section({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+  return <fieldset className="space-y-5 rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_8px_28px_#172b4d08] sm:p-7"><legend className="sr-only">{title}</legend><h2 className="flex items-center gap-3 text-xl font-semibold"><span className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-sm text-slate-500">{number}</span>{title}</h2>{children}</fieldset>;
+}
+export default function ApplicationForm() {
+  const requestId = useRef<string | null>(null);
+  const [busy, setBusy] = useState(false), [done, setDone] = useState(false), [error, setError] = useState("");
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); if (busy) return;
+    setError("");
+    const form = new FormData(event.currentTarget);
+    const values = Object.fromEntries(form.entries());
+    const parsed = applicationSchema.safeParse({ ...values, experienceYears: Number(values.experienceYears), skills: form.getAll("skills"), consent: form.get("consent") === "on" });
+    if (!parsed.success) { setError(parsed.error.issues[0].message); return; }
+    setBusy(true); requestId.current ||= crypto.randomUUID();
+    try {
+      const res = await fetch("/api/worker-applications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requestId: requestId.current, application: parsed.data, website: values.website || "" }) });
+      const result = await res.json(); if (!res.ok || !result.ok) throw Error(result.error || "Could not submit. Please try again.");
+      setDone(true);
+    } catch(e) { setError(e instanceof Error ? e.message : "Could not submit. Please try again."); }
+    finally { setBusy(false); }
+  }
+  if (done) return <section role="status" className="mt-8 rounded-3xl border border-emerald-200 bg-white p-8 shadow-sm"><h2 className="text-2xl font-semibold">Application received</h2><p className="mt-3 text-slate-600">Thank you. Your information is waiting for Daniel or Kayky to review. We’ll contact you using the details you provided. Submitting this form does not create a shop login.</p><Link href="/" className="mt-6 inline-block font-semibold text-amber-800">Back to King Iron Works →</Link></section>;
+  return <form onSubmit={submit} className="mt-8 space-y-6"><p className="text-sm text-slate-600">Fields marked * are required. Your application is visible only to the owners.</p>
+    <div className="hidden" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
+    <Section number="1" title="About you"><div className="grid gap-5 sm:grid-cols-2"><Field name="fullName" label="Full legal name" required autoComplete="name" /><Field name="preferredName" label="Preferred name" maxLength={80} /><Field name="phone" label="Mobile phone" type="tel" required autoComplete="tel" maxLength={40} /><Field name="email" label="Email address" type="email" required autoComplete="email" maxLength={160} /></div><div className="grid gap-5 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700">Preferred language *<select name="lang" className={input} defaultValue="en"><option value="en">English</option><option value="pt">Português</option><option value="es">Español</option></select></label><Field name="languages" label="Other languages spoken" maxLength={150} /></div><Field name="street" label="Street address" required autoComplete="address-line1" maxLength={200} /><div className="grid gap-5 sm:grid-cols-2"><Field name="unit" label="Apartment / unit" autoComplete="address-line2" maxLength={50} /><Field name="city" label="City" required autoComplete="address-level2" maxLength={100} /><Field name="state" label="State" required autoComplete="address-level1" maxLength={80} /><Field name="postalCode" label="ZIP / postal code" required autoComplete="postal-code" maxLength={20} /></div></Section>
+    <Section number="2" title="Your work"><div className="grid gap-5 sm:grid-cols-2"><label className="text-sm font-medium text-slate-700">Position interested in *<select name="position" required className={input} defaultValue=""><option value="" disabled>Choose a position</option>{APPLICATION_ROLES.map(role => <option key={role}>{role}</option>)}</select></label><label className="text-sm font-medium text-slate-700">Years of relevant experience *<input name="experienceYears" type="number" min="0" max="80" step="0.5" required className={input} /></label></div><fieldset><legend className="mb-3 text-sm font-medium text-slate-700">Skills · select all that apply</legend><div className="grid gap-2 sm:grid-cols-2">{APPLICATION_SKILLS.map(skill => <label key={skill} className="flex min-h-12 items-center gap-3 rounded-xl bg-slate-50 px-3 text-sm"><input type="checkbox" name="skills" value={skill} className="h-4 w-4 accent-blue-600" />{skill}</label>)}</div></fieldset><Area name="experience" label="Tell us about your experience, or what you would like to learn" required /><Area name="certifications" label="Certifications / training (include expiration dates if applicable)" maxLength={1000} /><div className="grid gap-5 sm:grid-cols-2"><Field name="previousEmployer" label="Most recent employer" maxLength={150} /><Field name="previousRole" label="Most recent position" maxLength={100} /><Field name="referenceName" label="Work reference name (optional)" /><Field name="referencePhone" label="Work reference phone (optional)" type="tel" maxLength={40} /></div></Section>
+    <Section number="3" title="Availability"><Field name="availableStart" label="Available start date" type="date" required /><Area name="availability" label="Days and hours you are available" required maxLength={500} /><label className="block text-sm font-medium text-slate-700">Do you have reliable transportation to work? *<select name="transportation" required className={input} defaultValue=""><option value="" disabled>Choose an answer</option><option value="yes">Yes</option><option value="no">No</option><option value="discuss">I would like to discuss this</option></select></label><Area name="notes" label="Anything else we should know?" /></Section>
+    <Section number="4" title="Emergency contact"><p className="text-sm text-slate-600">Someone we can contact in an emergency if you join the team.</p><Field name="emergencyName" label="Contact’s full name" required /><div className="grid gap-5 sm:grid-cols-2"><Field name="emergencyPhone" label="Contact’s phone" type="tel" required maxLength={40} /><Field name="emergencyRelationship" label="Relationship to you" required maxLength={80} /></div></Section>
+    <label className="flex items-start gap-3 text-sm leading-relaxed text-slate-600"><input name="consent" type="checkbox" required className="mt-1 h-5 w-5 shrink-0 accent-blue-600" /><span>I confirm that this information is accurate and agree that King Iron Works may contact me about joining the team. *</span></label>
+    {error && <p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{error}</p>}
+    <button type="submit" disabled={busy} className="min-h-14 w-full rounded-2xl bg-slate-900 px-5 text-lg font-semibold text-white shadow-lg disabled:opacity-50">{busy ? "Submitting…" : "Submit application"}</button>
+  </form>;
+}

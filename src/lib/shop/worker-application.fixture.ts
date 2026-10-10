@@ -1,0 +1,3 @@
+export const sampleApplication = {
+ fullName: "Test Applicant", preferredName: "", phone: "6175550100", email: "applicant@example.test", street: "10 Test Street", unit: "", city: "Everett", state: "MA", postalCode: "02149", lang: "en", languages: "", emergencyName: "Test Contact", emergencyPhone: "6175550101", emergencyRelationship: "Sibling", position: "Welder", experienceYears: 2, skills: ["MIG welding"], certifications: "", experience: "Two years of shop work", previousEmployer: "", previousRole: "", referenceName: "", referencePhone: "", availableStart: "2026-11-01", availability: "Monday to Friday", transportation: "yes", notes: "", consent: true,
+};
