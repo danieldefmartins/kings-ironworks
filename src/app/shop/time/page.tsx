@@ -3,11 +3,13 @@ import { getSessionWorker } from "@/lib/shop/session";
 import { listCorrections, listWorkerBreaks, listWorkerShifts, shiftHours } from "@/lib/shop/db";
 import ShopTopBar from "../ShopTopBar";
 import TimesheetClient from "./TimesheetClient";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
 export const dynamic = "force-dynamic";
 export default async function MyTimePage() {
   const worker = await getSessionWorker(); if (!worker) redirect("/shop/login");
+  if (canViewOwnerFinancials(worker)) redirect("/shop/admin/payroll");
   // Scoped in the query, not filtered afterwards: this screen is one person's
   // hours and one person's pay, so nobody else's shifts should be in the
   // process to begin with.

@@ -30,3 +30,7 @@ it("does not guess wages when the shift's saved rate is missing", async () => {
   m.shifts.mockResolvedValue([shift({ pay_rate: null })]);
   expect(await loadClockState({ id: "worker" }, now)).toMatchObject({ weekHoursBeforeShift: 8, weekEarningsBeforeShift: null });
 });
+it("does not load personal payroll for owners", async () => {
+  expect(await loadClockState({ id: "owner", is_admin: true, can_see_prices: true }, now)).toMatchObject({ shift: null, hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0 });
+  expect(m.open).not.toHaveBeenCalled(); expect(m.shifts).not.toHaveBeenCalled();
+});

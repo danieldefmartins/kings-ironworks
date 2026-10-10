@@ -139,7 +139,7 @@
 .shop-ui .shop-topbar, .shop-ui .shop-tabbar { background: var(--shop-glass); border-color: var(--shop-line); }
 .shop-ui .shop-topbar { box-shadow: 0 2px 16px #24334c05; }
 .shop-ui .shop-tabbar { box-shadow: 0 -4px 24px #10182809; }
-.shop-ui .shop-brand { background: transparent; }
+.shop-ui .shop-brand { width: 96px; height: 64px; background: transparent; }
 .shop-dialog { background: var(--shop-card); color: var(--shop-fg); border-color: var(--shop-line); box-shadow: 0 24px 100px #0005; }
 .shop-ui .shop-appearance button[aria-pressed="true"] { background: var(--shop-card); color: var(--shop-fg); box-shadow: 0 2px 8px #0002; }
 .shop-ui .shop-payroll-day { background: color-mix(in srgb, var(--day-color) 9%, var(--shop-card)); border-color: color-mix(in srgb, var(--day-color) 25%, var(--shop-line)); border-left: 4px solid var(--day-color); box-shadow: 0 3px 10px #18243804; }

@@ -50,7 +50,7 @@ it("keeps every tool in the unified owner menu, without duplicate destinations",
   admin.unmount();
   render(<MenuDirectory scope="all" lang="en" simple />);
   const actual = screen.getAllByRole("link").map(a => a.getAttribute("href"));
-  expect(new Set(actual)).toEqual(new Set([...paths, "/shop/admin"]));
+  expect(new Set(actual)).toEqual(new Set([...paths.filter(path => path !== "/shop/time"), "/shop/admin"]));
   expect(actual.length).toBe(new Set(actual).size);
   fireEvent.change(screen.getByRole("searchbox"), { target: { value: "payroll" } });
   expect(screen.getByRole("link", { name: /^Payroll/ })).toBeTruthy();

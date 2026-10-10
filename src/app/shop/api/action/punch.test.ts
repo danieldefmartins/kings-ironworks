@@ -38,3 +38,10 @@ it("does not attribute an unowned legacy queue entry to the currently signed-in 
   expect(await response.json()).toMatchObject({ refreshRequired: true });
   expect(m.start).not.toHaveBeenCalled(); expect(m.get).not.toHaveBeenCalled();
 });
+it.each(["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request"])("refuses owner %s before payroll database access", async type => {
+  m.worker.mockResolvedValue({ id: "owner", is_admin: true, can_see_prices: true });
+  const response = await POST(request({ type, workerId: "owner" }));
+  expect(response.status).toBe(403);
+  expect(await response.json()).toMatchObject({ final: true });
+  expect(m.start).not.toHaveBeenCalled(); expect(m.stop).not.toHaveBeenCalled(); expect(m.get).not.toHaveBeenCalled(); expect(m.open).not.toHaveBeenCalled();
+});

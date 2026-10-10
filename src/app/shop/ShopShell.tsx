@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { BriefcaseBusiness, Clock3, House, PackageSearch, Ruler, LayoutGrid, X } from "lucide-react";
+import { BriefcaseBusiness, Banknote, Clock3, House, PackageSearch, Ruler, LayoutGrid, X } from "lucide-react";
 import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { fmtTime, hoursToHm, shiftHours } from "@/lib/shop/shared";
 import { ShopAccess, isMeasuringPath } from "./ShopAccess";
@@ -176,7 +176,7 @@ export default function ShopShell({
   // A single ordered sender handles taps and background retries. Never skip an
   // in-flight start to send its stop, or discard an authentication failure.
   const flushOutbox = useCallback(async () => {
-    if (!workerId || flushing.current || path === "/shop/login") return;
+    if (isOwner || !workerId || flushing.current || path === "/shop/login") return;
     flushing.current = true;
     clockVersion.current++;
     if (pendingPunches(workerId).length) setBusy(true);
@@ -208,7 +208,7 @@ export default function ShopShell({
       setReview(readOutbox().some(p => !p.workerId || (p.workerId === workerId && !!p.review)));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workerId, path, lang, router, reloadClock]);
+  }, [isOwner, workerId, path, lang, router, reloadClock]);
 
   useEffect(() => {
     if (!workerId || path === "/shop/login") return;
@@ -251,7 +251,7 @@ export default function ShopShell({
   const tabs = [
     { href: "/shop", label: t(lang, "navToday"), icon: House, exact: true },
     { href: "/shop/jobs", label: t(lang, "jobs"), icon: BriefcaseBusiness },
-    { clock: true, label: shift ? (onBreak ? t(lang, "clockBreak") : t(lang, "clockWorking")) : t(lang, "clockInLabel"), icon: Clock3 },
+    isOwner ? { href: "/shop/admin/payroll", label: lang === "pt" ? "Pagamentos" : lang === "es" ? "Nómina" : "Payroll", icon: Banknote } : { clock: true, label: shift ? (onBreak ? t(lang, "clockBreak") : t(lang, "clockWorking")) : t(lang, "clockInLabel"), icon: Clock3 },
     { href: "/shop/leads", label: t(lang, "navMeasure"), icon: Ruler },
     measuring ? { href: "/shop/inventory", label: t(lang, "tileInventory"), icon: PackageSearch } : { href: "/shop/more", label: lang === "pt" ? "Mais" : lang === "es" ? "Más" : "More", icon: LayoutGrid },
   ];

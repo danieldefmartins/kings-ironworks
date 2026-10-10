@@ -56,3 +56,8 @@ it("allows clock-out while on break", async () => {
   fireEvent.click(screen.getByRole("button", { name: /break/i }));
   expect(screen.getByRole("button", { name: "Clock out" })).toBeDefined();
 });
+it("gives owners team payroll access without a personal punch clock", () => {
+  render(<ShopShell {...props} isOwner />);
+  expect(screen.queryByRole("button", { name: "Clock in" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Payroll" }).getAttribute("href")).toBe("/shop/admin/payroll");
+});

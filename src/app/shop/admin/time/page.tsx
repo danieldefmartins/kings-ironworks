@@ -29,9 +29,10 @@ export default async function TeamTimePage() {
     listCorrections(),
     listShiftLocations(),
   ]);
+  const owners = new Set(workers.filter(canViewOwnerFinancials).map(w => w.id));
   const names = new Map(workers.map((w) => [w.id, w.name]));
   const used = new Map<string, number>();
-  const rows: ShiftRow[] = [...shifts]
+  const rows: ShiftRow[] = shifts.filter(s => !owners.has(s.worker_id))
     .sort((a, b) => a.started_at.localeCompare(b.started_at))
     .map((s) => {
       const hours = shiftHours(s, breaks.filter((b) => b.shift_id === s.id));
@@ -56,7 +57,7 @@ export default async function TeamTimePage() {
       };
     })
     .reverse();
-  const correctionRows = corrections.map((c) => ({
+  const correctionRows = corrections.filter(c => !owners.has(c.worker_id)).map((c) => ({
     id: c.id,
     shiftId: c.shift_id,
     worker: names.get(c.worker_id) || "Unknown",
@@ -84,7 +85,7 @@ export default async function TeamTimePage() {
             <p className="mt-4 text-sm text-neutral-600">{t(lang, "locHistoryEmpty")}</p>
           ) : (
             <div className="mt-4 max-h-[480px] divide-y divide-neutral-800 overflow-y-auto">
-              {locations.map((p) => (
+              {locations.filter(p => !owners.has(p.worker_id)).map((p) => (
                 <a
                   key={p.id}
                   href={`https://www.google.com/maps?q=${p.lat},${p.lng}`}

@@ -21,3 +21,10 @@ describe("payroll data access", () => {
     expect(result.workers).toHaveLength(501); expect(result.shifts).toHaveLength(501); expect(result.breaks).toHaveLength(501);
   });
 });
+it("excludes owners and their historical shifts without dropping crew history", async () => {
+  select.mockImplementation(async (table: string) => table === "kiw_shop_workers" ? [{ id: "owner", name: "Owner", is_admin: true, can_see_prices: true }, { id: "crew", name: "Crew", is_admin: true, can_see_prices: false }] : table === "kiw_shop_shifts" ? [{ id: "os", worker_id: "owner" }, { id: "cs", worker_id: "crew" }] : [{ id: "ob", shift_id: "os" }, { id: "cb", shift_id: "cs" }]);
+  const result = await loadPayrollWeek(payrollWeek("2026-09-07"));
+  expect(result.workers.map(w => w.id)).toEqual(["crew"]);
+  expect(result.shifts.map(s => s.id)).toEqual(["cs"]);
+  expect(result.breaks.map(b => b.id)).toEqual(["cb"]);
+});

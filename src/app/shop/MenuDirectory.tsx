@@ -37,7 +37,7 @@ export default function MenuDirectory({ scope, lang, onNavigate, compact = false
   const groupList = scope === "all" ? [...GROUPS.crew.slice(0, 2), ...GROUPS.admin, GROUPS.crew[2]] : GROUPS[scope];
   const groups = groupList.map(([id, key]) => ({
     id, title: t(lang, key),
-    items: destinations.filter(d => d.group === id && normalize(`${label(d.key)} ${label(d.hintKey)} ${t(lang, key)}`).includes(normalize(query.trim()))),
+    items: destinations.filter(d => !(scope === "all" && d.href === "/shop/time") && d.group === id && normalize(`${label(d.key)} ${label(d.hintKey)} ${t(lang, key)}`).includes(normalize(query.trim()))),
   })).filter(g => g.items.length);
 
   return <div className="space-y-5">

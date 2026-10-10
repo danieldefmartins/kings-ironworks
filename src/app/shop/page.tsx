@@ -37,7 +37,8 @@ async function buildOnClockRows(jobs: Awaited<ReturnType<typeof listJobs>>): Pro
   const breaks = await listBreaksForShifts(shifts.map((s) => s.id));
   const names = new Map(workers.map((w) => [w.id, w.name]));
   const jobLabel = new Map(jobs.map((j) => [j.id, j.customer_name || j.job_number]));
-  return shifts.map((s) => {
+  const owners = new Set(workers.filter(canViewOwnerFinancials).map(w => w.id));
+  return shifts.filter(s => !owners.has(s.worker_id)).map((s) => {
     const mine = breaks.filter((b) => b.shift_id === s.id);
     const entry = entries.find((e) => e.worker_id === s.worker_id);
     return {

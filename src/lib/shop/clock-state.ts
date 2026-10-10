@@ -1,8 +1,9 @@
 import { getOpenShift, getShiftBreaks, getWorkerRate, listWorkerBreaks, listWorkerShifts } from "@/lib/shop/db";
+import { canViewOwnerFinancials } from "./shared";
 import { calculatePayroll, payrollWeek } from "@/lib/shop/payroll";
 
-export async function loadClockState(worker: { id: string } | null, now = Date.now()) {
-  if (!worker) return { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0 };
+export async function loadClockState(worker: { id: string; is_admin?: boolean | null; can_see_prices?: boolean | null } | null, now = Date.now()) {
+  if (!worker || canViewOwnerFinancials(worker)) return { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0 };
   const week = payrollWeek(undefined, now);
   const [shift, rate, weekShifts, weekBreaks] = await Promise.all([
     getOpenShift(worker.id), getWorkerRate(worker.id),

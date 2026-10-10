@@ -62,6 +62,9 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
+    if (canViewOwnerFinancials(worker) && ["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request"].includes(type)) {
+      return NextResponse.json({ error: "Owners are not enrolled in employee payroll.", final: true }, { status: 403 });
+    }
     // Old browser queues have no worker identity and can belong to someone
     // else on a shared tablet. A retryable response preserves their local
     // copy until refresh, where unowned punches are retained for review.
