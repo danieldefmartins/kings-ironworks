@@ -57,6 +57,7 @@ changes that worker's language and restores English in its `finally` cleanup.
 | `measure.deck`, `fire`, `skirt`, `trio`, `well` | Shape-specific API contracts and dimensional checks |
 
 `MEASURE_AUDIT_SCREENSHOTS=0` reruns the assertions and JSON audit without repeating PNG capture. The audit records its created TEST sheet IDs in `audit-created.json` for recovery after an interrupted process.
+For a focused regression after a complete sweep, set `MEASURE_AUDIT_SHAPES=opening,structural` and use a separate audit directory to preserve the full-run evidence. Omit this variable for all 21 shapes.
 
 Audit PNGs are viewport screenshots (not full-page). `audit.json` records screen
 text and findings for review. Screenshots require visual inspection; the suite

@@ -414,11 +414,11 @@ export default function OpeningSections({
                 <div>
                   <span className="mb-1 block text-[11px] text-neutral-400">{mt(lang, "opQty")}</span>
                   <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-800">
-                    <button type="button" aria-label="−" disabled={qty <= 1}
+                    <button type="button" aria-label={`${mt(lang, "opQty")} −`} disabled={qty <= 1}
                       onClick={() => setU(unit.id, (u) => void (u.qty = String(Math.max(1, qty - 1))))}
                       className="min-h-11 min-w-11 text-lg font-semibold disabled:opacity-30">−</button>
                     <span className="min-w-8 text-center text-base font-semibold tabular-nums">{qty}</span>
-                    <button type="button" aria-label="+"
+                    <button type="button" aria-label={`${mt(lang, "opQty")} +`}
                       onClick={() => setU(unit.id, (u) => void (u.qty = String(Math.min(99, qty + 1))))}
                       className="min-h-11 min-w-11 text-lg font-semibold">+</button>
                   </div>

@@ -9,6 +9,8 @@ const SHOTS=OUT && process.env.MEASURE_AUDIT_SCREENSHOTS!=='0';
 if(OUT)mkdirSync(OUT,{recursive:true});
 const browser=await chromium.launch(),ctx=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,isMobile:true});
 const shapes=['straight','stair_platform','l_shape','u_shape','builder','level_run','ramp','wall_rail','spiral','window_well','fire_escape','gate','fence','balcony','deck','custom','opening','structural','canopy','wall_cap','shop_piece'];
+const requestedShapes=process.env.MEASURE_AUDIT_SHAPES?.split(',');
+if(requestedShapes)assert.ok(requestedShapes.length>0&&requestedShapes.every(shape=>shapes.includes(shape)), 'Unknown audit shape');
 const created=[],findings=[],screens=[];let page;
 async function inspect(){
  const audit=await page.locator('[data-measure-ui]').evaluate(root=>{
@@ -20,7 +22,7 @@ async function inspect(){
 }
 try{
  assert.ok((await ctx.request.post(`${BASE}/shop/api/login`,{data:{workerId:process.env.SHOP_WORKER_ID,pin:process.env.SHOP_PIN}})).ok());
- for(const shape of shapes){const r=await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'create',jobId:JOB,shape,steps1:3,steps2:2,name:`QA ${shape}`}});assert.ok(r.ok());created.push({shape,...await r.json()});if(OUT)writeFileSync(join(OUT,'audit-created.json'),JSON.stringify({created:created.map(({shape,id})=>({shape,id})),cleaned:false},null,2));}
+ for(const shape of shapes.filter(shape=>!requestedShapes||requestedShapes.includes(shape))){const r=await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'create',jobId:JOB,shape,steps1:3,steps2:2,name:`QA ${shape}`}});assert.ok(r.ok());created.push({shape,...await r.json()});if(OUT)writeFileSync(join(OUT,'audit-created.json'),JSON.stringify({created:created.map(({shape,id})=>({shape,id})),cleaned:false},null,2));}
  page=await ctx.newPage();page.on('pageerror',e=>findings.push({error:e.message,url:page.url()}));
  for(const lang of ['en','pt','es']){
   assert.ok((await ctx.request.post(`${BASE}/shop/api/action`,{data:{type:'lang_set',lang}})).ok());

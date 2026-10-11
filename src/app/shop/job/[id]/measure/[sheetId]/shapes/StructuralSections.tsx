@@ -825,9 +825,9 @@ function Stepper({ label, value, onChange }: { label: string; value: number; onC
     <div role="group" aria-label={label}>
       <div className="mb-1 text-[11px] text-neutral-400">{label}</div>
       <div className="flex h-[46px] items-center rounded-lg border border-slate-200 bg-white">
-        <button type="button" aria-label="−" onClick={() => onChange(Math.max(1, value - 1))} className="h-full w-10 text-lg font-semibold text-slate-600">−</button>
+        <button type="button" aria-label={`${label} −`} onClick={() => onChange(Math.max(1, value - 1))} className="h-full w-10 text-lg font-semibold text-slate-600">−</button>
         <span className="w-7 text-center text-base font-semibold tabular-nums">{value}</span>
-        <button type="button" aria-label="+" onClick={() => onChange(Math.min(99, value + 1))} className="h-full w-10 text-lg font-semibold text-slate-600">+</button>
+        <button type="button" aria-label={`${label} +`} onClick={() => onChange(Math.min(99, value + 1))} className="h-full w-10 text-lg font-semibold text-slate-600">+</button>
       </div>
     </div>
   );
