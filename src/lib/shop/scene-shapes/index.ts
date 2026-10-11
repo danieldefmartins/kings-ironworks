@@ -15,6 +15,8 @@ import {spiralScene} from './scene-spiral';
 import {wallRailScene} from './scene-wall-rail';
 import {customScene} from './scene-custom';
 import {canopyScene} from './scene-canopy';
+import {wallCapScene} from './scene-wall-cap';
+import {shopPieceScene} from './scene-shop-piece';
 
 export type {ShapeSceneAdapter,ShapeSceneOutput} from './build-kit';
 /** @deprecated name kept for the opening/structural/... adapters; same type. */
@@ -35,6 +37,8 @@ export const SCENE_SHAPES:Partial<Record<MeasureShape,ShapeSceneAdapter>>={
  wall_rail:wallRailScene,
  custom:customScene,
  canopy:canopyScene,
+ wall_cap:wallCapScene,
+ shop_piece:shopPieceScene,
 };
 
 /** The scene may only receive the sheet's data, so the shape is read from the
@@ -51,5 +55,7 @@ export function sceneShapeOf(data:MeasureData):MeasureShape|null{
  if(data.opening)return 'opening';
  if(data.structural)return 'structural';
  if(data.canopy)return 'canopy';
+ if(data.wallCap)return 'wall_cap';
+ if(data.shopPiece)return 'shop_piece';
  return null;
 }

@@ -14,6 +14,8 @@ import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./m
 import { structuralChecks, structuralGaps } from "./measure-structural";
 import { finishChecks, mountingChecks } from "./measure-substrate";
 import { canopyChecks, canopyGaps } from "./measure-canopy";
+import { wallCapChecks, wallCapGaps, wallCapLimits } from "./measure-wall-cap";
+import { shopPieceChecks, shopPieceGaps } from "./measure-shop-piece";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -792,6 +794,8 @@ function shapeChecks(
   if (shape === "balcony") return balconyChecks(data);
   if (shape === "structural") return structuralChecks(data.structural);
   if (shape === "canopy") return canopyChecks(data.canopy);
+  if (shape === "wall_cap") return wallCapChecks(data.wallCap, wallCapLimits(data));
+  if (shape === "shop_piece") return shopPieceChecks(data.shopPiece);
   if (shape === "deck") {
     // An irregular deck can also be drawn, in which case the same
     // scale-independent closure test the custom shape uses applies here.
@@ -1164,6 +1168,9 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   if (shape === "structural") return [...structuralGaps(data.structural), ...photoGaps(data, shape)];
   // A canopy carries its own wall, heights, support and roof.
   if (shape === "canopy") return [...canopyGaps(data.canopy), ...(data.canopy?.kind ? photoGaps(data, shape) : [])];
+  // Wall caps and shop pieces carry their own runs / pieces; no stair rules apply.
+  if (shape === "wall_cap") return [...wallCapGaps(data.wallCap), ...photoGaps(data, shape)];
+  if (shape === "shop_piece") return shopPieceGaps(data.shopPiece, data.photos);
   const gaps: Gap[] = [];
   const supportSite=data.posts.some(p=>p.supportAttachment)?resolveSite(data):undefined;
   data.posts.forEach((p,i)=>{if(p.supportAttachment&&supportTerminal(data,supportSite,p).provisional)gaps.push({key:'post',detail:`P${i+1} · support connection`});});
