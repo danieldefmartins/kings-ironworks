@@ -17,7 +17,7 @@ import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
 import { sheetReadiness, flightGaps, type Tolerances } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
 import SceneStart from "./[sheetId]/SceneStart";
-import {sceneProjectShape,sceneProjectLabel,type SceneSetup} from "@/lib/shop/measure-scene-setup";
+import {sceneProjectShape,type SceneSetup} from "@/lib/shop/measure-scene-setup";
 
 export default function MeasureListClient({
   job,
@@ -35,12 +35,14 @@ export default function MeasureListClient({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [sceneDraft,setSceneDraft]=useState<ReturnType<typeof newMeasureData>&{sceneSetup?:SceneSetup}>(()=>newMeasureData('custom',1));
-  const [sceneReady,setSceneReady]=useState(false);
-  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
   const [shape, setShape] = useState<MeasureShape | null>(null);
+  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
+  const [specialLayoutsOpen,setSpecialLayoutsOpen]=useState(false);
+  const layoutClass=(selected:boolean)=>`rounded-lg border p-3 flex flex-col items-center gap-2 text-xs font-semibold text-center ${selected?'border-amber-500 bg-amber-500/10 text-amber-300':'border-neutral-700 bg-neutral-800/60 text-neutral-300'}`;
   const [preset, setPreset] = useState<MeasurePreset | null>(null);
   const [steps1, setSteps1] = useState(5);
   const [steps2, setSteps2] = useState(5);
+  const [flightCount, setFlightCount] = useState(2);
   const [steps3, setSteps3] = useState(5);
   const [endsOnPlatform, setEndsOnPlatform] = useState(false);
   const [name, setName] = useState("");
@@ -55,7 +57,7 @@ export default function MeasureListClient({
   const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony";
 
   async function create() {
-    if (!shape) return;
+    if (!shape || !sceneDraft.sceneSetup?.environment || !sceneDraft.sceneSetup?.projectType) return;
     setBusy(true);
     setErr(null);
     try {
@@ -69,7 +71,7 @@ export default function MeasureListClient({
           shape,
           preset,
           steps1,
-          steps2: isMulti || twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
+          steps2: isMulti ? flightCount : twoFlights || preset === "three_flight" || preset === "bifurcated" ? steps2 : 0,
           steps3: preset === "three_flight" || preset === "bifurcated" ? steps3 : 0,
           endsOnPlatform: isMulti ? endsOnPlatform : false,
           name,
@@ -109,67 +111,26 @@ export default function MeasureListClient({
         </button>
       ) : (
         <div className="mb-6">
-          {!sceneReady?<><SceneStart data={sceneDraft} set={fn=>setSceneDraft(old=>{const next=structuredClone(old);fn(next);return next;})} lang={lang} onContinue={()=>{const project=sceneDraft.sceneSetup?.projectType;const selected:MeasureShape=project?sceneProjectShape(project):'custom';setShape(selected);setPreset(null);setName('');setSceneReady(true);}}/><button type="button" className="mt-3 min-h-11 px-4 text-sm text-neutral-400" onClick={()=>setCreating(false)}>{mt(lang,'cancel')}</button></>:<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-          <button type="button" className="mb-4 min-h-11 rounded-xl border border-neutral-700 px-4 text-sm font-semibold" onClick={()=>setSceneReady(false)}>← {tx('Change project','Alterar projeto','Cambiar proyecto')}</button>
-          <h2 className="mb-4 text-xl font-bold">{sceneDraft.sceneSetup?.projectType?sceneProjectLabel(sceneDraft.sceneSetup.projectType,lang):''}</h2>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+          <SceneStart data={sceneDraft} set={fn=>setSceneDraft(old=>{const next=structuredClone(old);fn(next);return next;})} lang={lang} onProjectChange={project=>{if(project!==sceneDraft.sceneSetup?.projectType){setShape(sceneProjectShape(project));setPreset(null);}}}/>
           {sceneDraft.sceneSetup?.projectType==='stairs'&&<>
-          {/* Stairs first, because almost every sheet is one and the answer is
-              always the same two questions. L, U, three-flight and any longer
-              run are the SAME structure — flight, landing, flight — differing
-              only by the turn recorded on the landing. The shape grid below
-              stays for the things that genuinely are not stairs. */}
-          <div className="font-bold mb-2">{mt(lang, "stairQuestion")}</div>
-          <div className="grid grid-cols-2 gap-2 mb-5">
-            <button
-              onClick={() => { setPreset(null); setShape("straight"); setName(mt(lang, "singleFlight")); }}
-              className={`rounded-xl border p-3 text-left ${
-                !preset && (shape === "straight" || shape === "stair_platform")
-                  ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                  : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
-              }`}
-            >
-              <div className="text-sm font-bold">{mt(lang, "singleFlight")}</div>
-              <div className="mt-0.5 text-[11px] leading-snug text-neutral-500">{mt(lang, "singleFlightHint")}</div>
-            </button>
-            <button
-              onClick={() => { setPreset("multi_flight"); setShape("builder"); setName(mt(lang, "multiFlight")); }}
-              className={`rounded-xl border p-3 text-left ${
-                preset === "multi_flight"
-                  ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                  : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
-              }`}
-            >
-              <div className="text-sm font-bold">{mt(lang, "multiFlight")}</div>
-              <div className="mt-0.5 text-[11px] leading-snug text-neutral-500">{mt(lang, "multiFlightHint")}</div>
-            </button>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-neutral-500">{tx('Stair layout','Formato da escada','Forma de escalera')}</div>
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            {(['straight','stair_platform'] as const).map(sh=><button key={sh} type="button" aria-pressed={!preset&&shape===sh} onClick={()=>{setPreset(null);setShape(sh);}} className={layoutClass(!preset&&shape===sh)}><span aria-hidden="true"><ShapeIcon shape={sh} size={32}/></span>{shapeLabel(lang,sh)}</button>)}
+            <button type="button" aria-pressed={isMulti} onClick={()=>{setPreset('multi_flight');setShape('builder');}} className={layoutClass(isMulti)}><span aria-hidden="true"><ShapeIcon shape="builder" preset="multi_flight" size={32}/></span>{tx('Multi-flight','Vários lances','Varios tramos')}</button>
           </div>
-          {!preset && (shape === "straight" || shape === "stair_platform") && (
-            <div className="mb-5 flex gap-2">
-              {(["straight", "stair_platform"] as const).map((sh) => (
-                <button
-                  key={sh}
-                  onClick={() => setShape(sh)}
-                  className={`flex-1 rounded-lg border px-3 py-2 text-xs font-semibold ${
-                    shape === sh ? "border-amber-500 text-amber-300" : "border-neutral-700 text-neutral-400"
-                  }`}
-                >
-                  {shapeLabel(lang, sh)}
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="font-bold mb-2 mt-5">{mt(lang, "commonSpecialLayouts")}</div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+          <details className="mb-4" open={specialLayoutsOpen||!!(preset&&!isMulti)} onToggle={e=>setSpecialLayoutsOpen(e.currentTarget.open)}>
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium text-neutral-400">{mt(lang, "commonSpecialLayouts")}</summary>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
             {MEASURE_PRESETS.filter(p=>p!=='multi_flight').map((p) => {
               const presetShape: MeasureShape = p === "winder_l" ? "l_shape" : p === "winder_u" ? "u_shape" : "builder";
               return (
                 <button
                   key={p}
+                  aria-pressed={preset===p}
                   onClick={() => {
                     setPreset(p);
                     setShape(presetShape);
-                    setName(mt(lang, `preset_${p}`));
                   }}
                   className={`rounded-xl border p-3 flex flex-col items-center gap-2 text-xs font-semibold text-center ${
                     preset === p
@@ -177,27 +138,17 @@ export default function MeasureListClient({
                       : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
                   }`}
                 >
-                  <ShapeIcon shape={presetShape} preset={p} />
+                  <span aria-hidden="true"><ShapeIcon shape={presetShape} preset={p} size={32}/></span>
                   {mt(lang, `preset_${p}`)}
                 </button>
               );
             })}
           </div>
-
+          </details>
           </>}
-          {/* The two counts decide the whole sheet — how many step rows it
-              opens with, how many flights it walks you through — and they were
-              a pair of small steppers at the bottom of a long picker, below
-              two grids of shape tiles, where they were routinely left at the
-              default. They now get their own panel, with the answer written
-              back in a sentence so a wrong count is visible before it becomes
-              a sheet. */}
           {shape && needsSteps && (
-            <div className="mb-4 rounded-xl border border-amber-700/70 bg-amber-950/20 p-4">
-              <div className="text-sm font-bold text-amber-200">{mt(lang, "countsTitle")}</div>
-              <div className="mt-1 mb-3 text-[11px] leading-snug text-neutral-400">
-                {mt(lang, "countsHint")}
-              </div>
+            <div className="mb-4 rounded-lg border border-neutral-700 p-3">
+              <div className="mb-3 text-sm font-semibold text-neutral-300">{sceneDraft.sceneSetup?.projectType==='stairs'?tx('Treads & flights','Degraus e lances','Peldaños y tramos'):tx('Counts','Quantidades','Cantidades')}</div>
             <div className="flex flex-wrap gap-4">
               <Stepper
                 label={
@@ -223,7 +174,7 @@ export default function MeasureListClient({
               )}
               {isMulti && (
                 <>
-                  <Stepper label={mt(lang, "howManyFlights")} value={steps2 || 2} onChange={setSteps2} />
+                  <Stepper label={mt(lang, "howManyFlights")} value={flightCount} onChange={setFlightCount} min={2} max={8} />
                   {/* Usually you arrive on the finished floor, which is not
                       ours to guard. But a stair can land on a balcony or a top
                       landing that is. */}
@@ -237,9 +188,6 @@ export default function MeasureListClient({
                     }`}
                   >
                     <span className="block">{mt(lang, "endsOnPlatform")}</span>
-                    <span className="mt-0.5 block text-[10px] font-normal text-neutral-500">
-                      {mt(lang, "endsOnPlatformHint")}
-                    </span>
                   </button>
                 </>
               )}
@@ -256,19 +204,15 @@ export default function MeasureListClient({
                 </>
               )}
             </div>
-              {/* Said back in words, because "5" and "2" in two boxes is not a
-                  sentence anybody checks. */}
-              <div className="mt-3 border-t border-amber-900/50 pt-3 text-sm font-bold text-amber-100">
-                {mt(lang, "countsSummary")}:{" "}
+              {sceneDraft.sceneSetup?.projectType==='stairs'&&<div className="mt-3 text-xs text-neutral-400">
                 {isMulti
-                  ? `${Math.max(2, steps2 || 2)} ${mt(lang, "countsFlights")} · ${steps1} ${mt(lang, "countsSteps")} ${mt(lang, "ofWord")} ${mt(lang, "flight")} 1`
+                  ? `${flightCount} ${mt(lang, "countsFlights")} · ${steps1} ${mt(lang, "countsSteps")} ${mt(lang, "ofWord")} ${mt(lang, "flight")} 1`
                   : preset === "three_flight" || preset === "bifurcated"
                     ? `${steps1} + ${steps2} + ${steps3} ${mt(lang, "countsSteps")}`
                     : twoFlights
                       ? `${steps1} + ${steps2} ${mt(lang, "countsSteps")} · 2 ${mt(lang, "countsFlights")}`
                       : `${steps1} ${mt(lang, "countsSteps")}`}
-              </div>
-              <div className="mt-1 text-[11px] text-neutral-500">{mt(lang, "countsAddLater")}</div>
+              </div>}
             </div>
           )}
 
@@ -282,7 +226,7 @@ export default function MeasureListClient({
           <div className="flex gap-2">
             <button
               onClick={create}
-              disabled={!shape || busy}
+              disabled={!shape || !sceneDraft.sceneSetup?.environment || !sceneDraft.sceneSetup?.projectType || busy}
               className="flex-1 bg-amber-500 text-black font-bold rounded-xl py-3 disabled:opacity-40"
             >
               {busy ? "…" : mt(lang, "create")}
@@ -290,16 +234,13 @@ export default function MeasureListClient({
             <button
               onClick={() => {
                 setCreating(false);
-                setSceneReady(false);
-                setShape(null);
-                setPreset(null);
               }}
               className="px-5 rounded-xl border border-neutral-700 text-neutral-300"
             >
               {mt(lang, "cancel")}
             </button>
           </div>
-        </div>}
+        </div>
         </div>
       )}
 
@@ -396,17 +337,21 @@ function Stepper({
   label,
   value,
   onChange,
+  min = 1,
+  max = 40,
 }: {
   label: string;
   value: number;
   onChange: (n: number) => void;
+  min?: number;
+  max?: number;
 }) {
   return (
-    <div>
+    <div role="group" aria-label={label}>
       <div className="mb-1 text-xs font-bold text-neutral-300">{label}</div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => onChange(Math.max(1, value - 1))}
+          onClick={() => onChange(Math.max(min, value - 1))}
           aria-label="−"
           className="h-12 w-12 rounded-lg border border-neutral-600 bg-neutral-800 text-2xl font-bold"
         >
@@ -414,7 +359,7 @@ function Stepper({
         </button>
         <span className="w-12 text-center text-3xl font-bold tabular-nums">{value}</span>
         <button
-          onClick={() => onChange(Math.min(40, value + 1))}
+          onClick={() => onChange(Math.min(max, value + 1))}
           aria-label="+"
           className="h-12 w-12 rounded-lg border border-neutral-600 bg-neutral-800 text-2xl font-bold"
         >

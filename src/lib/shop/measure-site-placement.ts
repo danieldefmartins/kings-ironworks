@@ -1,8 +1,8 @@
 import type {MeasureData} from './measure';
 import type {Point3} from './measure-geometry';
 import {newSiteObject,siteMesh,siteNumber,type SiteObject,type SiteMesh} from './measure-site';
-export type PlaceableSiteKind='column'|'post'|'slab'|'opening'|'obstruction';
-const sizes:Record<PlaceableSiteKind,[number,number,number]>={column:[6,6,84],post:[6,6,84],slab:[36,36,4],opening:[36,6,80],obstruction:[6,6,6]};
+export type PlaceableSiteKind='wall'|'column'|'post'|'slab'|'opening'|'obstruction';
+const sizes:Record<PlaceableSiteKind,[number,number,number]>={wall:[36,6,84],column:[6,6,84],post:[6,6,84],slab:[36,36,4],opening:[36,6,80],obstruction:[6,6,6]};
 const isKind=(kind:string):kind is PlaceableSiteKind=>Object.prototype.hasOwnProperty.call(sizes,kind);
 const snap=(n:number)=>{const value=Math.sign(n)*Math.round(Math.abs(n)*16)/16;return value===0?'0':value.toFixed(4).replace(/\.?0+$/,'');};
 /** A picked scene position is a sketch placement, never a surveyed dimension.

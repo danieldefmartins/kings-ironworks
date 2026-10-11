@@ -4,10 +4,12 @@ import type { MeasurePreset, MeasureShape } from "@/lib/shop/measure";
 export default function ShapeIcon({
   shape,
   preset,
+  project,
   size = 44,
 }: {
   shape: MeasureShape;
   preset?: MeasurePreset;
+  project?: string;
   size?: number;
 }) {
   const common = {
@@ -20,6 +22,9 @@ export default function ShapeIcon({
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
   };
+
+  if (project === "grate") return <svg {...common}><rect x="7" y="7" width="34" height="34"/><path d="M14 7v34m7-34v34m7-34v34m7-34v34M7 18h34M7 30h34" strokeWidth={1.6}/></svg>;
+  if (project === "ladder") return <svg {...common}><path d="M13 43V5m22 38V5M13 11h22M13 19h22M13 27h22M13 35h22"/></svg>;
 
   if (preset === "three_flight") {
     return (

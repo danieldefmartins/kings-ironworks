@@ -45,7 +45,7 @@ describe('measuring with the shared scene',()=>{
  it('changes only the selected step and retains it across tool switches',()=>{
   show(3);fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));fireEvent.change(screen.getByLabelText('Riser height'),{target:{value:'7 1/4'}});
   fireEvent.click(screen.getByRole('button',{name:'Previous step'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('');
-  fireEvent.click(screen.getByRole('button',{name:'Site objects'}));fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('7 1/4');
+  fireEvent.click(screen.getByRole('button',{name:'Existing site'}));fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('7 1/4');
  });
  it('adds a post explicitly and returns to step dimensions',()=>{
   show(4);fireEvent.click(screen.getByRole('button',{name:'Pick step 1'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));expect(screen.getByRole('heading',{name:'Post position'})).toBeTruthy();expect(screen.getByRole('button',{name:'Pick post 1'})).toBeTruthy();

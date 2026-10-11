@@ -94,7 +94,7 @@ it('keeps attached-panel edits across tools and exposes member/review details',(
  click(/^Railing panels$/);expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
  fireEvent.change(screen.getByLabelText('Finished railing height above floor'),{target:{value:'43'}});
  fireEvent.click(screen.getByText('Members',{selector:'summary'}));expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
- click(/^Site objects$/);click(/^Railing panels$/);expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
+ click(/^Existing site$/);click(/^Railing panels$/);expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
  fireEvent.click(screen.getByText('Verification & cuts',{selector:'summary'}));expect(screen.getByText(/Verification & cuts/)).toBeTruthy();
  click(/^Shop package/);expect(screen.getByText('Drawing submission retained')).toBeTruthy();
 });

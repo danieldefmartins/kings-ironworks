@@ -39,7 +39,7 @@ describe('site builder field workflow',()=>{
   it('starts with the sketch and opens only the selected object inspector',()=>{
     render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));
     expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
-    fireEvent.click(screen.getByRole('button',{name:'Wall'}));
+    fireEvent.click(screen.getByRole('button',{name:'Existing wall'}));
     expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
     fireEvent.click(screen.getByRole('button',{name:'Place wall · Left · segment 1'}));
     expect(screen.getByRole('region',{name:'Selected site object'})).toBeTruthy();
@@ -71,7 +71,7 @@ describe('site builder field workflow',()=>{
   });
   it('adds a blank column without replacing measured objects or inventing dimensions',()=>{
     render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));
-    fireEvent.click(screen.getByRole('button',{name:'Column'}));
+    fireEvent.click(screen.getByRole('button',{name:'Existing column'}));
     fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
     fireEvent.click(screen.getByText('Position & more details',{selector:'summary'}));
     expect(screen.getByRole('button',{name:/House wall.*Verified/})).toBeTruthy();
@@ -81,7 +81,7 @@ describe('site builder field workflow',()=>{
   });
   it('inserts a new flight and directs measuring to that flight',()=>{
     const measure=vi.fn();render(<Harness measure={measure}/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));
-    fireEvent.click(screen.getByRole('button',{name:'Stairs'}));
+    fireEvent.click(screen.getByText('Add stairs, landing or ramp',{selector:'summary'}));fireEvent.click(screen.getByRole('button',{name:'Stairs'}));
     fireEvent.click(screen.getByRole('button',{name:'Add and measure'}));
     expect(measure).toHaveBeenCalledWith(2,null,1);
   });
@@ -97,11 +97,11 @@ describe('site builder field workflow',()=>{
 
 it('cancels choosing an anchored wall without saving or changing any existing measurement',()=>{
  const data=porchSiteFixture(),before=JSON.stringify(data),save=vi.fn();render(<SiteWorkspace data={data} set={save} lang="en" onContinue={()=>{}} onMeasure={()=>{}} onDetails={()=>{}}/>);
- fireEvent.click(screen.getByRole('button',{name:'Wall'}));expect(screen.getByText('Choose a wall edge')).toBeTruthy();expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Existing wall'}));expect(screen.getByText('Choose a wall edge')).toBeTruthy();expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Cancel'}));expect(save).not.toHaveBeenCalled();expect(JSON.stringify(data)).toBe(before);
 });
 it('places a wall on the chosen right edge and edits its side without exposing XYZ or guessed dimensions',()=>{
- render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));const before=saved();fireEvent.click(screen.getByRole('button',{name:'Wall'}));fireEvent.click(screen.getByRole('button',{name:'Place wall · Right · segment 1'}));
+ render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));const before=saved();fireEvent.click(screen.getByRole('button',{name:'Existing wall'}));fireEvent.click(screen.getByRole('button',{name:'Place wall · Right · segment 1'}));
  const wall=saved().site!.objects.at(-1)!;expect(wall.wallAnchor).toMatchObject({segmentId:'legacy-segment-1',side:'right',gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'});expect(wall.height).toBe('');expect(wall.depth).toBe('');expect(wall.x).toBe('');
  expect(screen.queryByLabelText('Length')).toBeNull();expect(screen.queryByLabelText('X · along')).toBeNull();
  fireEvent.change(screen.getByLabelText('Wall thickness'),{target:{value:'6'}});fireEvent.change(screen.getByLabelText('Wall height'),{target:{value:'84'}});
@@ -111,7 +111,7 @@ it('places a wall on the chosen right edge and edits its side without exposing X
 });
 it('converts an existing absolute wall only after edge selection and preserves its original recorded values',()=>{
  render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));const before=saved().site!.objects[0];fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));fireEvent.click(screen.getByRole('button',{name:/House wall.*Verified/}));
- fireEvent.click(screen.getByRole('button',{name:'Place against stairs'}));expect(saved().site!.objects[0]).toEqual(before);fireEvent.click(screen.getByRole('button',{name:'Cancel'}));expect(saved().site!.objects[0]).toEqual(before);
+ fireEvent.click(screen.getByRole('button',{name:'Place against stairs'}));expect(screen.queryByRole('button',{name:'Place independently'})).toBeNull();expect(saved().site!.objects[0]).toEqual(before);fireEvent.click(screen.getByRole('button',{name:'Cancel'}));expect(saved().site!.objects[0]).toEqual(before);
  fireEvent.click(screen.getByRole('button',{name:'Place against stairs'}));chooseEdge('Left');const after=saved().site!.objects[0];expect(after.wallAnchor?.side).toBe('left');expect(after.verified).toBe(false);const {wallAnchor:ignored,verified,...fields}=after;void ignored;void verified;const {verified:wasVerified,...original}=before;void wasVerified;expect(fields).toEqual(original);
  expect(screen.queryByLabelText('X · along')).toBeNull();expect(screen.queryByLabelText('Length')).toBeNull();
 });
@@ -120,7 +120,7 @@ it('centers the actual viewport when placement starts without scrolling again on
  const data=porchSiteFixture(),set=vi.fn(),props={data,set,lang:'en',onContinue:()=>{},onMeasure:()=>{},onDetails:()=>{}};
  const {rerender}=render(<SiteWorkspace {...props}/>);
  const viewport=document.querySelector('[data-scene-viewport]') as HTMLElement,scroll=vi.fn();viewport.scrollIntoView=scroll;
- fireEvent.click(screen.getByRole('button',{name:'Wall'}));
+ fireEvent.click(screen.getByRole('button',{name:'Existing wall'}));
  expect(scroll).toHaveBeenCalledWith({block:'center',behavior:'smooth'});
  rerender(<SiteWorkspace {...props} data={structuredClone(data)}/>);
  expect(scroll).toHaveBeenCalledTimes(1);
