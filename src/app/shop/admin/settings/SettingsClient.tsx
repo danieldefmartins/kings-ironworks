@@ -37,6 +37,7 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
   });
   const [allowSelf, setAllowSelf] = useState(initial.rules.allowSelfApproval);
   const [codeProfile, setCodeProfile] = useState(initial.defaults?.codeProfile || DEFAULT_CODE_PROFILE);
+  const [maxPostSpacing, setMaxPostSpacing] = useState(initial.defaults?.maxPostSpacing || "");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -66,7 +67,7 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
               colors: toList(options.colors),
             },
             rules: { allowSelfApproval: allowSelf },
-            defaults: { codeProfile },
+            defaults: { codeProfile, maxPostSpacing },
           },
         }),
       });
@@ -107,6 +108,13 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div className="font-bold mb-1">Max post spacing</div>
+        <div className="text-xs text-neutral-500 mb-3">Used for suggested post layouts on new sheets. A sheet can override it. Default 6&apos;.</div>
+        <input className={input} inputMode="decimal" placeholder={"6' (72\")"} value={maxPostSpacing}
+          aria-label="Max post spacing" onChange={(e) => setMaxPostSpacing(e.target.value)} />
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">

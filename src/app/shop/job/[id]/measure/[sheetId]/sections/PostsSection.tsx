@@ -29,6 +29,8 @@ import SubstrateEditor, { MATERIALS_FLOOR } from "../SubstrateEditor";
 import { postLayout, centeredSetback, type LayoutPost } from "@/lib/shop/measure-post-layout";
 import CalcStrip from "../PostCalc";
 import { formatMeas } from "@/lib/shop/measure-parse";
+import { StairPostSuggest } from "../PostSuggest";
+import { stairCanSuggest } from "@/lib/shop/measure-post-suggest-stair";
 
 export default function PostsSection({
   lang,
@@ -47,6 +49,8 @@ export default function PostsSection({
   isFence,
   isBalcony,
   isDeck,
+  orgMaxSpacing,
+  onUndo,
 }: {
   lang: string;
   data: MeasureData;
@@ -65,6 +69,8 @@ export default function PostsSection({
   isFence: boolean;
   isBalcony: boolean;
   isDeck: boolean;
+  orgMaxSpacing?: string | null;
+  onUndo?: () => void;
 }) {
   return (
     <>
@@ -89,6 +95,10 @@ export default function PostsSection({
               the same two numbers fourteen times and fourteen chances to type
               one of them differently. Set here, taken by every post added
               after, and pushed onto the existing ones on request. */}
+          {/* The whole layout, live: railing sides, posts per side, spans. */}
+          {!isDrawn && stairCanSuggest(data) && posts.some((p) => !p.pathId) && (
+            <div className="mb-4 border-b border-neutral-800 pb-4"><StairPostSuggest mode="placed" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={onUndo} /></div>
+          )}
           {!isDrawn && (
             <PostStandards lang={lang} data={data} posts={posts} set={set} />
           )}

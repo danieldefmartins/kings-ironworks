@@ -80,7 +80,7 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
   const resolvedPosts=drawingPosts(data,model);for(const p of resolvedPosts)if(p.post.supportAttachment&&(!p.base||!p.top))pending.push(`${p.label} · support connection`);
   const posts=resolvedPosts.filter(p=>p.base&&p.top),groups=new Map<string,typeof posts>();
   for(const p of posts){
-   const entity={postId:p.post.id,segmentIndex:p.post.segIdx,segmentId:segmentIdAt(data.segments[p.post.segIdx],p.post.segIdx),stepIndex:p.post.stepIdx},item={id:`post:${p.post.id}`,label:p.label,kind:'post' as const,provisional:p.provisional,referenceOnly:true,entity};
+   const entity={postId:p.post.id,segmentIndex:p.post.segIdx,segmentId:segmentIdAt(data.segments[p.post.segIdx],p.post.segIdx),stepIndex:p.post.stepIdx},item={id:`post:${p.post.id}`,label:p.label,kind:'post' as const,/* a suggested post not yet accepted shows as an amber ghost */provisional:p.provisional||p.post.suggested==='ghost',referenceOnly:true,entity};
    const terminal='terminal' in p?p.terminal:undefined;
    const w=siteNumber(p.post.existingW),d=siteNumber(p.post.existingD);
    const section=p.post.pointType==='railing_post'?postSection(data.materials.post):p.post.pointType==='existing_post'&&w!==null&&d!==null&&w>0&&d>0?{width:w,depth:d,round:false}:null;
