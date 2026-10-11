@@ -29,6 +29,8 @@ import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
 import { getOpenShift, getWorkerShift, appendShiftEmployeeNote } from "@/lib/shop/db";
 import { lateNote, resolvePunchAt } from "@/lib/shop/punch";
 import { alertStaleShifts } from "@/lib/shop/stale-alert";
+import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, reviewWindow } from "@/lib/shop/work-hours-db";
+import { resolveWorkHours } from "@/lib/shop/work-hours";
 
 export const runtime = "nodejs";
 
@@ -422,7 +424,9 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "That clock-in is too old to record — clock in again", final: true }, { status: 409 });
         }
         const shift = await clockIn(worker.id, loc, punch.at, id);
-        const created = shift.started_at === punch.at;
+        // Compared as instants: PostgREST echoes "+00:00", the punch is "Z" — a
+        // string compare called every normal clock-in "alreadyOpen".
+        const created = Date.parse(shift.started_at) === Date.parse(punch.at);
         if (created && punch.late) await appendShiftEmployeeNote(worker.id, shift.id, lateNote("in", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
         await audit("shift_clock_in", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: {
           locationStatus: loc?.status || "unavailable",
@@ -430,7 +434,18 @@ export async function POST(req: NextRequest) {
           punchAt: punch.at, delaySec: Math.round(punch.delayMs / 1000), reason: punch.reason, late: punch.late,
           punchId: typeof body.punchId === "string" ? body.punchId : null, alreadyOpen: !created,
         } });
-        result = { shiftId: shift.id, at: shift.started_at, late: created && punch.late };
+        // Work-hours window, strictly AFTER the punch is saved: a clock-in
+        // before 7:30 is recorded at its tap time first, the tap time goes on
+        // the audit record, and only then does payroll time move to 7:30. Any
+        // failure here leaves the shift at the actual tap — never a lost punch.
+        let asked = false;
+        if (created) {
+          try { asked = await applyStartWindow(worker.id, shift, punch.at); }
+          catch (err) { console.error("[work-hours] start window failed:", err); }
+        }
+        // `at` stays the tap time: it is what the worker did, and the toast
+        // confirms the punch, not the pay rule.
+        result = { shiftId: shift.id, at: created ? punch.at : shift.started_at, late: created && punch.late, ask: asked };
         break;
       }
 
@@ -447,7 +462,14 @@ export async function POST(req: NextRequest) {
         const open = body.shiftId ? await getWorkerShift(worker.id, body.shiftId) : await getOpenShift(worker.id);
         if (body.shiftId && !open) return NextResponse.json({ error: "Shift not found. Ask the office to review this punch.", final: true }, { status: 409 });
         if (open?.ended_at) { result = { shiftId: open.id, at: open.ended_at, late: false }; break; }
-        const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "stop", notBefore: open ? Date.parse(open.started_at) : null });
+        // A start rounded up to 7:30 must not make a 7:10 clock-out look like
+        // a stale punch from an older shift: guard against the ACTUAL start.
+        let actualStart = open?.started_at ?? null;
+        if (open) {
+          try { actualStart = await actualStartOf(open); }
+          catch (err) { console.error("[work-hours] actual start lookup failed:", err); }
+        }
+        const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "stop", notBefore: actualStart ? Date.parse(actualStart) : null });
         if (punch.reason === "too_old") return NextResponse.json({ error: "This clock-out is too old to save automatically. Ask the office to review it.", final: true }, { status: 409 });
         if (open && punch.reason === "before_start") {
           // A queued clock-out from BEFORE this shift started belongs to a
@@ -455,15 +477,25 @@ export async function POST(req: NextRequest) {
           // with it would be wrong; refuse it and let the phone drop it.
           return NextResponse.json({ error: "That clock-out belongs to an earlier shift that is already closed", final: true }, { status: 409 });
         }
-        const closed = open ? await clockOut(worker.id, loc, punch.at, open.id) : null;
+        // A tap between the actual and the rounded start closes the shift AT
+        // its (rounded) start — zero paid time unless the early start was
+        // requested; the real tap is kept on the window record below.
+        const closeAt = open && Date.parse(punch.at) < Date.parse(open.started_at) ? open.started_at : punch.at;
+        const closed = open ? await clockOut(worker.id, loc, closeAt, open.id) : null;
         if (closed && punch.late) await appendShiftEmployeeNote(worker.id, closed.id, lateNote("out", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
+        // Work-hours window, after the clock-out is saved (see shift_start).
+        let asked = false;
+        if (closed && open && !open.ended_at) {
+          try { asked = await applyEndWindow(worker.id, closed.id, punch.at); }
+          catch (err) { console.error("[work-hours] end window failed:", err); }
+        }
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", entityId: closed?.id, detail: {
           locationStatus: loc?.status || "unavailable",
           clientAt: typeof body.clientAt === "string" ? body.clientAt : null,
           punchAt: punch.at, delaySec: Math.round(punch.delayMs / 1000), reason: punch.reason, late: punch.late,
           punchId: typeof body.punchId === "string" ? body.punchId : null, nothingOpen: !closed,
         } });
-        result = { shiftId: closed?.id ?? null, at: closed?.ended_at ?? null, late: !!closed && punch.late };
+        result = { shiftId: closed?.id ?? null, at: closed ? punch.at : null, late: !!closed && punch.late, ask: asked };
         break;
       }
 
@@ -536,6 +568,33 @@ export async function POST(req: NextRequest) {
         const loc = punchLocation(body);
         await startProjectEntry(worker.id, String(body.jobId), loc);
         await audit("project_clock_transfer", { workerId: worker.id, entity: "job", entityId: String(body.jobId) });
+        break;
+      }
+
+      // "Did your team leader ask you to start early / stay late?" — asked
+      // right after a punch outside the work-hours window, or on the next app
+      // open when the punch arrived from the outbox. Yes keeps the actual tap
+      // time and tells the approval contacts; No keeps the window edge.
+      case "shift_window_answer": {
+        const { shiftId, edge } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId) || (edge !== "start" && edge !== "end") || typeof body.requested !== "boolean") {
+          return NextResponse.json({ error: "Bad answer" }, { status: 400 });
+        }
+        const answered = await answerWindow(worker, shiftId, edge, body.requested);
+        if (!answered.ok) return NextResponse.json({ error: "Nothing to answer for this shift" }, { status: 404 });
+        result = { notified: answered.notified ?? 0 };
+        break;
+      }
+
+      // Owner: extra time the worker says was requested — keep it, or move it
+      // back to the window edge.
+      case "shift_window_review": {
+        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        const { shiftId, edge } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId) || (edge !== "start" && edge !== "end") || typeof body.approve !== "boolean") {
+          return NextResponse.json({ error: "Bad review" }, { status: 400 });
+        }
+        if (!await reviewWindow(worker.id, shiftId, edge, body.approve)) return NextResponse.json({ error: "Not found" }, { status: 404 });
         break;
       }
 
@@ -637,6 +696,9 @@ export async function POST(req: NextRequest) {
               ? { maxPostSpacing: String((inb.defaults as Record<string, unknown>).maxPostSpacing).trim().slice(0, 20) }
               : {}),
           },
+          // Payroll work-hours window + approval contacts. Kept as-is unless
+          // the client sends it — saveOrgSettings replaces the whole JSON.
+          workHours: inb.workHours !== undefined ? resolveWorkHours(inb.workHours, resolveWorkHours(prev.workHours)) : prev.workHours,
         };
         await saveOrgSettings(next, worker.id);
         await audit("org_settings_change", {
@@ -712,6 +774,10 @@ export async function POST(req: NextRequest) {
           updated_at: now,
         });
         await audit("shift_force_stop", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { endedAt: end.toISOString() } });
+        // A forgotten clock-out is capped at the work-hours end of the day it
+        // started, unless the worker answers "requested" on their next open.
+        try { await applyEndWindow(worker.id, shiftId, end.toISOString()); }
+        catch (err) { console.error("[work-hours] force-stop window failed:", err); }
         break;
       }
 

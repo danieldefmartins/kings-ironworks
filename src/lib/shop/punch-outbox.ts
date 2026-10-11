@@ -22,6 +22,26 @@ export function flagPunch(id: string, reason: string) { writeOutbox(readOutbox()
 export function pendingPunches(workerId: string): QueuedPunch[] {
   return readOutbox().filter(p => p.workerId === workerId && !p.review).sort((a, b) => Date.parse(a.clientAt) - Date.parse(b.clientAt));
 }
+/**
+ * Record a tap on this device. A tap is NEVER dropped (André, 10/10: a
+ * clock-out tapped while a background sync was running vanished without a
+ * trace). The only dedupe is a repeated tap of the same kind while that kind
+ * is still the newest unsent punch — "I tapped clock-out twice" is one
+ * clock-out. Returns null only when the device cannot store anything.
+ */
+export function queueTap(
+  workerId: string, type: QueuedPunch["type"], shiftId: string | null | undefined, now: Date = new Date(),
+): { punch: QueuedPunch; added: boolean } | null {
+  const pending = pendingPunches(workerId);
+  const last = pending[pending.length - 1];
+  if (last && last.type === type) return { punch: last, added: false };
+  const punch: QueuedPunch = {
+    punchId: crypto.randomUUID(), workerId, type, clientAt: now.toISOString(),
+    ...(type === "shift_stop" && shiftId ? { shiftId } : {}),
+  };
+  return writeOutbox([...readOutbox(), punch]) ? { punch, added: true } : null;
+}
+
 export async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 12000);

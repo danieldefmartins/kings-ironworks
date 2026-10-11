@@ -13,7 +13,7 @@ const request = (type: string) => new NextRequest("http://localhost/shop/api/act
 beforeEach(() => vi.clearAllMocks());
 
 describe("owner-only business actions", () => {
-  it.each(["rate_set", "shift_review", "correction_review", "entry_stop", "entry_delete", "org_settings_set", "shift_force_stop", "shift_edit"])("blocks %s for crew and operational admins before database access", async type => {
+  it.each(["rate_set", "shift_review", "correction_review", "entry_stop", "entry_delete", "org_settings_set", "shift_force_stop", "shift_edit", "shift_window_review"])("blocks %s for crew and operational admins before database access", async type => {
     for (const flags of [{ is_admin: false, can_see_prices: false }, { is_admin: true, can_see_prices: false }, { is_admin: false, can_see_prices: true }]) {
       mocks.session.mockResolvedValue({ id: "worker", ...flags });
       expect((await POST(request(type))).status).toBe(403);
