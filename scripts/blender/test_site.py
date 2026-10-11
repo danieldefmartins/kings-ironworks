@@ -46,10 +46,11 @@ class SiteTests(unittest.TestCase):
         source=dict(id='panel',label='Panel',start=end,end=end,height='36',bottomClearance='2',profiles='Steel',infill='pickets',notes='')
         vertices=[dict(x=x,y=y,z=z) for x in (0,64) for y,z in [(-.75,35.625),(.75,35.625),(.75,36),(-.75,36)]]
         part=dict(mark='SR1-T',kind='top',profile='1.5 x .375 solid',edgeLength=64,stockLength=64,angle=0,polygon=[[0,-.1875],[64,-.1875],[64,.1875],[0,.1875]],vertices=vertices,faces=[[0,1,2,3],[4,5,6,7]],station=None)
-        payload['site']=dict(objects=[],rails=[dict(source=source,verified=True,issues=[],layout=dict(mark='SR1',label='Panel',vertices=vertices[:4],horizontal=64,length=64,rise=0,pitch=0),fabrication=dict(parts=[part]))])
+        payload['site']=dict(objects=[],rails=[dict(source=source,verified=True,issues=[],layout=dict(mark='SR1',label='Panel',vertices=vertices[:4],horizontal=64,length=64,rise=0,pitch=0),fabrication=dict(parts=[part,dict(part,mark='SR1-T2',kind='secondTop')]))])
         assembly=build_assembly(payload)
         self.assertEqual(next(m for m in assembly['members'] if m['mark']=='SR1-T')['vertices'],vertices)
         self.assertEqual(next(c for c in assembly['cut_parts'] if c['mark']=='SR1-T')['stock_length'],64)
+        self.assertEqual(next(c for c in assembly['cut_parts'] if c['mark']=='SR1-T2')['kind'],'Second top rail')
         with tempfile.TemporaryDirectory() as folder:
             generate(payload,folder)
             sheets='\n'.join(p.read_text() for p in Path(folder).glob('sheet-*.svg'))

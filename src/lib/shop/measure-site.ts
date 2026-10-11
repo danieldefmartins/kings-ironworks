@@ -106,7 +106,9 @@ export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:Sit
   if(incoming.rails===undefined&&existing?.rails!==undefined)return {...incoming,rails:existing.rails};
   if(incoming.rails&&existing?.rails)return {...incoming,rails:incoming.rails.map(r=>{
     const stored=existing.rails!.find(old=>old.id===r.id);
-    return r.fabrication===undefined&&stored?.fabrication?{...r,fabrication:stored.fabrication}:r;
+    if(r.fabrication===undefined&&stored?.fabrication)return {...r,fabrication:stored.fabrication};
+    if(r.fabrication&&stored?.fabrication?.secondTop!==undefined&&r.fabrication.secondTop===undefined)return {...r,fabrication:{...r.fabrication,secondTop:stored.fabrication.secondTop}};
+    return r;
   })};
   return incoming;
 }

@@ -1,4 +1,6 @@
+import type {NativeSteelSnapshot} from './measure-native-steel';
 import type {SteelPlan} from './measure-steel';
+import type {SpecialtySteel} from './measure-specialty-steel-schema';
 // KIW Field Measure — pre-fabrication measurement sheets.
 // A sheet belongs to a job, has a shape (stair layout), and stores every field
 // in a JSONB payload so shapes can evolve without migrations. All measurements
@@ -1210,6 +1212,8 @@ export interface MeasureData {
   /** Independent existing-site objects, in the same inch coordinates as the stair. */
   site?: SiteModel;
   steelPlan?: SteelPlan;
+  specialtySteel?: SpecialtySteel[];
+  nativeSteel?: NativeSteelSnapshot;
   landingTransitions?: LandingTransition[];
   /** Set only in an immutable revision by the release transaction. */
   drawingReleaseVersion?: number;
@@ -1638,6 +1642,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     drawingReleaseVersion: d.drawingReleaseVersion,
     site: d.site,
     steelPlan: d.steelPlan,
+    specialtySteel: d.specialtySteel,
+    nativeSteel: d.nativeSteel,
     landingTransitions: (d.landingTransitions || []).map(t=>({...blankLandingTransition(t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx,t.side),...t})),
     units: d.units === "ftin" ? "ftin" : "in",
     segments: (d.segments || []).map((seg) => {

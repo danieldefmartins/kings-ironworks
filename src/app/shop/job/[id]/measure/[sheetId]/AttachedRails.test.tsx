@@ -76,3 +76,22 @@ it('reuses member sizes without reusing the original opening or verification',()
  fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
  expect((within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing') as HTMLInputElement).value).toBe('1 1/2');
 });
+
+it('adds and removes a second top rail with explicit dimensions and a new cut mark',()=>{
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
+ fireEvent.click(screen.getByRole('button',{name:'Add second top rail'}));
+ const second=screen.getByRole('group',{name:'Second top rail'});
+ fireEvent.change(within(second).getByLabelText('Width across railing'),{target:{value:'1'}});
+ fireEvent.change(within(second).getByLabelText('Depth normal to rake'),{target:{value:'1/2'}});
+ fireEvent.change(within(second).getByLabelText('Section'),{target:{value:'solid'}});
+ fireEvent.change(screen.getByLabelText('Vertical drop between top faces'),{target:{value:'4'}});
+ fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
+ expect(screen.getByRole('cell',{name:'SR1-T2'})).toBeTruthy();
+ expect((screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement).checked).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
+ fireEvent.click(screen.getByRole('button',{name:'Remove second top rail'}));
+ fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
+ expect(screen.queryByRole('cell',{name:'SR1-T2'})).toBeNull();
+ expect(screen.getByRole('cell',{name:'SR1-T'})).toBeTruthy();
+});

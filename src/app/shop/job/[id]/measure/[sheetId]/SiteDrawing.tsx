@@ -24,7 +24,7 @@ export function projectSite(p:Point3, view:SiteView):[number,number] {
 }
 
 export default function SiteDrawing({data,view='iso',selected,onSelect,onSurface,measure=false,onAnchor,anchorIds=[],move,onMove,zoom=1,onMember}:{
-  onMember?:(railId:string,part:string,role:'top'|'bottom'|'picket')=>void;
+  onMember?:(railId:string,part:string,role:'top'|'secondTop'|'bottom'|'picket')=>void;
   data:MeasureData;view?:SiteView;selected?:string;onSelect?:(id:string)=>void;
   onSurface?:(segment:number,step:number|null)=>void;measure?:boolean;
   onAnchor?:(id:string)=>void;anchorIds?:string[];move?:boolean;onMove?:(x:number,y:number)=>void;zoom?:number;

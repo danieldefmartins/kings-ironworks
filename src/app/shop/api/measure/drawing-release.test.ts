@@ -9,6 +9,10 @@ vi.mock('@/lib/shop/measure-checks',async(importOriginal)=>({...await importOrig
 import {POST} from './route';
 import {newSteelPlan,newSteelRow} from '@/lib/shop/measure-steel';
 import {porchSiteFixture} from '@/lib/shop/measure-site.fixture';
+import {attachedFabricationFixture} from '@/lib/shop/measure-site.fixture';
+import {newSpecialtySteel} from '@/lib/shop/measure-specialty-steel';
+import {nativeGeometrySignature} from '@/lib/shop/measure-native-steel';
+import {normalizeMeasureData} from '@/lib/shop/measure';
 const id='a0000000-0000-4000-8000-000000000001',stamp='2026-09-07T12:00:00.000Z';
 let data:ReturnType<typeof newMeasureData>;
 const request=(extra:Record<string,unknown>={})=>POST(new NextRequest('http://localhost/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'approve',id,releaseDrawing:true,ackDrawing:true,expectedUpdatedAt:stamp,...extra})}));
@@ -30,6 +34,41 @@ describe('fabrication release endpoint',()=>{
 });
 
 describe('measurement persistence',()=>{
+  it('preserves imported native cuts for old tabs and normalizes their snapshot',async()=>{
+    const legacy=structuredClone(data);data.nativeSteel={signature:nativeGeometrySignature(data),sourceUpdatedAt:stamp,drawingId:id,sources:[{key:'native:P1',label:'P1',role:'post',length:42,profile:'2 sq',signature:id}],pending:[]};
+    expect(normalizeMeasureData(data).nativeSteel).toEqual(data.nativeSteel);
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.nativeSteel).toEqual(data.nativeSteel);
+    mocks.update.mockClear();
+    expect((await request({type:'update',data:{...data,nativeSteel:{...data.nativeSteel,sources:[{...data.nativeSteel.sources[0],length:-1}]}}})).status).toBe(400);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it('preserves measured specialty assemblies for older tabs and permits explicit removal',async()=>{
+    const legacy=structuredClone(data);data.specialtySteel=[newSpecialtySteel('grate-1','grate')];
+    expect(normalizeMeasureData(data).specialtySteel).toEqual(data.specialtySteel);
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.specialtySteel).toEqual(data.specialtySteel);
+    mocks.update.mockClear();
+    expect((await request({type:'update',data:{...data,specialtySteel:[]},baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.specialtySteel).toEqual([]);
+    mocks.update.mockClear();
+    expect((await request({type:'update',data:{...data,specialtySteel:Array(21).fill(data.specialtySteel[0])}})).status).toBe(400);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it('loads existing second rails when a newer legacy tab omits only that detail',async()=>{
+    data=attachedFabricationFixture();data.steelPlan=newSteelPlan();data.specialtySteel=[];
+    data.nativeSteel={signature:'test',sourceUpdatedAt:stamp,drawingId:id,sources:[],pending:[]};
+    data.site!.rails![0].fabrication!.secondTop={profile:{width:'1',depth:'1',section:'solid',wall:''},drop:'6'};
+    const legacy=structuredClone(data);delete legacy.site!.rails![0].fabrication!.secondTop;
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.site.rails[0].fabrication.secondTop).toEqual(data.site!.rails![0].fabrication!.secondTop);
+    mocks.update.mockClear();legacy.site!.rails![0].fabrication!.secondTop=null;
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.site.rails[0].fabrication.secondTop).toBeNull();
+  });
   it('keeps material assignments on save and protects them from older clients',async()=>{
     const legacy=structuredClone(data);data.steelPlan=newSteelPlan();data.steelPlan.rows.push(newSteelRow('member','Second rail','second_toprail'));
     mocks.update.mockResolvedValue([{updated_at:stamp}]);

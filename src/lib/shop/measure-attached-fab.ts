@@ -5,7 +5,7 @@ import type {Point3} from './measure-geometry';
 
 export const newAttachedFab=():AttachedFab=>({top:{width:'',depth:'',section:'',wall:''},bottom:{width:'',depth:'',section:'',wall:''},picket:{width:'',depth:'',section:'',wall:''},startGap:'',endGap:'',picketGap:'',maxClear:'',material:'',welds:'',reviewedSignature:''});
 type Layout={start:Point3;end:Point3;horizontal:number;rise:number;mark:string};
-export type AttachedCut={mark:string;kind:'top'|'bottom'|'picket';profile:string;edgeLength:number;stockLength:number;angle:number;polygon:[number,number][];vertices:Point3[];faces:number[][];station:number|null};
+export type AttachedCut={mark:string;kind:'top'|'secondTop'|'bottom'|'picket';profile:string;edgeLength:number;stockLength:number;angle:number;polygon:[number,number][];vertices:Point3[];faces:number[][];station:number|null};
 const faces=[[3,2,1,0],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
 function profile(p:AttachedProfile){
  const width=siteNumber(p.width),depth=siteNumber(p.depth),wall=siteNumber(p.wall);
@@ -39,16 +39,20 @@ export function attachedCuts(site:SiteModel|undefined,rail:SiteRail,layout:Layou
   if(Math.abs(dot-(index===0?1:-1))>1e-8)return fail('siteRailFabFaces');
  }
  const top=profile(f.top),bottom=profile(f.bottom),picket=profile(f.picket);
+ const second=f.secondTop?profile(f.secondTop.profile):null,drop=f.secondTop?siteNumber(f.secondTop.drop):0;
+ if(f.secondTop&&(!second||drop===null||drop<=0))return fail('siteRailFabDimensions');
  const gs=siteNumber(f.startGap),ge=siteNumber(f.endGap),pg=siteNumber(f.picketGap),max=siteNumber(f.maxClear);
  if(!top||!bottom||!picket||gs===null||ge===null||pg===null||max===null||gs<0||ge<0||pg<0||max<=0||gs+ge>=h)return fail('siteRailFabDimensions');
  const height=siteNumber(rail.height)!,clearance=siteNumber(rail.bottomClearance)!;
- const span=h-gs-ge,picketLength=height-clearance-(top.depth+bottom.depth)/cos-2*pg;
- if(!Number.isFinite(picketLength)||picketLength<=0||picket.depth>Math.min(top.width,bottom.width))return fail('siteRailFabFit');
+ const upper=height-(drop||0),termination=second||top;
+ if(second&&drop!<=top.depth/cos)return fail('siteRailFabFit');
+ const span=h-gs-ge,picketLength=upper-clearance-(termination.depth+bottom.depth)/cos-2*pg;
+ if(!Number.isFinite(picketLength)||picketLength<=0||picket.depth>Math.min(termination.width,bottom.width))return fail('siteRailFabFit');
  // Make sure the physical end width fits on each recorded supporting face.
  for(const end of [rail.start,rail.end]){
   const host=site!.objects.find(o=>o.id===end.objectId)!;
   const faceWidth=siteNumber(end.face==='left'||end.face==='right'?host.depth:host.length)!;
-  if(Math.min(end.along,1-end.along)*faceWidth+1e-8<Math.max(top.width,bottom.width)/2)return fail('siteRailFabFit');
+  if(Math.min(end.along,1-end.along)*faceWidth+1e-8<Math.max(top.width,bottom.width,second?.width||0)/2)return fail('siteRailFabFit');
  }
  const n=Math.max(1,Math.ceil((span-max)/(picket.width+max)-1e-10));
  if(n>200)return fail('siteRailFabCount');
@@ -56,14 +60,15 @@ export function attachedCuts(site:SiteModel|undefined,rail:SiteRail,layout:Layou
  if(gap<=0)return fail('siteRailFabFit');
  const point=(s:number,y:number,z:number):Point3=>({x:layout.start.x+s*dx-y*dy,y:layout.start.y+s*dy+y*dx,z:layout.start.z+z});
  const parts:AttachedCut[]=[];
- for(const [kind,p] of [['top',top],['bottom',bottom]] as const){
-  const lower=kind==='top'?height-p.depth/cos:clearance;
+ const rails: ['top'|'secondTop'|'bottom',NonNullable<ReturnType<typeof profile>>,number][]=[['top',top,height],...(second?[['secondTop',second,upper] as ['secondTop',typeof second,number]]:[]),['bottom',bottom,clearance+bottom.depth/cos]];
+ for(const [kind,p,topFace] of rails){
+  const lower=topFace-p.depth/cos;
   const vertices=[gs,h-ge].flatMap(s=>[[-p.width/2,lower],[p.width/2,lower],[p.width/2,lower+p.depth/cos],[-p.width/2,lower+p.depth/cos]].map(([y,z])=>point(s,y,s*m+z)));
-  parts.push({mark:`${layout.mark}-${kind==='top'?'T':'B'}`,kind,profile:p.spec,...parallelCut(span/cos,p.depth,m),vertices,faces,station:null});
+  parts.push({mark:`${layout.mark}-${kind==='top'?'T':kind==='secondTop'?'T2':'B'}`,kind,profile:p.spec,...parallelCut(span/cos,p.depth,m),vertices,faces,station:null});
  }
  const stations=Array.from({length:n},(_,i)=>gs+gap+picket.width/2+i*(picket.width+gap));
  for(const [i,s] of stations.entries()){
-  const lower=clearance+bottom.depth/cos+pg,upper=height-top.depth/cos-pg;
+  const lower=clearance+bottom.depth/cos+pg,upper=height-(drop||0)-termination.depth/cos-pg;
   const vertices=[lower,upper].flatMap(z=>[[-picket.width/2,-picket.depth/2],[picket.width/2,-picket.depth/2],[picket.width/2,picket.depth/2],[-picket.width/2,picket.depth/2]].map(([x,y])=>point(s+x,y,(s+x)*m+z)));
   parts.push({mark:`${layout.mark}-V${i+1}`,kind:'picket',profile:picket.spec,...parallelCut(picketLength,picket.width,m),vertices,faces,station:s});
  }

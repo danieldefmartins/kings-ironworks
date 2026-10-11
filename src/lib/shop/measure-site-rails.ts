@@ -58,7 +58,7 @@ export function siteRailSignature(site:SiteModel|undefined,rail:SiteRail):string
   const endpoint=(e:SiteRailEnd)=>({objectId:e.objectId,face:e.face,along:e.along,angle:e.angle,elevation:e.elevation,connection:e.connection});
   const f=rail.fabrication;
   const profile=(p:NonNullable<SiteRail['fabrication']>['top'])=>({width:p.width,depth:p.depth,section:p.section,wall:p.wall});
-  const fabrication=f?{top:profile(f.top),bottom:profile(f.bottom),picket:profile(f.picket),startGap:f.startGap,endGap:f.endGap,picketGap:f.picketGap,maxClear:f.maxClear,material:f.material,welds:f.welds}:undefined;
+  const fabrication=f?{...(f.secondTop!==undefined?{secondTop:f.secondTop?{profile:profile(f.secondTop.profile),drop:f.secondTop.drop}:null}:{}),top:profile(f.top),bottom:profile(f.bottom),picket:profile(f.picket),startGap:f.startGap,endGap:f.endGap,picketGap:f.picketGap,maxClear:f.maxClear,material:f.material,welds:f.welds}:undefined;
   return JSON.stringify({fabrication,datum:site?.datum||'',start:endpoint(rail.start),end:endpoint(rail.end),height:rail.height,bottomClearance:rail.bottomClearance,infill:rail.infill,profiles:rail.profiles,notes:rail.notes,hosts:[rail.start,rail.end].map(e=>hostSignature(site?.objects.find(o=>o.id===e.objectId)))});
 }
 export function siteRailVerified(site:SiteModel|undefined,rail:SiteRail):boolean {

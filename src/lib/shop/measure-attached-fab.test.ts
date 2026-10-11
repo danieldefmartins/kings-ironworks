@@ -48,3 +48,32 @@ describe('attached straight panel fabrication',()=>{
   const csv=attachedCutCsv(attachedCuts(s,r,siteRailLayout(s,r)).parts);expect(csv).toContain('DRAFT - SHOP REVIEW REQUIRED');expect(csv).toContain('Minimum stock length');expect(csv).toContain('SR1-T');
  });
 });
+
+describe('optional second top rail',()=>{
+ it.each([0,24,-16])('models the extra rail and terminates pickets underneath at rise %s',rise=>{
+  const {s,r}=sample(rise),g=siteRailLayout(s,r)!,before=attachedCuts(s,r,g);
+  r.fabrication!.secondTop={profile:{width:'1',depth:'1/2',section:'solid',wall:''},drop:'4'};
+  const after=attachedCuts(s,r,g),second=after.parts.find(p=>p.kind==='secondTop')!,cos=g.horizontal/g.length;
+  expect(after.issues).toEqual([]);expect(after.parts.length).toBe(before.parts.length+1);expect(second.mark).toBe('SR1-T2');
+  expect(second.edgeLength).toBeCloseTo(before.parts[0].edgeLength);
+  expect(second.stockLength).toBeCloseTo(second.edgeLength+Math.abs(rise/g.horizontal)*.5);
+  const oldPicket=before.parts.find(p=>p.kind==='picket')!,picket=after.parts.find(p=>p.kind==='picket')!;
+  expect(oldPicket.edgeLength-picket.edgeLength).toBeCloseTo(4+(.5-.375)/cos);
+  for(const v of picket.vertices.slice(4)){const along=v.x-g.start.x;expect(v.z).toBeCloseTo(g.start.z+along*rise/g.horizontal+36-4-.5/cos-1/32);}
+  expect(attachedCutCsv(after.parts)).toContain('SR1-T2');
+ });
+ it('rejects missing offsets, overlapping rails and a second rail too narrow for pickets',()=>{
+  const {s,r}=sample();r.fabrication!.secondTop={profile:{width:'1',depth:'1/2',section:'solid',wall:''},drop:''};
+  expect(attachedCuts(s,r,siteRailLayout(s,r)).issues).toContain('siteRailFabDimensions');
+  r.fabrication!.secondTop.drop='1/4';expect(attachedCuts(s,r,siteRailLayout(s,r)).issues).toContain('siteRailFabFit');
+  r.fabrication!.secondTop.drop='4';r.fabrication!.secondTop.profile.width='1/4';expect(attachedCuts(s,r,siteRailLayout(s,r)).issues).toContain('siteRailFabFit');
+ });
+ it('invalidates review when changed and preserves omitted fields from older clients',()=>{
+  const {s,r}=sample();r.fabrication!.secondTop={profile:{width:'1',depth:'1/2',section:'solid',wall:''},drop:'4'};
+  r.checkedSignature=siteRailSignature(s,r);r.fabrication!.reviewedSignature=siteRailSignature(s,r);expect(siteRailFabReviewed(s,r)).toBe(true);
+  const old=structuredClone(s);delete old.rails![0].fabrication!.secondTop;
+  expect(preserveSiteExtensions(old,s)?.rails![0].fabrication!.secondTop).toEqual(r.fabrication!.secondTop);
+  old.rails![0].fabrication!.secondTop=null;expect(preserveSiteExtensions(old,s)?.rails![0].fabrication!.secondTop).toBeNull();
+  r.fabrication!.secondTop.drop='5';expect(siteRailVerified(s,r)).toBe(false);expect(siteRailFabReviewed(s,r)).toBe(false);
+ });
+});

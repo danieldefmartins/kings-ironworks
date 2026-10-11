@@ -123,7 +123,7 @@ def build_assembly(payload):
     for record in payload.get('site',{}).get('rails',[]):
         for part in record.get('fabrication',{}).get('parts',[]):
             center=lambda ring:{k:sum(p[k] for p in ring)/len(ring) for k in ('x','y','z')}
-            kind={'top':'Top rail','bottom':'Bottom rail','picket':'Picket'}[part['kind']]
+            kind={'top':'Top rail','secondTop':'Second top rail','bottom':'Bottom rail','picket':'Picket'}[part['kind']]
             result['members'].append(dict(mark=part['mark'],kind='Attached '+kind,a=center(part['vertices'][:4]),b=center(part['vertices'][4:]),profile=part['profile'],section=None,segment=None,length=part['edgeLength'],vertices=part['vertices'],faces=part['faces'],provisional=bool(record.get('issues'))))
             result.setdefault('cut_parts',[]).append(dict(mark=part['mark'],kind=kind,section=record['layout']['mark'],profile=part['profile'],stock_length=part['stockLength'],edge_length=part['edgeLength'],depth=max(p[1] for p in part['polygon'])-min(p[1] for p in part['polygon']),saw_angle_from_square_deg=part['angle'],polygon=part['polygon'],quantity=1,station=part.get('station'),attached=True,notes='Attached rectangular panel. Rail end gaps are horizontal; picket end gaps are vertical. No kerf or process allowance. See attached connection schedule. Outer envelopes shown; tube wall recorded in profile.'))
     return result

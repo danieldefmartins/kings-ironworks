@@ -376,6 +376,7 @@ def generate(payload,output):
             if rail.get('fabrication'):
                 f=rail['fabrication'];rows.append((name,'MATERIAL / WELDS',f.get('material','')+' / '+f.get('welds','')))
                 rows.append((name,'GAPS','Start / end horizontal: '+f['startGap']+' / '+f['endGap']+'; picket vertical each end: '+f['picketGap']))
+                if f.get('secondTop'):rows.append((name,'SECOND TOP RAIL','Vertical top-face drop: '+f['secondTop']['drop']+' in. Pickets terminate under second top rail. Both rails attach to the recorded support faces.'))
                 fab=record.get('fabrication',{})
                 if fab.get('clearGap') is not None:rows.append((name,'PICKET SPACING','Equal horizontal clear gap: '+str(round(fab['clearGap'],4))+' in; centers from start support face: '+', '.join(str(round(v,4)) for v in fab['stations'])))
             rows.append((name,'OPEN ITEMS','; '.join(attached_issue(issue) for issue in record.get('issues',[]))))

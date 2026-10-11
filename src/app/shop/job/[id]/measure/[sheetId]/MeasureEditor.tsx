@@ -1100,7 +1100,7 @@ export default function MeasureEditor({
         {workspace!=='site'&&<div className="mb-4 grid grid-cols-3 gap-2" aria-label={siteText.railing}>
           {(['panels','details','steel'] as const).map(mode=><button type="button" key={mode} aria-pressed={workspace===mode} className={`min-h-12 rounded-xl border px-3 py-2 text-sm font-bold ${workspace===mode?'border-indigo-400 bg-indigo-50 text-indigo-900':'border-neutral-700 bg-neutral-900 text-neutral-300'}`} onClick={()=>{const fabrication=workspace==='steel'||(workspace==='panels'?panelStage!=='design':['specs','review'].includes(activeStage));if(mode!=='steel')setRailingMode(mode);setWorkspace(mode);setPanelStage(fabrication?'members':'design');setActiveStage(fabrication?'specs':'steps');}}>{mode==='panels'?siteText.panels:mode==='details'?siteText.native:lang==='pt'?'Materiais e barras':lang==='es'?'Materiales y barras':'Materials & stock'}</button>)}
         </div>}
-        {workspace==='steel'&&<SteelWorkspace data={data} set={set} catalog={catalog} lang={lang}/>}
+        {workspace==='steel'&&<SteelWorkspace data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/>}
         {workspace==='panels'&&<PanelWorkspace data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setWorkspace('site')} onReview={()=>{setWorkspace('details');goToStage('review');}}/>}
         {workspace==='site'&&<SiteWorkspace data={data} set={set} lang={lang}
           onPanels={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}

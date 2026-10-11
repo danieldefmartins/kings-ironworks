@@ -11,6 +11,7 @@ export const SiteRailEndSchema = z.object({
 });
 export const AttachedProfileSchema=z.object({width:measurement,depth:measurement,section:z.enum(['','solid','tube']),wall:measurement});
 export const AttachedFabSchema=z.object({
+  secondTop:z.object({profile:AttachedProfileSchema,drop:measurement}).nullable().optional(),
   top:AttachedProfileSchema,bottom:AttachedProfileSchema,picket:AttachedProfileSchema,
   startGap:measurement,endGap:measurement,picketGap:measurement,maxClear:measurement,
   material:z.string().max(120),welds:z.string().max(1000),reviewedSignature:z.string().max(24000),

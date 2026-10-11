@@ -1,4 +1,6 @@
+import {NativeSteelSnapshotSchema} from '@/lib/shop/measure-native-steel';
 import {SteelPlanSchema} from '@/lib/shop/measure-steel';
+import {SpecialtySteelListSchema} from '@/lib/shop/measure-specialty-steel-schema';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -439,6 +441,8 @@ const SpanSchema = z.object({
 const MeasureDataSchema = z.object({
   site: SiteModelSchema.optional(),
   steelPlan: SteelPlanSchema.optional(),
+  specialtySteel: SpecialtySteelListSchema.optional(),
+  nativeSteel: NativeSteelSnapshotSchema.optional(),
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
     .max(12),
@@ -654,9 +658,11 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined)) {
+        if (parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
+          if(parsed.data.nativeSteel === undefined && existing?.data.nativeSteel) parsed.data.nativeSteel=existing.data.nativeSteel;
+          if(parsed.data.specialtySteel === undefined && existing?.data.specialtySteel) parsed.data.specialtySteel=existing.data.specialtySteel;
           if(parsed.data.steelPlan === undefined && existing?.data.steelPlan) parsed.data.steelPlan=existing.data.steelPlan;
         }
         const baseFilter = sheetFilter(body.id, jobOk);
