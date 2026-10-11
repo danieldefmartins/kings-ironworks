@@ -34,6 +34,9 @@ import {
 import { MInput, RequiredChip, SlotRow, useRequiredNow } from "../fields";
 import { specValue } from "@/lib/shop/i18n";
 import OpeningElevation, { type OpeningField } from "./OpeningElevation";
+import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
+
+const ELEVATION_FIELDS = ["wTop", "wMid", "wBot", "hLeft", "hCenter", "hRight", "diagA", "diagB"] as const;
 
 const CARD = "mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
 const H2 = "mb-3 text-base font-semibold tracking-tight";
@@ -67,7 +70,7 @@ function Segmented({
 }) {
   const needed = useRequiredNow(value, undefined, gap);
   return (
-    <div className="min-w-0">
+    <div className="min-w-0" data-gap={gap}>
       <div className={`mb-1.5 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
         <span className="min-w-0">{label}</span>
         {needed && <RequiredChip />}
@@ -107,7 +110,7 @@ function OSelect({
 }) {
   const needed = useRequiredNow(value, undefined, gap);
   return (
-    <label className="block min-w-0">
+    <label className="block min-w-0" data-gap={gap}>
       <span className={`mb-1 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
         <span className="min-w-0">{label}</span>
         {needed && <RequiredChip />}
@@ -185,6 +188,27 @@ export default function OpeningSections({
   const [focusField, setFocusField] = useState<OpeningField | null>(null);
   const [choosing, setChoosing] = useState(false);
   const fieldsRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const elevRef = useRef<HTMLDivElement>(null);
+  // The Next-measurement card walks the openings: follow it to the right
+  // opening and light the number on the elevation; scroll there when asked.
+  useMeasureLocate((d) => {
+    if (d.groupKind === "opening" && d.groupId && o.units.some((u) => u.id === d.groupId)) setActiveId(d.groupId);
+    const onElevation = !!d.part && (ELEVATION_FIELDS as readonly string[]).includes(d.part);
+    if (d.groupKind === "opening" || d.part) setFocusField(onElevation ? (d.part as OpeningField) : null);
+    if (!d.scroll) return;
+    requestAnimationFrame(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      if (onElevation) return revealElement(elevRef.current);
+      const target =
+        (d.part && root.querySelector(`[data-op-field="${d.part}"], [data-op-part~="${d.part}"]`)) ||
+        (d.gap === "photo" && root.querySelector("[data-op-photos]")) ||
+        (d.gap && root.querySelector(`[data-gap="${d.gap}"]`)) ||
+        root.firstElementChild;
+      revealElement(target);
+    });
+  });
   const unitIdx = Math.max(0, o.units.findIndex((u) => u.id === activeId));
   const unit = o.units[unitIdx];
 
@@ -257,7 +281,7 @@ export default function OpeningSections({
   );
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div ref={rootRef} className="mx-auto max-w-5xl">
       {/* ---- What goes in the opening -------------------------------------- */}
       <section className={CARD}>
         <h2 className={H2}>{mt(lang, "opProductTitle")}</h2>
@@ -338,7 +362,7 @@ export default function OpeningSections({
         {unit && (
           <div ref={fieldsRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div>
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
+              <div ref={elevRef} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-slate-50 p-2">
                 <OpeningElevation opening={o} unit={unit} lang={lang} onPick={pick} active={focusField} />
               </div>
 
@@ -463,7 +487,7 @@ export default function OpeningSections({
 
       {/* ---- Juliet --------------------------------------------------------- */}
       {product === "juliet" && (
-        <section className={CARD}>
+        <section className={CARD} data-op-part="julietSill julietProjection">
           <h2 className={H2}>{mt(lang, "opJulietTitle")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <MInput label={mt(lang, "opJulietSill")} hint={mt(lang, "opJulietSillHint")} gap="op_juliet_sill" value={o.julietSill}
@@ -491,7 +515,7 @@ export default function OpeningSections({
 
       {/* ---- Doors and gates in an opening --------------------------------- */}
       {isDoor && (
-        <section className={CARD}>
+        <section className={CARD} data-op-part="threshold">
           <h2 className={H2}>{mt(lang, "opDoorTitle")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Segmented label={mt(lang, "opDoorHinge")} gap="op_door_hinge" value={o.doorHinge} options={sides}
@@ -552,7 +576,7 @@ export default function OpeningSections({
       </section>
 
       {/* ---- Photos ---------------------------------------------------------- */}
-      <section className={CARD}>
+      <section className={CARD} data-op-photos="">
         <h2 className={H2}>{mt(lang, "opPhotosTitle")}</h2>
         {slotErr && <p className="mb-2 text-sm text-red-400">{slotErr}</p>}
         <div className="space-y-2">
