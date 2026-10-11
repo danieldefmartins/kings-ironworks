@@ -4,7 +4,7 @@ import {useShopAppearance} from "../../../../ShopAppearance";
 import { drawingProjection, drawingPointOccluded } from '@/lib/shop/measure-projection';
 import type { CSSProperties } from 'react';
 import { railSideSetback, flightWalls } from "@/lib/shop/measure";
-import { parseMeas } from "@/lib/shop/measure-parse";
+import { parseMeas, showMeas } from "@/lib/shop/measure-parse";
 import { landingConnections,landingConnectionGeometry } from "@/lib/shop/measure-landings";
 import type { MeasureData } from '@/lib/shop/measure';
 import { stairGeometry, surfacePoint, type Point3 } from '@/lib/shop/measure-geometry';
@@ -105,7 +105,7 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
       return <g key={`distance-${p.post.id}`} pointerEvents="none" data-post-distance={p.post.id}>
         <polyline points={`${base[0]},${base[1]} ${geometryRight-15},${labelY} ${geometryRight},${labelY}`} fill="none" stroke={accent} strokeWidth={1} strokeDasharray="3 3"/>
         <text x={geometryRight+8} y={labelY-6} fill={ink} fontSize={11}>{mt(lang,'firstStepToPostEdge')} · {p.label}</text>
-        <text x={geometryRight+8} y={labelY+13} fill={accent} fontSize={15} fontWeight="bold">{p.post.firstStepToPostEdge}{data.units==='in'?'″':''}</text>
+        <text x={geometryRight+8} y={labelY+13} fill={accent} fontSize={15} fontWeight="bold">{showMeas(p.post.firstStepToPostEdge,data.units||'in')}</text>
       </g>;
     })}
     {railSegments.map(({start,end})=>{const a=project(start.top!),b=project(end.top!);return <line key={`${start.post.id}:${end.post.id}`} data-native-rail={`${start.post.id}:${end.post.id}`} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={accent} strokeWidth={3} strokeDasharray={start.provisional||end.provisional?'5 4':undefined}/>;})}

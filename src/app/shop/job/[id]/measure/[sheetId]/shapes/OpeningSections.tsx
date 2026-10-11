@@ -8,6 +8,7 @@ import ShotList from "../sections/ShotList";
 import { useRef, useState } from "react";
 import type { MeasureData } from "@/lib/shop/measure";
 import { formatIn, type CheckLevel } from "@/lib/shop/measure-checks";
+import { showMeas } from "@/lib/shop/measure-parse";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
   OPENING_ANCHORS,
@@ -259,7 +260,7 @@ export default function OpeningSections({
   const fab = unit ? openingFabSize(o, unit) : null;
   const sq = unit ? openingSquareness(unit) : null;
   const allowanceText = (face ? o.overlap : o.clearance).trim() || "0";
-  const allowanceShown = /["']$/.test(allowanceText) ? allowanceText : `${allowanceText}"`;
+  const allowanceShown = showMeas(allowanceText, data.units || "in");
   const qty = Math.max(1, parseInt(unit?.qty || "1", 10) || 1);
   const juliet = julietGuardAboveSill(o);
   const finishList = Array.from(new Set([...(data.materials.finish ? [data.materials.finish] : []), ...finishOptions]));
@@ -377,7 +378,7 @@ export default function OpeningSections({
                       {qty > 1 && <span className="ml-2 text-base font-semibold text-indigo-700">×{qty}</span>}
                     </div>
                     <div className="mt-1 text-xs text-indigo-800">
-                      {mt(lang, fab.face ? "opFabFromFace" : "opFabFromReveal").replace("{a}", /["']$/.test(allowanceText) ? allowanceText : `${allowanceText}"`)}
+                      {mt(lang, fab.face ? "opFabFromFace" : "opFabFromReveal").replace("{a}", allowanceShown)}
                       {" · "}
                       {mt(lang, `opW_${fab.widthFrom}`)} {formatIn(fab.openW)} / {mt(lang, `opH_${fab.heightFrom}`)} {formatIn(fab.openH)} {mt(lang, "opGoverns")}
                     </div>

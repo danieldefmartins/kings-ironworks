@@ -25,6 +25,7 @@ import type {
   RampSegment,
 } from "@/lib/shop/measure";
 import { formatIn, wellClearance, type CheckResult } from "@/lib/shop/measure-checks";
+import { showMeas } from "@/lib/shop/measure-parse";
 import { mt, optLabel, shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
 import DrawingSvg from "./DrawingSvg";
@@ -42,11 +43,15 @@ import CanopyPrint from './shapes/CanopyPrint';
 import PhotoLogPrint from "./PhotoLogPrint";
 import PrintLetterhead, { appOrigin } from "@/app/shop/brand/PrintLetterhead";
 import { resolveBrand, type OrgBranding } from "@/lib/shop/org-brand";
+import { MeasUnits, useShowMeas } from "./MeasUnits";
 
 // Org accent (white-label), set on the print root; KIW gold otherwise.
 const GOLD = "var(--brand-accent, #b8860b)";
 
-function Val({ v }: { v: string }) {
+/** `len` marks a typed length: printed in shop notation, never the raw "36.125". */
+function Val({ v: raw, len }: { v: string; len?: boolean }) {
+  const show = useShowMeas();
+  const v = len ? show(raw) : raw;
   const has = v && v.trim() !== "";
   return has ? (
     <span style={{ fontWeight: 700 }}>{v}</span>
@@ -123,10 +128,19 @@ export default function PrintSheet({
       .then(setQr)
       .catch(() => setQr(null));
   }, [target]);
+  // Placement offsets may be negative, which parseMeas leaves as typed.
+  const placeAt = (s: string | undefined) => {
+    const t = (s || "").trim();
+    if (!t) return "?";
+    const neg = /^[-−]/.test(t);
+    const shown = showMeas(neg ? t.slice(1) : t, data.units || "in");
+    return /["'″]$/.test(shown) ? `${neg ? "−" : ""}${shown}` : `${t}″`;
+  };
 
   const orientation = data.datums?.orientation;
 
   return (
+    <MeasUnits.Provider value={data.units || "in"}>
     <div
       className={`${visible ? "block" : "hidden print:block"} bg-white text-black p-6`}
       style={{ fontSize: 12, position: "relative", ["--brand-accent" as string]: brand.accent } as React.CSSProperties}
@@ -284,7 +298,7 @@ export default function PrintSheet({
       {data.sceneSetup?.projectType&&<p style={{fontSize:12,fontWeight:700,marginBottom:10}}>
         {lang==='pt'?'Projeto':lang==='es'?'Proyecto':'Project'}: {sceneProjectLabel(data.sceneSetup.projectType,lang)}
       </p>}
-      {data.sceneSetup?.placement&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Posição da escada e guarda-corpo':lang==='es'?'Posición de escalera y barandilla':'Stair and railing placement'}: X {data.sceneSetup.placement.x||'?'}″ · Y {data.sceneSetup.placement.y||'?'}″ · Z {data.sceneSetup.placement.z||'?'}″ · {data.sceneSetup.placement.rotation}°</p>}
+      {data.sceneSetup?.placement&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Posição da escada e guarda-corpo':lang==='es'?'Posición de escalera y barandilla':'Stair and railing placement'}: X {placeAt(data.sceneSetup.placement.x)} · Y {placeAt(data.sceneSetup.placement.y)} · Z {placeAt(data.sceneSetup.placement.z)} · {data.sceneSetup.placement.rotation}°</p>}
       {data.sceneSetup?.house&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Casa ilustrativa, sem medidas. Usar as paredes medidas e detalhes de ligação para fabricar.':lang==='es'?'Casa ilustrativa, sin medir. Utilice paredes medidas y detalles de unión para fabricar.':'Illustrative house, unmeasured. Use measured walls and connection details for fabrication.'}</p>}
       {/* Warnings */}
       {(warnings.length > 0 || gapCount > 0) && (
@@ -353,10 +367,10 @@ export default function PrintSheet({
               {path.segs.map((sg, i) => (
                 <tr key={i}>
                   <Td>{i + 1}</Td>
-                  <Td><Val v={sg.len} /></Td>
+                  <Td><Val len v={sg.len} /></Td>
                   <Td>{sg.kind ? mt(lang, `segment_${sg.kind}`) : <Val v="" />}</Td>
                   <Td><Val v={sg.steps || ""} /></Td>
-                  <Td><Val v={sg.rise || ""} /> / <Val v={sg.run || ""} /></Td>
+                  <Td><Val len v={sg.rise || ""} /> / <Val len v={sg.run || ""} /></Td>
                   <Td>{sg.note ? <b>{sg.note}</b> : <Val v="" />}</Td>
                 </tr>
               ))}
@@ -394,13 +408,13 @@ export default function PrintSheet({
                   fl.steps.map((st, si) => (
                     <tr key={`${fi}-${si}`}>
                       <Td>{flightOffsets[fi] + si + 1}{st.winder ? " ◺" : ""}</Td>
-                      <Td><Val v={st.rise} /></Td>
-                      <Td><Val v={st.run} /></Td>
-                      <Td><Val v={st.nosing} /></Td>
+                      <Td><Val len v={st.rise} /></Td>
+                      <Td><Val len v={st.run} /></Td>
+                      <Td><Val len v={st.nosing} /></Td>
                       {anyWinder && (
                         <>
-                          <Td>{st.winder ? <Val v={st.runIn || ""} /> : "—"}</Td>
-                          <Td>{st.winder ? <Val v={st.runOut || ""} /> : "—"}</Td>
+                          <Td>{st.winder ? <Val len v={st.runIn || ""} /> : "—"}</Td>
+                          <Td>{st.winder ? <Val len v={st.runOut || ""} /> : "—"}</Td>
                           <Td>{st.winder ? <Val v={st.turnDeg || ""} /> : "—"}</Td>
                         </>
                       )}
@@ -414,7 +428,7 @@ export default function PrintSheet({
                 {flights.length > 1 && (
                   <b>{mt(lang, fi === 0 ? "lowerFlight" : "upperFlight")}: </b>
                 )}
-                {mt(lang, "width")}: <Val v={fl.width} /> · {mt(lang, "stairAngle")}:{" "}
+                {mt(lang, "width")}: <Val len v={fl.width} /> · {mt(lang, "stairAngle")}:{" "}
                 <Val v={fl.angleDeg} />
                 {fl.angleBreak && fl.angleBreak.trim() !== "" && (
                   <>
@@ -428,17 +442,17 @@ export default function PrintSheet({
             <div className="mt-2">
               <SectionTitle>{mt(lang, "controlsTitle")}</SectionTitle>
               <div>
-                {mt(lang, "floorToFloor")}: <Val v={data.overall.floorToFloor} /> ·{" "}
-                {mt(lang, "totalRise")}: <Val v={data.overall.totalRise} />
+                {mt(lang, "floorToFloor")}: <Val len v={data.overall.floorToFloor} /> ·{" "}
+                {mt(lang, "totalRise")}: <Val len v={data.overall.totalRise} />
               </div>
               <div>
-                {mt(lang, "totalRun")}: <Val v={data.overall.totalRun} /> ·{" "}
-                {mt(lang, "rakeLength")}: <Val v={data.overall.rakeLength} />
+                {mt(lang, "totalRun")}: <Val len v={data.overall.totalRun} /> ·{" "}
+                {mt(lang, "rakeLength")}: <Val len v={data.overall.rakeLength} />
               </div>
               <div>
-                {mt(lang, "widthBottom")}: <Val v={data.overall.widthBottom} /> ·{" "}
-                {mt(lang, "widthMid")}: <Val v={data.overall.widthMid} /> ·{" "}
-                {mt(lang, "widthTop")}: <Val v={data.overall.widthTop} />
+                {mt(lang, "widthBottom")}: <Val len v={data.overall.widthBottom} /> ·{" "}
+                {mt(lang, "widthMid")}: <Val len v={data.overall.widthMid} /> ·{" "}
+                {mt(lang, "widthTop")}: <Val len v={data.overall.widthTop} />
               </div>
             </div>
           </div>
@@ -473,9 +487,9 @@ export default function PrintSheet({
                   <tr key={po.id}>
                     <Td>P{i + 1}{po.supportAttachment ? " · existing support" : ""}</Td>
                     <Td>{po.stepIdx !== null ? stepOf(data, po) : mt(lang, "platform")}</Td>
-                    <Td><Val v={po.firstStepToPostEdge || ""} /></Td>
-                    <Td><Val v={po.stepIdx !== null ? po.fromNosing : po.pos} /></Td>
-                    <Td><Val v={po.fromEdge} /></Td>
+                    <Td><Val len v={po.firstStepToPostEdge || ""} /></Td>
+                    <Td><Val len v={po.stepIdx !== null ? po.fromNosing : po.pos} /></Td>
+                    <Td><Val len v={po.fromEdge} /></Td>
                     <Td>{po.mount ? optLabel(lang, po.mount) : <Val v="" />}</Td>
                     <Td>{po.anchor ? optLabel(lang, po.anchor) : <Val v="" />}</Td>
                   </tr>
@@ -506,8 +520,8 @@ export default function PrintSheet({
           {platforms.map((pl, i) => (
             <div key={i} className="mt-2">
               <b>{mt(lang, pl.turn === "none" ? "platform" : "landing")}: </b>
-              {mt(lang, "length")}: <Val v={pl.length} /> · {mt(lang, "depth")}:{" "}
-              <Val v={pl.depth} /> · {lang==='pt'?'Altura até o patamar':lang==='es'?'Subida al descanso':'Rise to platform'}: {pl.entryRise?.trim()?<Val v={pl.entryRise}/>:!platformEntryRise(pl,data.segments[data.segments.indexOf(pl)-1]).provisional?<Val v="0"/>:<strong>{lang==='pt'?'Não confirmada':lang==='es'?'Sin confirmar':'Unconfirmed'}</strong>} · {mt(lang, "slope")}: <Val v={pl.slope} />
+              {mt(lang, "length")}: <Val len v={pl.length} /> · {mt(lang, "depth")}:{" "}
+              <Val len v={pl.depth} /> · {lang==='pt'?'Altura até o patamar':lang==='es'?'Subida al descanso':'Rise to platform'}: {pl.entryRise?.trim()?<Val len v={pl.entryRise}/>:!platformEntryRise(pl,data.segments[data.segments.indexOf(pl)-1]).provisional?<Val v="0"/>:<strong>{lang==='pt'?'Não confirmada':lang==='es'?'Sin confirmar':'Unconfirmed'}</strong>} · {mt(lang, "slope")}: <Val v={pl.slope} />
               {pl.slopeDir && pl.slopeDir.trim() !== "" && <> → {pl.slopeDir}</>}
             </div>
           ))}
@@ -515,11 +529,11 @@ export default function PrintSheet({
           {curveSegs.map((cv, i) => (
             <div key={`cv${i}`} className="mt-2">
               <b>{mt(lang, "curveTitle")}: </b>
-              R <Val v={cv.radius} /> · {mt(lang, "curveChord")}: <Val v={cv.chord} /> ·{" "}
-              {mt(lang, "curveArc")}: <Val v={cv.arc} />
+              R <Val len v={cv.radius} /> · {mt(lang, "curveChord")}: <Val len v={cv.chord} /> ·{" "}
+              {mt(lang, "curveArc")}: <Val len v={cv.arc} />
               {cv.sweepDeg ? <> · {cv.sweepDeg}°</> : null}
-              {cv.rise ? <> · {mt(lang, "totalRise")}: <b>{cv.rise}</b></> : null} ·{" "}
-              {mt(lang, "width")}: <Val v={cv.width} /> ·{" "}
+              {cv.rise ? <> · {mt(lang, "totalRise")}: <Val len v={cv.rise} /></> : null} ·{" "}
+              {mt(lang, "width")}: <Val len v={cv.width} /> ·{" "}
               {cv.direction === "left" ? "↰" : "↱"}
             </div>
           ))}
@@ -527,9 +541,9 @@ export default function PrintSheet({
           {ramp && (
             <div className="mt-2">
               <b>{mt(lang, "shape_ramp")}: </b>
-              {mt(lang, "length")}: <Val v={ramp.length} /> · {mt(lang, "totalRise")}:{" "}
-              <Val v={ramp.rise} /> · ∠ <Val v={ramp.angleDeg} /> · {mt(lang, "width")}:{" "}
-              <Val v={ramp.width} />
+              {mt(lang, "length")}: <Val len v={ramp.length} /> · {mt(lang, "totalRise")}:{" "}
+              <Val len v={ramp.rise} /> · ∠ <Val v={ramp.angleDeg} /> · {mt(lang, "width")}:{" "}
+              <Val len v={ramp.width} />
             </div>
           )}
 
@@ -540,13 +554,13 @@ export default function PrintSheet({
               <div>
                 {data.gate.use ? mt(lang, `gateU_${data.gate.use}`) : "—"} ·{" "}
                 {data.gate.operation ? mt(lang, `gateO_${data.gate.operation}`) : "—"} ·{" "}
-                {mt(lang, "gateWidthTop")}: <Val v={data.gate.widthTop} /> /{" "}
-                <Val v={data.gate.widthBottom} /> · {mt(lang, "gateHeightHinge")}:{" "}
-                <Val v={data.gate.heightHinge} /> / <Val v={data.gate.heightLatch} />
+                {mt(lang, "gateWidthTop")}: <Val len v={data.gate.widthTop} /> /{" "}
+                <Val len v={data.gate.widthBottom} /> · {mt(lang, "gateHeightHinge")}:{" "}
+                <Val len v={data.gate.heightHinge} /> / <Val len v={data.gate.heightLatch} />
               </div>
               <div>
-                {mt(lang, "gateGroundClearance")}: <Val v={data.gate.groundClearance} /> ·{" "}
-                {mt(lang, "gateGradeRise")}: <Val v={data.gate.gradeRise} /> ·{" "}
+                {mt(lang, "gateGroundClearance")}: <Val len v={data.gate.groundClearance} /> ·{" "}
+                {mt(lang, "gateGradeRise")}: <Val len v={data.gate.gradeRise} /> ·{" "}
                 {mt(lang, "gateSurface")}: <Val v={data.gate.surface} /> ·{" "}
                 {mt(lang, "gateHingeSide")}: <Val v={data.gate.hingeSide} />
               </div>
@@ -555,7 +569,7 @@ export default function PrintSheet({
                 {mt(lang, "gateHinges")}: <Val v={data.gate.hinges} /> ·{" "}
                 {mt(lang, "gateLatch")}: <Val v={data.gate.latch} /> ·{" "}
                 {mt(lang, "gatePostSize")}: <Val v={data.gate.postSize} /> ·{" "}
-                {mt(lang, "gateFooting")}: <Val v={data.gate.footingDepth} />
+                {mt(lang, "gateFooting")}: <Val len v={data.gate.footingDepth} />
               </div>
               {data.gate.automated && (
                 <div>
@@ -571,11 +585,11 @@ export default function PrintSheet({
             <div className="mt-2">
               <SectionTitle>{mt(lang, "fenceTitle")}</SectionTitle>
               <div>
-                {mt(lang, "fenceTotalRun")}: <Val v={data.fence.totalRun} /> ·{" "}
-                {mt(lang, "fenceHeight")}: <Val v={data.fence.height} /> ·{" "}
-                {mt(lang, "fencePostSpacing")}: <Val v={data.fence.postSpacing} /> ·{" "}
+                {mt(lang, "fenceTotalRun")}: <Val len v={data.fence.totalRun} /> ·{" "}
+                {mt(lang, "fenceHeight")}: <Val len v={data.fence.height} /> ·{" "}
+                {mt(lang, "fencePostSpacing")}: <Val len v={data.fence.postSpacing} /> ·{" "}
                 {mt(lang, "fencePostSize")}: <Val v={data.fence.postSize} /> ·{" "}
-                {mt(lang, "fenceFooting")}: <Val v={data.fence.footingDepth} />
+                {mt(lang, "fenceFooting")}: <Val len v={data.fence.footingDepth} />
               </div>
               <div>
                 <Val v={data.fence.startTerm} /> → <Val v={data.fence.endTerm} /> ·{" "}
@@ -584,11 +598,11 @@ export default function PrintSheet({
               </div>
               {data.fence.segments.map((sg, i) => (
                 <div key={sg.id}>
-                  {sg.label || i + 1}. <Val v={sg.length} />
+                  {sg.label || i + 1}. <Val len v={sg.length} />
                   {sg.panels ? <> · <Val v={sg.panels} /> {mt(lang, "fenceSegPanels")}</> : null}
                   {sg.turnDeg ? <> · ⟲ <Val v={sg.turnDeg} /></> : null}
                   {sg.gradeChange ? (
-                    <> · <Val v={sg.gradeChange} />{" "}
+                    <> · <Val len v={sg.gradeChange} />{" "}
                       {sg.followsGrade ? mt(lang, sg.followsGrade === "stepped" ? "fenceStepped" : "fenceRacked") : ""}
                     </>
                   ) : null}
@@ -604,24 +618,24 @@ export default function PrintSheet({
               <div>
                 {data.balcony.kind ? mt(lang, `balK_${data.balcony.kind}`) : "—"} ·{" "}
                 {data.balcony.mount ? mt(lang, `balM_${data.balcony.mount}`) : "—"} ·{" "}
-                {mt(lang, "balEdgeLength")}: <Val v={data.balcony.edgeLength} /> ·{" "}
-                {mt(lang, "balGuardHeight")}: <Val v={data.balcony.guardHeight} /> ·{" "}
-                {mt(lang, "balPicketSpacing")}: <Val v={data.balcony.picketSpacing} />
+                {mt(lang, "balEdgeLength")}: <Val len v={data.balcony.edgeLength} /> ·{" "}
+                {mt(lang, "balGuardHeight")}: <Val len v={data.balcony.guardHeight} /> ·{" "}
+                {mt(lang, "balPicketSpacing")}: <Val len v={data.balcony.picketSpacing} />
               </div>
               <div className="border border-black/40 p-1">
                 <b>{mt(lang, "balAnchorTitle")}: </b>
                 {mt(lang, "balSlabMaterial")}: <Val v={data.balcony.slabMaterial} /> ·{" "}
-                {mt(lang, "balSlabThickness")}: <Val v={data.balcony.slabThickness} /> ·{" "}
+                {mt(lang, "balSlabThickness")}: <Val len v={data.balcony.slabThickness} /> ·{" "}
                 {mt(lang, "balAnchorType")}: <Val v={data.balcony.anchorType} /> ·{" "}
-                {mt(lang, "balEmbedment")}: <Val v={data.balcony.anchorEmbedment} /> ·{" "}
-                {mt(lang, "balEdgeDistance")}: <Val v={data.balcony.edgeDistance} />
+                {mt(lang, "balEmbedment")}: <Val len v={data.balcony.anchorEmbedment} /> ·{" "}
+                {mt(lang, "balEdgeDistance")}: <Val len v={data.balcony.edgeDistance} />
                 {data.balcony.platePlan ? <> · <Val v={data.balcony.platePlan} /></> : null}
               </div>
               <div>
-                {mt(lang, "balFinishedFloor")}: <Val v={data.balcony.finishedFloor} /> ·{" "}
+                {mt(lang, "balFinishedFloor")}: <Val len v={data.balcony.finishedFloor} /> ·{" "}
                 {mt(lang, "balReturns")}: <Val v={data.balcony.returns} />
                 {data.balcony.drainage ? <> · {mt(lang, "balDrainage")}: <Val v={data.balcony.drainage} /></> : null}
-                {data.balcony.doorOpening ? <> · {mt(lang, "balDoorOpening")}: <Val v={data.balcony.doorOpening} /></> : null}
+                {data.balcony.doorOpening ? <> · {mt(lang, "balDoorOpening")}: <Val len v={data.balcony.doorOpening} /></> : null}
               </div>
             </div>
           )}
@@ -634,7 +648,7 @@ export default function PrintSheet({
                 {data.fire.purpose ? mt(lang, `fireP_${data.fire.purpose}`) : "—"} ·{" "}
                 {mt(lang, "fireStories")}: <Val v={data.fire.stories} /> ·{" "}
                 {mt(lang, "fireWallMaterial")}: <Val v={data.fire.wallMaterial} /> ·{" "}
-                {mt(lang, "fireTotalHeight")}: <Val v={data.fire.totalHeight} />
+                {mt(lang, "fireTotalHeight")}: <Val len v={data.fire.totalHeight} />
               </div>
               {data.fire.access && (
                 <div>{mt(lang, "fireAccess")}: <Val v={data.fire.access} /></div>
@@ -652,24 +666,24 @@ export default function PrintSheet({
                       <> — <b>{mt(lang, `fireR_${l.condition.rating}`).toUpperCase()}</b></>
                     )}
                     <div>
-                      {mt(lang, "firePlatLength")}: <Val v={l.platLength} /> ·{" "}
-                      {mt(lang, "firePlatWidth")}: <Val v={l.platWidth} /> ·{" "}
-                      {mt(lang, "fireHeightGrade")}: <Val v={l.heightAboveGrade} /> ·{" "}
+                      {mt(lang, "firePlatLength")}: <Val len v={l.platLength} /> ·{" "}
+                      {mt(lang, "firePlatWidth")}: <Val len v={l.platWidth} /> ·{" "}
+                      {mt(lang, "fireHeightGrade")}: <Val len v={l.heightAboveGrade} /> ·{" "}
                       {mt(lang, "fireDeck")}: <Val v={l.deck} />
                     </div>
                     <div>
-                      {mt(lang, "fireGuardHeight")}: <Val v={l.guardHeight} /> ·{" "}
-                      {mt(lang, "firePicketSpacing")}: <Val v={l.picketSpacing} /> ·{" "}
+                      {mt(lang, "fireGuardHeight")}: <Val len v={l.guardHeight} /> ·{" "}
+                      {mt(lang, "firePicketSpacing")}: <Val len v={l.picketSpacing} /> ·{" "}
                       {mt(lang, "fireAnchorType")}: <Val v={l.anchorType} /> ×{" "}
                       <Val v={l.anchorCount} />
                     </div>
                     {!lowest && (
                       <div>
                         {mt(lang, "fireStairDown")}: <Val v={l.stairRisers} /> ×{" "}
-                        <Val v={l.stairRise} /> / <Val v={l.stairRun} /> ·{" "}
-                        {mt(lang, "fireStairWidth")}: <Val v={l.stairWidth} /> · ∠{" "}
+                        <Val len v={l.stairRise} /> / <Val len v={l.stairRun} /> ·{" "}
+                        {mt(lang, "fireStairWidth")}: <Val len v={l.stairWidth} /> · ∠{" "}
                         <Val v={l.stairAngle} /> · {mt(lang, "fireFloorToFloor")}:{" "}
-                        <Val v={l.floorToFloor} />
+                        <Val len v={l.floorToFloor} />
                       </div>
                     )}
                     {(l.condition.rust || l.condition.sectionLoss || l.condition.anchors || l.condition.notes) && (
@@ -688,10 +702,10 @@ export default function PrintSheet({
                 <div className="mt-1">
                   <b>{mt(lang, "fireLadderTitle")}: </b>
                   {data.fire.ladder.type ? mt(lang, `fireLT_${data.fire.ladder.type}`) : "—"} ·{" "}
-                  <Val v={data.fire.ladder.length} /> × <Val v={data.fire.ladder.width} /> ·{" "}
-                  {mt(lang, "fireLadderRung")}: <Val v={data.fire.ladder.rungSpacing} /> ·{" "}
-                  {mt(lang, "fireStowed")}: <Val v={data.fire.ladder.stowedAboveGrade} /> ·{" "}
-                  {mt(lang, "fireDeployed")}: <Val v={data.fire.ladder.deployedAboveGrade} /> ·{" "}
+                  <Val len v={data.fire.ladder.length} /> × <Val len v={data.fire.ladder.width} /> ·{" "}
+                  {mt(lang, "fireLadderRung")}: <Val len v={data.fire.ladder.rungSpacing} /> ·{" "}
+                  {mt(lang, "fireStowed")}: <Val len v={data.fire.ladder.stowedAboveGrade} /> ·{" "}
+                  {mt(lang, "fireDeployed")}: <Val len v={data.fire.ladder.deployedAboveGrade} /> ·{" "}
                   {mt(lang, "fireLandingSurface")}: <Val v={data.fire.ladder.landingSurface} />
                   {data.fire.ladder.operates && (
                     <> · <b>{mt(lang, `fireOp_${data.fire.ladder.operates}`)}</b></>
@@ -727,20 +741,20 @@ export default function PrintSheet({
               <div>
                 {mt(lang, "wellConstruction")}:{" "}
                 <Val v={data.well.construction ? mt(lang, `wellC_${data.well.construction}`) : ""} /> ·{" "}
-                {mt(lang, "wellLengthAtHouse")}: <Val v={data.well.lengthAtHouse} /> ·{" "}
-                {mt(lang, "wellProjection")}: <Val v={data.well.projection} /> ·{" "}
-                {mt(lang, "wellDepth")}: <Val v={data.well.depth} />
+                {mt(lang, "wellLengthAtHouse")}: <Val len v={data.well.lengthAtHouse} /> ·{" "}
+                {mt(lang, "wellProjection")}: <Val len v={data.well.projection} /> ·{" "}
+                {mt(lang, "wellDepth")}: <Val len v={data.well.depth} />
               </div>
               <div>
-                {mt(lang, "wellInside")}: <Val v={data.well.insideLength} /> ×{" "}
-                <Val v={data.well.insideProjection} /> · {mt(lang, "wellWallThickness")}:{" "}
-                <Val v={data.well.wallThickness} /> · {mt(lang, "wellDiagA")}/{mt(lang, "wellDiagB")}:{" "}
-                <Val v={data.well.diagA} /> / <Val v={data.well.diagB} />
+                {mt(lang, "wellInside")}: <Val len v={data.well.insideLength} /> ×{" "}
+                <Val len v={data.well.insideProjection} /> · {mt(lang, "wellWallThickness")}:{" "}
+                <Val len v={data.well.wallThickness} /> · {mt(lang, "wellDiagA")}/{mt(lang, "wellDiagB")}:{" "}
+                <Val len v={data.well.diagA} /> / <Val len v={data.well.diagB} />
               </div>
               <div>
-                {mt(lang, "wellWindowTitle")}: <Val v={data.well.windowW} /> ×{" "}
-                <Val v={data.well.windowH} /> · {mt(lang, "wellSillToFloor")}:{" "}
-                <Val v={data.well.sillToFloor} />
+                {mt(lang, "wellWindowTitle")}: <Val len v={data.well.windowW} /> ×{" "}
+                <Val len v={data.well.windowH} /> · {mt(lang, "wellSillToFloor")}:{" "}
+                <Val len v={data.well.sillToFloor} />
               </div>
 
               {data.well.deliverables.includes("guard") && (
@@ -748,14 +762,14 @@ export default function PrintSheet({
                   <b>{mt(lang, "wellWallTitle")}</b>
                   <div>
                     {mt(lang, "wellWallRef")}: <Val v={data.well.wallRef} /> ·{" "}
-                    {mt(lang, "wellGuardHeight")}: <Val v={data.well.guardHeight} />
+                    {mt(lang, "wellGuardHeight")}: <Val len v={data.well.guardHeight} />
                   </div>
                   {data.well.bands.map((b, i) => (
                     <div key={b.id}>
                       {i + 1}. <Val v={b.label} /> — {mt(lang, "wellBandSetback")}:{" "}
-                      <Val v={b.setback} />
+                      <Val len v={b.setback} />
                       {(b.fromTop || b.toTop) && (
-                        <> (<Val v={b.fromTop} /> → <Val v={b.toTop} />)</>
+                        <> (<Val len v={b.fromTop} /> → <Val len v={b.toTop} />)</>
                       )}
                     </div>
                   ))}
@@ -780,7 +794,7 @@ export default function PrintSheet({
                     );
                   })()}
                   <div>
-                    {mt(lang, "wellPostToWall")}: <Val v={data.well.postToWall} />
+                    {mt(lang, "wellPostToWall")}: <Val len v={data.well.postToWall} />
                   </div>
                 </div>
               )}
@@ -788,7 +802,7 @@ export default function PrintSheet({
               {data.well.deliverables.includes("gate") && (
                 <div>
                   <b>{mt(lang, "wellD_gate")}: </b>
-                  {mt(lang, "wellGateWidth")}: <Val v={data.well.gateWidth} /> ·{" "}
+                  {mt(lang, "wellGateWidth")}: <Val len v={data.well.gateWidth} /> ·{" "}
                   {mt(lang, "wellGateSwing")}:{" "}
                   <Val v={data.well.gateSwing ? mt(lang, data.well.gateSwing === "in" ? "wellSwingIn" : "wellSwingOut") : ""} /> ·{" "}
                   {mt(lang, "wellGateHinge")}: <Val v={data.well.gateHinge} /> ·{" "}
@@ -798,11 +812,11 @@ export default function PrintSheet({
               {data.well.deliverables.includes("ladder") && (
                 <div>
                   <b>{mt(lang, "wellD_ladder")}: </b>
-                  {mt(lang, "wellLadderWidth")}: <Val v={data.well.ladderWidth} /> ·{" "}
+                  {mt(lang, "wellLadderWidth")}: <Val len v={data.well.ladderWidth} /> ·{" "}
                   {mt(lang, "wellLadderRungs")}: <Val v={data.well.ladderRungs} /> @{" "}
-                  <Val v={data.well.ladderSpacing} /> · {mt(lang, "wellLadderStandoff")}:{" "}
-                  <Val v={data.well.ladderStandoff} /> · {mt(lang, "wellLadderTopExt")}:{" "}
-                  <Val v={data.well.ladderTopExt} />
+                  <Val len v={data.well.ladderSpacing} /> · {mt(lang, "wellLadderStandoff")}:{" "}
+                  <Val len v={data.well.ladderStandoff} /> · {mt(lang, "wellLadderTopExt")}:{" "}
+                  <Val len v={data.well.ladderTopExt} />
                 </div>
               )}
               {data.well.deliverables.includes("grate") && (
@@ -821,10 +835,10 @@ export default function PrintSheet({
           {data.spiral && (
             <div className="mt-2">
               <b>{mt(lang, "spiralTitle")}: </b>
-              {mt(lang, "floorToFloor")}: <Val v={data.spiral.floorToFloor} /> ·{" "}
+              {mt(lang, "floorToFloor")}: <Val len v={data.spiral.floorToFloor} /> ·{" "}
               {mt(lang, "treadsCount")}: <Val v={data.spiral.treads} /> ·{" "}
               {mt(lang, "rotation")}: <Val v={data.spiral.rotationDeg} /> · Ø{" "}
-              <Val v={data.spiral.diameter} /> · {mt(lang, "columnSize")}:{" "}
+              <Val len v={data.spiral.diameter} /> · {mt(lang, "columnSize")}:{" "}
               <Val v={data.spiral.columnSize} /> ·{" "}
               {mt(lang, data.spiral.direction === "cw" ? "cw" : "ccw")}
             </div>
@@ -860,7 +874,7 @@ export default function PrintSheet({
           <SectionTitle>{mt(lang, "railSection")}</SectionTitle>
           <div>
             {mt(lang, "railKind")}: {data.rail.kind ? optLabel(lang, data.rail.kind) : <Val v="" />} ·{" "}
-            {mt(lang, "railHeight")}: <Val v={data.rail.height} /> · {mt(lang, "railSide")}:{" "}
+            {mt(lang, "railHeight")}: <Val len v={data.rail.height} /> · {mt(lang, "railSide")}:{" "}
             {data.rail.side ? optLabel(lang, data.rail.side) : <Val v="" />}
           </div>
           <div>
@@ -880,11 +894,11 @@ export default function PrintSheet({
                 <div key={sp.id} style={{ marginBottom: 4 }}>
                   <div>
                     <b>#{i + 1}</b>
-                    {sp.label ? ` ${sp.label}` : ""} · {mt(lang, "topSpanLbl")}: <Val v={sp.topSpan} />
+                    {sp.label ? ` ${sp.label}` : ""} · {mt(lang, "topSpanLbl")}: <Val len v={sp.topSpan} />
                     {(sp.start.molding || sp.end.molding) && (
                       <>
                         {" · "}
-                        {mt(lang, "lowerSpanLbl")}: <Val v={sp.lowerSpan} />
+                        {mt(lang, "lowerSpanLbl")}: <Val len v={sp.lowerSpan} />
                       </>
                     )}
                   </div>
@@ -976,7 +990,7 @@ export default function PrintSheet({
           <div>{mt(lang, "matTopRail")}: <Val v={data.materials.topRail} /></div>
           <div>
             {mt(lang, "matPicket")}: <Val v={data.materials.picket} /> ·{" "}
-            {mt(lang, "matPicketSpacing")}: <Val v={data.materials.picketSpacing} />
+            {mt(lang, "matPicketSpacing")}: <Val len v={data.materials.picketSpacing} />
           </div>
           <div>{mt(lang, "matBottomRail")}: <Val v={data.materials.bottomRail} /></div>
           <div>
@@ -1093,6 +1107,7 @@ export default function PrintSheet({
       <SpecialtySteelPrint assemblies={data.specialtySteel||[]} lang={lang}/>
       <SteelTakeoffPrint data={data}/>
     </div>
+    </MeasUnits.Provider>
   );
 }
 

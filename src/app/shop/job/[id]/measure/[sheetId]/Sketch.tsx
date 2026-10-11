@@ -8,7 +8,9 @@ import { OpeningSketch } from "./OpeningPrint";
 // value box on every step/field — entered numbers show in gold, missing ones
 // as "—" — and lets the crew tap a tread to place a post.
 
-import { useLayoutEffect, useRef } from "react";
+import { useContext, useLayoutEffect, useRef } from "react";
+import { MeasUnits } from "./MeasUnits";
+import { showMeas } from "@/lib/shop/measure-parse";
 
 import type {
   CurveSegment,
@@ -23,6 +25,7 @@ import type {
   FireEscapeData,
   GateData,
   FenceData,
+  Units,
   BalconyData,
 } from "@/lib/shop/measure";
 import { flightWalls, planPaths } from "@/lib/shop/measure";
@@ -64,6 +67,11 @@ const LIGHT: Palette = {
 function v(s: string | undefined, p: Palette) {
   const has = s && s.trim() !== "";
   return { text: has ? s!.trim() : "—", fill: has ? p.val : p.miss };
+}
+/** A typed length, always drawn in shop notation (never the raw "36.125"). */
+function vl(s: string | undefined, p: Palette, u: Units) {
+  const t = showMeas(s, u);
+  return { text: t || "—", fill: t ? p.val : p.miss };
 }
 
 export type SketchView = "plan" | "front" | "side";
@@ -127,24 +135,7 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
   ];
 }
 
-export default function Sketch({
-  shape,
-  data,
-  lang,
-  light = false,
-  view = "side",
-  onTapStep,
-  onTapPlatform,
-  onHoldStep,
-  onTapPost,
-  onHoldPost,
-  onTapLine,
-  onHoldLine,
-  onHoldPlatform,
-  onToggleWallSide,
-  focusSeg,
-  zoom = 1,
-}: {
+type SketchProps = {
   shape: MeasureShape;
   data: MeasureData;
   lang: string;
@@ -165,7 +156,30 @@ export default function Sketch({
   focusSeg?: number;
   /** Enlarge the drawing itself while keeping its viewport scrollable. */
   zoom?: number;
-}) {
+};
+
+export default function Sketch(props: SketchProps) {
+  return <MeasUnits.Provider value={props.data.units || "in"}><SketchBody {...props} /></MeasUnits.Provider>;
+}
+
+function SketchBody({
+  shape,
+  data,
+  lang,
+  light = false,
+  view = "side",
+  onTapStep,
+  onTapPlatform,
+  onHoldStep,
+  onTapPost,
+  onHoldPost,
+  onTapLine,
+  onHoldLine,
+  onHoldPlatform,
+  onToggleWallSide,
+  focusSeg,
+  zoom = 1,
+}: SketchProps) {
   const appearance=useShopAppearance();
   light = light || appearance==='light';
   const p = light ? LIGHT : DARK;
@@ -482,6 +496,7 @@ function PlanSketch({
   focusSeg?: number;
   zoom?: number;
 }) {
+  const u = useContext(MeasUnits);
   const wallRail = shape === "wall_rail";
   const o = data.datums?.orientation;
   // Walls are resolved PER SEGMENT, not once for the sheet. A switchback turns
@@ -543,7 +558,7 @@ function PlanSketch({
       // winder flight: each tread renders in its own frame; the direction of
       // travel rotates after every turning tread — drawing the wedges
       const fl = seg as FlightSegment;
-      const wv = v(fl.width, p);
+      const wv = vl(fl.width, p, u);
       fl.steps.forEach((st, i) => {
         const els: React.ReactNode[] = [
           <line key="t" x1={0} y1={-PLAN_W / 2} x2={0} y2={PLAN_W / 2} stroke={p.ghost} strokeWidth={1.2} />,
@@ -611,8 +626,8 @@ function PlanSketch({
       if (sweep === null) sweep = 90;
       const sgn = cv.direction === "left" ? -1 : 1;
       const Rd = 78; // display radius
-      const rv = v(cv.radius, p);
-      const av = v(cv.arc, p);
+      const rv = vl(cv.radius, p, u);
+      const av = vl(cv.arc, p, u);
       // circle center is perpendicular to travel
       const centerLocal = { x: 0, y: sgn * Rd };
       const th = (sweep * Math.PI) / 180;
@@ -684,7 +699,7 @@ function PlanSketch({
     if (seg.kind === "ramp") {
       const rp = seg as RampSegment;
       const len = 90;
-      const lv = v(rp.length, p);
+      const lv = vl(rp.length, p, u);
       const els: React.ReactNode[] = [
         <line key="e1" x1={0} y1={-PLAN_W / 2} x2={len} y2={-PLAN_W / 2} {...edgeStroke(true, segIdx)} />,
         <line key="e2" x1={0} y1={PLAN_W / 2} x2={len} y2={PLAN_W / 2} {...edgeStroke(false, segIdx)} />,
@@ -724,7 +739,7 @@ function PlanSketch({
     if (seg.kind === "flight") {
       const fl = seg as FlightSegment;
       const len = fl.steps.length * PLAN_TREAD;
-      const wv = v(fl.width, p);
+      const wv = vl(fl.width, p, u);
       const els: React.ReactNode[] = [];
       // strip edges
       els.push(
@@ -783,8 +798,8 @@ function PlanSketch({
       const switchbackOffset = PLAN_W + 16;
       const platTop = -L / 2;
       const platBottom = pl.turn === "u" ? switchbackOffset + L / 2 : L / 2;
-      const lv = v(pl.length, p);
-      const dv = v(pl.depth, p);
+      const lv = vl(pl.length, p, u);
+      const dv = vl(pl.depth, p, u);
       const els: React.ReactNode[] = [
         <path key="r" d={landingOutline(
           pl.turn,
@@ -1032,6 +1047,7 @@ export function CustomPlanSketch({
   onHoldPost?: (postId: string) => void;
   zoom?: number;
 }) {
+  const u = useContext(MeasUnits);
   const paths = planPaths(data.plan).filter((pp) => pp.points.length > 0);
   if (paths.length === 0) {
     return (
@@ -1058,7 +1074,7 @@ export function CustomPlanSketch({
     for (let i = 0; i < segCount; i++) {
       const a = pts[i];
       const b = pts[(i + 1) % pts.length];
-      const lv = v(path.segs[i]?.len, p);
+      const lv = vl(path.segs[i]?.len, p, u);
       const sg = path.segs[i];
       const dx = b.x - a.x;
       const dy = b.y - a.y;
@@ -1180,6 +1196,7 @@ function StairSketch({
   focusSeg?: number;
   zoom?: number;
 }) {
+  const u = useContext(MeasUnits);
   const wallRail = shape === "wall_rail";
 
   // Pre-compute canvas size — over the segments that are actually DRAWN.
@@ -1238,7 +1255,7 @@ function StairSketch({
         // riser, inside the step, with a dimension line and ticks; the run
         // stays horizontal above its tread. Two axes, no collision, and the
         // drawing says which number is which without being told.
-        const rv = v(st.rise, p);
+        const rv = vl(st.rise, p, u);
         const dimX = x + 7;
         els.push(
           <g key={`r${segIdx}-${i}`}>
@@ -1258,7 +1275,7 @@ function StairSketch({
           </g>
         );
         // run value (above the tread it measures)
-        const uv = v(st.run, p);
+        const uv = vl(st.run, p, u);
         els.push(
           <text key={`u${segIdx}-${i}`} x={x + RUN * 0.62} y={yTop - 5} fontSize={9} textAnchor="middle" fill={uv.fill}>
             {uv.text}
@@ -1316,7 +1333,7 @@ function StairSketch({
       }
       outline += ` L ${x + PLAT} ${y}`;
 
-      const lv = v(pl.length, p);
+      const lv = vl(pl.length, p, u);
       els.push(
         <g key={`plat${segIdx}`}>
           <text x={x0 + PLAT / 2} y={y - 26} fontSize={9} textAnchor="middle" fill={lv.fill}>
@@ -1369,7 +1386,7 @@ function StairSketch({
       const cv = seg as CurveSegment;
       const len = 110;
       const drop = cv.rise.trim() === "" ? 0 : 60;
-      const av = v(cv.arc, p);
+      const av = vl(cv.arc, p, u);
       outline += ` q ${len / 3} ${-drop / 2 - 8} ${len / 2} ${-drop / 2}`;
       outline += ` q ${len / 6} ${8 - drop / 2} ${len / 2} ${-drop / 2}`;
       els.push(
@@ -1389,7 +1406,7 @@ function StairSketch({
       const rp = seg as RampSegment;
       const len = 130;
       const drop = 60;
-      const lv = v(rp.length, p);
+      const lv = vl(rp.length, p, u);
       outline += ` L ${x + len} ${y - drop}`;
       els.push(
         <text key={`rp${segIdx}`} x={x + len / 2} y={y - drop / 2 - 10} fontSize={9} textAnchor="middle" fill={lv.fill}
@@ -1418,7 +1435,7 @@ function StairSketch({
     const len = Math.hypot(dx, dy) || 1;
     const ux = dx / len;
     const uy = dy / len;
-    const rl = v(data.overall.rakeLength, p);
+    const rl = vl(data.overall.rakeLength, p, u);
     const av = v(firstFlightAngle(data), p);
     els.push(
       <g key="rake">
@@ -1545,13 +1562,14 @@ function LevelSketch({
   onTapPlatform?: (segIdx: number) => void;
   onHoldPlatform?: (segIdx: number) => void;
 }) {
+  const u = useContext(MeasUnits);
   const seg = data.segments[0] as PlatformSegment | undefined;
   const W = 340;
   const railY = 60;
   const baseY = 150;
   const posts = sortPlatPosts(data.posts.filter((po) => po.segIdx === 0));
   const runLen = parseMeas(seg?.length || "");
-  const lv = v(seg?.length || "", p);
+  const lv = vl(seg?.length || "", p, u);
 
   return (
     <svg viewBox={`0 0 ${W} 190`} className="w-full" style={{ maxHeight: 300 }}>
@@ -1612,12 +1630,13 @@ function RampSketch({
   lang: string;
   onTapPlatform?: (segIdx: number) => void;
 }) {
+  const u = useContext(MeasUnits);
   const seg = data.segments[0] as RampSegment | undefined;
   const posts = data.posts.filter((po) => po.segIdx === 0);
   const x1 = 30, y1 = 170, x2 = 300, y2 = 70;
-  const lv = v(seg?.length || "", p);
+  const lv = vl(seg?.length || "", p, u);
   const av = v(seg?.angleDeg || "", p);
-  const rv = v(seg?.rise || "", p);
+  const rv = vl(seg?.rise || "", p, u);
 
   return (
     <svg viewBox="0 0 340 210" className="w-full" style={{ maxHeight: 300 }}>
@@ -1667,12 +1686,13 @@ function FrontSketch({
   p: Palette;
   lang: string;
 }) {
+  const u = useContext(MeasUnits);
   const flight = data.segments.find((s) => s.kind === "flight") as FlightSegment | undefined;
   const rampSeg = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
-  const widthVal = v(flight?.width || rampSeg?.width || "", p);
-  const hv = v(data.rail.height, p);
+  const widthVal = vl(flight?.width || rampSeg?.width || "", p, u);
+  const hv = vl(data.rail.height, p, u);
   const firstPost = data.posts[0];
-  const ev = v(firstPost?.fromEdge || "", p);
+  const ev = vl(firstPost?.fromEdge || "", p, u);
 
   const side = data.rail.side; // Left | Right | Both | ""
   // A wall beats a rail: where the stair runs against the house there is no
@@ -1815,7 +1835,8 @@ function LevelSectionSketch({
   p: Palette;
   lang: string;
 }) {
-  const hv = v(data.rail.height, p);
+  const u = useContext(MeasUnits);
+  const hv = vl(data.rail.height, p, u);
   const firstPost = data.posts[0];
   const mount = firstPost?.mount || "";
   const cx = 170, groundY = 195, railTop = 66;
@@ -1857,7 +1878,8 @@ function SpiralSideSketch({
   p: Palette;
   lang: string;
 }) {
-  const fv = v(spiral?.floorToFloor || "", p);
+  const u = useContext(MeasUnits);
+  const fv = vl(spiral?.floorToFloor || "", p, u);
   const cv = v(spiral?.columnSize || "", p);
   const topY = 58, botY = 200, cx = 150;
   const treads = Math.min(12, Math.max(4, parseInt(spiral?.treads || "8", 10) || 8));
@@ -1915,9 +1937,10 @@ function SpiralSketch({
   p: Palette;
   lang: string;
 }) {
+  const u = useContext(MeasUnits);
   const treads = Math.min(24, Math.max(4, parseInt(spiral?.treads || "12", 10) || 12));
   const cx = 130, cy = 115, r = 88;
-  const dv = v(spiral?.diameter || "", p);
+  const dv = vl(spiral?.diameter || "", p, u);
   const cv = v(spiral?.columnSize || "", p);
   const rv = v(spiral?.rotationDeg || "", p);
   const spokes = Array.from({ length: treads }, (_, i) => {
@@ -1966,6 +1989,7 @@ function SpiralSketch({
 // Plan: the well box against the house, with the gate opening and the ladder
 // marked where they were measured.
 function WellPlanSketch({ well, p, lang }: { well: WellData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 258;
   const houseY = 34; // face of the house wall
@@ -1978,7 +2002,7 @@ function WellPlanSketch({ well, p, lang }: { well: WellData | null; p: Palette; 
     const val = well?.[k];
     return typeof val === "string" && val.trim() !== "";
   };
-  const d = (k: keyof WellData) => v(typeof well?.[k] === "string" ? (well[k] as string) : "", p);
+  const d = (k: keyof WellData) => vl(typeof well?.[k] === "string" ? (well[k] as string) : "", p, u);
   const wants = (k: string) => !!well?.deliverables.includes(k as never);
 
   const gateW = 74;
@@ -2089,6 +2113,7 @@ function WellPlanSketch({ well, p, lang }: { well: WellData | null; p: Palette; 
 // and the guard post standing off. This is the drawing that shows why a post
 // set off the trim can still fail at the siding behind it.
 function WellSectionSketch({ well, p, lang }: { well: WellData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 268;
   const proudX = 150; // the most-proud wall face (the datum)
@@ -2096,7 +2121,7 @@ function WellSectionSketch({ well, p, lang }: { well: WellData | null; p: Palett
   const floorY = 214;
   const wellOutX = 300;
 
-  const d = (k: keyof WellData) => v(typeof well?.[k] === "string" ? (well[k] as string) : "", p);
+  const d = (k: keyof WellData) => vl(typeof well?.[k] === "string" ? (well[k] as string) : "", p, u);
   const wants = (k: string) => !!well?.deliverables.includes(k as never);
   const cl = wellClearance(well);
 
@@ -2227,6 +2252,7 @@ const RATING_FILL: Record<string, string> = {
 // Elevation: the building wall on the left, a balcony per floor stepping out
 // from it, stairs zig-zagging between them and the drop ladder at the bottom.
 function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const levels = fire?.levels || [];
   const n = Math.max(1, levels.length);
   const LEVEL_H = 92;
@@ -2260,7 +2286,7 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
       {levels.map((l, i) => {
         const deckY = topPad + i * LEVEL_H;
         const lowest = i === levels.length - 1;
-        const gv = v(l.guardHeight, p);
+        const gv = vl(l.guardHeight, p, u);
         const rating = l.condition.rating;
         const stroke = survey && rating ? RATING_FILL[rating] || p.line : p.line;
 
@@ -2295,7 +2321,7 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
                 <line x1={wallX + platW} y1={deckY} x2={wallX + 34} y2={deckY + LEVEL_H} stroke={stroke} strokeWidth={2.5} />
                 <line x1={wallX + platW} y1={deckY - 30} x2={wallX + 34} y2={deckY + LEVEL_H - 30} stroke={p.ghost} strokeWidth={1.4} />
                 <text x={wallX + platW / 2 + 22} y={deckY + LEVEL_H / 2 + 4} fontSize={8} fill={v(l.stairRisers, p).fill}>
-                  {v(l.stairRisers, p).text} × {v(l.stairRise, p).text}
+                  {v(l.stairRisers, p).text} × {vl(l.stairRise, p, u).text}
                 </text>
               </g>
             )}
@@ -2304,8 +2330,8 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
             {!lowest && (
               <g>
                 <line x1={W - 16} y1={deckY} x2={W - 16} y2={deckY + LEVEL_H} stroke={p.dim} strokeWidth={1} />
-                <text x={W - 13} y={deckY + LEVEL_H / 2} fontSize={8} fill={v(l.floorToFloor, p).fill}>
-                  {v(l.floorToFloor, p).text}
+                <text x={W - 13} y={deckY + LEVEL_H / 2} fontSize={8} fill={vl(l.floorToFloor, p, u).fill}>
+                  {vl(l.floorToFloor, p, u).text}
                 </text>
               </g>
             )}
@@ -2317,7 +2343,7 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
       {fire?.ladder.present && (() => {
         const lastY = topPad + (levels.length - 1) * LEVEL_H;
         const lx = wallX + platW - 26;
-        const stow = v(fire.ladder.stowedAboveGrade, p);
+        const stow = vl(fire.ladder.stowedAboveGrade, p, u);
         return (
           <g>
             <line x1={lx} y1={lastY} x2={lx} y2={gradeY - 22} stroke={p.post} strokeWidth={2} />
@@ -2340,8 +2366,8 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
 
       {/* total height */}
       <line x1={12} y1={topPad} x2={12} y2={gradeY} stroke={p.dim} strokeWidth={1} />
-      <text x={16} y={(topPad + gradeY) / 2} fontSize={9} fill={v(fire?.totalHeight, p).fill}>
-        {v(fire?.totalHeight, p).text}
+      <text x={16} y={(topPad + gradeY) / 2} fontSize={9} fill={vl(fire?.totalHeight, p, u).fill}>
+        {vl(fire?.totalHeight, p, u).text}
       </text>
     </svg>
   );
@@ -2350,6 +2376,7 @@ function FireElevationSketch({ fire, p, lang }: { fire: FireEscapeData | null; p
 // Plan: one balcony seen from above — its footprint off the wall and the
 // opening it serves.
 function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 220;
   const wallY = 40;
@@ -2373,7 +2400,7 @@ function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Pal
       {/* the opening served */}
       <rect x={(left + right) / 2 - 30} y={wallY - 5} width={60} height={10} fill={p.ghost} stroke={p.line} strokeWidth={1.4} />
       <text x={(left + right) / 2} y={wallY + 22} fontSize={8} textAnchor="middle" fill={p.dim}>
-        {l0?.openingType === "door" ? mt(lang, "feDoor") : mt(lang, "feWindow")} {v(l0?.openingW, p).text}
+        {l0?.openingType === "door" ? mt(lang, "feDoor") : mt(lang, "feWindow")} {vl(l0?.openingW, p, u).text}
       </text>
 
       {/* balcony footprint */}
@@ -2386,12 +2413,12 @@ function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Pal
 
       {/* dimensions */}
       <line x1={left} y1={bottom + 20} x2={right} y2={bottom + 20} stroke={p.dim} strokeWidth={1} />
-      <text x={(left + right) / 2} y={bottom + 34} fontSize={9} textAnchor="middle" fill={v(l0?.platLength, p).fill}>
-        {v(l0?.platLength, p).text}
+      <text x={(left + right) / 2} y={bottom + 34} fontSize={9} textAnchor="middle" fill={vl(l0?.platLength, p, u).fill}>
+        {vl(l0?.platLength, p, u).text}
       </text>
       <line x1={right + 16} y1={wallY} x2={right + 16} y2={bottom} stroke={p.dim} strokeWidth={1} />
-      <text x={right + 20} y={(wallY + bottom) / 2} fontSize={9} fill={v(l0?.platWidth, p).fill}>
-        {v(l0?.platWidth, p).text}
+      <text x={right + 20} y={(wallY + bottom) / 2} fontSize={9} fill={vl(l0?.platWidth, p, u).fill}>
+        {vl(l0?.platWidth, p, u).text}
       </text>
       <text x={left} y={bottom + 48} fontSize={8} fill={p.dim}>
         {l0?.label ? `${l0.label} — ` : ""}{mt(lang, "feDeck")}: {v(l0?.deck, p).text}
@@ -2405,6 +2432,7 @@ function FirePlanSketch({ fire, p, lang }: { fire: FireEscapeData | null; p: Pal
 // Elevation looking at the opening: both posts, the leaf (or leaves), the
 // clearance under it and the grade it has to swing over.
 function GateSketch({ gate, p, lang }: { gate: GateData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 250;
   const leftX = 52;
@@ -2413,7 +2441,7 @@ function GateSketch({ gate, p, lang }: { gate: GateData | null; p: Palette; lang
   const gradeY = 186;
   const clearY = gradeY - 16;
 
-  const d = (k: keyof GateData) => v(typeof gate?.[k] === "string" ? (gate[k] as string) : "", p);
+  const d = (k: keyof GateData) => vl(typeof gate?.[k] === "string" ? (gate[k] as string) : "", p, u);
   const dbl = gate?.operation === "double_swing" || gate?.operation === "bifold";
   const slide = gate?.operation === "slide";
   const rise = parseMeas(gate?.gradeRise || "");
@@ -2495,6 +2523,7 @@ function GateSketch({ gate, p, lang }: { gate: GateData | null; p: Palette; lang
 // The run laid out flat: each segment as a bay of panels, turns marked, grade
 // change noted under the segment that carries it.
 function FenceSketch({ fence, p, lang }: { fence: FenceData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const segs = fence?.segments || [];
   const W = 340;
   const H = 210;
@@ -2529,8 +2558,8 @@ function FenceSketch({ fence, p, lang }: { fence: FenceData | null; p: Palette; 
                 x2={x0 + 5 + k * ((x1 - x0 - 10) / 5)} y2={baseY - 8} stroke={p.ghost} strokeWidth={1.2} />
             ))}
             {/* segment length */}
-            <text x={(x0 + x1) / 2} y={baseY + 26} fontSize={8.5} textAnchor="middle" fill={v(sg.length, p).fill}>
-              {v(sg.length, p).text}
+            <text x={(x0 + x1) / 2} y={baseY + 26} fontSize={8.5} textAnchor="middle" fill={vl(sg.length, p, u).fill}>
+              {vl(sg.length, p, u).text}
             </text>
             <text x={(x0 + x1) / 2} y={topY - 6} fontSize={8} textAnchor="middle" fill={p.dim}>
               {sg.label || i + 1}
@@ -2553,14 +2582,14 @@ function FenceSketch({ fence, p, lang }: { fence: FenceData | null; p: Palette; 
 
       {/* height + total run */}
       <line x1={16} y1={topY} x2={16} y2={baseY} stroke={p.dim} strokeWidth={1} />
-      <text x={4} y={(topY + baseY) / 2 - 6} fontSize={8.5} fill={v(fence?.height, p).fill}>
-        {v(fence?.height, p).text}
+      <text x={4} y={(topY + baseY) / 2 - 6} fontSize={8.5} fill={vl(fence?.height, p, u).fill}>
+        {vl(fence?.height, p, u).text}
       </text>
-      <text x={W / 2} y={24} fontSize={9} textAnchor="middle" fill={v(fence?.totalRun, p).fill}>
-        {mt(lang, "fenceTotalRun")}: {v(fence?.totalRun, p).text}
+      <text x={W / 2} y={24} fontSize={9} textAnchor="middle" fill={vl(fence?.totalRun, p, u).fill}>
+        {mt(lang, "fenceTotalRun")}: {vl(fence?.totalRun, p, u).text}
       </text>
       <text x={W / 2} y={40} fontSize={8} textAnchor="middle" fill={p.dim}>
-        {v(fence?.startTerm, p).text} → {v(fence?.endTerm, p).text}
+        {vl(fence?.startTerm, p, u).text} → {vl(fence?.endTerm, p, u).text}
       </text>
     </svg>
   );
@@ -2571,6 +2600,7 @@ function FenceSketch({ fence, p, lang }: { fence: FenceData | null; p: Palette; 
 // Section through the slab edge: where the anchor lands, how deep it goes and
 // how close to the edge — the two numbers that decide if the rail holds.
 function BalconySectionSketch({ bal, p, lang }: { bal: BalconyData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 250;
   const slabTop = 132;
@@ -2578,7 +2608,7 @@ function BalconySectionSketch({ bal, p, lang }: { bal: BalconyData | null; p: Pa
   const edgeX = 250;
   const railTop = 40;
 
-  const d = (k: keyof BalconyData) => v(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p);
+  const d = (k: keyof BalconyData) => vl(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p, u);
   const emb = parseMeas(bal?.anchorEmbedment || "");
   const th = parseMeas(bal?.slabThickness || "");
   const cover = parseMeas(bal?.minCover || "") ?? 0;
@@ -2640,13 +2670,14 @@ function BalconySectionSketch({ bal, p, lang }: { bal: BalconyData | null; p: Pa
 
 // Elevation along the edge — length, returns and the opening a juliet fronts.
 function BalconyElevationSketch({ bal, p, lang }: { bal: BalconyData | null; p: Palette; lang: string }) {
+  const u = useContext(MeasUnits);
   const W = 340;
   const H = 200;
   const left = 40;
   const right = 300;
   const floorY = 150;
   const railTop = 56;
-  const d = (k: keyof BalconyData) => v(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p);
+  const d = (k: keyof BalconyData) => vl(typeof bal?.[k] === "string" ? (bal[k] as string) : "", p, u);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: 280 }}>

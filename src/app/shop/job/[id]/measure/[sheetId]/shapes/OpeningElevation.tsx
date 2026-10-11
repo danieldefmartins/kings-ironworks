@@ -18,6 +18,7 @@ import {
 } from "@/lib/shop/measure-opening";
 import type { CheckLevel } from "@/lib/shop/measure-checks";
 import { useShopAppearance } from "../../../../../ShopAppearance";
+import { useShowMeas } from "../MeasUnits";
 
 export type OpeningField = "wTop" | "wMid" | "wBot" | "hLeft" | "hCenter" | "hRight" | "diagA" | "diagB";
 
@@ -49,6 +50,7 @@ export default function OpeningElevation({
   active?: OpeningField | null;
 }) {
   const appearance = useShopAppearance();
+  const show = useShowMeas();
   const c = light || appearance !== "dark" ? LIGHT : DARK;
   const W = 360;
   const H = 316;
@@ -78,7 +80,7 @@ export default function OpeningElevation({
   const pill = (k: OpeningField, x: number, y: number, caption?: string) => {
     const raw = unit[k].trim();
     const has = raw !== "";
-    const text = has ? (/["'°]$/.test(raw) ? raw : `${raw}"`) : "—";
+    const text = has ? show(raw) : "—";
     const gov = governs(k);
     const diag = k === "diagA" || k === "diagB";
     const lvl = diag ? sq.diagLevel : "na";

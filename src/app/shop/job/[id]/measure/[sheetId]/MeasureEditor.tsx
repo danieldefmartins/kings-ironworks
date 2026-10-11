@@ -52,6 +52,7 @@ import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
 import DeckSections from "./shapes/DeckSections";
 import OpeningSections from "./shapes/OpeningSections";
+import { MeasUnits } from "./MeasUnits";
 import StructuralSections from "./shapes/StructuralSections";
 import CanopySections from "./shapes/CanopySections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
@@ -1107,7 +1108,7 @@ export default function MeasureEditor({
 
   return (
     <BrandProvider branding={orgSettings?.branding}>
-    <LangCtx.Provider value={lang}>
+    <LangCtx.Provider value={lang}><MeasUnits.Provider value={units}>
     <SubstrateCtx.Provider value={{ data, set, shape: sheet.shape, lang, posts, anchorOptions: orgSettings?.options?.anchors || [], onPhoto: (slot, label) => setPhotoSlot({ slot, label }) }}>
     <PlaceholderCtx.Provider value={unitPh}>
     {/* What the sheet is waiting on, carried down to every field — the ones in
@@ -1337,7 +1338,7 @@ export default function MeasureEditor({
     </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
     </SubstrateCtx.Provider>
-    </LangCtx.Provider>
+    </MeasUnits.Provider></LangCtx.Provider>
     </BrandProvider>
   );
 }

@@ -50,3 +50,25 @@ export function formatIn(n: number): string {
   return `${whole ? `${whole} ` : ""}${num}/${den}"`;
 }
 
+
+// Inches → shop notation in the sheet's units: '36 1/8"' or, on a feet+inches
+// sheet, '3\' 1/8"' once it reaches a foot.
+export function formatMeas(n: number, units: "in" | "ftin" = "in"): string {
+  const s16 = Math.round(n * 16);
+  if (units === "ftin" && s16 >= 192) {
+    const ft = Math.floor(s16 / 192);
+    return `${ft}' ${formatIn((s16 - ft * 192) / 16)}`;
+  }
+  return formatIn(n);
+}
+
+// What a drawing or print shows for a typed dimension: "36.125" → '36 1/8"'.
+// Text a measurer typed that is not a length (angles, percentages, notes)
+// passes through untouched; empty stays empty.
+export function showMeas(raw: string | undefined | null, units: "in" | "ftin" = "in"): string {
+  const t = (raw ?? "").trim();
+  if (!t) return "";
+  if (/[°º%]/.test(t)) return t;
+  const n = parseMeas(t);
+  return n === null ? t : formatMeas(n, units);
+}

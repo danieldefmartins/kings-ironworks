@@ -21,6 +21,7 @@ import {
   type StructuralData,
 } from "@/lib/shop/measure-structural";
 import { fmtLen } from "./StructuralSketch";
+import { useShowMeas } from "../MeasUnits";
 import { checkLine } from "./StructuralSections";
 
 // Org accent (white-label), set on the print root; KIW gold otherwise.
@@ -41,6 +42,8 @@ const v = (s: string | undefined | null) => (s && s.trim() ? s : "—");
 
 export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: string }) {
   const t = (k: string) => mt(lang, k);
+  const show = useShowMeas();
+  const d = (x: string | undefined | null) => v(show(x));
   const sum = structuralSummary(s);
   const checks = structuralChecks(s);
   const wv = weightVerdict(s);
@@ -79,8 +82,8 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
             const cut = memberCut(m, s);
             const w = memberWeight(m, s);
             const field = isSpanning(m.role)
-              ? [m.spanA, m.spanB].filter((x) => x.trim()).join(" / ")
-              : m.heights.filter((r) => r.value.trim()).map((r) => `${r.label ? `${r.label} ` : ""}${r.value}`).join(" / ");
+              ? [m.spanA, m.spanB].filter((x) => x.trim()).map(show).join(" / ")
+              : m.heights.filter((r) => r.value.trim()).map((r) => `${r.label ? `${r.label} ` : ""}${show(r.value)}`).join(" / ");
             return (
               <tr key={m.id} style={{ breakInside: "avoid" }}>
                 <td style={{ ...cell, fontWeight: 800 }}>{m.mark}</td>
@@ -135,13 +138,13 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
                       <td key={i} style={cell}>
                         {b.substrate ? t(`st_sub_${b.substrate}`) : "—"}{b.condition ? ` (${t(`st_cond_${b.condition}`)})` : ""}
                         <br />
-                        {t("st_bearingLen")}: <b>{v(b.length)}</b>{need !== null ? ` · ${t("st_min")} ${fmtLen(need)}` : ""} · {t("st_wallShort")} {v(b.wall)}
+                        {t("st_bearingLen")}: <b>{d(b.length)}</b>{need !== null ? ` · ${t("st_min")} ${fmtLen(need)}` : ""} · {t("st_wallShort")} {d(b.wall)}
                       </td>
                     );
                   })}
                   <td style={cell}>{m.carries ? t(`st_carry_${m.carries}`) : "—"}{m.shoring ? <><br />{t("st_shoring")}: {t(`st_shore_${m.shoring}`)}</> : null}</td>
                   <td style={cell}>{v(m.existing)}</td>
-                  <td style={cell}>{v(m.elevation)}{m.dwgElevation ? ` (${t("st_perDrawing")} ${m.dwgElevation})` : ""}</td>
+                  <td style={cell}>{d(m.elevation)}{m.dwgElevation ? ` (${t("st_perDrawing")} ${show(m.dwgElevation)})` : ""}</td>
                 </tr>
               ))}
             </tbody>
@@ -170,10 +173,10 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
                   <td style={{ ...cell, fontWeight: 800 }}>{m.mark}</td>
                   <td style={cell}>{m.base.substrate ? t(`st_sub_${m.base.substrate}`) : "—"}{m.base.condition ? ` (${t(`st_cond_${m.base.condition}`)})` : ""}</td>
                   <td style={cell}>{m.footing ? t(`st_foot_${m.footing}`) : "—"}{m.footingSize ? ` · ${m.footingSize}` : ""}</td>
-                  <td style={cell}>{v(m.basePlate)} / {v(m.capPlate)}{m.shim ? ` · ${t("st_shim")} ${m.shim}` : ""}</td>
+                  <td style={cell}>{v(m.basePlate)} / {v(m.capPlate)}{m.shim ? ` · ${t("st_shim")} ${show(m.shim)}` : ""}</td>
                   <td style={cell}>{v(m.anchors)}</td>
                   <td style={cell}>{v(m.plumb)}</td>
-                  <td style={cell}>{v(m.existing)}{m.finishFloor ? <><br />{t("st_finishFloor")}: {m.finishFloor}</> : null}</td>
+                  <td style={cell}>{v(m.existing)}{m.finishFloor ? <><br />{t("st_finishFloor")}: {show(m.finishFloor)}</> : null}</td>
                 </tr>
               ))}
             </tbody>
@@ -185,8 +188,8 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
         <>
           <Title>{t("st_frameTitle")}</Title>
           <div>
-            {t("st_frameOpening")}: <b>{v(s.frame.opening)}</b> · {t("st_frameCc")}: <b>{v(s.frame.cc)}</b> · {t("st_diagA")}: <b>{v(s.frame.diagA)}</b> · {t("st_diagB")}: <b>{v(s.frame.diagB)}</b>
-            {s.eng.stamped === "yes" && <> · {t("st_perDrawing")}: {v(s.frame.dwgOpening)} / {v(s.frame.dwgCc)}</>}
+            {t("st_frameOpening")}: <b>{d(s.frame.opening)}</b> · {t("st_frameCc")}: <b>{d(s.frame.cc)}</b> · {t("st_diagA")}: <b>{d(s.frame.diagA)}</b> · {t("st_diagB")}: <b>{d(s.frame.diagB)}</b>
+            {s.eng.stamped === "yes" && <> · {t("st_perDrawing")}: {d(s.frame.dwgOpening)} / {d(s.frame.dwgCc)}</>}
           </div>
         </>
       )}
@@ -197,10 +200,10 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
         {s.fireRating ? <> · {t("st_fireRating")}: <b>{s.fireRating}</b></> : null}
       </div>
       <div>
-        {t("st_accessPath")}: <b>{v(s.access.path)}</b> · {t("st_doorWidth")}: <b>{v(s.access.doorWidth)}</b> · {t("st_stairWidth")}: <b>{v(s.access.stairWidth)}</b>
+        {t("st_accessPath")}: <b>{v(s.access.path)}</b> · {t("st_doorWidth")}: <b>{d(s.access.doorWidth)}</b> · {t("st_stairWidth")}: <b>{d(s.access.stairWidth)}</b>
       </div>
       <div>
-        {t("st_maxLength")}: <b>{v(s.access.maxLength)}</b> · {t("st_maxWeight")}: <b>{v(s.access.maxWeight)}</b> · {t("st_lift")}: <b>{s.access.lift ? t(`st_lift_${s.access.lift}`) : "—"}</b>
+        {t("st_maxLength")}: <b>{d(s.access.maxLength)}</b> · {t("st_maxWeight")}: <b>{v(s.access.maxWeight)}</b> · {t("st_lift")}: <b>{s.access.lift ? t(`st_lift_${s.access.lift}`) : "—"}</b>
         {s.access.splice ? <> · {t("st_splice")}: <b>{s.access.splice}</b></> : null}
         {wv.level === "yellow" ? <> · <b style={{ color: LEVEL_COLOR.yellow }}>{t("st_needsLift")}</b></> : null}
       </div>
