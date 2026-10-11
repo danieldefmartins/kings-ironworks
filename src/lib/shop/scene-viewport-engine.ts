@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import type {MeasureScene,SceneMesh,SceneLine,SceneSelection} from './measure-scene';
-import {faceIndices,localPositions,placeSceneTargets,fitScene,isSceneSelected,point3,PostDragGesture,TapGesture,viewDirection,type SceneView,type ScenePostDrop} from './scene-viewport-utils';
+import {faceIndices,localPositions,placeSceneTargets,fitScene,isSceneSelected,point3,PostDragGesture,TapGesture,viewDirection,isoDirection,type SceneView,type ScenePostDrop} from './scene-viewport-utils';
 type Item=SceneMesh|SceneLine;
 export type ViewportOptions={dark:boolean;selectedId?:string;site:boolean;rails:boolean;surfacePick?:boolean;groundPick?:boolean;wallPlacement?:boolean;wallPlacementSegment?:string;lang:string;onSelect?:(selection:SceneSelection)=>void;onPostDrop?:(target:ScenePostDrop)=>void;draggablePostIds?:string[];onWallEdge?:(id:string,side:'left'|'right'|'start'|'end')=>void;onUnavailable?:()=>void};
 export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailure:()=>void){
@@ -19,7 +19,7 @@ export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailu
  function render(){frame=0;if(disposed)return;renderer.render(scene,camera);const projected=labels.map(label=>label.point.clone().project(camera)),positions=placeSceneTargets(projected.map(p=>({x:(p.x+1)*width/2,y:(1-p.y)*height/2})),width,height);labels.forEach((label,i)=>{label.button.style.left=`${positions[i].x}px`;label.button.style.top=`${positions[i].y}px`;label.button.hidden=projected[i].z< -1||projected[i].z>1;});}
 
  controls.addEventListener('change',schedule);
- function fit(view?:SceneView){if(!model)return;const direction=view?viewDirection(view):camera.position.clone().sub(controls.target).normalize();const result=fitScene(model.bounds,width/height,direction);halfHeight=result.halfHeight;camera.zoom=1;camera.position.copy(result.center).addScaledVector(direction,result.distance);controls.target.copy(result.center);camera.far=Math.max(result.distance*5,1000);resize();controls.update();schedule();}
+ function fit(view?:SceneView){if(!model)return;const direction=view?(view==='iso'?isoDirection(model):viewDirection(view)):camera.position.clone().sub(controls.target).normalize();const result=fitScene(model.bounds,width/height,direction);halfHeight=result.halfHeight;camera.zoom=1;camera.position.copy(result.center).addScaledVector(direction,result.distance);controls.target.copy(result.center);camera.far=Math.max(result.distance*5,1000);resize();controls.update();schedule();}
  function resize(){width=Math.max(host.clientWidth,1);height=Math.max(host.clientHeight,1);renderer.setSize(width,height,false);camera.left=-halfHeight*width/height;camera.right=halfHeight*width/height;camera.top=halfHeight;camera.bottom=-halfHeight;camera.updateProjectionMatrix();schedule();}
  const observer=new ResizeObserver(resize);observer.observe(host);
  function clear(){group.traverse(o=>{if(o instanceof THREE.Mesh||o instanceof THREE.Line){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});group.clear();objects=[];for(const l of labels)l.button.remove();labels=[];}

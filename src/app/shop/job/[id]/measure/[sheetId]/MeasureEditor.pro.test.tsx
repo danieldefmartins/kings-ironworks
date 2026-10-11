@@ -13,6 +13,7 @@ vi.mock('./SceneViewport',()=>({default:({data,onPostDrop}:SceneViewportProps)=>
 vi.mock('./PrintSheet',()=>({default:()=>null}));
 vi.mock('./ShopDrawingSubmission',()=>({default:()=> <div>Drawing submission retained</div>}));
 import MeasureEditor from './MeasureEditor';
+const tool=(value:string)=>fireEvent.change(screen.getByRole('combobox',{name:'Tool'}),{target:{value}});
 const job: Job = {
   id: "job-1",
   job_number: "KIW-1000",
@@ -53,16 +54,16 @@ describe('single professional measuring workspace',()=>{
   const scene=screen.getByTestId('persistent-scene');
   expect(screen.queryByRole('button',{name:'All tools'})).toBeNull();
   expect(screen.queryByLabelText('Measurement stages')).toBeNull();
-  for(const name of [/^Dimensions & posts$/,/^Railing panels$/,/^Materials$/,/^Shop package/]){
-   click(name);expect(screen.getAllByTestId('persistent-scene')).toHaveLength(1);expect(screen.getByTestId('persistent-scene')).toBe(scene);
+  for(const name of ['measure','panels',/^Materials$/,/^Shop package/]){
+   if(typeof name==='string')tool(name);else click(name);expect(screen.getAllByTestId('persistent-scene')).toHaveLength(1);expect(screen.getByTestId('persistent-scene')).toBe(scene);
   }
   expect(screen.getByText('Drawing submission retained')).toBeTruthy();
  });
  it('keeps photo controls and structure fields reachable in contextual tools',()=>{
   render(<MeasureEditor job={job} sheet={sheetWith(0)} lang="en" workerName="Tester"/>);
-  fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'structure'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Tool'}),{target:{value:'structure'}});
   expect(screen.getByLabelText('Typical rise')).toBeTruthy();
-  fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'photos'}});
+  fireEvent.change(screen.getByRole('combobox',{name:'Tool'}),{target:{value:'photos'}});
   expect(screen.getByRole('heading',{name:'Photos'})).toBeTruthy();
   expect(screen.queryByLabelText('Typical rise')).toBeNull();
  });
@@ -72,7 +73,7 @@ describe('single professional measuring workspace',()=>{
   click(/^Shop package/);
   const label=`${mt('en','gap_flight_width')} (${gap.detail})`;
   fireEvent.click(screen.getByRole('button',{name:new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))}));
-  expect((screen.getByRole('combobox',{name:'Project controls'}) as HTMLSelectElement).value).toBe('structure');
+  expect((screen.getByRole('combobox',{name:'Tool'}) as HTMLSelectElement).value).toBe('structure');
   expect((screen.getByRole('combobox',{name:'Flight'}) as HTMLSelectElement).value).toBe('2');
  });
  it('retains owner approval controls in the sole shop review',()=>{
@@ -92,8 +93,8 @@ it('shows a global direct-drop datum error without silently changing measurement
 });
 
 it('starts with existing structures before tread measurement without requiring them or changing saved data',()=>{
- const sheet=sheetWith(0);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);expect(screen.getByRole('heading',{name:'Start with the existing structures'})).toBeTruthy();expect(screen.getByRole('button',{name:'Existing column'})).toBeTruthy();const before=screen.getByTestId('scene-data').textContent;click(/^Dimensions & posts$/);expect(screen.getByRole('button',{name:'Add existing structures'})).toBeTruthy();expect(screen.getByRole('button',{name:'Segment 1 · flight'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Add existing structures'}));expect(screen.getByRole('button',{name:'Existing column'})).toBeTruthy();expect(screen.getByTestId('scene-data').textContent).toBe(before);
+ const sheet=sheetWith(0);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);expect(screen.getByRole('heading',{name:'Start with the existing structures'})).toBeTruthy();expect(screen.getByRole('button',{name:'Existing column'})).toBeTruthy();const before=screen.getByTestId('scene-data').textContent;tool('measure');expect(screen.getByRole('button',{name:'Add existing structures'})).toBeTruthy();expect(screen.getByRole('button',{name:'Segment 1 · flight'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Add existing structures'}));expect(screen.getByRole('button',{name:'Existing column'})).toBeTruthy();expect(screen.getByTestId('scene-data').textContent).toBe(before);
 });
 it('does not repeat the setup prompt or replace structural columns on an existing measured sheet',()=>{
- const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.shape='stair_platform';render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);expect(screen.queryByRole('heading',{name:'Start with the existing structures'})).toBeNull();const before=screen.getByTestId('scene-data').textContent;click(/^Dimensions & posts$/);expect(screen.queryByRole('button',{name:'Add existing structures'})).toBeNull();expect(screen.getByTestId('scene-data').textContent).toBe(before);
+ const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.shape='stair_platform';render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);expect(screen.queryByRole('heading',{name:'Start with the existing structures'})).toBeNull();const before=screen.getByTestId('scene-data').textContent;tool('measure');expect(screen.queryByRole('button',{name:'Add existing structures'})).toBeNull();expect(screen.getByTestId('scene-data').textContent).toBe(before);
 });

@@ -94,6 +94,8 @@ import VisualMeasureWorkspace from './VisualMeasureWorkspace';
 import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
+import NextMeasurement from './NextMeasurement';
+import {Check,ChevronDown,ChevronLeft,Redo2,Undo2} from 'lucide-react';
 import type {PanelStage} from './AttachedRails';
 
 // Where a multi-flight sheet should open. Reopening on flight 1 after a day
@@ -118,8 +120,11 @@ export default function MeasureEditor({
   history = [],
   carryover = null,
   catalog = [],
+  adminLink = false,
 }: {
   catalog?: SteelCatalogItem[];
+  /** Owner/admin: the overflow menu links to the admin hub (the shop top bar is hidden here). */
+  adminLink?: boolean;
   job: Job;
   sheet: MeasureSheet;
   lang: string;
@@ -195,6 +200,10 @@ export default function MeasureEditor({
     const moved=draft.posts.find(p=>p.id===target.postId)!;set(d=>{const current=d.posts.find(p=>p.id===target.postId);if(current)Object.assign(current,moved);});setPostDropError('');selectScene({postId:target.postId});
   }
   const [panelStage,setPanelStage]=useState<PanelStage>('design');
+  const toolLabels={site:tx('Existing site','Local existente','Sitio existente'),measure:tx('Dimensions & posts','Medidas e postes','Medidas y postes'),panels:tx('Railing panels','Painéis de corrimão','Paneles de barandilla'),specialty:tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')} as const;
+  // Openings are measured on a form of their own; the scene has nothing to show yet.
+  const openingForm=sheet.shape==='opening'&&!!data.opening&&designTool!=='materials';
+  function saveAndClose(){requestSave();router.push(`/shop/job/${job.id}/measure`);}
   function openDetails(topic:ProDetailsTopic){setDetailTopic(topic);if(topic==='review'){setWorkspace('review');return;}setWorkspace('design');setDesignTool('details');}
   function selectScene(target:SceneSelection){
     setWorkspace('design');
@@ -1079,9 +1088,99 @@ export default function MeasureEditor({
         colouring those red teaches a measurer to ignore the colour. */}
     <MissingCtx.Provider value={missingKeys}>
       {/* Room for the fixed action bar at the bottom. */}
-      <div data-measure-ui className="mx-auto max-w-[1600px] p-3 pb-36 print:hidden sm:p-4">
+      <div data-measure-ui className="print:hidden">
+        {/* Focus mode: one slim bar. Back saves and closes; the rest is the
+            sheet, its save state, history and a menu for housekeeping. */}
+        <header className="sticky top-0 z-40 border-b border-slate-200 bg-[var(--shop-glass)] pt-[env(safe-area-inset-top)] backdrop-blur-xl">
+          <div className="mx-auto flex h-14 max-w-[1600px] items-center gap-0.5 px-1.5 sm:px-3">
+            <button type="button" aria-label={tx('Save & close','Salvar e fechar','Guardar y cerrar')} onClick={saveAndClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-slate-700 active:bg-slate-100"><ChevronLeft aria-hidden className="h-6 w-6"/></button>
+            <div className="min-w-0 flex-1 px-1">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={() => saveName(name)}
+                placeholder={shapeLabel(lang, sheet.shape)}
+                aria-label={lang==='pt'?'Nome do desenho':lang==='es'?'Nombre del dibujo':'Drawing name'}
+                className="block w-full truncate rounded-md bg-transparent text-[16px] font-semibold leading-5 tracking-tight text-slate-900 outline-none focus:bg-slate-100"
+              />
+              <div className="flex min-w-0 items-center gap-1.5 text-[11px] leading-4 text-slate-500">
+                {status !== "in_progress" && <span className={`shrink-0 rounded-full px-1.5 font-bold ${status === "approved" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"}`}>{status === "approved" ? `✓ ${mt(lang, "approvedBadge")} · ${mt(lang, "revLabel")} ${rev}` : mt(lang, "submittedBadge")}</span>}
+                <span className="truncate">{shapeLabel(lang, sheet.shape)} · {job.customer_name}</span>
+              </div>
+            </div>
+            {/* Autosave is trusted quietly; it only asks for a tap when something went wrong. */}
+            {(saveState === "queued" || saveState === "error") ? (
+              <button type="button" onClick={requestSave} className="min-h-10 shrink-0 rounded-full border border-amber-500 bg-amber-50 px-3 text-xs font-bold text-amber-800">⬇ {mt(lang, "saveNow")}</button>
+            ) : (
+              <span role="status" title={saveState === "saving" ? mt(lang, "saving") : saveState === "dirty" ? mt(lang, "unsaved") : mt(lang, "savedAll")} className="grid h-10 w-8 shrink-0 place-items-center">
+                {saveState === "saving" ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-600 motion-reduce:animate-none"/> : saveState === "dirty" ? <span className="h-2 w-2 rounded-full bg-amber-500"/> : <Check aria-hidden className="h-4 w-4 text-emerald-600" strokeWidth={2.5}/>}
+                <span className="sr-only">{saveState === "saving" ? mt(lang, "saving") : saveState === "dirty" ? mt(lang, "unsaved") : mt(lang, "savedAll")}</span>
+              </span>
+            )}
+            <button type="button" aria-label={lang==='pt'?'Desfazer':lang==='es'?'Deshacer':'Undo'} disabled={!canUndo} onClick={undo} className="grid h-11 w-10 shrink-0 place-items-center rounded-full text-slate-700 active:bg-slate-100 disabled:opacity-25"><Undo2 aria-hidden className="h-5 w-5"/></button>
+            <button type="button" aria-label={lang==='pt'?'Refazer':lang==='es'?'Rehacer':'Redo'} disabled={!canRedo} onClick={redo} className="grid h-11 w-10 shrink-0 place-items-center rounded-full text-slate-700 active:bg-slate-100 disabled:opacity-25"><Redo2 aria-hidden className="h-5 w-5"/></button>
+            <MoreMenu ghost label={mt(lang, "moreLabel")} closeLabel={mt(lang, "closeLabel")}>
+              {(close) => (
+                <>
+                  <MoreItem onClick={() => { close(); saveAndClose(); }}>
+                    ‹ {tx('Save & close','Salvar e fechar','Guardar y cerrar')}
+                  </MoreItem>
+                  <MoreItem
+                    onClick={() => {
+                      close();
+                      fetch("/shop/api/measure", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ type: "log_print", id: sheet.id, jobId: job.id, rev }),
+                      }).catch(() => {});
+                      window.print();
+                    }}
+                  >
+                    🖨 {mt(lang, "drawingPrint")}
+                  </MoreItem>
+                  <div className="pt-2 text-[11px] uppercase tracking-widest text-neutral-500">
+                    {mt(lang, "unitsLabel")}
+                  </div>
+                  <div className="flex gap-2">
+                    {(
+                      [
+                        ["in", `${mt(lang, "unitsIn")} (")`],
+                        ["ftin", `${mt(lang, "unitsFtIn")} (' ")`],
+                      ] as const
+                    ).map(([u, label]) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => set((d) => void (d.units = u))}
+                        className={`min-h-[48px] flex-1 rounded-xl border px-3 text-sm font-bold ${
+                          units === u
+                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
+                            : "border-neutral-700 bg-neutral-800 text-neutral-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <ShopAppearance lang={lang}/>
+                  {adminLink && <MoreItem href="/shop/admin">🛡 {lang==='pt'?'Administração':lang==='es'?'Administración':'Admin'}</MoreItem>}
+                  <MoreItem
+                    danger
+                    onClick={() => {
+                      close();
+                      deleteSheet();
+                    }}
+                  >
+                    ✕ {mt(lang, "deleteSheet")}
+                  </MoreItem>
+                </>
+              )}
+            </MoreMenu>
+          </div>
+        </header>
+      <div className="mx-auto max-w-[1600px] px-3 pb-28 pt-3 sm:px-4">
         {!online && (
-          <div className="sticky top-0 z-30 -mx-4 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black">
+          <div className="-mx-3 -mt-3 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black sm:-mx-4">
             {mt(lang, "offlineBanner")}
           </div>
         )}
@@ -1125,139 +1224,36 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        {/* Header */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-xl bg-indigo-50 text-lg text-indigo-600">⌑</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={() => saveName(name)}
-              placeholder={shapeLabel(lang, sheet.shape)}
-              aria-label={lang==='pt'?'Nome do desenho':lang==='es'?'Nombre del dibujo':'Drawing name'} className="min-w-0 flex-1 bg-transparent text-xl font-display font-bold outline-none border-b border-transparent focus:border-indigo-500"
-            />
-          </div>
-          <div className="text-xs text-neutral-400 mb-3">
-            {shapeLabel(lang, sheet.shape)} · {job.customer_name}
-          </div>
-          {/* Status and the save state are the only things the measurer needs
-              from the header. Print, units and delete are housekeeping. */}
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs font-bold rounded-full px-3 py-2 border ${
-                status === "approved"
-                  ? "bg-green-600/20 border-green-500 text-green-300"
-                  : status === "submitted"
-                    ? "bg-amber-500/10 border-amber-500 text-amber-300"
-                    : "bg-neutral-800 border-neutral-600 text-neutral-300"
-              }`}
-            >
-              {status === "approved"
-                ? `✓ ${mt(lang, "approvedBadge")} · ${mt(lang, "revLabel")} ${rev}`
-                : status === "submitted"
-                  ? mt(lang, "submittedBadge")
-                  : mt(lang, "inProgress")}
-            </span>
-            {/* Autosave is trusted out loud. "Save now" only appears when
-                something has actually gone wrong. */}
-            <span className="min-w-0 flex-1 truncate text-xs">
-              {saveState === "saving" && (
-                <span className="text-neutral-500">{mt(lang, "saving")}</span>
-              )}
-              {(saveState === "saved" || saveState === "idle") && (
-                <span className="text-neutral-500">✓ {mt(lang, "savedAll")}</span>
-              )}
-              {saveState === "dirty" && (
-                <span className="text-amber-400">● {mt(lang, "unsaved")}</span>
-              )}
-              {(saveState === "queued" || saveState === "error") && (
-                <button
-                  onClick={requestSave}
-                  className="min-h-[48px] rounded-full border border-amber-700 bg-amber-950/40 px-3 font-bold text-amber-300"
-                >
-                  ⬇ {mt(lang, "savedOnDevice")} — {mt(lang, "saveNow")}
-                </button>
-              )}
-            </span>
-            <MoreMenu label={mt(lang, "moreLabel")} closeLabel={mt(lang, "closeLabel")}>
-              {(close) => (
-                <>
-                  <MoreItem
-                    onClick={() => {
-                      close();
-                      fetch("/shop/api/measure", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ type: "log_print", id: sheet.id, jobId: job.id, rev }),
-                      }).catch(() => {});
-                      window.print();
-                    }}
-                  >
-                    🖨 {mt(lang, "drawingPrint")}
-                  </MoreItem>
-                  <div className="pt-2 text-[11px] uppercase tracking-widest text-neutral-500">
-                    {mt(lang, "unitsLabel")}
-                  </div>
-                  <div className="flex gap-2">
-                    {(
-                      [
-                        ["in", `${mt(lang, "unitsIn")} (")`],
-                        ["ftin", `${mt(lang, "unitsFtIn")} (' ")`],
-                      ] as const
-                    ).map(([u, label]) => (
-                      <button
-                        key={u}
-                        type="button"
-                        onClick={() => set((d) => void (d.units = u))}
-                        className={`min-h-[48px] flex-1 rounded-xl border px-3 text-sm font-bold ${
-                          units === u
-                            ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                            : "border-neutral-700 bg-neutral-800 text-neutral-300"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <MoreItem
-                    danger
-                    onClick={() => {
-                      close();
-                      deleteSheet();
-                    }}
-                  >
-                    ✕ {mt(lang, "deleteSheet")}
-                  </MoreItem>
-                </>
-              )}
-            </MoreMenu>
-          </div>
-        </div>
-
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-1"><button type="button" aria-label={lang==='pt'?'Desfazer':lang==='es'?'Deshacer':'Undo'} disabled={!canUndo} onClick={undo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↶</button><button type="button" aria-label={lang==='pt'?'Refazer':lang==='es'?'Rehacer':'Redo'} disabled={!canRedo} onClick={redo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↷</button></div>
-          <details className="relative"><summary className="min-h-11 cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-slate-500">{lang==='pt'?'Aparência':lang==='es'?'Apariencia':'Appearance'}</summary><div className="absolute left-0 top-full z-40 min-w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl"><ShopAppearance lang={lang}/></div></details>
-          <button type="button" className="min-h-11 rounded-xl px-3 text-sm font-semibold" onClick={()=>{requestSave();router.push(`/shop/job/${job.id}/measure`);}}>{tx('Save & close','Salvar e fechar','Guardar y cerrar')}</button>
-        </div>
-        <nav aria-label="Professional workspace" className="mb-4 flex gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-          {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=><button type="button" key={key} aria-current={(key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials'))?'page':undefined} className={`min-h-12 flex-1 rounded-xl px-3 text-sm font-semibold ${((key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials')))?'bg-indigo-600 text-white shadow-sm':'text-slate-600'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">{ready.remaining}</span>}</button>)}
-        </nav>
-        <div hidden={workspace!=='design'}>
+        <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||openingForm}
+          lead={openingForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
+            onOpenGap={g=>{jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
+            onShow={slot=>{if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
+            onDone={()=>setWorkspace('review')}/>}
+          nav={<nav aria-label="Professional workspace" className="flex gap-1 rounded-2xl bg-slate-100 p-1">
+            {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
+          </nav>}
+          toolbar={designTool==='materials'||openingForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
+            <span className="min-w-0 flex-1 truncate">{designTool==='details'?detailTopicLabel(detailTopic,lang):toolLabels[designTool as keyof typeof toolLabels]}</span><ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-slate-500"/>
+            <select aria-label={tx('Tool','Ferramenta','Herramienta')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" value={designTool==='details'?detailTopic:designTool} onChange={e=>{const v=e.target.value;if(v in toolLabels){setDesignTool(v as keyof typeof toolLabels);}else openDetails(v as ProDetailsTopic);}}>
+              <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
+              <optgroup label={tx('Project controls','Controles do projeto','Controles del proyecto')}>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang)}</option>)}</optgroup>
+            </select>
+          </label>}>
+          <div hidden={workspace!=='design'}>
           {postDropError&&<div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{postDropError}{data.datums.postRef!=='centerline'&&<button type="button" className="mt-2 block min-h-11 rounded-xl bg-white px-3 font-semibold" onClick={()=>{set(d=>{d.datums.postRef='centerline';});setPostDropError('');}}>{tx('Use measurements to post centerlines','Usar medidas ao centro dos postes','Usar medidas al centro de postes')}</button>}</div>}
-          {sheet.shape==='opening'&&data.opening&&designTool!=='materials'?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:<ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} toolbar={designTool!=='materials'?<div className="flex flex-wrap items-center gap-2">
-            {([['site',tx('Existing site','Local existente','Sitio existente')],['measure',tx('Dimensions & posts','Medidas e postes','Medidas y postes')],['panels',tx('Railing panels','Painéis de corrimão','Paneles de barandilla')],['specialty',tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')]] as const).map(([tool,label])=><button type="button" key={tool} aria-pressed={designTool===tool} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${designTool===tool?'bg-indigo-50 text-indigo-800':'bg-white text-slate-600'}`} onClick={()=>setDesignTool(tool)}>{label}</button>)}
-            <label className="ml-auto"><span className="sr-only">{tx('Project controls','Controles do projeto','Controles del proyecto')}</span><select aria-label={tx('Project controls','Controles do projeto','Controles del proyecto')} className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" value={designTool==='details'?detailTopic:''} onChange={e=>{if(e.target.value)openDetails(e.target.value as ProDetailsTopic);}}><option value="">{tx('Project controls','Controles do projeto','Controles del proyecto')}</option>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang)}</option>)}</select></label>
-          </div>:undefined}>
-            {designTool==='site'&&!hasExistingStructures&&<div className="mb-3 rounded-xl bg-indigo-50 p-3 text-sm text-indigo-950"><h2 className="font-semibold">{tx('Start with the existing structures','Comece pelas estruturas existentes','Comience con las estructuras existentes')}</h2><p className="mt-1 leading-relaxed">{tx('Add the house walls, structural columns and existing posts that the railing connects to. Then open Dimensions & posts to measure the treads and landings.','Adicione paredes da casa, colunas estruturais e postes existentes onde o corrimão será conectado. Depois abra Medidas e postes para medir degraus e patamares.','Añada las paredes de la casa, columnas estructurales y postes existentes donde se conecta la barandilla. Después abra Medidas y postes para medir peldaños y descansos.')}</p></div>}
+          {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:<>
+            {designTool==='site'&&!hasExistingStructures&&<h2 className="mb-3 px-1 text-lg font-semibold tracking-tight text-slate-900">{tx('Start with the existing structures','Comece pelas estruturas existentes','Comience con las estructuras existentes')}</h2>}
             {designTool==='site'&&<SiteWorkspace embedded key={`site:${visualSite||''}`} initialObjectId={visualSite} data={data} set={set} lang={lang} onPanels={()=>setDesignTool('panels')} onContinue={()=>setDesignTool('measure')} onDetails={()=>openDetails('photos')} onPost={id=>selectScene({postId:id})} onMeasure={(segment,step)=>{if(segment!==undefined)selectScene({segmentIndex:segment,stepIndex:step??null});else setDesignTool('measure');}}/>}
-            {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm"><p>{tx('If the railing meets existing walls, columns or posts, place them on the site sketch first.','Se o corrimão encontra paredes, colunas ou postes existentes, coloque-os primeiro no desenho do local.','Si la barandilla llega a paredes, columnas o postes existentes, colóquelos primero en el dibujo del sitio.')}</p><button type="button" className="mt-2 min-h-11 rounded-xl bg-white px-3 font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang)}</button>)}</div></>}
+            {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3"><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang)}</button>)}</div></>}
             {designTool==='panels'&&<PanelWorkspace embedded selectedRailId={visualRail} onSelectRail={setVisualRail} onSceneSelect={selectScene} data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setDesignTool('site')} onReview={()=>setWorkspace('review')}/>}
             {designTool==='materials'&&<><SteelWorkspace embedded onSceneSelect={selectScene} data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/><button type="button" className="mt-3 min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" onClick={()=>openDetails('specifications')}>{detailTopicLabel('specifications',lang)}</button></>}
             {designTool==='specialty'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></>}
             {designTool==='details'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><h2 className="mb-3 text-lg font-bold">{detailTopicLabel(detailTopic,lang)}</h2>{detailContent}</>}
-          </ProWorkspace>}
-        </div>
-        {workspace==='review'&&<div className="mx-auto max-w-5xl"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{tx('Shop package','Pacote da oficina','Paquete del taller')}</h2><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold" onClick={()=>{setWorkspace('design');setDesignTool('materials');}}>{tx('Materials & stock','Materiais e barras','Materiales y barras')}</button></div>{reviewContent}</div>}
+          </>}
+          </div>
+          {workspace==='review'&&<div className="mx-auto max-w-5xl"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{tx('Shop package','Pacote da oficina','Paquete del taller')}</h2><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold" onClick={()=>{setWorkspace('design');setDesignTool('materials');}}>{tx('Materials & stock','Materiais e barras','Materiales y barras')}</button></div>{reviewContent}</div>}
+        </ProWorkspace>
+      </div>
       </div>
 
       <PointMenus
