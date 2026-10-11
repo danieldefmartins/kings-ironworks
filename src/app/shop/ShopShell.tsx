@@ -293,8 +293,15 @@ export default function ShopShell({
             const { label, icon: Icon } = tab;
             if ("clock" in tab) return (
               <button key="clock" onClick={() => setOpen(true)} className="relative z-20 flex h-full touch-manipulation flex-col items-center justify-end pb-2 text-[11px] font-bold text-neutral-100">
-                <span className={`absolute -top-2.5 grid h-[62px] w-[62px] place-items-center rounded-full border-4 border-neutral-950 shadow-xl shadow-black/50 ${shift ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>
-                  <Clock3 className="h-8 w-8" strokeWidth={2.5} />
+                {/* The crew's main control: big, centred, and its colour is the state —
+                    green while on the clock, amber on break, grey when stopped. Inline
+                    colours so the light theme's utility remapping can't wash them out. */}
+                <span
+                  data-clock-state={shift ? (onBreak ? "break" : "working") : "stopped"}
+                  style={{ background: shift ? (onBreak ? "#f59e0b" : "#22c55e") : "#9ca3af", color: "#fff", borderColor: "var(--shop-card, #fff)" }}
+                  className="absolute -top-8 grid h-[78px] w-[78px] place-items-center rounded-full border-[5px] shadow-xl shadow-black/30 transition-colors"
+                >
+                  <Clock3 className="h-10 w-10" strokeWidth={2.5} />
                 </span>
                 <span>{label}</span>
               </button>
