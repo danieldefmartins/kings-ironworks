@@ -24,7 +24,7 @@ describe("shop menus", () => {
     expect(screen.getByRole("status")).toBeTruthy();
     expect(screen.queryAllByRole("link")).toHaveLength(0);
     fireEvent.click(screen.getByRole("button", { name: "Limpar busca" }));
-    expect(screen.getAllByRole("link")).toHaveLength(8);
+    expect(screen.getAllByRole("link")).toHaveLength(9);
   });
   it("groups owner tools and distinguishes project time from payroll", () => {
     render(<MenuDirectory scope="admin" lang="en" />);

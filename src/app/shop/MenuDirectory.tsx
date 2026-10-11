@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BriefcaseBusiness, Calculator, ChevronRight, ClipboardClock, House, PackageSearch, Ruler, Search, UserRound, X } from "lucide-react";
+import { BriefcaseBusiness, Calculator, ChevronRight, ClipboardClock, House, KeyRound, PackageSearch, Ruler, Search, UserRound, X } from "lucide-react";
 import { t } from "@/lib/shop/i18n";
 import { mt } from "@/lib/shop/measure-i18n";
 import { ADMIN_DESTS } from "./adminNav";
@@ -17,6 +17,7 @@ const CREW_DESTS = [
   { group: "field", href: "/shop/calc", key: "calcTile", hintKey: "calcTileHint", icon: Calculator },
   { group: "account", href: "/shop/time", key: "myTimesheet", hintKey: "myTimesheetHint", icon: ClipboardClock },
   { group: "account", href: "/shop/profile", key: "myProfile", hintKey: "myProfileHint", icon: UserRound },
+  { group: "account", href: "/shop/profile/pin", key: "changePin", hintKey: "changePinHint", icon: KeyRound },
 ];
 const GROUPS = {
   crew: [["daily", "menuDaily"], ["field", "menuField"], ["account", "menuAccount"]],
