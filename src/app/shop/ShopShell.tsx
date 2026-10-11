@@ -269,7 +269,7 @@ export default function ShopShell({
     ? null : clock.weekEarningsBeforeShift + (currentWeek?.basePay ?? 0);
 
   return (
-    <ShopAccess.Provider value={isOwner}><div data-shop-theme={measuring ? undefined : appearance} className={`${measuring ? "" : "shop-ui shop-app"} min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]`}>
+    <ShopAccess.Provider value={isOwner}><div data-shop-theme={appearance} className={`shop-ui shop-app ${measuring ? "shop-measuring" : ""} min-h-screen max-w-full overflow-x-hidden pb-[calc(82px+env(safe-area-inset-bottom))]`}>
       {queued > 0 && (
         <div className="fixed inset-x-0 top-0 z-[70] bg-amber-400 px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] text-center text-sm font-semibold text-black">
           {t(lang, "punchQueuedBanner", { n: String(queued) })}
@@ -285,7 +285,7 @@ export default function ShopShell({
       </div>}
       {children}
 
-      <nav aria-label={lang === "pt" ? "Navegação principal" : lang === "es" ? "Navegación principal" : "Main navigation"} className={measuring ? "fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl" : "shop-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#111215]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] backdrop-blur-2xl"}>
+      <nav aria-label={lang === "pt" ? "Navegação principal" : lang === "es" ? "Navegación principal" : "Main navigation"} className={measuring ? "shop-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl" : "shop-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#111215]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] backdrop-blur-2xl"}>
         <div className="mx-auto grid h-[76px] max-w-2xl grid-cols-5">
           {tabs.map((tab) => {
             const { label, icon: Icon } = tab;

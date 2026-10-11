@@ -1,3 +1,4 @@
+import {SteelPlanSchema} from '@/lib/shop/measure-steel';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -437,6 +438,7 @@ const SpanSchema = z.object({
 
 const MeasureDataSchema = z.object({
   site: SiteModelSchema.optional(),
+  steelPlan: SteelPlanSchema.optional(),
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
     .max(12),
@@ -652,9 +654,10 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (!parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined)) {
+        if (parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
+          if(parsed.data.steelPlan === undefined && existing?.data.steelPlan) parsed.data.steelPlan=existing.data.steelPlan;
         }
         const baseFilter = sheetFilter(body.id, jobOk);
         const base = typeof body.baseUpdatedAt === "string" ? body.baseUpdatedAt : null;

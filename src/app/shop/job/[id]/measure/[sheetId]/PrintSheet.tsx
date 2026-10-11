@@ -28,6 +28,7 @@ import DrawingDetails from "./DrawingDetails";
 import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { sketchViews } from "./Sketch";
 import SitePrint from './SitePrint';
+import SteelTakeoffPrint from './SteelTakeoffPrint';
 
 const GOLD = "#b8860b";
 
@@ -1061,6 +1062,7 @@ export default function PrintSheet({
         {data.photos.length} 📷
       </div>
       <SitePrint data={data} lang={lang} revision={sheet.current_rev||0}/>
+      <SteelTakeoffPrint data={data}/>
     </div>
   );
 }

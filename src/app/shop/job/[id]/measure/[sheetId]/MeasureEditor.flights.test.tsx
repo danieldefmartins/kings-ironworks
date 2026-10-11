@@ -123,7 +123,7 @@ it('opens saved attached panels from the main navigation and keeps edits across 
  expect(screen.queryByRole('group',{name:'Start connection'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Stairs & specialty'}));
  expect(screen.getByRole('button',{name:'Stairs & specialty'}).getAttribute('aria-pressed')).toBe('true');
- fireEvent.click(screen.getByRole('button',{name:'Attached panels',exact:true}));
+ fireEvent.click(screen.getByRole('button',{name:'Attached panels'}));
  expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'1. Site'}));
  fireEvent.click(screen.getByRole('button',{name:/Design attached panels/}));

@@ -23,7 +23,8 @@ export function projectSite(p:Point3, view:SiteView):[number,number] {
   return [(p.x+p.y)*Math.sqrt(3)/2,-p.x/2+p.y/2-p.z];
 }
 
-export default function SiteDrawing({data,view='iso',selected,onSelect,onSurface,measure=false,onAnchor,anchorIds=[],move,onMove,zoom=1}:{
+export default function SiteDrawing({data,view='iso',selected,onSelect,onSurface,measure=false,onAnchor,anchorIds=[],move,onMove,zoom=1,onMember}:{
+  onMember?:(railId:string,part:string,role:'top'|'bottom'|'picket')=>void;
   data:MeasureData;view?:SiteView;selected?:string;onSelect?:(id:string)=>void;
   onSurface?:(segment:number,step:number|null)=>void;measure?:boolean;
   onAnchor?:(id:string)=>void;anchorIds?:string[];move?:boolean;onMove?:(x:number,y:number)=>void;zoom?:number;
@@ -48,7 +49,7 @@ export default function SiteDrawing({data,view='iso',selected,onSelect,onSurface
   const anchors=siteAnchors(data);
   const faces=meshes.flatMap(m=>m.faces.map(face=>({m,verts:face.map(i=>m.vertices[i])})))
     .sort((a,b)=>a.verts.reduce((n,p)=>n+p.x-p.y+p.z,0)/a.verts.length-b.verts.reduce((n,p)=>n+p.x-p.y+p.z,0)/b.verts.length);
-  return <svg viewBox="0 0 800 470" role="img" aria-label="Job site and railing drawing" style={{display:'block',width:`${zoom*100}%`,minWidth:'100%',background:'#f8fafc',borderRadius:16}} onClick={e=>{
+  return <svg data-site-sketch viewBox="0 0 800 470" role="img" aria-label="Job site and railing drawing" style={{display:'block',width:`${zoom*100}%`,minWidth:'100%',background:'#f8fafc',borderRadius:16}} onClick={e=>{
     if(!move||view!=='plan'||!onMove)return;
     const matrix=e.currentTarget.getScreenCTM();if(!matrix)return;
     const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(matrix.inverse());
@@ -61,7 +62,7 @@ export default function SiteDrawing({data,view='iso',selected,onSelect,onSurface
     {posts.map(p=>p.base&&p.top?<g key={p.post.id}><polyline points={points([p.base,p.top])} fill="none" stroke={p.provisional?'#d97706':'#2563eb'} strokeWidth="3" strokeDasharray={p.provisional?'4 3':undefined}/><text x={xy(p.top)[0]+4} y={xy(p.top)[1]-4} fontSize="11" fill="#1d4ed8">{p.label}</text></g>:null)}
     {[...groups.values()].map((list,i)=><polyline key={i} points={points(list.map(p=>p.top!))} fill="none" stroke="#2563eb" strokeWidth="2" strokeDasharray="6 3"/>)}
     {connections.map((path,i)=><polyline key={`connection:${i}`} points={points(path)} fill="none" stroke="#2563eb" strokeWidth="2" strokeDasharray="6 3"/>)}
-    {rails.map(r=><g key={r.id} data-attached-rail={r.id}>{r.parts.flatMap(p=>p.faces.map((face,i)=><polygon key={`${p.mark}:${i}`} points={points(face.map(v=>p.vertices[v]))} fill="#94a3b8" fillOpacity=".7" stroke="#334155" strokeWidth=".7"/>))}<polygon points={points(r.vertices)} fill="#93c5fd" fillOpacity=".22" stroke={r.verified?'#2563eb':'#d97706'} strokeWidth="2.5" strokeDasharray="6 3"/><text x={xy(r.vertices[3])[0]+4} y={xy(r.vertices[3])[1]-8} fontSize="12" fontWeight="700" fill="#1d4ed8" paintOrder="stroke" stroke="#f8fafc" strokeWidth="3">{r.mark}</text>{[r.vertices[2],r.vertices[3]].map((p,i)=><circle key={i} cx={xy(p)[0]} cy={xy(p)[1]} r="4" fill="#2563eb"/>)}</g>)}
+    {rails.map(r=><g key={r.id} data-attached-rail={r.id}>{r.parts.map(p=><g key={p.mark} role={onMember?'button':undefined} tabIndex={onMember?0:undefined} aria-label={onMember?`Assign material ${p.mark}`:undefined} style={{cursor:onMember?'pointer':undefined}} onClick={e=>{e.stopPropagation();onMember?.(r.id,p.mark.split('-').at(-1)!,p.kind);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onMember?.(r.id,p.mark.split('-').at(-1)!,p.kind);}}}>{p.faces.map((face,i)=><polygon key={i} points={points(face.map(v=>p.vertices[v]))} fill="#94a3b8" fillOpacity=".8" stroke="#475569" strokeWidth=".7"/>)}</g>)}<polygon pointerEvents={onMember?'none':undefined} points={points(r.vertices)} fill="#93c5fd" fillOpacity=".22" stroke={r.verified?'#2563eb':'#d97706'} strokeWidth="2.5" strokeDasharray="6 3"/><text x={xy(r.vertices[3])[0]+4} y={xy(r.vertices[3])[1]-8} fontSize="12" fontWeight="700" fill="#1d4ed8" paintOrder="stroke" stroke="#f8fafc" strokeWidth="3">{r.mark}</text>{[r.vertices[2],r.vertices[3]].map((p,i)=><circle key={i} cx={xy(p)[0]} cy={xy(p)[1]} r="4" fill="#2563eb"/>)}</g>)}
     {measure&&anchors.filter(a=>!selected||a.id.startsWith(selected+':')||a.id.startsWith('step:')||a.id==='origin').map(a=>{const p=xy(a.point);return <g key={a.id} role="button" aria-label={a.label} tabIndex={0} onClick={e=>{e.stopPropagation();onAnchor?.(a.id);}} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onAnchor?.(a.id);}}}><circle cx={p[0]} cy={p[1]} r="10" fill="transparent"/><circle cx={p[0]} cy={p[1]} r={anchorIds.includes(a.id)?6:3.5} fill={anchorIds.includes(a.id)?'#dc2626':'#4f46e5'} stroke="white" strokeWidth="1.5"/></g>;})}
     {anchorIds.length===2&&anchors.find(a=>a.id===anchorIds[0])&&anchors.find(a=>a.id===anchorIds[1])&&<polyline points={points(anchorIds.map(id=>anchors.find(a=>a.id===id)!.point))} stroke="#dc2626" strokeWidth="2" strokeDasharray="4 2" fill="none"/>}
     <circle cx={xy({x:0,y:0,z:0})[0]} cy={xy({x:0,y:0,z:0})[1]} r="4" fill="#0f172a"/>

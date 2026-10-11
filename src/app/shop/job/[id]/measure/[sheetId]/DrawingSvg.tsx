@@ -1,4 +1,5 @@
 "use client";
+import {useShopAppearance} from "../../../../ShopAppearance";
 import { drawingProjection, drawingPointOccluded } from '@/lib/shop/measure-projection';
 import type { CSSProperties } from 'react';
 import { railSideSetback, flightWalls } from "@/lib/shop/measure";
@@ -14,6 +15,8 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   onTapPlatform?:(segIdx:number)=>void;
   onMeasureStep?:(segIdx:number,stepIdx:number)=>void;onTapPost?:(id:string)=>void;style?:CSSProperties;
 }) {
+  const appearance=useShopAppearance();
+  light = light || appearance==='light';
   const model=stairGeometry(data,focusSeg);if(!model)return null;
   const camera=drawingProjection(view,azimuth);
   const {project,depth}=camera;

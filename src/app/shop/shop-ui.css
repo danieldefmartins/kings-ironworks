@@ -1,4 +1,4 @@
-/* Scoped to the shop shell; measuring routes retain their existing appearance. */
+/* Shared appearance for shop and measuring routes. */
 .shop-ui {
  --shop-bg: #f3f4f7; --shop-card: #fff; --shop-inset: #edf0f5;
  --shop-fg: #1d2027; --shop-secondary: #535e70; --shop-muted: #647084;
@@ -182,3 +182,20 @@
 .shop-ui [data-money-layout="stacked"] .shop-money-card dd { margin-top: 10px; font-size: clamp(12px, 13cqi, 32px); line-height: 1.2; }
 .shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] { grid-column: 1 / -1; padding: 18px 16px; }
 .shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] dd { font-size: clamp(24px, 11cqi, 40px); }
+
+/* Measuring cards use the same surfaces; the printed sheets keep white paper. */
+@media screen {
+ .shop-ui [data-measure-ui] :is(.bg-white,.bg-slate-50) { background-color: var(--shop-card); }
+ .shop-ui [data-measure-ui] :is(.bg-slate-100,.bg-indigo-50) { background-color: var(--shop-inset); }
+ .shop-ui [data-measure-ui] :is(.text-slate-900,.text-slate-800,.text-indigo-950,.text-white:not(button):not(a)) { color: var(--shop-fg); }
+ .shop-ui [data-measure-ui] :is(.text-slate-700,.text-slate-600,.text-slate-500) { color: var(--shop-secondary); }
+ .shop-ui [data-measure-ui] :is(.border-slate-100,.border-slate-200,.border-slate-300,.border-indigo-100,.border-indigo-200) { border-color: var(--shop-line); }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-indigo-700,.text-indigo-800,.text-indigo-900) { color: #c7d2fe; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.bg-amber-50,.bg-emerald-50,.bg-sky-50) { background-color: var(--shop-inset); }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-amber-800,.text-amber-900) { color: #fcd34d; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-emerald-700,.text-emerald-900) { color: #6ee7b7; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] .text-red-700 { color: #fca5a5; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] { background: #171c24 !important; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] text { fill: #cbd5e1; stroke: none; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] [stroke="#2563eb"] { stroke: #93c5fd; }
+}

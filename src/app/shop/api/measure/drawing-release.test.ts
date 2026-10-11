@@ -7,6 +7,7 @@ vi.mock('@/lib/shop/session',()=>({getSessionWorker:mocks.worker,touchSession:vi
 vi.mock('@/lib/shop/db',()=>({sbSelect:mocks.select,sbUpdate:mocks.update,sbRpc:mocks.rpc,audit:mocks.audit,ORG_ID:'org',getOrgSettings:async()=>({rules:{allowSelfApproval:false},tolerances:{}})}));
 vi.mock('@/lib/shop/measure-checks',async(importOriginal)=>({...await importOriginal<object>(),runChecks:mocks.checks,submitBlockers:mocks.blockers}));
 import {POST} from './route';
+import {newSteelPlan,newSteelRow} from '@/lib/shop/measure-steel';
 import {porchSiteFixture} from '@/lib/shop/measure-site.fixture';
 const id='a0000000-0000-4000-8000-000000000001',stamp='2026-09-07T12:00:00.000Z';
 let data:ReturnType<typeof newMeasureData>;
@@ -29,6 +30,19 @@ describe('fabrication release endpoint',()=>{
 });
 
 describe('measurement persistence',()=>{
+  it('keeps material assignments on save and protects them from older clients',async()=>{
+    const legacy=structuredClone(data);data.steelPlan=newSteelPlan();data.steelPlan.rows.push(newSteelRow('member','Second rail','second_toprail'));
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.steelPlan).toEqual(data.steelPlan);
+    mocks.update.mockClear();
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.steelPlan).toEqual(data.steelPlan);
+    mocks.update.mockClear();
+    expect((await request({type:'update',data:{...data,steelPlan:newSteelPlan()},baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.steelPlan.rows).toEqual([]);
+  });
+
   it('persists the site layer alongside the existing sheet data',async()=>{
     data.site=porchSiteFixture().site;
     mocks.update.mockResolvedValue([{updated_at:stamp}]);

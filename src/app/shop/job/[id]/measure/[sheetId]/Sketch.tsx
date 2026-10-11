@@ -1,4 +1,5 @@
 "use client";
+import {useShopAppearance} from "../../../../ShopAppearance";
 
 // Auto-generated measurement sketch. Draws the chosen railing shape with a
 // value box on every step/field — entered numbers show in gold, missing ones
@@ -158,6 +159,8 @@ export default function Sketch({
   /** Enlarge the drawing itself while keeping its viewport scrollable. */
   zoom?: number;
 }) {
+  const appearance=useShopAppearance();
+  light = light || appearance==='light';
   const p = light ? LIGHT : DARK;
   const staticZoom = (drawing: React.ReactNode) => <ZoomBox zoom={zoom} maxHeight={560}>
     <div data-specialty-zoom style={{width:`${zoom*100}%`}} className="[&>svg]:max-h-none! [&>svg]:h-auto!">{drawing}</div>
