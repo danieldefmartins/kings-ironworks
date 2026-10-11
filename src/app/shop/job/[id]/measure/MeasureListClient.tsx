@@ -54,7 +54,7 @@ export default function MeasureListClient({
   // step count up front asks about a stair nobody has walked yet. The first
   // flight's steps are set in the sheet like every other flight's.
   const isMulti = preset === "multi_flight";
-  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony" && shape !== "opening";
+  const needsSteps = shape !== "level_run" && shape !== "ramp" && shape !== "custom" && shape !== "window_well" && shape !== "gate" && shape !== "balcony" && shape !== "opening" && shape !== "structural";
 
   async function create() {
     if (!shape || !sceneDraft.sceneSetup?.environment || !sceneDraft.sceneSetup?.projectType) return;

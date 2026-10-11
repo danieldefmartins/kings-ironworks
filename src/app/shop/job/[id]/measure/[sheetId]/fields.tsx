@@ -1006,17 +1006,18 @@ export function CheckRow({ c, lang }: { c: CheckResult; lang: string }) {
   const fmt = (n: number | null) =>
     n === null ? "—" : c.unit === "deg" ? `${n.toFixed(1)}°` : formatIn(n);
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm">
       <span
         className={`text-[10px] font-bold rounded-full border px-2 py-0.5 shrink-0 w-24 text-center ${LEVEL_STYLE[c.level]}`}
       >
         {c.level === "na" ? "…" : mt(lang, c.level === "green" ? "levelGreen" : c.level === "yellow" ? "levelYellow" : "levelRed")}
       </span>
-      <span className="flex-1 text-neutral-300 min-w-0">
+      <span className="min-w-40 flex-1 text-neutral-300">
         {mt(lang, `check_${c.key}`)}
         {c.detail ? ` ${c.detail}` : ""}
       </span>
-      <span className="text-xs text-neutral-500 shrink-0 text-right">
+      {/* On a phone the numbers drop under the label instead of crushing it. */}
+      <span className="w-full pl-[6.5rem] text-xs text-neutral-500 sm:w-auto sm:shrink-0 sm:pl-0 sm:text-right">
         {c.level === "na"
           ? mt(lang, "checkNa")
           : `${mt(lang, "calcLbl")} ${fmt(c.expected)} · ${mt(lang, "measLbl")} ${fmt(c.actual)}${

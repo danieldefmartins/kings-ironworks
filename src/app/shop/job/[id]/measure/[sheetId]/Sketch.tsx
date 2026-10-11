@@ -1,4 +1,5 @@
 "use client";
+import StructuralSketch from "./shapes/StructuralSketch";
 import {useShopAppearance} from "../../../../ShopAppearance";
 import { OpeningSketch } from "./OpeningPrint";
 
@@ -105,6 +106,7 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
     ];
   if (shape === "gate") return [["front", "elevationView"]];
   if (shape === "opening") return [["front", "elevationView"]];
+  if (shape === "structural") return [["front", "elevationView"]];
   if (shape === "fence") return [["front", "elevationView"]];
   if (shape === "balcony")
     return [
@@ -183,6 +185,7 @@ export default function Sketch({
       />
     );
   if (shape === "opening") return <OpeningSketch opening={data.opening} lang={lang} light={light} />;
+  if (shape === "structural") return <div style={{ maxWidth: 640, margin: "0 auto" }}><StructuralSketch s={data.structural ?? null} lang={lang} /></div>;
   if (shape === "gate") return staticZoom(<GateSketch gate={data.gate} p={p} lang={lang} />);
   if (shape === "fence") return staticZoom(<FenceSketch fence={data.fence} p={p} lang={lang} />);
   if (shape === "balcony")
