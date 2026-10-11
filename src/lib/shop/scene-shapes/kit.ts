@@ -1,4 +1,5 @@
-// Small geometry kit shared by the opening / structural / fire-escape / spiral /
+// Section / solid helpers (true steel shapes, flat-shaded boxes) on top of
+// build-kit's adapter contract. Shared by the opening / structural / fire-escape / spiral /
 // wall-rail / custom scene adapters. Inches, Z up. Display only: nothing here
 // is written back to a sheet or used to cut steel.
 import type {Point3} from '../measure-geometry';
@@ -6,8 +7,9 @@ import type {SceneEntity,SceneKind,SceneLine,SceneMesh} from '../measure-scene';
 import {parseMeas} from '../measure-parse';
 
 export type Geo={vertices:Point3[];faces:number[][]};
-export type ShapeScene={meshes:SceneMesh[];lines:SceneLine[];pending:string[]};
-export const emptyScene=():ShapeScene=>({meshes:[],lines:[],pending:[]});
+import type {ShapeSceneOutput} from './build-kit';
+export {emptyScene} from './build-kit';
+export type ShapeScene=ShapeSceneOutput;
 
 /** A measured value, or null when blank / unreadable / not positive. */
 export function num(s:string|null|undefined,zero=false):number|null{

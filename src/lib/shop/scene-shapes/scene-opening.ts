@@ -37,8 +37,8 @@ export function holeOutline(u:OpeningUnit):HoleOutline{
 }
 
 /** Front + back faces of a wall ring around the hole, jamb faces, and the outer edges. */
-function wallWithHole(hole:HoleOutline,cx:number,sillZ:number,depth:number):Geo{
- const W=hole.width/2+MARGIN,top=sillZ+hole.height+MARGIN,bottom=0;
+function wallWithHole(hole:HoleOutline,cx:number,sillZ:number,depth:number,wallTop:number):Geo{
+ const W=hole.width/2+MARGIN,top=Math.max(wallTop,sillZ+hole.height+MARGIN),bottom=0;
  const inner=hole.points.map(p=>P(cx+p.x,0,sillZ+p.z));
  const midZ=sillZ+hole.height/2;
  const outer=[P(cx-W,0,bottom),P(cx,0,bottom),P(cx+W,0,bottom),P(cx+W,0,midZ),P(cx+W,0,top),P(cx,0,top),P(cx-W,0,top),P(cx-W,0,midZ)];
@@ -79,6 +79,9 @@ export function openingScene(data:MeasureData):ShapeScene{
  if(!product)out.pending.push('Product');
  if(!o.mount)out.pending.push('Mount');
  let cursor=0;
+ // One wall: every stretch shares the tallest head line.
+ const sillOf=(u:OpeningUnit)=>door?0:num(u.dropOutside,true)??30;
+ const wallTop=Math.max(...o.units.map(u=>sillOf(u)+holeOutline(u).height+MARGIN));
  o.units.forEach((u,i)=>{
   const tag=unitTag(u,i),hole=holeOutline(u),reveal=num(u.reveal),depth=reveal??8;
   if(hole.provisional)out.pending.push(`${tag} · opening`);
@@ -86,10 +89,9 @@ export function openingScene(data:MeasureData):ShapeScene{
   const half=hole.width/2+MARGIN,cx=cursor+half;cursor+=2*half+GAP;
   // The ground is the outside grade: a door stands on its threshold, a sill at its measured
   // drop to the surface outside (a placeholder height until that is read).
-  const drop=num(u.dropOutside,true);
-  const sillZ=door?0:drop??30;
+  const sillZ=sillOf(u);
   const entity={part:`opening:${u.id}`};
-  out.meshes.push(mesh(`opening:wall:${u.id}`,`${tag} · wall`,'site',wallWithHole(hole,cx,sillZ,depth),{referenceOnly:true,provisional:reveal===null,entity}));
+  out.meshes.push(mesh(`opening:wall:${u.id}`,`${tag} · wall`,'site',wallWithHole(hole,cx,sillZ,depth,wallTop),{referenceOnly:true,provisional:reveal===null,entity}));
   // Sill: projects proud of the face and falls outward by the measured slope.
   const proj=num(u.sillProjection,true),fall=num(u.sillSlope,true)??0;
   if(!door&&proj!==null){
