@@ -3,7 +3,6 @@ import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials, redactJobMoney } from "@/lib/shop/shared";
 import { listCatalog, getJob, getMeasureSheet, listWorkers, getOrgSettings, getSheetHistory, getCarryover } from "@/lib/shop/db";
 import { normalizeMeasureData } from "@/lib/shop/measure";
-import ShopTopBar from "../../../../ShopTopBar";
 import {steelCatalog} from '@/lib/shop/measure-steel';
 import MeasureEditor from "./MeasureEditor";
 
@@ -39,15 +38,8 @@ export default async function MeasureSheetPage({
 
   return (
     <div>
-      <div className="print:hidden">
-        <ShopTopBar
-          workerName={worker.name}
-          title={job.customer_name}
-          back={`/shop/job/${id}/measure`}
-          lang={lang}
-          adminLink={canViewOwnerFinancials(worker)}
-        />
-      </div>
+      {/* Focus mode: the editor draws its own slim bar (back, sheet, save
+          state, menu). The shop top bar and tab bar return on the sheet list. */}
       <MeasureEditor
         job={redactJobMoney(job, canViewOwnerFinancials(worker))}
         sheet={sheet}
@@ -59,6 +51,7 @@ export default async function MeasureSheetPage({
         history={history}
         carryover={carryover}
         catalog={steelCatalog(catalog)}
+        adminLink={canViewOwnerFinancials(worker)}
       />
     </div>
   );
