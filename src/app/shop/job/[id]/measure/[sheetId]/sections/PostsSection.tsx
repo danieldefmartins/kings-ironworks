@@ -331,7 +331,7 @@ function PostStandards({
         <MInput help="fromEdge" label={mt(lang, "railSideSetback")} hint={mt(lang,"railSideSetbackHint")} value={edge}
           onChange={(v) => applyAll("fromEdge", v)} />
       </Grid>
-      <ChipRow label={mt(lang,"postRefLbl")} value={data.datums.postRef} options={[["centerline",mt(lang,"postRef_centerline")],["face",mt(lang,"postRef_face")]]} onChange={v=>set(d=>void(d.datums.postRef=v as ""|"centerline"|"face"))}/>
+      <ChipRow help="postRefLbl" label={mt(lang,"postRefLbl")} value={data.datums.postRef} options={[["centerline",mt(lang,"postRef_centerline")],["face",mt(lang,"postRef_face")]]} onChange={v=>set(d=>void(d.datums.postRef=v as ""|"centerline"|"face"))}/>
       {/* Only offered when the run has actually drifted apart — otherwise it
           is a button that does nothing, which is worse than no button. */}
       {uneven && (

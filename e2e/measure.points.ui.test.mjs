@@ -9,7 +9,7 @@
 // dir), and a server on the TEST org:
 //   SHOP_ORG_ID=b0000000-0000-4000-8000-000000000002 npx next start -p 3457
 
-import { chromium } from "playwright";
+import { chromium } from "./playwright.mjs";
 
 const BASE = process.env.SHOP_BASE_URL || "http://localhost:3457";
 const WORKER = process.env.SHOP_WORKER_ID || "b1000000-0000-4000-8000-000000000002";
@@ -47,19 +47,20 @@ const sheetId = (await mk.json()).id;
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
-page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
+
+try {
 await page.goto(`${BASE}/shop/job/${JOB}/measure/${sheetId}`, { waitUntil: "networkidle" });
+await page.getByLabel("Tool",{exact:true}).selectOption("structure");
 check(errors.length === 0, "sheet loads with no client errors", errors.slice(0, 2).join(" | ") || "clean");
 
 // --- draw run 1: three taps on the canvas -------------------------------
 const canvas = page.locator("svg.touch-none").first();
 await canvas.waitFor({ state: "visible", timeout: 15000 });
+await canvas.scrollIntoViewIfNeeded();
 const box = await canvas.boundingBox();
 const tap = async (fx, fy) => {
-  await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy);
-  await page.mouse.down();
-  await page.mouse.up();
+  await canvas.click({position:{x:box.width*fx,y:box.height*fy}});
   await page.waitForTimeout(160);
 };
 await tap(0.15, 0.20);
@@ -108,7 +109,7 @@ const mid = await page.evaluate(() => {
   return { x: r.left + r.width / 2, y: r.top + r.height / 2, count: strips.length };
 });
 check(mid !== null, "line grab strips appear in Add point mode", mid ? `${mid.count} strips` : "none");
-console.log("      under the cursor:", JSON.stringify(under));
+
 if (mid) {
   await page.mouse.move(mid.x, mid.y);
   await page.mouse.down();
@@ -148,6 +149,7 @@ const stored = await fetch(`${BASE}/shop/api/measure`, {
 
 // read the row straight back through a fresh page render
 await page.reload({ waitUntil: "networkidle" });
+await page.getByLabel("Tool",{exact:true}).selectOption("structure");
 await page.waitForTimeout(1000);
 const cards = await page.getByText(/^On run$/).count();
 check(cards >= 2, "point cards render on the drawing screen after reload", `${cards} cards`);
@@ -159,7 +161,7 @@ const hasTypes = chipTexts.some((t) => /New railing post/i.test(t)) &&
                  chipTexts.some((t) => /clip/i.test(t));
 check(hasTypes, "post / existing column / concrete wall / clip are all offered");
 
-const alongVals = await page.getByLabel(/Along the line/i).all();
+const alongVals = await page.getByRole('textbox', { name: /^Along the line/i }).all();
 check(alongVals.length >= 2, "each point has a distance-along-the-line field", `${alongVals.length}`);
 // Seeding only happens when the tapped line already carries a measured
 // length — the distance is derived from it. These lines were never
@@ -170,11 +172,9 @@ check(seeded === "", "an undimensioned line seeds no distance (correct)", seeded
 check(errors.length === 0, "no client errors through the whole flow", errors.slice(0, 3).join(" | ") || "clean");
 await page.screenshot({ path: "/tmp/shop-points.png", fullPage: false });
 
-await fetch(`${BASE}/shop/api/measure`, {
-  method: "POST",
-  headers: { "content-type": "application/json", cookie: nv },
-  body: JSON.stringify({ type: "delete", id: sheetId, jobId: JOB }),
-});
-await browser.close();
+} finally {
+ await fetch(`${BASE}/shop/api/measure`, {method:'POST',headers:{'content-type':'application/json',cookie:nv},body:JSON.stringify({type:'delete',id:sheetId,jobId:JOB})});
+ await browser.close();
+}
 console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+process.exitCode = fail ? 1 : 0;

@@ -29,12 +29,15 @@ async function loginCookie(workerId, pin) {
 
 const cookie = await loginCookie(WORKER, PIN); // admin
 const cookie2 = await loginCookie(WORKER2, PIN2); // measurer
-const api = (body, ck = cookie) =>
-  fetch(`${BASE}/shop/api/measure`, {
+const api = async (body, ck = cookie) => {
+  const response = await fetch(`${BASE}/shop/api/measure`, {
     method: "POST",
     headers: { "Content-Type": "application/json", cookie: ck },
     body: JSON.stringify(body),
   });
+  if (process.env.E2E_VERBOSE && body.type === "submit" && response.status === 422) console.log("submission diagnostics", await response.clone().json());
+  return response;
+};
 
 // tiny valid JPEG so photo uploads are real storage objects
 const JPEG = Buffer.from(
@@ -93,14 +96,14 @@ function completeData(photos) {
     posts: [
       {
         id: "p1", pointType: "railing_post", side: "right", segIdx: 0, stepIdx: 0,
-        pos: "", distanceFromFirst: "0", fromNosing: "3", fromEdge: "2",
+        pos: "", firstStepToPostEdge: "3", distanceFromFirst: "0", fromNosing: "3", fromEdge: "2",
         mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
         substrate: "granite 6", edgeDist: "", obstruction: "none",
         existingW: "", existingD: "", skirtProjection: "", skirtHeight: "", clipDetail: "",
       },
       {
         id: "p2", pointType: "railing_post", side: "right", segIdx: 0, stepIdx: 1,
-        pos: "", distanceFromFirst: "11", fromNosing: "3", fromEdge: "2",
+        pos: "", firstStepToPostEdge: "14", distanceFromFirst: "11", fromNosing: "3", fromEdge: "2",
         mount: "Core-drill", anchor: "Granite", plate: "", anchors: '1" hole x 4" deep',
         substrate: "granite 6", edgeDist: "", obstruction: "none",
         existingW: "", existingD: "", skirtProjection: "", skirtHeight: "", clipDetail: "",
@@ -462,7 +465,7 @@ function mixedData(photos) {
       width: "42", angleDeg: "35", angleBreak: "",
       rake: "48 7/8", ctrlRise: "28", ctrlRun: "40",
     },
-    { kind: "platform", length: "40", depth: "40", diag: "56 9/16", slope: "", slopeDir: "", turn: "left" },
+    { kind: "platform", entryRise: "0", length: "40", depth: "40", diag: "56 9/16", slope: "0", slopeDir: "", turn: "left" },
     // 90° curve, R=48: chord = 67.88", arc = 75.40"
     { kind: "curve", radius: "48", chord: "67 7/8", arc: "75 3/8", sweepDeg: "90", rise: "", direction: "right", width: "42" },
     {
@@ -472,6 +475,7 @@ function mixedData(photos) {
       rake: "36 5/8", ctrlRise: "21", ctrlRun: "30",
     },
   ];
+  base.joints = [0,1,2].map(afterSegment => ({afterSegment, method:"weld", gap:"0", angleChange:afterSegment === 0 ? "35" : "0", offsetV:"0", offsetH:"0", carriedBy:"", leaveLong:"", note:"Test measured joint"}));
   base.overall.floorToFloor = "49"; // 7 risers × 7"
   base.overall.totalRise = "49";
   base.datums.walkline = "21"; // mid-width of 42 — winder math uses the offset

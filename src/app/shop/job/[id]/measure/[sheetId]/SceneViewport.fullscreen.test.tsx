@@ -25,3 +25,17 @@ it('opens edge to edge and returns to the same scroll position on close or Escap
  fireEvent.keyDown(window,{key:'Escape'});
  expect(root.getAttribute('data-fullscreen')).toBeNull();
 });
+
+it('cancels delayed scroll restoration when the viewport unmounts',async()=>{
+ vi.useFakeTimers();
+ const scrollTo=vi.spyOn(window,'scrollTo').mockImplementation(()=>{});
+ try{
+  const {unmount}=render(<SceneViewport data={normalizeMeasureData(newMeasureData('straight',3))} lang="en" compact/>);
+  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Full screen'}));});
+  fireEvent.click(screen.getByRole('button',{name:'Exit full screen'}));
+  unmount();scrollTo.mockClear();
+  act(()=>vi.advanceTimersByTime(1000));
+  expect(scrollTo).not.toHaveBeenCalled();
+  expect(vi.getTimerCount()).toBe(0);
+ }finally{vi.useRealTimers();}
+});

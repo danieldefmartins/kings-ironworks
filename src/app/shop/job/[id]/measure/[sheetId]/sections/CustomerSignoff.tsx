@@ -5,6 +5,7 @@
 // as recommended until signed, and flagged "out of date" the moment a
 // measurement changes after signing.
 
+import MeasureTime from "../MeasureTime";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
@@ -25,13 +26,6 @@ import { brandInitials } from "@/lib/shop/org-brand";
 
 const LANG_NAME: Record<SignoffLang, string> = { en: "English", pt: "Português", es: "Español" };
 
-function when(iso: string, lang: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US", {
-    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-  });
-}
 
 export default function CustomerSignoff({
   lang,
@@ -81,7 +75,7 @@ export default function CustomerSignoff({
           <div className="mt-2 text-base font-semibold text-neutral-100">{so.name}</div>
           <div className="text-sm text-neutral-500">
             {/* Server renders UTC, the tablet its own zone: the time is allowed to differ. */}
-            <span suppressHydrationWarning>{when(so.signedAt, lang)}</span> · {LANG_NAME[so.lang]}
+            <span><MeasureTime iso={so.signedAt} lang={lang} /></span> · {LANG_NAME[so.lang]}
             {so.email ? ` · ${so.email}` : ""}
           </div>
           {state === "stale" && <div className="mt-2 text-sm font-medium text-amber-300">{ct(lang, "signStaleNote")}</div>}

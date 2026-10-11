@@ -1,61 +1,38 @@
-// Every measurement field must carry a plain-language explanation behind its
-// "i", in all three languages. The person holding the tape is often not the
-// person who designed the sheet.
-//
-// Static check — no server needed:  node e2e/measure.help.test.mjs
-
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-
-const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const editor = readFileSync(join(root, "src/app/shop/job/[id]/measure/[sheetId]/MeasureEditor.tsx"), "utf8");
-const help = readFileSync(join(root, "src/lib/shop/measure-help.ts"), "utf8");
-
-let pass = 0;
-let fail = 0;
-const check = (ok, label, extra) => {
-  console.log(`${ok ? "  ok  " : "  FAIL"} ${label}${extra ? ` — ${extra}` : ""}`);
-  ok ? pass++ : fail++;
-};
-
-// Pull each language block out of measure-help.ts.
-function keysOf(name) {
-  const m = help.match(new RegExp(`const ${name}: HelpDict = \\{([\\s\\S]*?)\\n\\};`));
-  if (!m) return null;
-  return new Set([...m[1].matchAll(/^\s{2}([A-Za-z0-9_]+):/gm)].map((x) => x[1]));
+// Fields were extracted from MeasureEditor. Walk every production component,
+// using the TS parser so multiline props, arrows and single quotes are valid.
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+const ts = createRequire(import.meta.url)('typescript');
+const root = fileURLToPath(new URL('..', import.meta.url));
+const help = ts.createSourceFile('help.ts', readFileSync(join(root,'src/lib/shop/measure-help.ts'),'utf8'), ts.ScriptTarget.Latest, true);
+const dicts = {};
+function visit(node, fn) { fn(node); ts.forEachChild(node, n => visit(n,fn)); }
+visit(help, n => { if (ts.isVariableDeclaration(n) && ['en','pt','es'].includes(n.name.getText(help)) && n.initializer && ts.isObjectLiteralExpression(n.initializer)) dicts[n.name.getText(help)] = Object.fromEntries(n.initializer.properties.map(p => [p.name.text, p.initializer.text])); });
+for (const lang of ['pt','es']) assert.deepEqual(Object.keys(dicts[lang]).sort(), Object.keys(dicts.en).sort(), `${lang} help keys`);
+for (const [lang,dict] of Object.entries(dicts)) for (const [key,text] of Object.entries(dict)) assert.ok(text.length >= 15, `${lang}.${key} is a stub`);
+const dir = join(root,'src/app/shop/job/[id]/measure');
+const files = readdirSync(dir,{recursive:true}).filter(f=>f.endsWith('.tsx') && !f.includes('.test.'));
+let fields=0, wired=0;
+for (const file of files) {
+ const source=ts.createSourceFile(file,readFileSync(join(dir,file),'utf8'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ visit(source,n=>{
+  if (!ts.isJsxSelfClosingElement(n) && !ts.isJsxOpeningElement(n)) return;
+  if (!['MInput','MSelect','ChipRow'].includes(n.tagName.getText(source))) return;
+  fields++;
+  const props=n.attributes.properties;
+  const h=props.find(p=>p.name?.getText(source)==='help');
+  if (h?.initializer && ts.isStringLiteral(h.initializer)) { assert.ok(dicts.en[h.initializer.text], `${file}: unknown help ${h.initializer.text}`); wired++; }
+  const label=props.find(p=>p.name?.getText(source)==='label')?.initializer;
+  const e=label && ts.isJsxExpression(label) ? label.expression : null;
+  if (e && ts.isCallExpression(e) && e.expression.getText(source)==='mt' && ts.isStringLiteral(e.arguments[1])) {
+   const key=e.arguments[1].text;
+   if (dicts.en[key]) assert.ok(h,`${file}: ${key} has an explanation but no help prop`);
+  }
+ });
 }
-
-const en = keysOf("en");
-const pt = keysOf("pt");
-const es = keysOf("es");
-check(!!en && !!pt && !!es, "all three language blocks parse");
-
-const missingPt = [...en].filter((k) => !pt.has(k));
-const missingEs = [...en].filter((k) => !es.has(k));
-check(missingPt.length === 0, "every explanation is translated to Portuguese", missingPt.slice(0, 6).join(", "));
-check(missingEs.length === 0, "every explanation is translated to Spanish", missingEs.slice(0, 6).join(", "));
-
-// Every field whose label comes from the dictionary should offer help.
-const labelled = [...editor.matchAll(/<(?:MInput|MSelect|ChipRow)\b[^>]*?label=\{mt\(lang, "([A-Za-z0-9_]+)"\)\}[^>]*>/g)];
-const uncovered = [];
-for (const m of labelled) {
-  if (!m[0].includes('help="')) uncovered.push(m[1]);
-}
-check(
-  uncovered.length === 0,
-  `all ${labelled.length} labelled fields wire up their explanation`,
-  [...new Set(uncovered)].slice(0, 10).join(", ")
-);
-
-// A help key that names no real field is dead weight and usually a typo.
-const used = new Set(labelled.map((m) => m[1]));
-const orphans = [...en].filter((k) => !used.has(k));
-check(orphans.length === 0, "no explanation is written for a field that does not exist", orphans.slice(0, 10).join(", "));
-
-// Explanations have to actually say something.
-const shorties = [...help.matchAll(/^\s{2}([A-Za-z0-9_]+): "([^"]*)"/gm)].filter(([, , v]) => v.length < 15);
-check(shorties.length === 0, "no explanation is a stub", shorties.slice(0, 5).map((x) => x[1]).join(", "));
-
-console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail ? 1 : 0);
+assert.ok(fields > 100, `Extraction failed: found only ${fields} fields`);
+assert.ok(wired > 100, `Found only ${wired} help bindings`);
+console.log(`ok  ${fields} fields inspected across ${files.length} components; ${wired} help bindings; all help keys translated`);

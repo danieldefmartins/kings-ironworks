@@ -134,7 +134,7 @@ export default function CodeCheckCard({
     <div data-testid="code-check" className="mb-4 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
       <div className="flex items-center gap-3">
         <h3 className="flex-1 text-lg font-semibold text-neutral-100">{ct(lang, "codeTitle")}</h3>
-        <div className="flex items-center gap-1.5" aria-label="summary">
+        <div className="flex items-center gap-1.5" aria-label={lang === 'pt' ? "Resumo" : lang === 'es' ? "Resumen" : "summary"}>
           {(["red", "yellow", "green"] as const).map((lv) =>
             rep.counts[lv] ? (
               <span key={lv} className={`inline-flex min-w-8 items-center justify-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${TONE[lv].bg} ${TONE[lv].text}`}>

@@ -169,7 +169,7 @@ export default function StructuralSketch({ s, lang, focusId, height, hot }: { s:
   else body = <Empty lang={lang} />;
   return (
     <svg viewBox={`0 0 ${VW} ${VH}`} width="100%" height={height} role="img" aria-label={mt(lang, "st_sketchTitle")}
-      data-site-sketch="" style={{ display: "block", background: "#fff", borderRadius: 12 }}>
+      data-structural-sketch="" style={{ display: "block", background: "#fff", borderRadius: 12 }}>
       <Defs />
       {body}
     </svg>

@@ -14,6 +14,15 @@ type Dict = Record<string, string>;
 
 const STR: Record<Lang, Dict> = {
   en: {
+    stockSqTube: "sq tube",
+    stockSqSolid: "sq solid",
+    stockPipe: "Sch40 pipe",
+    stockFlat: "Flat bar",
+    stockChannel: "channel",
+    stockCap: "Molded cap rail",
+    stockShoe: "Shoe rail",
+    stockNone: "None (into treads)",
+
     siteDatumOpen: "Define the site reference point before fabrication release.",
     siteDimensionsOpen: "Complete the dimensions and positions of all site objects.",
     siteVerificationOpen: "Verify the site measurements and record their source.",
@@ -1453,6 +1462,15 @@ const STR: Record<Lang, Dict> = {
   },
 
   pt: {
+    stockSqTube: "tubo quadrado",
+    stockSqSolid: "barra quadrada maciça",
+    stockPipe: "tubo Sch40",
+    stockFlat: "Barra chata",
+    stockChannel: "perfil U",
+    stockCap: "Corrimão perfilado",
+    stockShoe: "Travessa inferior",
+    stockNone: "Sem travessa (fixação nos degraus)",
+
     siteDatumOpen: "Defina o ponto de referência do local antes da liberação.",
     siteDimensionsOpen: "Complete as dimensões e posições dos objetos do local.",
     siteVerificationOpen: "Verifique as medidas do local e registre a origem.",
@@ -2887,6 +2905,15 @@ const STR: Record<Lang, Dict> = {
   },
 
   es: {
+    stockSqTube: "tubo cuadrado",
+    stockSqSolid: "barra cuadrada maciza",
+    stockPipe: "tubo Sch40",
+    stockFlat: "Solera",
+    stockChannel: "canal U",
+    stockCap: "Pasamanos moldurado",
+    stockShoe: "Travesaño inferior",
+    stockNone: "Sin travesaño (fijación en peldaños)",
+
     siteDatumOpen: "Defina el punto de referencia antes de liberar la fabricación.",
     siteDimensionsOpen: "Complete las dimensiones y posiciones de los objetos.",
     siteVerificationOpen: "Verifique las medidas y registre su origen.",
@@ -4344,7 +4371,22 @@ export function shapeLabel(lang: string | undefined | null, shape: MeasureShape)
 
 // Option values stored in EN; translated for display only.
 const OPT: Record<Lang, Record<string, string>> = {
-  en: {},
+  en: {
+    "Core-drill": "Core-drill",
+    "Base plate": "Base plate",
+    "Side mount": "Side mount",
+    "Granite": "Granite",
+    "Bluestone": "Bluestone",
+    "Concrete": "Concrete",
+    "Brick": "Brick",
+    "Wood": "Wood",
+    "Steel": "Steel",
+    "Guardrail": "Guardrail",
+    "Handrail": "Handrail",
+    "Both": "Both",
+    "Left": "Left",
+    "Right": "Right",
+  },
   pt: {
     "Core-drill": "Chumbado (furo + concreto)",
     "Base plate": "Placa de base",
@@ -4382,5 +4424,27 @@ const OPT: Record<Lang, Record<string, string>> = {
 export function optLabel(lang: string | undefined | null, value: string): string {
   const l = asLang(lang);
   if (l === "en" || !value) return value;
-  return OPT[l][value] || value;
+  return OPT[l][value] || materialLabel(l, value);
+}
+
+/** Canonical stock values remain unchanged in saved measurement data. */
+export function materialLabel(lang: string, value: string): string {
+ if(lang !== 'pt' && lang !== 'es') return value;
+ const exact:Record<string,string>={'Molded cap rail':'stockCap','Shoe rail':'stockShoe','None (into treads)':'stockNone'};
+ if(exact[value])return mt(lang,exact[value]);
+ const shopPresets: Record<string, [string, string]> = {
+  '1 1/2" sq tube 11ga': ['1 1/2" tubo quadrado 11ga', '1 1/2" tubo cuadrado 11ga'],
+  '1" sq tube 14ga': ['1" tubo quadrado 14ga', '1" tubo cuadrado 14ga'],
+  '2x1 tube 11ga': ['2x1 tubo 11ga', '2x1 tubo 11ga'],
+  '1 1/2" angle 3/16': ['1 1/2" cantoneira 3/16', '1 1/2" ángulo 3/16'],
+  '1/4" plate': ['1/4" chapa', '1/4" placa'],
+  '3/4" sq bar': ['3/4" barra quadrada', '3/4" barra cuadrada'],
+  '1/2" round bar': ['1/2" barra redonda', '1/2" barra redonda'],
+ };
+ if(shopPresets[value]) return shopPresets[value][lang === 'pt' ? 0 : 1];
+ if(value.startsWith('Flat bar '))return `${mt(lang,'stockFlat')} ${value.slice(9)}`;
+ const match=value.match(/^([0-9][0-9\/\- ."x]*) (sq tube|sq solid|Sch40 pipe|flat bar|channel)$/);
+ if(!match)return value;
+ const key:Record<string,string>={'sq tube':'stockSqTube','sq solid':'stockSqSolid','Sch40 pipe':'stockPipe','flat bar':'stockFlat','channel':'stockChannel'};
+ return `${match[1]} ${mt(lang,key[match[2]])}`;
 }

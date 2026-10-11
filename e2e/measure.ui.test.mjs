@@ -1,53 +1,43 @@
-import { chromium } from "playwright";
-
-const BASE = process.env.SHOP_BASE_URL || "http://localhost:3457";
-const WORKER = process.env.SHOP_WORKER_ID;
-const PIN = process.env.SHOP_PIN;
-const JOB = process.env.SHOP_JOB_ID;
-if (!WORKER || !PIN || !JOB) {
-  console.error("Set SHOP_WORKER_ID, SHOP_PIN, SHOP_JOB_ID (and optionally SHOP_BASE_URL)");
-  process.exit(2);
+import assert from 'node:assert/strict';
+import { chromium } from './playwright.mjs';
+const BASE=process.env.SHOP_BASE_URL, JOB=process.env.SHOP_JOB_ID;
+const browser=await chromium.launch(), ctx=await browser.newContext({viewport:{width:1024,height:1366},locale:'pt-BR',timezoneId:'America/Los_Angeles'});
+const errors=[];let id;
+try {
+ assert.ok((await ctx.request.post(`${BASE}/shop/api/login`,{data:{workerId:process.env.SHOP_WORKER_ID,pin:process.env.SHOP_PIN}})).ok());
+ const created=await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'create',jobId:JOB,shape:'straight',steps1:3,name:'UI QA'}});
+ const body=await created.json();id=body.id;assert.ok(id);
+ const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));
+ const url=`${BASE}/shop/job/${JOB}/measure/${id}`;
+ await page.goto(url,{waitUntil:'networkidle'});
+ await page.locator('#next-measure-input').fill('6 3/4');
+ await page.getByRole('status').filter({hasText:'All changes saved'}).waitFor();
+ await page.getByLabel('Tool',{exact:true}).selectOption('structure');
+ await page.getByLabel('Stair width',{exact:true}).fill('48');
+ await page.getByRole('status').filter({hasText:'All changes saved'}).waitFor();
+ await page.reload({waitUntil:'networkidle'});
+ await page.getByLabel('Tool',{exact:true}).selectOption('structure');
+ assert.equal(await page.getByLabel('Stair width',{exact:true}).inputValue(),'48');
+ await page.getByText('Type the list instead',{exact:false}).click();
+ assert.equal(await page.getByRole('textbox',{name:'Rise',exact:true}).first().inputValue(),'6 3/4');
+ console.log('ok  NextMeasurement and detailed fields autosave across reload');
+ assert.ok((await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'rename',id,jobId:JOB,name:'UI QA other device'}})).ok());
+ await page.getByLabel('Stair width',{exact:true}).fill('49');
+ await page.getByText(/changed on another device/).waitFor();
+ await page.reload({waitUntil:'networkidle'});
+ assert.equal(await page.getByLabel('Drawing name',{exact:true}).inputValue(),'UI QA other device');
+ console.log('ok  stale writer shows conflict and reload restores server state');
+ // Filled stair + wall references triggered React #418 in hidden print SVGs.
+ const data=body.sheet.data;data.datums.orientation='left_wall';
+ for(const s of data.segments)if(s.kind==='flight'){s.width='48';s.steps.forEach(st=>Object.assign(st,{rise:'7',run:'11',nosing:'1'}));}
+ assert.ok((await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'update',id,jobId:JOB,data}})).ok());
+ await page.reload({waitUntil:'networkidle'});
+ const wallTitles=await page.locator('[data-wall-segment] title').allTextContents();
+ assert.ok(wallTitles.length>0,'filled stair wall titles are rendered');
+ assert.ok(wallTitles.every(t=>t.includes('Walls')));
+ assert.deepEqual(errors,[]);
+ console.log('ok  filled stairs hydrate without client errors across locale/time zone');
+} finally {
+ if(id)await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'delete',id,jobId:JOB}});
+ await browser.close();
 }
-const OUT = new URL(".", import.meta.url).pathname;
-
-const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 834, height: 1100 } });
-await ctx.request.post(`${BASE}/shop/api/login`, { data: { workerId: WORKER, pin: PIN } });
-const page = await ctx.newPage();
-page.on("pageerror", (e) => console.log("PAGE ERROR:", e.message));
-
-const cr = await ctx.request.post(`${BASE}/shop/api/measure`, {
-  data: { type: "create", jobId: JOB, shape: "straight", steps1: 3, name: "UI TEST v3" },
-});
-const { id } = await cr.json();
-
-// 1) autosave round-trip
-await page.goto(`${BASE}/shop/job/${JOB}/measure/${id}`, { waitUntil: "networkidle" });
-const first = page.locator('input[data-m="1"]').first();
-await first.fill("6 3/4");
-await page.waitForSelector("text=Unsaved changes", { timeout: 3000 }).catch(() => {});
-await page.waitForSelector("text=All changes saved", { timeout: 8000 });
-console.log("ok  autosave reaches saved state");
-
-await page.reload({ waitUntil: "networkidle" });
-const val = await page.locator('input[data-m="1"]').first().inputValue();
-console.log(val === "6 3/4" ? "ok  value persisted after reload" : `FAIL persisted value = ${val}`);
-
-// 2) conflict: another writer bumps updated_at behind this page's back
-const sheetRow = await ctx.request.post(`${BASE}/shop/api/measure`, {
-  data: { type: "rename", id, jobId: JOB, name: "UI TEST v3 (other device)" },
-});
-console.log("other-device rename:", sheetRow.status());
-await page.locator('input[data-m="1"]').nth(1).fill("11 1/2");
-await page.waitForSelector("text=changed on another device", { timeout: 8000 });
-console.log("ok  conflict banner appears");
-await page.screenshot({ path: OUT + "v3-conflict.png" });
-
-// reload clears conflict and shows server state
-await page.reload({ waitUntil: "networkidle" });
-const name = await page.locator("input").first().inputValue();
-console.log(name.includes("other device") ? "ok  reload shows latest server state" : `note name=${name}`);
-
-await ctx.request.post(`${BASE}/shop/api/measure`, { data: { type: "delete", id, jobId: JOB } });
-await browser.close();
-console.log("done");

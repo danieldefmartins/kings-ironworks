@@ -203,7 +203,7 @@
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.bg-amber-50,.bg-emerald-50,.bg-sky-50) { background-color: var(--shop-inset); }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-amber-800,.text-amber-900) { color: #fcd34d; }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-emerald-700,.text-emerald-900) { color: #6ee7b7; }
- .shop-ui[data-shop-theme="dark"] [data-measure-ui] .text-red-700 { color: #fca5a5; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-red-600,.text-red-700) { color: #fca5a5; }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] { background: #171c24 !important; }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] text { fill: #cbd5e1; stroke: none; }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] [stroke="#2563eb"] { stroke: #93c5fd; }
@@ -215,4 +215,17 @@
   .shop-ui :is(.text-\[9px\], .text-\[10px\], .text-\[11px\]) { font-size: 12px; line-height: 1.35; }
   .shop-ui .text-xs { font-size: 13px; line-height: 1.4; }
   .shop-ui .text-sm { font-size: 15px; line-height: 1.45; }
+}
+
+/* Field use: all editor controls, including compact icon/help buttons, have
+ * a 44px touch box. Keep this scoped away from print and the rest of the shop. */
+@media screen {
+ .shop-ui [data-measure-ui] :is(button,select,summary,a[href],label:has(> input[type="file"])) { min-height: 44px; min-width: 44px; }
+ .shop-ui [data-measure-ui] label:has(> input:is([type="checkbox"],[type="radio"])) { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; }
+ .shop-ui [data-measure-ui] :is(button,summary) { touch-action: manipulation; }
+ .shop-ui [data-measure-ui] summary { align-content: center; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-indigo-600,.text-blue-600,.text-blue-700) { color: #a5b4fc; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-emerald-600,.text-green-700,.text-green-800) { color: #6ee7b7; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.text-amber-700,.text-sky-700,.text-sky-800) { color: #fcd34d; }
+ .shop-ui[data-shop-theme="dark"] [data-measure-ui] :is(.bg-amber-100,.bg-emerald-100,.bg-red-50,.bg-green-50,.bg-blue-50,.bg-blue-100,.bg-indigo-100,.bg-indigo-50\/60) { background-color: var(--shop-inset); }
 }

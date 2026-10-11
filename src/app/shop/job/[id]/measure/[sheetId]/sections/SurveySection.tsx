@@ -7,6 +7,7 @@ import {surveyText} from '@/lib/shop/measure-survey-i18n';
 import {formatIn,showMeas} from '@/lib/shop/measure-parse';
 import {InfoHint} from '../fields';
 import {useShowMeas} from '../MeasUnits';
+import MeasureTime from '../MeasureTime';
 
 // Condition survey, install access and second measure, shared by every shape.
 // Lists stay compact — one row per item — and each item edits in a bottom
@@ -18,10 +19,9 @@ function dimensionLabel(row:SecondMeasure,data:MeasureData,lang:string){
 }
 const tone:Record<string,string>={green:'bg-green-50 text-green-800',yellow:'bg-amber-50 text-amber-900',red:'bg-red-50 text-red-700',stale:'bg-amber-50 text-amber-900',pending:'bg-slate-100 text-slate-600'};
 const SEVERITY_DOT:Record<ConditionItem['severity'],string>={minor:'bg-yellow-400',major:'bg-orange-500',unsafe:'bg-red-600'};
-const SEVERITY_ON:Record<ConditionItem['severity'],string>={minor:'bg-yellow-400 text-yellow-950',major:'bg-orange-500 text-white',unsafe:'bg-red-600 text-white'};
+const SEVERITY_ON:Record<ConditionItem['severity'],string>={minor:'bg-yellow-400 text-yellow-950',major:'bg-orange-700 text-white',unsafe:'bg-red-600 text-white'};
 const input='min-h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100';
 const caption='px-1 pb-2 pt-1 text-[13px] font-semibold uppercase tracking-wide text-slate-500';
-const dateFmt=(lang:string,iso:string)=>new Date(iso).toLocaleString(lang==='pt'?'pt-BR':lang==='es'?'es':'en-US');
 
 // Upload completion precedes the sheet autosave. Retry the authorized sheet-photo
 // endpoint briefly so a newly attached photo is not left broken until reload.
@@ -53,8 +53,8 @@ function Chips<T extends string>({label,value,options,onChange,cols=2,on}:{label
 }
 function Switch({label,checked,onChange}:{label:string;checked:boolean;onChange:(v:boolean)=>void}){
   return <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={()=>onChange(!checked)}
-    className={`relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors ${checked?'bg-green-500':'bg-slate-300'}`}>
-    <span className={`absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow transition-all ${checked?'left-[22px]':'left-[2px]'}`}/>
+    className="inline-flex h-11 w-[51px] shrink-0 items-center rounded-full">
+    <span aria-hidden className={`relative block h-[31px] w-[51px] rounded-full transition-colors ${checked?'bg-green-500':'bg-slate-300'}`}><span style={{background:'#fff'}} className={`absolute top-[2px] h-[27px] w-[27px] rounded-full shadow transition-all ${checked?'left-[22px]':'left-[2px]'}`}/></span>
   </button>;
 }
 /** One settings row: label left, control right, hairline under. */
@@ -82,7 +82,7 @@ function Sheet({title,done,onClose,anchor,children,footer}:{title:string;done:st
   useEffect(()=>{const esc=(e:KeyboardEvent)=>{if(e.key==='Escape')onClose();};window.addEventListener('keydown',esc);return()=>window.removeEventListener('keydown',esc);},[onClose]);
   if(typeof document==='undefined')return null;
   return createPortal(<div data-shop-theme={theme} className="shop-ui fixed inset-0 z-[90] flex items-end justify-center bg-black/40 sm:items-center sm:p-6" onClick={onClose}>
-    <div data-measure-ui role="dialog" aria-modal="true" aria-label={title} onClick={e=>e.stopPropagation()}
+    <div data-measure-ui role="dialog" aria-modal="true" aria-label={title} onClick={e=>e.stopPropagation()} style={{background:"var(--shop-card)",color:"var(--shop-fg)"}}
       className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-3xl bg-white text-slate-900 shadow-2xl sm:rounded-3xl">
       <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-slate-300 sm:hidden" aria-hidden/>
       <div className="flex shrink-0 items-center justify-between gap-3 px-5 pb-2 pt-3">
@@ -225,7 +225,7 @@ export default function SurveySection({data,lang,set,sheetId,directSlotPhoto,slo
       </div>
       <p role="status" className={`flex min-h-12 items-center justify-between gap-3 rounded-xl px-4 text-[15px] font-semibold ${tone[result.level]}`}><span>{t(result.level)}</span>{result.delta!==null&&<span className="tabular-nums">Δ {formatIn(result.delta)}</span>}</p>
       {result.level==='stale'&&result.current!==undefined&&<button type="button" className="min-h-12 w-full rounded-xl bg-slate-100 text-[16px] font-semibold text-indigo-600" onClick={()=>editRow({original:result.current!,value:'',who:'',when:''})}>{t('rebase')} · {show(result.current)}</button>}
-      <div className="space-y-1.5"><label className="block space-y-1.5"><span className="block text-[13px] font-semibold text-slate-500">{t('who')}</span><input className={input} value={row.who} maxLength={120} onChange={e=>editRow({who:e.target.value.slice(0,120)})}/></label>{row.when&&<p className="px-1 text-sm text-slate-500">{t('when')}: {dateFmt(lang,row.when)}</p>}</div>
+      <div className="space-y-1.5"><label className="block space-y-1.5"><span className="block text-[13px] font-semibold text-slate-500">{t('who')}</span><input className={input} value={row.who} maxLength={120} onChange={e=>editRow({who:e.target.value.slice(0,120)})}/></label>{row.when&&<p className="px-1 text-sm text-slate-500">{t('when')}: <MeasureTime iso={row.when} lang={lang}/></p>}</div>
       <div className="space-y-2"><div className="text-[13px] font-semibold text-slate-500">{t('tolerance')}</div><Chips label={t('tolerance')} value={row.tolerance} options={(['widthVar','riseSum','runSum','rake'] as const).map(v=>[v,t(v)] as [SecondMeasure['tolerance'],string])} onChange={v=>editRow({tolerance:v})}/></div>
     </Sheet>;})()}
 
@@ -246,6 +246,6 @@ export function SurveyPrint({data,lang,sheetId,rev}:{data:MeasureData;lang:strin
   return <section style={{marginTop:20}} data-survey-print><h3 style={{fontWeight:800,borderBottom:'1px solid #b8860b',paddingBottom:5}}>{t('jobType')}: {t(s.jobType)}</h3>
     {s.conditions.length>0&&<><h4 style={{fontWeight:700,marginTop:12}}>{t('condition')}</h4>{s.conditions.map((r,i)=>{const index=data.photos.findIndex(p=>p.slot===r.photoSlot);return <div key={r.id} style={{breakInside:'avoid',marginTop:8,padding:8,border:'1px solid #ddd',color:r.severity==='unsafe'?'#b91c1c':undefined}}><strong>{i+1}. {r.location||'—'} · {t(r.severity)}</strong><p>{t(r.defect)}{r.defect==='section_loss'?` ${r.sectionLoss||'—'}%`:''} · {t(r.action)} · {t('quantity')}: {r.quantity||'—'} · {t('length')}: {m(r.length)}</p>{index>=0?<SurveyPhoto key={data.photos[index].path} alt={`${t('photo')} ${i+1}`} style={{maxHeight:120,maxWidth:200,marginTop:6}} src={`/shop/api/measure-photo?sheetId=${encodeURIComponent(sheetId)}&index=${index}&expectedPath=${encodeURIComponent(data.photos[index].path)}${rev?`&rev=${rev}`:''}`}/>:<p>{t('photo')}: {t('notRecorded')}</p>}</div>;})}<h4 style={{fontWeight:700,marginTop:10}}>{t('totals')}</h4>{actionTotals(s.conditions).map(r=><p key={r.action}>{t(r.action)}: {r.quantity} {t('items')}{r.length?` · ${formatIn(r.length)} ${t('total')}`:''}{r.incomplete?` · ${t('incomplete')}`:''}</p>)}</>}
     <div style={{marginTop:12,breakInside:'avoid'}}><h4 style={{fontWeight:700}}>{t('access')}</h4><p>{t('route')}: {a.route?t(a.route):'—'} · {t('permit')}: {a.permit?t(a.permit):'—'} · {t('power')}: {a.power?(a.power==='120'||a.power==='240'?`${a.power} V`:t(a.power)):'—'}</p>{(['doorWidth','stairWidth','turningRoom','maxLength','maxWeight','parking'] as const).map(k=><p key={k}>{t(k)}: {k==='doorWidth'||k==='stairWidth'||k==='maxLength'?m(a[k]):a[k]||'—'}</p>)}<p>{(['lift','crane','scaffold','generator'] as const).map(k=>`${t(k)}: ${a[k]?t('yes'):'—'}`).join(' · ')}</p>{a.pieces.map(p=><p key={p.id}>{p.label||t('piece')} · {t('length')}: {m(p.length)} · {t('weight')}: {p.weight||'—'}</p>)}{deliveryWarnings(data).map(w=><p key={w.id} style={{color:'#92400e',fontWeight:700}}>{w.label||t('piece')} · {w.splice?t('splice'):''}{w.overweight?` · ${t('overweight')}`:''}</p>)}</div>
-    {!!s.verify.length&&<div style={{marginTop:12}}><h4 style={{fontWeight:700}}>{t('verify')} {verified?`· ${t('verified')} ${verified}`:''}</h4>{s.verify.map(r=>{const result=secondResult(data,r);return <p key={r.id} style={{breakInside:'avoid',color:result.level==='green'?'#166534':result.level==='red'?'#b91c1c':'#92400e'}}><strong>{dimensionLabel(r,data,lang)}</strong>: {m(r.original)} → {m(r.value)} · {t(result.level)}{result.delta!==null?` · Δ ${formatIn(result.delta)}`:''} · {t(r.tolerance)} · {r.who||'—'} · {r.when?dateFmt(lang,r.when):'—'}</p>;})}</div>}
+    {!!s.verify.length&&<div style={{marginTop:12}}><h4 style={{fontWeight:700}}>{t('verify')} {verified?`· ${t('verified')} ${verified}`:''}</h4>{s.verify.map(r=>{const result=secondResult(data,r);return <p key={r.id} style={{breakInside:'avoid',color:result.level==='green'?'#166534':result.level==='red'?'#b91c1c':'#92400e'}}><strong>{dimensionLabel(r,data,lang)}</strong>: {m(r.original)} → {m(r.value)} · {t(result.level)}{result.delta!==null?` · Δ ${formatIn(result.delta)}`:''} · {t(r.tolerance)} · {r.who||'—'} · {r.when?<MeasureTime iso={r.when} lang={lang}/>:'—'}</p>;})}</div>}
   </section>;
 }

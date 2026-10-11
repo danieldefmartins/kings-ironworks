@@ -1,4 +1,5 @@
 "use client";
+import MeasureTime from "../MeasureTime";
 import {resolveSite} from '@/lib/shop/measure-wall-placement';
 
 // Where a sheet is judged: what the geometry checks say, what is still
@@ -225,7 +226,7 @@ export default function ReviewSection({
             {sheet.approved_by && nameById[sheet.approved_by] && (
               <div className="text-xs text-neutral-400 mb-2">
                 {mt(lang, "approvedByLbl")}: {nameById[sheet.approved_by]}
-                {sheet.approved_at ? ` · ${new Date(sheet.approved_at).toLocaleString()}` : ""}
+                {sheet.approved_at ? <> · <MeasureTime iso={sheet.approved_at} lang={lang} /></> : ""}
               </div>
             )}
             <a
@@ -246,7 +247,7 @@ export default function ReviewSection({
         <summary className="min-h-11 cursor-pointer font-semibold">{lang==='pt'?'Prévia das folhas':lang==='es'?'Vista previa de planos':'Drawing sheets preview'}</summary>
         {previews}
       </details> : previews}
-            {<Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
+            {<Card stage="review" title={lang === 'pt' ? "Desenhos de fabricação" : lang === 'es' ? "Planos de fabricación" : "Shop Drawings"}><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
 
       {history.length>0&&<details className="rounded-2xl border border-slate-200 bg-white p-3"><summary className="min-h-11 cursor-pointer font-semibold">{mt(lang,'historyTitle')}</summary>      {history.length > 0 && (
         <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>
@@ -275,7 +276,7 @@ export default function ReviewSection({
                   }`}
                 >
                   <span className="text-neutral-500 text-xs shrink-0 tabular-nums">
-                    {new Date(h.at).toLocaleString()}
+                    <MeasureTime iso={h.at} lang={lang} />
                   </span>
                   <span className="font-semibold truncate">
                     {h.workerId ? nameById[h.workerId] || "—" : "—"}

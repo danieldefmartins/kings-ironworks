@@ -265,14 +265,14 @@ export default function PhotoMarkup({
               </div>
 
               <div className="mt-3 flex items-center gap-2">
-                {COLORS.map((c) => (
+                {COLORS.map((c, i) => (
                   <button
                     key={c}
                     type="button"
-                    aria-label={c}
+                    aria-label={(lang === "pt" ? ["Vermelho", "Amarelo", "Azul", "Branco"] : lang === "es" ? ["Rojo", "Amarillo", "Azul", "Blanco"] : ["Red", "Yellow", "Blue", "White"])[i]}
                     aria-pressed={color === c}
                     onClick={() => setColor(c)}
-                    className="h-9 w-9 rounded-full"
+                    className="h-11 w-11 shrink-0 rounded-full"
                     style={{
                       background: c,
                       boxShadow: color === c ? `0 0 0 2px var(--shop-card, #fff), 0 0 0 4px ${c === "#ffffff" ? "#9ca3af" : c}` : "inset 0 0 0 1px rgba(0,0,0,.15)",
