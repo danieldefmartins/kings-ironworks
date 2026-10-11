@@ -873,6 +873,20 @@ export async function recentLoginFailures(
   return rows.length;
 }
 
+// PIN changes and owner resets made by this worker in the recent window
+// (rate limit on top of the failed-PIN lockout).
+export async function recentPinChanges(
+  workerId: string,
+  windowMinutes = 15
+): Promise<number> {
+  const since = new Date(Date.now() - windowMinutes * 60000).toISOString();
+  const rows = await sbSelect<{ id: string }[]>(
+    "kiw_shop_audit",
+    `select=id&org_id=eq.${ORG_ID}&action=in.(pin_change,pin_reset)&worker_id=eq.${workerId}&at=gte.${encodeURIComponent(since)}`
+  );
+  return rows.length;
+}
+
 // ---- Photos & Storage -----------------------------------------------------
 
 const PHOTO_BUCKET = "kiw-shop-photos";

@@ -26,6 +26,7 @@ import {
 } from "./w9";
 import { decryptBytes, decryptText, encryptBytes, encryptText, sha256Hex, w9Aad, w9KeyId } from "./w9-crypto";
 import { buildW9Pdf } from "./w9-pdf";
+import { pinResetOf } from "./pin-service";
 
 export interface TeamRecord {
   id: string;
@@ -133,6 +134,8 @@ export interface RosterRow {
   complete: boolean;
   /** Counts toward year-end 1099 readiness. */
   contractor: boolean;
+  /** Owner set a temporary PIN the worker has not replaced yet. */
+  pinReset?: boolean;
 }
 export function rosterRow(rec: TeamRecord): RosterRow {
   const profile = profileView(rec);
@@ -145,6 +148,7 @@ export function rosterRow(rec: TeamRecord): RosterRow {
     isOwner, system, payrollExcluded: !!rec.payroll_excluded,
     profile, complete: profileComplete(profile),
     contractor: !isOwner && !system && !rec.payroll_excluded,
+    pinReset: !!pinResetOf(rec),
   };
 }
 
