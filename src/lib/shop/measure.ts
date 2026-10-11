@@ -404,6 +404,10 @@ export interface SpiralData {
   columnSize: string;
   clearWidth: string;
   landingNote: string;
+  /** Riser height: floor to floor ÷ treads, approved or read on site. */
+  riser?: string;
+  /** Turn of one tread, degrees: rotation ÷ treads, approved or read. */
+  treadAngle?: string;
 }
 
 // ---- Fire escapes ----------------------------------------------------------
@@ -1321,6 +1325,8 @@ export interface MeasureData {
   joints: JointMeasure[];
   posts: PostMeasure[];
   spiral: SpiralData | null;
+  /** How a calculated number the Next card offered was set, by slot id (measure-calc-struct.ts). */
+  calcSources?: Record<string, "calculated-approved" | "measured">;
   well: WellData | null;
   fire: FireEscapeData | null;
   gate: GateData | null;
@@ -1784,6 +1790,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     ...(d.surfaces ? { surfaces: d.surfaces } : {}),
     ...(d.code ? { code: d.code } : {}),
     ...(d.signoff ? { signoff: d.signoff } : {}),
+    ...(d.calcSources ? { calcSources: d.calcSources } : {}),
     site: d.site,
     steelPlan: d.steelPlan,
     specialtySteel: d.specialtySteel,

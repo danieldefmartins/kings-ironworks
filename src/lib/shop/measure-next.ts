@@ -9,6 +9,10 @@ import { blankMountGaps } from './measure-substrate';
 import { postsOf, runTag } from './measure-wall-cap';
 import { D_KEYS, DESIGN_KEYS, H_KEYS, pieceTag, W_KEYS } from './measure-shop-piece';
 import { isSingleFlight, perFlightControls } from './measure-dims';
+import { structuralCutReady } from './measure-dims-structural';
+import { spiralSlotCalc as SLOT_CALC_SPIRAL } from './measure-dims-spiral';
+import { fireSlotCalc as SLOT_CALC_FIRE } from './measure-dims-fire';
+import { shopPieceSlotCalc as SLOT_CALC_SP } from './measure-dims-shop-piece';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -50,6 +54,10 @@ export interface NextSlot {
   part?: string;
   /** 1-based reading number when a dimension is read more than once. */
   reading?: number;
+  /** Slots sharing a copy key repeat the same number ("Same for all floors / columns / pieces"). */
+  copyKey?: string;
+  /** What the copy row calls its siblings. */
+  copyNoun?: 'levels' | 'columns' | 'pieces';
   get: (d: MeasureData) => string;
   put: (d: MeasureData, value: string) => void;
 }
@@ -137,9 +145,16 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     }
   });
   if (shape === 'spiral') {
+    // Up the column, then round it: floor to floor and its treads (the riser
+    // follows from them), the diameter, then the turn and each tread's share.
     const sp = (d: MeasureData) => d.spiral as unknown as Bag | null;
+    const calcReady = (id: string) => (d: MeasureData) => (SLOT_CALC_SPIRAL(id, d)?.calc ?? null) !== null;
     field('spiral.f2f', 'floor_to_floor', 'floorToFloor', sp, 'floorToFloor');
+    field('spiral.treads', 'spiral_treads', 'nx_spTreads', sp, 'treads', { unit: 'count', ask: d => !!d.spiral });
+    field('spiral.riser', 'spiral_riser', 'nx_spRiser', sp, 'riser', { ask: calcReady('spiral.riser') });
     field('spiral.dia', 'diameter', 'diameter', sp, 'diameter');
+    field('spiral.rotation', 'spiral_rotation', 'nx_spRotation', sp, 'rotationDeg', { unit: 'deg', ask: d => !!d.spiral });
+    field('spiral.treadAngle', 'spiral_tread_angle', 'nx_spTreadAngle', sp, 'treadAngle', { unit: 'deg', ask: calcReady('spiral.treadAngle') });
   } else if (flightList.length) {
     // The overall numbers close the stair: after every step and landing.
     const ov = (d: MeasureData) => d.overall as unknown as Bag;
@@ -194,16 +209,24 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
   }
   if (shape === 'fire_escape' && data.fire) {
     table('fire', d => d.fire as unknown as Bag, [['fire_total_height', 'fireTotalHeight', 'totalHeight']]);
+    const levels = data.fire.levels.length;
     data.fire.levels.forEach((l, n) => {
       const tag = l.label || `#${n + 1}`, lv = (d: MeasureData) => d.fire?.levels[n] as unknown as Bag | undefined;
-      table(`fire.l${n}`, lv, [
+      // A level's own height above grade is never another's; the rest usually repeat floor to floor.
+      const rows: [string, string, string, SlotUnit?][] = [
         ['fire_plat_length', 'firePlatLength', 'platLength'], ['fire_plat_width', 'firePlatWidth', 'platWidth'],
         ['fire_height_grade', 'fireHeightGrade', 'heightAboveGrade'], ['fire_guard_height', 'fireGuardHeight', 'guardHeight'],
         ['fire_picket_spacing', 'firePicketSpacing', 'picketSpacing'], ['fire_anchor_count', 'fireAnchorCount', 'anchorCount', 'count'],
         ['fire_stair_risers', 'fireStairRisers', 'stairRisers', 'count'], ['fire_stair_rise', 'fireStairRise', 'stairRise'],
-        ['fire_stair_run', 'fireStairRun', 'stairRun'], ['fire_stair_width', 'fireStairWidth', 'stairWidth'],
-        ['fire_floor_to_floor', 'fireFloorToFloor', 'floorToFloor'],
-      ], { detail: tag, tag });
+        ['fire_stair_run', 'fireStairRun', 'stairRun'], ['fire_stair_angle', 'fireStairAngle', 'stairAngle', 'deg'],
+        ['fire_stair_width', 'fireStairWidth', 'stairWidth'], ['fire_floor_to_floor', 'fireFloorToFloor', 'floorToFloor'],
+      ];
+      rows.forEach(([gap, labelKey, key, unit]) => field(`fire.l${n}.${key}`, gap, labelKey, lv, key, {
+        detail: tag, tag, unit: unit || 'len',
+        ...(key === 'heightAboveGrade' || key === 'stairAngle' ? {} : { copyKey: `fire:${key}`, copyNoun: 'levels' as const }),
+        // The angle is the stair's rise over its run: offered to approve once both are in.
+        ...(key === 'stairAngle' ? { ask: (d: MeasureData) => n < levels - 1 && (SLOT_CALC_FIRE(`fire.l${n}.stairAngle`, d)?.calc ?? null) !== null } : {}),
+      }));
     });
     table('fire.ladder', d => d.fire?.ladder as unknown as Bag | undefined, [
       ['fire_ladder_length', 'fireLadderLength', 'length'], ['fire_ladder_width', 'fireLadderWidth', 'width'],
@@ -347,11 +370,12 @@ const MASONRY = new Set(['', 'brick', 'block', 'concrete', 'stone']);
  * the clear span twice (top and bottom, because once is how beams get cut
  * short), then each end — how far the steel sits in and how thick that wall
  * is — left before right; a column at every place its height was read. The
- * frame that ties them together, and the longest piece the way in allows,
- * close the walk.
+ * frame that ties them together, each member's cut length to approve, and the
+ * longest piece the way in allows, close the walk.
  */
 function structuralSlots(data: MeasureData, field: FieldFn) {
   const s = data.structural!;
+  const cuts: (() => void)[] = [];
   s.members.forEach((m, n) => {
     const id = m.id, detail = m.mark || ROLE_PREFIX[m.role];
     const member = (d: MeasureData) => d.structural?.members.find(x => x.id === id) as unknown as Bag | undefined;
@@ -384,9 +408,12 @@ function structuralSlots(data: MeasureData, field: FieldFn) {
         const reading = (d: MeasureData) => d.structural?.members.find(x => x.id === id)?.heights.find(x => x.id === rid) as unknown as Bag | undefined;
         field(`st.${id}.h.${rid}`, 'struct_heights', m.role === 'cover' ? 'nx_coverHeight' : 'nx_colHeight', reading, 'value', {
           detail, group, part: `height:${k}`, reading: k + 1, tag: r.label.trim() || undefined, alsoGaps: ['struct_heights_second'],
+          copyKey: m.role === 'cover' ? 'st:coverHeight' : 'st:colHeight', copyNoun: 'columns',
         });
       });
     }
+    // The cut the member's numbers give, with its weight: approved, or modified and checked — once every number is in.
+    cuts.push(() => field(`st.${id}.cut`, 'struct_cut', 'nx_cutLen', member, 'cutLen', { detail, group, part: 'cut', ask: d => structuralCutReady(d, id) }));
   });
   if (s.frame.on) {
     const fr = (d: MeasureData) => d.structural?.frame as unknown as Bag | undefined;
@@ -397,6 +424,7 @@ function structuralSlots(data: MeasureData, field: FieldFn) {
     field('st.frame.diagA', 'struct_frame_diag', 'nx_diagA', fr, 'diagA', { group, part: 'diagA' });
     field('st.frame.diagB', 'struct_frame_diag', 'nx_diagB', fr, 'diagB', { group, part: 'diagB' });
   }
+  cuts.forEach(c => c());
   if (s.members.length) field('st.access.maxLength', 'struct_max_length', 'nx_maxLength', d => d.structural?.access as unknown as Bag | undefined, 'maxLength', { part: 'maxLength' });
 }
 
@@ -449,15 +477,19 @@ function shopPieceSlots(data: MeasureData, field: FieldFn) {
     const id = p.id, detail = pieceTag(p, n);
     const piece = (d: MeasureData) => d.shopPiece?.pieces.find(x => x.id === id) as unknown as Bag | undefined;
     const at = (part: string): Partial<NextSlot> => ({ detail, tag: detail, group: { kind: 'piece', id, index: n, label: detail }, part });
+    // Identical pieces (same type) usually read the same: "Same for all pieces".
+    const same = (k: string): Partial<NextSlot> => ({ ...at(k), copyKey: `sp:${p.type || '-'}:${k}`, copyNoun: 'pieces' });
     if (s.niche) {
-      for (const k of W_KEYS) field(`sp.${id}.${k}`, 'sp_widths', `sp_nx_${k}`, piece, k, at(k));
-      for (const k of H_KEYS) field(`sp.${id}.${k}`, 'sp_heights', `sp_nx_${k}`, piece, k, at(k));
-      for (const k of D_KEYS) field(`sp.${id}.${k}`, 'sp_depths', `sp_nx_${k}`, piece, k, at(k));
+      for (const k of W_KEYS) field(`sp.${id}.${k}`, 'sp_widths', `sp_nx_${k}`, piece, k, same(k));
+      for (const k of H_KEYS) field(`sp.${id}.${k}`, 'sp_heights', `sp_nx_${k}`, piece, k, same(k));
+      for (const k of D_KEYS) field(`sp.${id}.${k}`, 'sp_depths', `sp_nx_${k}`, piece, k, same(k));
       for (const k of ['diagA', 'diagB'] as const) field(`sp.${id}.${k}`, 'sp_diagonals', `sp_${k}`, piece, k, at(k));
+      // Fabricate-to: the tightest reading less the clearance, approved or modified.
+      for (const k of ['fabW', 'fabH', 'fabD'] as const) field(`sp.${id}.${k}`, 'sp_fab', `nx_${k}`, piece, k, { ...at(k), ask: d => (SLOT_CALC_SP(`sp.${id}.${k}`, d)?.calc ?? null) !== null });
     } else {
-      field(`sp.${id}.w`, 'sp_width', 'sp_w', piece, DESIGN_KEYS.w, at(DESIGN_KEYS.w));
-      field(`sp.${id}.h`, 'sp_height', 'sp_h', piece, DESIGN_KEYS.h, at(DESIGN_KEYS.h));
-      field(`sp.${id}.d`, 'sp_depth', 'sp_d', piece, DESIGN_KEYS.d, at(DESIGN_KEYS.d));
+      field(`sp.${id}.w`, 'sp_width', 'sp_w', piece, DESIGN_KEYS.w, same(DESIGN_KEYS.w));
+      field(`sp.${id}.h`, 'sp_height', 'sp_h', piece, DESIGN_KEYS.h, same(DESIGN_KEYS.h));
+      field(`sp.${id}.d`, 'sp_depth', 'sp_d', piece, DESIGN_KEYS.d, same(DESIGN_KEYS.d));
     }
   });
 }
@@ -470,8 +502,13 @@ const matches = (slot: NextSlot, g: Gap) =>
 const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy|wc|sp)_/;
 // The stair's geometry is one walk: landings where they are reached, the
 // overall numbers right after the last step (not later with the posts).
-const WALK_WITH_STEPS = new Set(['landing_entry_rise', 'landing_length', 'landing_depth', 'landing_diag', 'flight_ctrl_rise', 'flight_ctrl_run', 'floor_to_floor', 'total_run', 'rake']);
+const WALK_WITH_STEPS = new Set(['spiral_treads', 'spiral_riser', 'diameter', 'spiral_rotation', 'spiral_tread_angle', 'landing_entry_rise', 'landing_length', 'landing_depth', 'landing_diag', 'flight_ctrl_rise', 'flight_ctrl_run', 'floor_to_floor', 'total_run', 'rake']);
 const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : WALK_WITH_STEPS.has(key) ? STAGE_ORDER.indexOf('steps') : STAGE_ORDER.indexOf(legacyStageForGap(key)));
+
+/** One slot of the sheet by id, whether or not it is listed now. */
+export function slotById(data: MeasureData, shape: MeasureShape, id: string): NextSlot | undefined {
+  return slotsFor(data, shape).find(s => s.id === id);
+}
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */
 export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: readonly Gap[]): MeasureQueue {
@@ -565,5 +602,29 @@ export function copyStepValue(data: MeasureData, segIdx: number, stepIdx: number
   if (!targets.length || seg?.kind !== 'flight') return 0;
   const value = seg.steps[stepIdx][key];
   for (const k of targets) seg.steps[k][key] = value;
+  return targets.length;
+}
+
+/**
+ * Copy to all: the other listed slots that repeat this one's number (same
+ * copy key) — the empty ones, or (overwrite) every one not already reading the
+ * same. Only slots this sheet lists, so a level without a stair never receives
+ * a stair number.
+ */
+export function slotCopyTargets(slots: readonly NextSlot[], data: MeasureData, slot: NextSlot, overwrite = false): NextSlot[] {
+  if (!slot.copyKey) return [];
+  const v = slot.get(data).trim();
+  if (!copyableStepValue(v)) return [];
+  return slots.filter(s => {
+    if (s.id === slot.id || s.copyKey !== slot.copyKey) return false;
+    const now = s.get(data).trim();
+    return overwrite ? now !== v : now === '';
+  });
+}
+
+/** Copy a slot's number onto its siblings. Returns how many changed. */
+export function copySlotValue(slots: readonly NextSlot[], data: MeasureData, slot: NextSlot, overwrite = false): number {
+  const targets = slotCopyTargets(slots, data, slot, overwrite), v = slot.get(data);
+  for (const t of targets) t.put(data, v);
   return targets.length;
 }

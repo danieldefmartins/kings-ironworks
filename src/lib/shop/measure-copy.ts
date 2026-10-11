@@ -1,5 +1,6 @@
 import type { MeasureData } from './measure';
 import { copyableStepValue } from './measure-next';
+import { structCopy } from './measure-calc-struct';
 
 /**
  * "Same for all …" beyond the stair steps: a number (or a whole set of
@@ -65,6 +66,7 @@ export const canopyPostCopy: CopyAdapter = (id, data) => {
 export const COPY_ADAPTERS: CopyAdapter[] = [
   openingCopy,
   canopyPostCopy,
+  (id, d) => structCopy(id, d),
 ];
 
 export function slotCopy(slotId: string, data: MeasureData): CopyPlan | null {

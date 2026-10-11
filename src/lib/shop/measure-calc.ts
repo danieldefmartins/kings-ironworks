@@ -26,6 +26,8 @@ export interface CalcSlot {
   approve: (d: MeasureData) => void;
   read: (d: MeasureData, v: string) => void;
   tol?: [number, number] | null;
+  /** A short, language-neutral working shown beside the calculation ("104\" ÷ 13", "≈ 142 lb"). */
+  note?: string;
 }
 export type CalcAdapter = (slotId: string, data: MeasureData) => CalcSlot | null;
 

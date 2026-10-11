@@ -37,6 +37,26 @@ const ROWS: Row[] = [
   ["nx_frameCc", "Column center to center", "Eixo a eixo das colunas", "Eje a eje de columnas"],
   ["nx_frame", "Frame", "Pórtico", "Pórtico"],
   ["nx_maxLength", "Longest piece that fits in", "Maior peça que entra", "Pieza más larga que entra"],
+  ["nx_cutLen", "Cut length", "Comprimento de corte", "Largo de corte"],
+  // Spiral — up the column, then round it
+  ["nx_spTreads", "Number of treads", "Número de degraus", "Número de peldaños"],
+  ["nx_spRiser", "Riser height", "Altura do espelho", "Altura de contrahuella"],
+  ["nx_spRotation", "Total rotation", "Rotação total", "Rotación total"],
+  ["nx_spTreadAngle", "Angle per tread", "Ângulo por degrau", "Ángulo por peldaño"],
+  // Shop piece — the size the shop builds to
+  ["nx_fabW", "Build width", "Largura a fabricar", "Ancho a fabricar"],
+  ["nx_fabH", "Build height", "Altura a fabricar", "Alto a fabricar"],
+  ["nx_fabD", "Build depth", "Profundidade a fabricar", "Fondo a fabricar"],
+  // Copy to all, by what repeats
+  ["nx_copyAll_levels", "Same for all floors", "Igual em todos os andares", "Igual en todos los pisos"],
+  ["nx_copyAll_columns", "Same for all columns", "Igual em todas as colunas", "Igual en todas las columnas"],
+  ["nx_copyAll_pieces", "Same for all pieces", "Igual em todas as peças", "Igual en todas las piezas"],
+  ["nx_copied_levels", "Copied to {n} floors", "Copiado para {n} andares", "Copiado a {n} pisos"],
+  ["nx_copied1_levels", "Copied to 1 floor", "Copiado para 1 andar", "Copiado a 1 piso"],
+  ["nx_copied_columns", "Copied to {n} columns", "Copiado para {n} colunas", "Copiado a {n} columnas"],
+  ["nx_copied1_columns", "Copied to 1 column", "Copiado para 1 coluna", "Copiado a 1 columna"],
+  ["nx_copied_pieces", "Copied to {n} pieces", "Copiado para {n} peças", "Copiado a {n} piezas"],
+  ["nx_copied1_pieces", "Copied to 1 piece", "Copiado para 1 peça", "Copiado a 1 pieza"],
   // Stairs — step by step, riser then tread
   ["nx_rise", "Rise", "Espelho", "Contrahuella"],
   ["nx_tread", "Tread depth", "Piso", "Huella"],

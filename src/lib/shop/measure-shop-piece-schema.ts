@@ -18,6 +18,7 @@ const Piece = z.object({
   diagA: meas, diagB: meas,
   squareFix: z.enum(["", "smallest", "template"]),
   notes: z.string().max(600),
+  fabW: meas.optional(), fabH: meas.optional(), fabD: meas.optional(),
 });
 
 export const ShopPieceSchema = z

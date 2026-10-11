@@ -6,6 +6,7 @@
 import type {FireLevel,MeasureData} from '../measure';
 import type {Point3} from '../measure-geometry';
 import {P,box,emptyScene,merge,mesh,num,polyTube,sweepRects,type Geo,type ShapeScene} from './kit';
+import {preMirrorScene} from './pre-mirror';
 import {steelSection,sweepSection} from './steel-sections';
 
 const STORY=108;
@@ -23,7 +24,8 @@ export function fireHeights(levels:FireLevel[]):{z:number;provisional:boolean}[]
  return z.map((v,i)=>v===null?{z:(n-i)*STORY,provisional:true}:{z:v,provisional:false});
 }
 
-export function fireEscapeScene(data:MeasureData):ShapeScene{
+export function fireEscapeScene(data:MeasureData):ShapeScene{return preMirrorScene(build(data));}
+function build(data:MeasureData):ShapeScene{
  const out=emptyScene(),f=data.fire;
  if(!f||!f.levels.length)return out;
  const heights=fireHeights(f.levels);

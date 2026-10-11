@@ -1,6 +1,7 @@
 import type { MeasureData } from './measure';
 import type { CalcAdapter, CalcSlot } from './measure-calc';
 import { canopyCalc, gateCalc, openingCalc, wellCalc } from './measure-calc-open';
+import { structCalc } from './measure-calc-struct';
 
 /**
  * Every work type's calculated numbers (Calculated · Approve · Modify on the
@@ -11,6 +12,7 @@ export const CALC_ADAPTERS: CalcAdapter[] = [
   openingCalc,
   wellCalc,
   canopyCalc,
+  structCalc,
 ];
 
 /** The calculation behind a Next-card slot, if any work type offers one. */

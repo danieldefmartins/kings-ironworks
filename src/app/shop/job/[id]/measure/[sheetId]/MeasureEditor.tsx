@@ -110,6 +110,7 @@ import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
 import NextMeasurement from './NextMeasurement';
+import WallRailBrackets from "./WallRailBrackets";
 import { StairPostSuggest, POST_SUGGEST_SHAPES } from './PostSuggest';
 import { stairSuggestion, reconcileSuggestedPosts, withSuggestionGhosts } from '@/lib/shop/measure-post-suggest-stair';
 import LaserControl, { LaserBrowserHint } from './LaserControl';
@@ -1291,7 +1292,8 @@ export default function MeasureEditor({
             onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
-          {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}</>}
+          {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}
+          {sheet.shape==='wall_rail'&&workspace!=='review'&&<WallRailBrackets lang={lang} data={data} set={set}/>}</>}
           nav={<nav aria-label={lang === 'pt' ? "Área de trabalho" : lang === 'es' ? "Área de trabajo" : "Professional workspace"} className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
           </nav>}

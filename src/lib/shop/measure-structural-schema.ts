@@ -54,6 +54,7 @@ const Member = z.object({
   dwgHeight: meas,
   dwgElevation: meas,
   notes: z.string().max(600),
+  cutLen: meas.optional(),
 });
 
 export const StructuralSchema = z

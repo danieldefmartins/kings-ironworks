@@ -73,6 +73,10 @@ export interface ShopPiece extends Record<WKey | HKey | DKey, string> {
   /** Out-of-square decision for a red niche: build square to the smallest, or to a template. */
   squareFix: "" | "smallest" | "template";
   notes: string;
+  /** Fabricate-to size the shop signs off (niche: tightest reading less clearance, approved or modified). */
+  fabW?: string;
+  fabH?: string;
+  fabD?: string;
 }
 
 export interface ShopPieceData {
