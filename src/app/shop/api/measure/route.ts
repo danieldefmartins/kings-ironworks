@@ -143,6 +143,7 @@ const PostSchema = z.object({
   infillGap: meas.optional(),
   clipDetail: z.string().max(300).optional(),
   sub: SubstrateSchema.optional(),
+  suggested: z.string().max(400).optional(),
 });
 const SpiralSchema = z
   .object({
@@ -528,6 +529,14 @@ const MeasureDataSchema = z.object({
   rail: z.object({
     sideSetback: meas.optional(),
     postCentered: z.boolean().optional(),
+    maxPostSpacing: meas.optional(),
+    segSides: z.record(z.string().max(40), z.enum(["left", "right", "both"])).optional(),
+    postPlan: z.object({
+      left: z.number().int().min(0).max(80).optional(),
+      right: z.number().int().min(0).max(80).optional(),
+      linked: z.boolean().optional(),
+      sig: z.string().max(4000).optional(),
+    }).optional(),
     kind: z.string().max(40),
     height: meas,
     side: z.string().max(20),
