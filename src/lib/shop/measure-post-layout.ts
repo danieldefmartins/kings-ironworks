@@ -221,7 +221,7 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
     const t = treads[ti];
     if (!t) continue;
     const seg = data.segments[post.segIdx];
-    if (!seg || (seg.kind !== "flight" && seg.kind !== "platform")) continue;
+    if (!seg || (seg.kind !== "flight" && seg.kind !== "platform" && seg.kind !== "ramp")) continue;
     const alongRaw = num(post.stepIdx === null ? post.pos : post.fromNosing);
     const edgeRaw = num(post.fromEdge);
     const side: "left" | "right" = post.side === "left" ? "left" : "right";
@@ -229,13 +229,15 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
     const edge = Math.min(t.width, (edgeRaw ?? 0) + half);
     const across = side === "right" ? t.width - edge : edge;
     const base = surfacePoint(t, along, across);
-    const onLanding = t.stepIdx === null;
-    const slope = onLanding ? 0 : treadSlope(treads, ti);
+    // A ramp post stands on the sloped surface; its rail runs parallel to it.
+    const onRamp = seg.kind === "ramp";
+    const onLanding = t.stepIdx === null && !onRamp;
+    const slope = onRamp ? (t.run > 0 ? t.rise / t.run : 0) : onLanding ? 0 : treadSlope(treads, ti);
     const nosing = surfacePoint(t, 0, across);
     // Rail height datum: the code convention (and the default) measures from the
     // nosing line; a sheet that records "finished top at each post" measures it
     // from the surface under that post instead.
-    const railZ = onLanding || atPost ? base.z + railHeight : nosing.z + along * slope + railHeight;
+    const railZ = onLanding || onRamp || atPost ? base.z + railHeight : nosing.z + along * slope + railHeight;
     const top = { ...base, z: railZ };
     const heading = unit(t.corners[0], t.corners[1]);
     const sameLine = Math.abs(heading.x * firstHeading.x + heading.y * firstHeading.y - 1) < 1e-4;

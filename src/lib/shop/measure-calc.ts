@@ -28,6 +28,8 @@ export interface CalcSlot {
   tol?: [number, number] | null;
   /** A short, language-neutral working shown beside the calculation ("104\" ÷ 13", "≈ 142 lb"). */
   note?: string;
+  /** A short verdict beside the calculation (a ramp's slope against 1:12): nxText key, its values, its colour. */
+  verdict?: { key: string; vars: Record<string, string | number>; level: 'green' | 'yellow' | 'red' };
 }
 export type CalcAdapter = (slotId: string, data: MeasureData) => CalcSlot | null;
 

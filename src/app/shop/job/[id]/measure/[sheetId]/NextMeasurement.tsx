@@ -457,6 +457,11 @@ export default function NextMeasurement({
               {dimWord(lang, "calculated")} <span data-approve-calc-value className="text-[20px] tabular-nums tracking-tight text-slate-900">{dimText(approve.calc!, approve.unit)}</span>
               {approve.note && <span data-approve-calc-note className="ml-1.5 text-[13px] font-medium tabular-nums text-slate-400">{approve.note}</span>}
             </p>
+            {approve.verdict && (
+              <span data-approve-verdict={approve.verdict.level} className={`inline-flex h-9 items-center rounded-full px-3 text-[14px] font-semibold tabular-nums ring-1 ${CHECK_TONE[approve.verdict.level]}`}>
+                {nx(lang, approve.verdict.key, approve.verdict.vars)}
+              </span>
+            )}
             {angleSt === "approved" ? (
               <span role="status" aria-label={dimWord(lang, "approvedA11y")} className="flex h-9 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-[15px] font-semibold text-emerald-700">
                 <Check aria-hidden className="h-4 w-4" strokeWidth={3} />{dimWord(lang, "approved")}

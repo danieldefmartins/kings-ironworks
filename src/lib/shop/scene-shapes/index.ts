@@ -3,6 +3,7 @@
 // Keep SCENE_SHAPES a plain object literal: one line per shape.
 import type {MeasureData,MeasureShape} from '../measure';
 import type {ShapeSceneAdapter} from './build-kit';
+import {preMirrorScene} from './pre-mirror';
 import {gateScene} from './scene-gate';
 import {fenceScene} from './scene-fence';
 import {deckScene} from './scene-deck';
@@ -22,22 +23,27 @@ export type {ShapeSceneAdapter,ShapeSceneOutput} from './build-kit';
 /** @deprecated name kept for the opening/structural/... adapters; same type. */
 export type SceneShapeAdapter=ShapeSceneAdapter;
 
+// Shapes modelled in true plan (outside toward −y, +x to the right seen from
+// outside, + turns to the left) are flipped once here so the viewport's stair
+// mirror (scene-mirror.ts) shows them as modelled. Canopy is modelled from the
+// house side (+y out) and reads right through the mirror as it is; stairs,
+// ramps and wall rails are stair-convention.
 export const SCENE_SHAPES:Partial<Record<MeasureShape,ShapeSceneAdapter>>={
- gate:gateScene,
- fence:fenceScene,
- deck:deckScene,
- balcony:balconyScene,
- window_well:windowWellScene,
- opening:openingScene,
+ gate:d=>preMirrorScene(gateScene(d)),
+ fence:d=>preMirrorScene(fenceScene(d)),
+ deck:d=>preMirrorScene(deckScene(d)),
+ balcony:d=>preMirrorScene(balconyScene(d)),
+ window_well:d=>preMirrorScene(windowWellScene(d)),
+ opening:d=>preMirrorScene(openingScene(d)),
  structural:structuralScene,
  fire_escape:fireEscapeScene,
  spiral:spiralScene,
  // Only when the caller names the shape: on paper a wall rail is a stair flight
  // and a custom sheet is a drawing, which a deck also carries.
  wall_rail:wallRailScene,
- custom:customScene,
+ custom:d=>preMirrorScene(customScene(d)),
  canopy:canopyScene,
- wall_cap:wallCapScene,
+ wall_cap:d=>preMirrorScene(wallCapScene(d)),
  shop_piece:shopPieceScene,
 };
 

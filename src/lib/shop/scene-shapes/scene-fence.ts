@@ -4,6 +4,7 @@
 // with the slope or step level between posts — the choice that changes every
 // panel on a hill. Layout: run starts at the origin heading +X; outside is −Y.
 import type {MeasureData} from '../measure';
+import {fenceSpacing} from '../measure-post-suggest-fence';
 import {Geo,Guard,SceneOut,emptyScene,guardBay,len,p3,section,signed,type ShapeSceneOutput} from './build-kit';
 
 export function fenceScene(data:MeasureData):ShapeSceneOutput{
@@ -22,8 +23,9 @@ export function fenceScene(data:MeasureData):ShapeSceneOutput{
   const unsure=rise!==0&&!seg.followsGrade;if(unsure)out.need(`Fence segment ${tag} · follows grade`);
   if(H===null)out.need(`Fence segment ${tag} · height`);
   const ux=Math.cos(heading),uy=Math.sin(heading),start=p3(x,y,z),end=p3(x+ux*L,y+uy*L,z+rise);
-  const panels=Math.round(len(seg.panels)??0)||(spacing?Math.max(1,Math.ceil(L/spacing-1e-6)):0);
-  if(!panels)out.need(`Fence segment ${tag} · post spacing`);
+  // No panel count yet: the suggested equal panels (measure-post-suggest-fence), drawn as amber ghosts.
+  const own=Math.round(len(seg.panels)??0),panels=own||Math.max(1,Math.ceil(L/(spacing??fenceSpacing(data))-1e-6));
+  if(!own&&!spacing)out.need(`Fence segment ${tag} · post spacing`);
   const n=Math.max(1,panels),at=(k:number)=>p3(start.x+ux*L*k/n,start.y+uy*L*k/n,start.z+rise*k/n);
   // Grade ribbon either side of the line, following the measured fall.
   const nx=-uy*18,ny=ux*18;ground.quad(p3(start.x-nx,start.y-ny,start.z),p3(end.x-nx,end.y-ny,end.z),p3(end.x+nx,end.y+ny,end.z),p3(start.x+nx,start.y+ny,start.z));
@@ -43,8 +45,8 @@ export function fenceScene(data:MeasureData):ShapeSceneOutput{
   }
   const label=`Fence segment ${tag}`;
   guard.emit(out,`fence:segment:${seg.id}`,label,{provisional:unsure,entity});
-  out.mesh(`fence:posts:${seg.id}`,`${label} · posts`,'post',posts.geo,{entity});
-  posts.axes.forEach(points=>out.line(`fence:posts:${seg.id}`,`${label} · posts`,'post',points,{entity}));
+  out.mesh(`fence:posts:${seg.id}`,`${label} · posts`,'post',posts.geo,{entity,provisional:!own});
+  posts.axes.forEach(points=>out.line(`fence:posts:${seg.id}`,`${label} · posts`,'post',points,{entity,provisional:!own}));
   if(H===null)out.line(`fence:line:${seg.id}`,label,'rail',[start,end],{provisional:true,entity});
   x=end.x;y=end.y;z=end.z;
   const turn=signed(seg.turnDeg);heading+=((turn??0)*Math.PI)/180;

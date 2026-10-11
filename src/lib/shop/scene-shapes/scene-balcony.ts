@@ -6,11 +6,13 @@
 // finished floor at Z=0.
 import type {MeasureData} from '../measure';
 import type {Point3} from '../measure-geometry';
+import {balconySuggestion} from '../measure-post-suggest-balcony';
+import {pointAlong} from '../measure-post-suggest';
 import {Geo,Guard,SceneOut,emptyScene,guardBay,len,p3,section,type ShapeSceneOutput} from './build-kit';
 
 export function balconyScene(data:MeasureData):ShapeSceneOutput{
  const b=data.balcony;if(!b)return emptyScene();
- const out=new SceneOut(),m=data.materials;
+ const out=new SceneOut(),m=data.materials,sugg=balconySuggestion(data),approved=!!data.rail.runPlan?.approved;
  const juliet=b.kind==='juliet',L=juliet?len(b.doorOpening)??len(b.edgeLength):len(b.edgeLength);
  if(!b.kind)out.need('Balcony · type');
  if(L===null){out.need(juliet?'Juliet · door opening width':'Balcony · edge length');return out.done();}
@@ -30,13 +32,14 @@ export function balconyScene(data:MeasureData):ShapeSceneOutput{
   if(guardH===null)return out.done();
   // Rail stands off the wall by the measured projection (0 = in the opening's plane).
   const y=-(P??0),guard=new Guard(),posts=new Guard(),entity={part:'balcony-guard'};
-  for(const x of [pw/2,L-pw/2])posts.add(p3(x,y,0),p3(x,y,guardH),post,{x:1,y:0,z:0});
-  guardBay(guard,{a:p3(pw/2,y,0),b:p3(L-pw/2,y,0),bottomA:clear,bottomB:clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});
+  const xs=sugg?.layouts[0]?.posts.map(q=>pw/2+q.at)??[pw/2,L-pw/2];
+  for(const x of xs)posts.add(p3(x,y,0),p3(x,y,guardH),post,{x:1,y:0,z:0});
+  for(let k=1;k<xs.length;k++)guardBay(guard,{a:p3(xs[k-1],y,0),b:p3(xs[k],y,0),bottomA:clear,bottomB:clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});
   // Brackets back to the jambs at top and bottom rail.
   if(P)for(const x of [0,L])for(const z of [clear+2,guardH-2])posts.add(p3(x,y,z),p3(x,0,z),bottomRail??topRail);
   guard.emit(out,'balcony:guard','Juliet rail',{entity});
-  out.mesh('balcony:posts','Juliet · posts + brackets','post',posts.geo,{entity});
-  posts.axes.forEach(points=>out.line('balcony:posts','Juliet · posts + brackets','post',points,{entity}));
+  out.mesh('balcony:posts','Juliet · posts + brackets','post',posts.geo,{entity,provisional:!approved});
+  posts.axes.forEach(points=>out.line('balcony:posts','Juliet · posts + brackets','post',points,{entity,provisional:!approved}));
   return out.done();
  }
  wall.box(p3(-wallMargin,0,-(T??0)-48),p3(L+wallMargin,8,top));
@@ -56,18 +59,19 @@ export function balconyScene(data:MeasureData):ShapeSceneOutput{
  const path:Point3[]=depth>0&&returns?[p3(sx0,0,0),p3(sx0,front,0),p3(sx1,front,0),p3(sx1,0,0)]:[p3(sx0,front,0),p3(sx1,front,0)];
  const base=fascia?-(T??0):b.mount==='core_drill'||b.mount==='embedded'?-(embed??0):0;
  const guard=new Guard(),posts=new Guard(),entity={part:'balcony-guard'};
- for(let i=0;i<path.length;i++){
-  const p=path[i],next=path[i+1]??path[i-1],ux=next.x-p.x,uy=next.y-p.y,l=Math.hypot(ux,uy)||1;
+ // Posts where the post plan puts them (measure-post-suggest-balcony): corners and wall ends fixed, the rest evenly spaced.
+ const lines=sugg?.layouts.map(l=>l.posts.map(q=>pointAlong(l.run.path,q.at)))??[path];
+ const off=(q:Point3)=>Math.abs(q.y)<1e-6&&path.length>2?p3(q.x,-pw/2,0):q;
+ const seen:Point3[]=[];
+ for(const pts of lines)for(let i=0;i<pts.length;i++){
+  const p=pts[i],next=pts[i+1]??pts[i-1]??p,ux=next.x-p.x,uy=next.y-p.y,l=Math.hypot(ux,uy)||1;
+  if(seen.some(s0=>Math.hypot(s0.x-p.x,s0.y-p.y)<.5))continue;seen.push(p);
   // A post against the wall is a return's end; it stops short of the wall face.
-  const q=Math.abs(p.y)<1e-6&&path.length>2?p3(p.x,-pw/2,0):p;
-  posts.add(p3(q.x,q.y,base),p3(q.x,q.y,guardH),post,{x:ux/l,y:uy/l,z:0});
+  const q=off(p);posts.add(p3(q.x,q.y,base),p3(q.x,q.y,guardH),post,{x:ux/l,y:uy/l,z:0});
  }
- for(let i=0;i<path.length-1;i++){
-  const a=Math.abs(path[i].y)<1e-6?p3(path[i].x,-pw/2,0):path[i],c=Math.abs(path[i+1].y)<1e-6?p3(path[i+1].x,-pw/2,0):path[i+1];
-  guardBay(guard,{a,b:c,bottomA:clear,bottomB:clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});
- }
+ for(const pts of lines)for(let i=0;i<pts.length-1;i++)guardBay(guard,{a:off(pts[i]),b:off(pts[i+1]),bottomA:clear,bottomB:clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});
  guard.emit(out,'balcony:guard','Balcony guard',{provisional:!fascia&&ed===null,entity});
- out.mesh('balcony:posts','Balcony · posts','post',posts.geo,{entity});
- posts.axes.forEach(points=>out.line('balcony:posts','Balcony · posts','post',points,{entity}));
+ out.mesh('balcony:posts','Balcony · posts','post',posts.geo,{entity,provisional:!approved});
+ posts.axes.forEach(points=>out.line('balcony:posts','Balcony · posts','post',points,{entity,provisional:!approved}));
  return out.done();
 }

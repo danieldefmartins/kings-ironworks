@@ -1,6 +1,9 @@
 import {describe,expect,it} from 'vitest';
 import {newMeasureData,type MeasureData} from '../measure';
-import {measureScene} from '../measure-scene';
+import {measureScene as rawScene} from '../measure-scene';
+import {mirrorScene} from '../scene-mirror';
+// What the viewport shows (it mirrors y for the stair convention): true-plan shapes read as modelled.
+const measureScene=(...a:Parameters<typeof rawScene>)=>mirrorScene(rawScene(...a));
 import {SCENE_SHAPES,sceneShapeOf} from '.';
 import {picketCentres,section,triangulate} from './build-kit';
 import {balconyFixture,deckFixture,fenceFixture,gateFixture,julietFixture,wellFixture} from './scene-shapes.fixture';
@@ -57,7 +60,7 @@ describe('fence',()=>{
  it('chains segments with turns and carries grade post to post',()=>{
   const data=fenceFixture(),s=measureScene(data);expect(finite(s)).toBe(true);expect(faceOk(s)).toBe(true);
   // A: 192 along +X, turn left 90 → B: 192 along +Y, turn right → C: 96 along +X.
-  expect(s.bounds.max.x).toBeCloseTo(192+96+1,0);expect(s.bounds.max.y).toBeGreaterThan(192);
+  const meshX=Math.max(...s.meshes.flatMap(m=>m.vertices.map(v=>v.x)));expect(meshX).toBeCloseTo(192+96+1,0);expect(s.bounds.max.y).toBeGreaterThan(192);
   // Grade falls 8 + 18; the lowest post foot is 26 below the start, its footing 36 more.
   expect(s.bounds.min.z).toBeCloseTo(-26-36);
   // 3 + 3 + 2 bays at 72" max spacing → 9 posts (4 + 3 + 2).
@@ -94,7 +97,8 @@ describe('balcony',()=>{
  it('sets guard posts in from the slab edge by the measured edge distance',()=>{
   const data=balconyFixture(),s=measureScene(data);expect(finite(s)).toBe(true);expect(faceOk(s)).toBe(true);
   const slab=s.meshes.find(m=>m.id==='balcony:slab')!;expect(Math.min(...slab.vertices.map(v=>v.y))).toBe(-60);expect(Math.min(...slab.vertices.map(v=>v.z))).toBe(-6);
-  const posts=s.meshes.find(m=>m.id==='balcony:posts')!;expect(posts.vertices.length/8).toBe(4);
+  // 4 corner / wall-end posts plus the one the 112" front needs within the 6' spacing.
+  const posts=s.meshes.find(m=>m.id==='balcony:posts')!;expect(posts.vertices.length/8).toBe(5);
   expect(Math.min(...posts.vertices.map(v=>v.y))).toBeCloseTo(-56-1);expect(Math.min(...posts.vertices.map(v=>v.z))).toBe(-3);
   expect(s.bounds.max.z).toBeGreaterThanOrEqual(42);expect(s.pending).toEqual([]);
  });

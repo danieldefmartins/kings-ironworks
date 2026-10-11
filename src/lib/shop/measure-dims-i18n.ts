@@ -3,6 +3,7 @@
 import type { DimKind } from './measure-dims';
 import { OPEN_DIM_NAMES } from './measure-open-i18n';
 import { STRUCT_DIM_NAMES } from './measure-dims-struct-i18n';
+import { RUN_DIM_NAMES } from './measure-dims-runs-i18n';
 
 type Row = [en: string, pt: string, es: string];
 const pick = (lang: string, r: Row) => (lang === 'pt' ? r[1] : lang === 'es' ? r[2] : r[0]);
@@ -28,7 +29,7 @@ const NAMES: Record<DimKind, Row> = {
 
 /** Short name for a dimension kind; '' for a kind with no name here (the descriptor's own label is used). */
 export function dimName(lang: string, kind: DimKind | (string & {})): string {
-  const r = (NAMES as Record<string, Row>)[kind] ?? OPEN_DIM_NAMES[kind] ?? STRUCT_DIM_NAMES[kind];
+  const r = (NAMES as Record<string, Row>)[kind] ?? OPEN_DIM_NAMES[kind] ?? STRUCT_DIM_NAMES[kind] ?? RUN_DIM_NAMES[kind];
   return r ? pick(lang, r) : '';
 }
 

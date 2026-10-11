@@ -15,6 +15,12 @@ import { spiralDims } from './measure-dims-spiral';
 import { wallRailDims } from './measure-dims-wall-rail';
 import { shopPieceDims } from './measure-dims-shop-piece';
 import { preMirrorDims } from './scene-shapes/pre-mirror';
+import { deckDims } from './measure-dims-deck';
+import { fenceDims } from './measure-dims-fence';
+import { wallCapDims } from './measure-dims-wall-cap';
+import { balconyDims } from './measure-dims-balcony';
+import { levelRunDims, rampDims } from './measure-dims-ramp';
+import { customDims } from './measure-dims-custom';
 
 /**
  * Architectural dimension lines for the sketch — every length, height or angle
@@ -355,12 +361,19 @@ export function stairSlotsForKey(key: string): string[] {
 export const DIM_ADAPTERS: Partial<Record<MeasureShape, (data: MeasureData) => SceneDim[]>> = {
   straight: d => stairDims(d), stair_platform: d => stairDims(d), l_shape: d => stairDims(d),
   u_shape: d => stairDims(d), builder: d => stairDims(d),
-  gate: d => gateDims(d),
-  opening: d => openingDims(d),
-  window_well: d => wellDims(d),
+  gate: d => preMirrorDims(gateDims(d)),
+  opening: d => preMirrorDims(openingDims(d)),
+  window_well: d => preMirrorDims(wellDims(d)),
   canopy: d => canopyDims(d),
   // Shapes modelled in true plan are flipped to survive the viewport's stair mirror (scene-shapes/pre-mirror.ts).
   structural: d => preMirrorDims(structuralDims(d)), fire_escape: d => preMirrorDims(fireDims(d)), spiral: d => preMirrorDims(spiralDims(d)), wall_rail: d => wallRailDims(d), shop_piece: d => preMirrorDims(shopPieceDims(d)),
+  deck: d => preMirrorDims(deckDims(d)),
+  fence: d => preMirrorDims(fenceDims(d)),
+  wall_cap: d => preMirrorDims(wallCapDims(d)),
+  balcony: d => preMirrorDims(balconyDims(d)),
+  ramp: d => rampDims(d),
+  level_run: d => levelRunDims(d),
+  custom: d => preMirrorDims(customDims(d)),
 };
 
 /** The dimension lines for a sheet of this shape (none for a shape with no adapter yet). */

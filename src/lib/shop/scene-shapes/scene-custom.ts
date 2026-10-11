@@ -68,7 +68,7 @@ export function customScene(data:MeasureData):ShapeScene{
   placed.forEach((po,k)=>{
    const i=po.planSegIdx??0,a=run.points[i],b=run.points[i+1];if(!a||!b)return;
    const L=Math.hypot(b.x-a.x,b.y-a.y),along=num(po.pos,true),t=along!==null&&L>0?Math.max(0,Math.min(1,along/L)):.5;
-   const base=P(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t),provisional=along===null||run.provisional[i];
+   const base=P(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t),provisional=along===null||run.provisional[i]||po.suggested==='ghost';
    if(along===null)out.pending.push(`${label} · post ${k+1}`);
    const entity2={postId:po.id};
    if(post)out.meshes.push(mesh(`post:${po.id}`,`${label} · post ${k+1}`,'post',postGeo(base,up(base,H),post),{provisional,referenceOnly:true,entity:entity2}));

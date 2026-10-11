@@ -70,6 +70,8 @@ export function PostPlanPreview({ outlines, walls, layouts, ghost, label }: {
 export interface PlanRow {
   layout: RunLayout;
   label: string;
+  /** A short fact after the span (a fence's grade per bay). */
+  note?: string;
 }
 
 /** Generic card: preview, one stepper row per run, caller's controls and actions. */
@@ -106,7 +108,7 @@ export function PostPlanCard({ lang, title, summary, rows, maxSpacing, outlines,
         {controls && <div className="mt-3 @2xl:mt-0">{controls}</div>}
         {rows.length > 0 && (
           <ul className="mt-3 divide-y divide-slate-100 rounded-2xl border border-slate-200">
-            {rows.map(({ layout: l, label }) => {
+            {rows.map(({ layout: l, label, note }) => {
               const bad = l.overMax || l.underMin;
               const span = l.spans.length === 0 ? "" : l.spanEach !== null ? ps(lang, "spanEach", { v: ft(l.spanEach) })
                 : ps(lang, "spans", { a: ft(Math.min(...l.spans)), b: ft(l.longest) });
@@ -118,6 +120,7 @@ export function PostPlanCard({ lang, title, summary, rows, maxSpacing, outlines,
                       {span}
                       {l.overMax && <> · {ps(lang, "overMax", { v: ft(maxSpacing) })}</>}
                       {!l.overMax && l.underMin && <> · {ps(lang, "tooClose")}</>}
+                      {note && <> · {note}</>}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center rounded-full bg-slate-100 p-1">
