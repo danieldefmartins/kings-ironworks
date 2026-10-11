@@ -16,7 +16,12 @@
 // - A tread's front edge (corners[0]→corners[3]) is its nosing.
 // - Rail height is vertical from the nosing line on a flight, from the floor on
 //   a landing (see measure-help railHeight). So a post standing `a` behind a
-//   nosing is `railHeight + a·slope` tall to the rail line.
+//   nosing is `railHeight + a·slope` tall to the rail line. Sheets whose
+//   fab.railHeightDatum is "finished_top_at_post" measured it at each post from
+//   the surface under it instead: then the post is simply `railHeight` tall.
+// - This is the ONE source of post tops: drawingPosts (3D, 2D drawings, the
+//   Blender payload and therefore its post cuts) and the landing connections
+//   all read their tops from here.
 // - Setbacks are to the post centre, or to its face when datums.postRef is
 //   "face" (then half the post is added).
 
@@ -192,6 +197,7 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
     maxOpening = codeLimits(s, effectiveOccupancy(data, s)).sphere || 4;
   } catch { /* defaults */ }
   const face = data.datums?.postRef === "face";
+  const atPost = data.fab?.railHeightDatum === "finished_top_at_post";
   const half = face ? postSize / 2 : 0;
   const first = treads.find((t) => t.stepIdx !== null) ?? treads[0];
   const firstHeading = unit(first.corners[0], first.corners[1]);
@@ -226,7 +232,10 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
     const onLanding = t.stepIdx === null;
     const slope = onLanding ? 0 : treadSlope(treads, ti);
     const nosing = surfacePoint(t, 0, across);
-    const railZ = onLanding ? base.z + railHeight : nosing.z + along * slope + railHeight;
+    // Rail height datum: the code convention (and the default) measures from the
+    // nosing line; a sheet that records "finished top at each post" measures it
+    // from the surface under that post instead.
+    const railZ = onLanding || atPost ? base.z + railHeight : nosing.z + along * slope + railHeight;
     const top = { ...base, z: railZ };
     const heading = unit(t.corners[0], t.corners[1]);
     const sameLine = Math.abs(heading.x * firstHeading.x + heading.y * firstHeading.y - 1) < 1e-4;
@@ -277,7 +286,7 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
         const landing = landingStart(a.post.segIdx + 1);
         if (landing && landing.segIdx <= b.post.segIdx) {
           const d = (landing.corners[0].x - a.base.x) * a.heading.x + (landing.corners[0].y - a.base.y) * a.heading.y;
-          if (d > 0) path.push({ x: a.base.x + a.heading.x * d, y: a.base.y + a.heading.y * d, z: landing.corners[0].z + railHeight });
+          if (d > 0) path.push({ x: a.base.x + a.heading.x * d, y: a.base.y + a.heading.y * d, z: atPost ? a.top.z + a.slope * d : landing.corners[0].z + railHeight });
         }
       }
       // Leaving the landing up the next flight: the nosing line meets the landing one tread back.
@@ -286,7 +295,7 @@ export function postLayout(data: MeasureData, numbered?: PostMeasure[]): PostLay
         const landing = landingStart(b.post.segIdx - 1);
         if (upper && landing && landing.segIdx >= a.post.segIdx) {
           const back = (b.base.x - upper.corners[0].x) * b.heading.x + (b.base.y - upper.corners[0].y) * b.heading.y + upper.run;
-          const knee = { x: b.base.x - b.heading.x * back, y: b.base.y - b.heading.y * back, z: upper.corners[0].z - upper.rise + railHeight };
+          const knee = { x: b.base.x - b.heading.x * back, y: b.base.y - b.heading.y * back, z: atPost ? b.top.z - b.slope * back : upper.corners[0].z - upper.rise + railHeight };
           const prev = path[path.length - 1];
           const prevDir = a.heading;
           // A turn on the landing: the rail runs on to the corner of the two rail lines.

@@ -76,10 +76,11 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
   }
  }
  // Calculated post-to-post dimensions: run · rail length · rake, drawn just above the rail line.
+ const DIM_LIFT=10;
  if(model&&data.posts.length>1){const layout=postLayout(data,orderedPosts(data));for(const sp of layout?.spans||[]){
   const angle=sp.kind==='level'?'0°':sp.pieces.filter(p=>p.kind==='rake').map(p=>`${Math.abs(p.angle).toFixed(1)}°`).join(' / ');
   lines.push({id:`dim:${sp.from.post.id}:${sp.to.post.id}`,label:`${sp.from.label} → ${sp.to.label}`,kind:'dim',provisional:sp.provisional,referenceOnly:true,entity:{},between:[sp.from.post.id,sp.to.post.id],
-   text:`${sp.from.label}→${sp.to.label}   ↔ ${formatIn(sp.run)}   ⟋ ${formatIn(sp.length)}   ∠ ${angle}`,points:sp.path.map(p=>({...p,z:p.z+4}))});
+   text:`${sp.from.label}→${sp.to.label}   ↔ ${formatIn(sp.run)}   ⟋ ${formatIn(sp.length)}   ∠ ${angle}`,points:sp.path.map(p=>({...p,z:p.z+DIM_LIFT}))});
  }}
  for(const [i,t] of landingConnections(data).entries()){
   if(t.kind!=='drop'&&t.kind!=='level')continue;const g=landingConnectionGeometry(data,t);if(!g)continue;
