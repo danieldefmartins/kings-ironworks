@@ -11,6 +11,7 @@ import { parseMeas } from "./measure-parse";
 import { postLayout, calculatedFromFirst, POST_CHECK_TOL } from "./measure-post-layout";
 import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
+import {platformLayout} from "./measure-platform-placement";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import { structuralChecks, structuralGaps } from "./measure-structural";
 import { finishChecks, mountingChecks } from "./measure-substrate";
@@ -886,6 +887,18 @@ function shapeChecks(
     out.push(
       compare("landing_diag", calc, dg, tol.rake, "in", data.segments.length > 2 ? `#${si}` : undefined)
     );
+    // Flights must land on the platform: offset + flight width within the edge.
+    const layout = platformLayout(data, si);
+    if (layout) for (const end of ["entry", "exit"] as const) {
+      const p = layout[end];
+      if (!p || !p.explicit) continue;
+      const edgeKnown = end === "exit" && (pl.turn === "left" || pl.turn === "right") ? layout.runKnown : layout.acrossKnown;
+      if (!edgeKnown) continue;
+      out.push({ key: "landing_fit", level: p.overhang > 0 ? "red" : "green", expected: p.edge, actual: p.overhang > 0 ? p.edge + p.overhang : p.start + p.width, delta: p.overhang, unit: "in",
+        detail: `#${si + 1} ${end}`, detailI18n: end === "entry" ? {en: `#${si + 1} · stairs in`, pt: `#${si + 1} · chegada`, es: `#${si + 1} · llegada`} : {en: `#${si + 1} · stairs out`, pt: `#${si + 1} · saída`, es: `#${si + 1} · salida`} });
+    }
+    if (layout?.overlap) out.push({ key: "landing_fit", level: "red", expected: layout.across, actual: layout.incomingWidth + layout.outgoingWidth, delta: layout.incomingWidth + layout.outgoingWidth - layout.across, unit: "in",
+      detail: `#${si + 1} overlap`, detailI18n: {en: `#${si + 1} · flights overlap`, pt: `#${si + 1} · lances sobrepostos`, es: `#${si + 1} · tramos superpuestos`} });
   });
 
   // computed vs measured stair angle, per flight

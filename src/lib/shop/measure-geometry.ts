@@ -2,6 +2,7 @@ import type { MeasureData } from './measure';
 import { parseMeas } from './measure-parse';
 import {platformEntryRise} from './measure-platform-rise';
 import {siteNumber} from './measure-site';
+import {platformLayout} from './measure-platform-placement';
 
 export type Point3 = { x: number; y: number; z: number };
 export interface MeasuredTread {
@@ -42,10 +43,6 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
   let pose: Pose = { x: position[0]??0, y: position[1]??0, z: baseZ, heading: placement&&!placementInvalid?rad(placement.rotation):0 };
   let landing: { pose: Pose; run: number; width: number; gradeX: number; gradeY: number; provisional: boolean } | null = null;
   let number = 0, runTotal = 0, originProvisional = placementInvalid;
-  const widthOf = (index: number) => {
-    const s = data.segments[index];
-    return s && 'width' in s ? value(s.width) ?? 36 : 36;
-  };
   data.segments.forEach((segment, segIdx) => {
     if (focusSeg !== undefined && segIdx !== focusSeg) {
       if (segment.kind === 'flight') number += segment.steps.length;
@@ -96,35 +93,29 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       });
     } else if (segment.kind === 'platform') {
       const entryRise=platformEntryRise(segment,data.segments[segIdx-1]);
-      const run=value(segment.length), width=value(segment.depth), d=run??36;
-      const incomingWidth=widthOf(segIdx-1),nextWidth=widthOf(segIdx+1);
-      const w=width??(segment.turn==='u'?incomingWidth+nextWidth:Math.max(incomingWidth,nextWidth));
-      const entry=value(segment.entryOffset,true),entryOffset=entry??0;
+      const run=value(segment.length), width=value(segment.depth);
+      const layout=platformLayout(data,segIdx)!,d=layout.run,w=layout.across,nextWidth=layout.outgoingWidth;
+      const entryOffset=layout.entry?.start??0;
       const grade=landingGrade(segment.slope);
       const direction=segment.slopeDir;
       const knownDirection=['Left','Right','Toward stairs','Away from stairs'].includes(direction);
       const gx=direction==='Toward stairs' ? grade??0 : direction==='Away from stairs' ? -(grade??0) : 0;
       const gy=direction==='Left' ? grade??0 : direction==='Right' ? -(grade??0) : 0;
-      const entryUnknown=focusSeg===undefined && segIdx>0 && (entry===null && Math.abs(w-incomingWidth)>.001 || entryOffset+incomingWidth>w);
+      const entryUnknown=focusSeg===undefined && segIdx>0 && !!layout.entry && (!layout.entry.known || layout.entry.overhang>0);
       pose=poseAt(pose,0,-entryOffset,entryRise.rise-gy*entryOffset);
       const corners: MeasuredTread['corners']=[point(pose,0,0),point(pose,d,0,gx*d),point(pose,d,w,gx*d+gy*w),point(pose,0,w,gy*w)];
       treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:entryRise.rise,run:d,width:w,corners,
         riseLabel:entryRise.label,runLabel:run===null?'?':segment.length,widthLabel:width===null?'?':segment.depth,
         provisional:originProvisional||entryRise.provisional||entryUnknown||run===null||width===null||!segment.slope.trim()||grade===null||(grade!==0&&!knownDirection)});
       landing={pose:{...pose},run:d,width:w,gradeX:gx,gradeY:gy,provisional:treads[treads.length-1].provisional};
-      const offset=value(segment.exitOffset,true);
-      const x=segment.turn==='left' ? (d-nextWidth)/2 : segment.turn==='right' ? (d+nextWidth)/2 : segment.turn==='u' ? 0 : d;
       const uLeft=segment.turn==='u'&&segment.uDirection==='left';
-      const y=uLeft ? nextWidth : segment.turn==='left' ? 0 : segment.turn==='right'||segment.turn==='u' ? w : (w-nextWidth)/2;
       const turn=segment.turn==='left' ? -Math.PI/2 : segment.turn==='right' ? Math.PI/2 : segment.turn==='u' ? (uLeft?-Math.PI:Math.PI) : 0;
-      const ox=offset===null?x:segment.turn==='left'?offset:segment.turn==='right'?d-offset:x;
-      const oy=offset===null?y:segment.turn==='u'?(uLeft?offset+nextWidth:w-offset):segment.turn==='none'?offset:y;
-      const next=data.segments[segIdx+1];
-      if(next && !(next.kind==='flight'&&next.branch) && (offset===null || offset+nextWidth>(segment.turn==='left'||segment.turn==='right'?d:w)))treads[treads.length-1].provisional=true;
-      if(next&&segment.turn==='u'&&segment.uDirection&&offset!==null){
-        const outgoingMin=oy-nextWidth,outgoingMax=oy;
-        if(Math.min(entryOffset+incomingWidth,outgoingMax)-Math.max(entryOffset,outgoingMin)>.001)treads[treads.length-1].provisional=true;
-      }
+      // Flight start pose = the next flight's left edge (walking up it) on the departure edge.
+      const exit=layout.exit,s0=exit?exit.start:null;
+      const ox=segment.turn==='left' ? s0??(d-nextWidth)/2 : segment.turn==='right' ? d-(s0??(d-nextWidth)/2) : segment.turn==='u' ? 0 : d;
+      const oy=segment.turn==='left' ? 0 : segment.turn==='right' ? w : segment.turn==='u' ? (s0===null?(uLeft?nextWidth:w):w-s0) : s0??(w-nextWidth)/2;
+      if(exit && (!exit.known || exit.overhang>0))treads[treads.length-1].provisional=true;
+      if(layout.overlap)treads[treads.length-1].provisional=true;
       originProvisional=treads[treads.length-1].provisional;
       pose=poseAt(pose,ox,oy,gx*ox+gy*oy,turn);runTotal+=d;
     } else if (segment.kind === 'ramp') {

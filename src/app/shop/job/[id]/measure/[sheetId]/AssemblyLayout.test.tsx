@@ -12,9 +12,10 @@ it('lets a measurer correct the whole-stair turn and landing registration togeth
  const turn=screen.getByRole('combobox');
  expect(turn.querySelectorAll('option')).toHaveLength(4);
  fireEvent.change(turn,{target:{value:'u'}});
- fireEvent.change(screen.getByLabelText('Incoming flight · left-edge offset'),{target:{value:'8'}});
+ fireEvent.click(document.querySelector('[data-placement-edge="entry"] [data-align="custom"]')!);
+ fireEvent.change(document.querySelector('[data-placement-offset="entry"]')!,{target:{value:'8'}});
  const landing=JSON.parse(screen.getByTestId('landing').textContent!);
- expect(landing).toMatchObject({turn:'u',entryOffset:'8',length:'48',depth:'84'});
+ expect(landing).toMatchObject({turn:'u',entryOffset:'8',entryAlign:'custom',entryFrom:'left',length:'48',depth:'84'});
  fireEvent.change(turn,{target:{value:'none'}});
  expect(JSON.parse(screen.getByTestId('landing').textContent!).turn).toBe('none');
 });

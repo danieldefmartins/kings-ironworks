@@ -16,6 +16,7 @@ import { flightTotals, inchesToField } from "@/lib/shop/measure-derive";
 import { helpText } from "@/lib/shop/measure-help";
 import { stepDimensionsRecorded } from "@/lib/shop/measure-progress";
 import { mt } from "@/lib/shop/measure-i18n";
+import PlatformPlacement from "../PlatformPlacement";
 import {
   AutoMInput,
   Card,
@@ -366,8 +367,6 @@ export default function StairSections({
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
             <MInput help="depth" label={mt(lang, "depth")} value={seg.depth}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).depth = v))} />
-            {i>0 && <MInput label={mt(lang,"assemblyEntry")} value={seg.entryOffset||""} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).entryOffset=v))}/>}
-            {data.segments[i+1] && <MInput label={mt(lang,"drawingExitOffset")} value={seg.exitOffset||""} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).exitOffset=v))}/>}
             <MInput help="landingDiag" label={mt(lang, "landingDiag")} value={seg.diag}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).diag = v))} />
             <ChoiceMInput label={`${mt(lang, "slope")} — ${mt(lang, "slopeHint")}`} value={seg.slope}
@@ -378,6 +377,7 @@ export default function StairSections({
                 choices={slopeDirectionChoices(lang)} onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).slopeDir = v))} />
             )}
           </Grid>
+          <div className="mt-3"><PlatformPlacement data={data} segIdx={i} set={set} lang={lang}/></div>
           {(seg.turn === "left" || seg.turn === "right") && (
             <div className="mt-3">
               <div className="text-[11px] text-neutral-400 mb-1">{mt(lang, "turn")}</div>

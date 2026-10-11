@@ -3,6 +3,7 @@ import type { MeasureData, PlatformSegment } from '@/lib/shop/measure';
 import { applyStandardReturn } from '@/lib/shop/measure-standard-layout';
 import { mt } from '@/lib/shop/measure-i18n';
 import { MInput } from './fields';
+import PlatformPlacement from './PlatformPlacement';
 
 export default function AssemblyLayout({ data, lang, set }: { data: MeasureData; lang: string; set: (fn: (data: MeasureData) => void) => void }) {
   const landings = data.segments.flatMap((seg, index) => seg.kind === 'platform' ? [{ seg, index }] : []);
@@ -22,17 +23,14 @@ export default function AssemblyLayout({ data, lang, set }: { data: MeasureData;
     <summary className="cursor-pointer font-semibold text-sky-200">{mt(lang, 'assemblyLayout')}</summary>
     <p className="mt-2 text-sm text-neutral-300">{mt(lang, 'assemblyLayoutHint')}</p>
     {landings.map(({ seg, index }, number) => {
-      const edit = (key: 'length' | 'depth' | 'entryOffset' | 'exitOffset', value: string) => set(d => { (d.segments[index] as PlatformSegment)[key] = value; });
-      const next = data.segments[index + 1];
-      const branched = next?.kind === 'flight' && next.branch;
+      const edit = (key: 'length' | 'depth', value: string) => set(d => { (d.segments[index] as PlatformSegment)[key] = value; });
       return <div key={index} className="mt-3 border-t border-neutral-700 pt-3">
         <h3 className="mb-2 font-semibold">{mt(lang, 'landing')} {number + 1}</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <MInput label={mt(lang, 'assemblyLength')} value={seg.length} onChange={v=>edit('length',v)}/>
           <MInput label={mt(lang, 'assemblyWidth')} value={seg.depth} onChange={v=>edit('depth',v)}/>
-          {index > 0 && <MInput label={mt(lang, 'assemblyEntry')} value={seg.entryOffset||''} onChange={v=>edit('entryOffset',v)}/>}
-          {next && !branched && <MInput label={mt(lang, 'drawingExitOffset')} value={seg.exitOffset||''} onChange={v=>edit('exitOffset',v)}/>}
         </div>
+        <div className="mt-3"><PlatformPlacement data={data} segIdx={index} set={set} lang={lang}/></div>
       </div>;
     })}
   </details></div>;

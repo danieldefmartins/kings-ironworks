@@ -69,7 +69,7 @@ it('records a separate platform entry rise including same-level zero without cha
 
 it('records a landing entry offset from its left edge without changing widths or stair measurements',()=>{
  function LandingHarness(){const [data,setData]=useState(()=>newMeasureData('stair_platform',2));return <><output hidden data-testid="saved-measurement">{JSON.stringify(data)}</output><VisualMeasureWorkspace initialTarget={{segment:1,step:null}} data={data} set={fn=>setData(old=>{const d=structuredClone(old);fn(d);return d;})} lang="en" shape="stair_platform"/></>;}
- render(<LandingHarness/>);const before=saved();fireEvent.change(screen.getByLabelText('Landing left edge to stair left edge'),{target:{value:'12 1/2'}});expect(saved().segments[1]).toMatchObject({entryOffset:'12 1/2'});expect(saved().segments[0]).toEqual(before.segments[0]);expect((saved().segments[1] as {depth:string}).depth).toBe((before.segments[1] as {depth:string}).depth);
+ render(<LandingHarness/>);const before=saved();fireEvent.click(document.querySelector('[data-placement-edge="entry"] [data-align="custom"]')!);fireEvent.change(document.querySelector('[data-placement-offset="entry"]')!,{target:{value:'12 1/2'}});expect(saved().segments[1]).toMatchObject({entryOffset:'12 1/2',entryAlign:'custom',entryFrom:'left'});expect(saved().segments[0]).toEqual(before.segments[0]);expect((saved().segments[1] as {depth:string}).depth).toBe((before.segments[1] as {depth:string}).depth);
 });
 
 it('edits a rail connection on a structural column face without changing the column or turning it into a fabricated post',()=>{
