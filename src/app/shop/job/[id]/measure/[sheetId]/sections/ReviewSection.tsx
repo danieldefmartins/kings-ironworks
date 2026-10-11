@@ -15,6 +15,10 @@ import {
   type Readiness,
 } from "@/lib/shop/measure-checks";
 import ShopDrawingSubmission from "../ShopDrawingSubmission";
+import CodeCheckCard from "./CodeCheckCard";
+import CustomerSignoff from "./CustomerSignoff";
+import { signoffState } from "@/lib/shop/measure-signoff";
+import { ct } from "@/lib/shop/measure-code-i18n";
 import DrawingSvg from "../DrawingSvg";
 import DrawingReport from "../DrawingReport";
 import SiteDrawing from '../SiteDrawing';
@@ -58,8 +62,14 @@ export default function ReviewSection({
   approveSheet,
   sendBackSheet,
   embedded = false,
+  set,
+  codeDefault,
 }: {
   embedded?: boolean;
+  /** Sheet mutator — enables the code profile and customer sign-off controls. */
+  set?: (fn: (d: MeasureData) => void) => void;
+  /** Organization default code profile (org settings defaults.codeProfile). */
+  codeDefault?: string | null;
   lang: string;
   data: MeasureData;
   sheet: MeasureSheet;
@@ -143,6 +153,20 @@ export default function ReviewSection({
 
         {status === "in_progress" && (
           <>
+            {/* Sign-off is optional: listed as recommended, never a blocker. */}
+            {set && signoffState(data) !== "valid" && (
+              <button
+                type="button"
+                onClick={() => document.querySelector('[data-testid="customer-signoff"]')?.scrollIntoView({ behavior: "smooth", block: "center" })}
+                className="mb-3 flex min-h-12 w-full items-center gap-2 rounded-xl border border-neutral-800 px-3 text-left text-sm"
+              >
+                <span className="flex-1 font-medium text-neutral-200">{ct(lang, "signTitle")}</span>
+                <span className={signoffState(data) === "stale" ? "text-amber-300" : "text-neutral-500"}>
+                  {signoffState(data) === "stale" ? ct(lang, "signStale") : ct(lang, "signRecommended")}
+                </span>
+                <span className="text-sky-400" aria-hidden>→</span>
+              </button>
+            )}
             {redChecks.length > 0 && (
               <div className="text-sm text-red-300 mb-2">⛔ {mt(lang, "redBlock")}</div>
             )}
@@ -214,6 +238,10 @@ export default function ReviewSection({
           </div>
         )}
       </Card>
+      <>
+        <CodeCheckCard lang={lang} data={data} shape={sheet.shape} orgDefault={codeDefault} set={set} readOnly={status !== "in_progress"} />
+        <CustomerSignoff lang={lang} data={data} shape={sheet.shape} sheetName={sheet.name || undefined} set={set} readOnly={status === "approved"} />
+      </>
       {embedded ? <details className="rounded-2xl border border-slate-200 bg-white p-3">
         <summary className="min-h-11 cursor-pointer font-semibold">{lang==='pt'?'Prévia das folhas':lang==='es'?'Vista previa de planos':'Drawing sheets preview'}</summary>
         {previews}

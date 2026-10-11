@@ -33,6 +33,7 @@ import Sketch, { sketchViews } from "./Sketch";
 import SitePrint from './SitePrint';
 import SpecialtySteelPrint from './SpecialtySteelPrint';
 import SteelTakeoffPrint from './SteelTakeoffPrint';
+import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
 
 const GOLD = "#b8860b";
 
@@ -67,7 +68,9 @@ export default function PrintSheet({
   qrUrl,
   superseded = false,
   branding,
+  codeDefault,
 }: {
+  codeDefault?: string | null; // org default code profile
   job: Job;
   sheet: MeasureSheet;
   data: MeasureData;
@@ -1061,6 +1064,9 @@ export default function PrintSheet({
           </div>
         )}
       </div>
+
+      <CodeCheckPrint data={data} shape={sheet.shape} lang={lang} orgDefault={codeDefault} />
+      <SignoffPrint data={data} lang={lang} />
 
       <div
         className="mt-4 pt-2"

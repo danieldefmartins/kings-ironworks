@@ -9,6 +9,8 @@ import type {SpecialtySteel} from './measure-specialty-steel-schema';
 // are free-text strings ("23 3/4") because crews work in inches + fractions.
 
 import type { SiteModel } from './measure-site';
+import type { CodeSettings } from './measure-code';
+import type { CustomerSignoff } from './measure-signoff';
 
 export type MeasureShape =
   | "straight"
@@ -1255,6 +1257,10 @@ export interface MeasureData {
   plan?: PlanDrawing | null; // custom shape: the drawn top view
   spans: RailSpan[]; // every rail piece with BOTH end terminations
   units?: Units; // measurement entry unit — inches (default) or feet+inches
+  /** Code profile + occupancy this sheet is checked against (measure-code.ts). */
+  code?: CodeSettings;
+  /** Customer sign-off on the field dimensions (measure-signoff.ts). */
+  signoff?: CustomerSignoff | null;
 }
 
 export interface MeasureSheet {
@@ -1655,6 +1661,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
   const d = (raw || {}) as Partial<MeasureData>;
   return {
     drawingReleaseVersion: d.drawingReleaseVersion,
+    ...(d.code ? { code: d.code } : {}),
+    ...(d.signoff ? { signoff: d.signoff } : {}),
     site: d.site,
     steelPlan: d.steelPlan,
     specialtySteel: d.specialtySteel,
