@@ -987,6 +987,12 @@ export interface MeasurePhoto {
   slot: string; // which checklist slot (or post id) it documents
   path: string; // storage object path in the photos bucket
   takenAt: string;
+  /** Capture GPS fix (shot-list camera), when the phone gave one. */
+  lat?: number;
+  lng?: number;
+  acc?: number; // metres
+  /** A marked-up copy was also uploaded. */
+  marked?: boolean;
 }
 
 export interface AnnotationStroke {

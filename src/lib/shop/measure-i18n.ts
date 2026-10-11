@@ -3,6 +3,7 @@ import { asLang, type Lang } from "./i18n";
 import type { MeasureShape } from "./measure";
 import { OPENING_STR } from "./measure-opening-i18n";
 import { STRUCTURAL_STR } from "./measure-structural-i18n";
+import { SHOTS_STR } from "./measure-shots-i18n";
 
 type Dict = Record<string, string>;
 
@@ -631,7 +632,7 @@ const STR: Record<Lang, Dict> = {
     wellMaxWord: "max",
     sketchHintWell: "Top view shows the well and what sits over it. Section shows the house wall profile and how close the post can be.",
     wellTitle: "The well",
-    wellHint: "Measure the well box first, then tick what KIW is supplying. Everything below adapts to what you tick.",
+    wellHint: "Measure the well box first, then tick what we are supplying. Everything below adapts to what you tick.",
     wellDeliverables: "What are we supplying?",
     wellD_grate: "Grate",
     wellD_guard: "Guard rail",
@@ -721,7 +722,7 @@ const STR: Record<Lang, Dict> = {
     check_well_rung_standoff: "Rung standoff under 3\"",
     check_well_ladder_width: "Ladder narrower than 12\"",
     gap_well_missing: "Well measurements missing",
-    gap_well_deliverable: "Tick what KIW is supplying",
+    gap_well_deliverable: "Tick what we are supplying",
     gap_well_construction: "Well construction",
     gap_well_length: "Length along the house",
     gap_well_projection: "Projection from the house",
@@ -2069,7 +2070,7 @@ const STR: Record<Lang, Dict> = {
     wellMaxWord: "máx",
     sketchHintWell: "A vista de cima mostra o poço e o que fica sobre ele. A seção mostra o perfil da parede da casa e o quão perto o poste pode ficar.",
     wellTitle: "O poço",
-    wellHint: "Meça primeiro a caixa do poço, depois marque o que a KIW vai fornecer. Tudo abaixo se ajusta ao que marcar.",
+    wellHint: "Meça primeiro a caixa do poço, depois marque o que vamos fornecer. Tudo abaixo se ajusta ao que marcar.",
     wellDeliverables: "O que vamos fornecer?",
     wellD_grate: "Grade",
     wellD_guard: "Guarda-corpo",
@@ -2159,7 +2160,7 @@ const STR: Record<Lang, Dict> = {
     check_well_rung_standoff: "Afastamento do degrau abaixo de 3\"",
     check_well_ladder_width: "Escada com menos de 12\"",
     gap_well_missing: "Faltam as medidas do poço",
-    gap_well_deliverable: "Marque o que a KIW vai fornecer",
+    gap_well_deliverable: "Marque o que vamos fornecer",
     gap_well_construction: "Construção do poço",
     gap_well_length: "Comprimento junto à casa",
     gap_well_projection: "Projeção a partir da casa",
@@ -3503,7 +3504,7 @@ const STR: Record<Lang, Dict> = {
     wellMaxWord: "máx",
     sketchHintWell: "La vista superior muestra el foso y lo que va encima. La sección muestra el perfil del muro de la casa y qué tan cerca puede ir el poste.",
     wellTitle: "El foso",
-    wellHint: "Mida primero la caja del foso y luego marque lo que KIW va a suministrar. Todo lo de abajo se adapta a lo que marque.",
+    wellHint: "Mida primero la caja del foso y luego marque lo que vamos a suministrar. Todo lo de abajo se adapta a lo que marque.",
     wellDeliverables: "¿Qué vamos a suministrar?",
     wellD_grate: "Rejilla",
     wellD_guard: "Barandilla",
@@ -3593,7 +3594,7 @@ const STR: Record<Lang, Dict> = {
     check_well_rung_standoff: "Separación del peldaño bajo 3\"",
     check_well_ladder_width: "Escalera de menos de 12\"",
     gap_well_missing: "Faltan las medidas del foso",
-    gap_well_deliverable: "Marque lo que KIW va a suministrar",
+    gap_well_deliverable: "Marque lo que vamos a suministrar",
     gap_well_construction: "Construcción del foso",
     gap_well_length: "Largo junto a la casa",
     gap_well_projection: "Proyección desde la casa",
@@ -4319,6 +4320,7 @@ const STR: Record<Lang, Dict> = {
 for (const l of ["en", "pt", "es"] as const) Object.assign(STR[l], OPENING_STR[l]);
 // Structural steel strings live in their own file and join the main dictionary.
 for (const l of Object.keys(STRUCTURAL_STR) as Lang[]) Object.assign(STR[l], STRUCTURAL_STR[l]);
+for (const l of Object.keys(SHOTS_STR) as Lang[]) Object.assign(STR[l], SHOTS_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);
