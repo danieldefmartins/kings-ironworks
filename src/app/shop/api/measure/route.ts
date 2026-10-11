@@ -90,6 +90,10 @@ const PlatformSchema = z.object({
   uDirection: z.enum(["left", "right"]).optional(),
   entryOffset: meas.optional(),
   exitOffset: meas.optional(),
+  entryAlign: z.enum(["left", "center", "right", "custom"]).optional(),
+  entryFrom: z.enum(["left", "right"]).optional(),
+  exitAlign: z.enum(["left", "center", "right", "custom"]).optional(),
+  exitFrom: z.enum(["left", "right"]).optional(),
 });
 const RampSchema = z.object({
   id: z.string().min(1).max(80).optional(),

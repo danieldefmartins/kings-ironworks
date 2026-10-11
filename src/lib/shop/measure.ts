@@ -227,6 +227,13 @@ export interface PlatformSegment {
   slopeDir: string; // which way it falls
   entryOffset?: string; // landing left edge to incoming flight left edge, looking uphill
   exitOffset?: string; // departure edge to next flight left edge, looking out
+  // Placement mode per edge (see measure-platform-placement.ts). Absent on
+  // older sheets: a non-blank offset then reads as "custom" from its legacy
+  // edge (unchanged), a blank one as centered.
+  entryAlign?: "left" | "center" | "right" | "custom";
+  entryFrom?: "left" | "right"; // edge the custom entry offset is taped from, looking up
+  exitAlign?: "left" | "center" | "right" | "custom";
+  exitFrom?: "left" | "right"; // edge the custom exit offset is taped from, looking up the next flight
   uDirection?: "left" | "right"; // handedness of a 180-degree return; absent preserves legacy right return
   turn: "none" | "left" | "right" | "u"; // direction change after this landing
 }
