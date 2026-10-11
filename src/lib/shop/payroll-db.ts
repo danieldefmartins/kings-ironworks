@@ -16,7 +16,7 @@ export async function loadPayrollWeek(week: ReturnType<typeof payrollWeek>) {
   const start = encodeURIComponent(week.start), end = encodeURIComponent(week.end);
   const [workers, shifts, breaks] = await Promise.all([
     allRows<Worker>("kiw_shop_workers", `select=id,name,active,is_admin,can_see_prices,payroll_excluded&org_id=eq.${ORG_ID}&order=name.asc,id.asc`),
-    allRows<TimeShift>("kiw_shop_shifts", `select=id,worker_id,pay_rate,started_at,ended_at,status&org_id=eq.${ORG_ID}&started_at=lt.${end}&or=(ended_at.is.null,ended_at.gt.${start})&order=started_at.asc,id.asc`),
+    allRows<TimeShift>("kiw_shop_shifts", `select=id,worker_id,pay_rate,started_at,ended_at,status,start_lat,start_lng,start_accuracy_m,end_lat,end_lng,end_accuracy_m&org_id=eq.${ORG_ID}&started_at=lt.${end}&or=(ended_at.is.null,ended_at.gt.${start})&order=started_at.asc,id.asc`),
     allRows<TimeBreak>("kiw_shop_breaks", `select=id,shift_id,started_at,ended_at,paid&org_id=eq.${ORG_ID}&started_at=lt.${end}&or=(ended_at.is.null,ended_at.gt.${start})&order=started_at.asc,id.asc`),
   ]);
   const excludedWorkers = new Set(workers.filter(w => w.payroll_excluded || canViewOwnerFinancials(w)).map(w => w.id));

@@ -313,7 +313,7 @@ const STR: Record<Lang, Dict> = {
     mapStart: "Start", mapEnd: "End", requestCorrection: "Request correction", approve: "Approve", reject: "Reject",
     correctionRequests: "Correction requests", correctionTitle: "Request a correction", clockInLabel: "Clock in",
     clockOutLabel: "Clock out", correctionReason: "What needs fixing?", sendRequest: "Send request",
-    timeReview: "Time review", timeReviewHint: "Daily hours, weekly overtime, GPS punches and corrections.", running: "Running",
+    timeReview: "Time review", timeReviewHint: "Daily hours, punch locations and corrections.", running: "Running",
   },
   pt: {
     workerApplications: "Candidaturas",
@@ -621,7 +621,7 @@ const STR: Record<Lang, Dict> = {
     mapStart: "Entrada", mapEnd: "Saída", requestCorrection: "Pedir correção", approve: "Aprovar", reject: "Rejeitar",
     correctionRequests: "Pedidos de correção", correctionTitle: "Pedir uma correção", clockInLabel: "Entrada",
     clockOutLabel: "Saída", correctionReason: "O que precisa ser corrigido?", sendRequest: "Enviar pedido",
-    timeReview: "Revisão de horas", timeReviewHint: "Horas diárias, extras semanais, GPS e correções.", running: "Em andamento",
+    timeReview: "Revisão de horas", timeReviewHint: "Horas diárias, locais do ponto e correções.", running: "Em andamento",
   },
   es: {
     workerApplications: "Solicitudes de empleo",
@@ -929,7 +929,7 @@ const STR: Record<Lang, Dict> = {
     mapStart: "Entrada", mapEnd: "Salida", requestCorrection: "Solicitar corrección", approve: "Aprobar", reject: "Rechazar",
     correctionRequests: "Solicitudes de corrección", correctionTitle: "Solicitar una corrección", clockInLabel: "Entrada",
     clockOutLabel: "Salida", correctionReason: "¿Qué necesita corregirse?", sendRequest: "Enviar solicitud",
-    timeReview: "Revisión de horas", timeReviewHint: "Horas diarias, extras semanales, GPS y correcciones.", running: "En curso",
+    timeReview: "Revisión de horas", timeReviewHint: "Horas diarias, ubicaciones de marcación y correcciones.", running: "En curso",
   },
 };
 

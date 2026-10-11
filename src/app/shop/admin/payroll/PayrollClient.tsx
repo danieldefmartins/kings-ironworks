@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { fmtDateTime, hoursToHm } from "@/lib/shop/shared";
 import { addPayrollDays, type PayrollRow } from "@/lib/shop/payroll";
+import type { ShiftPlaces } from "@/lib/shop/punch-place";
+import PunchPlaceLine from "./PunchPlaceLine";
 
-export default function PayrollClient({ rows, days, weeks, selected, sunday, lang }: { rows: PayrollRow[]; days: { date: string; rows: PayrollRow[] }[]; weeks: string[]; selected: string; sunday: string; lang: string }) {
+export default function PayrollClient({ rows, places = {}, days, weeks, selected, sunday, lang }: { rows: PayrollRow[]; places?: Record<string, ShiftPlaces>; days: { date: string; rows: PayrollRow[] }[]; weeks: string[]; selected: string; sunday: string; lang: string }) {
   const router = useRouter();
   const pt = lang === "pt", es = lang === "es";
   const label = (en: string, br: string, sp: string) => pt ? br : es ? sp : en;
@@ -43,8 +45,8 @@ export default function PayrollClient({ rows, days, weeks, selected, sunday, lan
         {days.map((day, dayIndex) => { const daily = day.rows.find(r => r.id === row.id); return <section key={day.date} data-payroll-day={dayIndex % 7} className="shop-payroll-day rounded-2xl border p-4 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2"><span className="font-semibold">{new Date(`${day.date}T12:00:00Z`).toLocaleDateString(pt ? "pt-BR" : es ? "es-US" : "en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })}</span><span className="font-semibold text-neutral-300">{label("Daily hours", "Horas do dia", "Horas del día")}: {hoursToHm(daily?.hours || 0)}</span><span className="tabular-nums">{money(daily?.basePay || 0)}{(daily?.missingRateHours || 0) > 0 ? " + ?" : ""}</span></div>
           {(daily?.punches || []).map(punch => <div key={punch.id} className={`mt-3 grid grid-cols-2 gap-2 rounded-xl bg-neutral-950/60 p-3 ${punch.rejected ? "text-red-300" : "text-neutral-300"}`}>
-            <div><span className="block text-xs text-neutral-500">{label("Clock in", "Entrada", "Entrada")}</span><span>{fmtDateTime(punch.startedAt, lang)}</span></div>
-            <div><span className="block text-xs text-neutral-500">{label("Clock out", "Saída", "Salida")}</span><span>{punch.endedAt ? fmtDateTime(punch.endedAt, lang) : punch.needsReview ? label("Missing clock-out · needs review", "Saída ausente · revisar", "Falta salida · revisar") : label("Still clocked in", "Ainda em serviço", "Turno abierto")}</span></div>
+            <div><span className="block text-xs text-neutral-500">{label("Clock in", "Entrada", "Entrada")}</span><span>{fmtDateTime(punch.startedAt, lang)}</span><PunchPlaceLine place={places[punch.id]?.in ?? null} late={places[punch.id]?.lateIn} lang={lang} /></div>
+            <div><span className="block text-xs text-neutral-500">{label("Clock out", "Saída", "Salida")}</span><span>{punch.endedAt ? fmtDateTime(punch.endedAt, lang) : punch.needsReview ? label("Missing clock-out · needs review", "Saída ausente · revisar", "Falta salida · revisar") : label("Still clocked in", "Ainda em serviço", "Turno abierto")}</span>{punch.endedAt && <PunchPlaceLine place={places[punch.id]?.out ?? null} late={places[punch.id]?.lateOut} lang={lang} />}</div>
             <p className="col-span-2 text-xs">{punch.needsReview ? label("Unverified elapsed time · excluded", "Tempo não confirmado · excluído", "Tiempo sin confirmar · excluido") : label("Paid hours this day", "Horas pagas neste dia", "Horas pagadas este día")}: {hoursToHm(punch.hours)}{punch.rejected ? ` · ${label("Rejected · excluded", "Rejeitado · excluído", "Rechazado · excluido")}` : !punch.endedAt ? ` · ${label("Estimate", "Estimativa", "Estimación")}` : ""}</p>
           </div>)}
           {!daily?.punches?.length && <p className="mt-2 text-xs text-neutral-500">{label("No recorded punches", "Nenhum ponto registrado", "Sin registros de entrada o salida")}</p>}

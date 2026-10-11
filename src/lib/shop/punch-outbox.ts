@@ -2,10 +2,12 @@
 export type QueuedPunch = {
   punchId: string; workerId?: string; shiftId?: string;
   type: "shift_start" | "shift_stop"; clientAt: string; review?: string;
+  /** Where the tap happened — required by the server for a clock-in. */
+  lat?: number; lng?: number; accuracy?: number | null;
 };
 export type PunchResult =
   | { ok: true; shiftId: string | null; at: string | null; late: boolean }
-  | { ok: false; error: string; final: boolean; signIn: boolean };
+  | { ok: false; error: string; final: boolean; signIn: boolean; locationRequired?: boolean };
 const KEY = "kiw-punch-outbox";
 export function readOutbox(): QueuedPunch[] {
   try {
@@ -31,6 +33,7 @@ export function pendingPunches(workerId: string): QueuedPunch[] {
  */
 export function queueTap(
   workerId: string, type: QueuedPunch["type"], shiftId: string | null | undefined, now: Date = new Date(),
+  loc?: { lat: number; lng: number; accuracy: number | null } | null,
 ): { punch: QueuedPunch; added: boolean } | null {
   const pending = pendingPunches(workerId);
   const last = pending[pending.length - 1];
@@ -38,8 +41,36 @@ export function queueTap(
   const punch: QueuedPunch = {
     punchId: crypto.randomUUID(), workerId, type, clientAt: now.toISOString(),
     ...(type === "shift_stop" && shiftId ? { shiftId } : {}),
+    ...(loc ? { lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy } : {}),
   };
   return writeOutbox([...readOutbox(), punch]) ? { punch, added: true } : null;
+}
+
+// "Tried to clock in but had no location" reports for the office. Kept on the
+// phone until the server has them, so a phone with no signal still reports on
+// its next open.
+export type BlockedReport = { id: string; workerId: string; reason: "denied" | "unavailable" | "timeout"; tapAt: string; userAgent: string };
+const BLOCKED_KEY = "kiw-clockin-blocked";
+function readBlocked(): BlockedReport[] {
+  try { const v = JSON.parse(window.localStorage.getItem(BLOCKED_KEY) || "[]"); return Array.isArray(v) ? v : []; } catch { return []; }
+}
+function writeBlocked(items: BlockedReport[]) {
+  try { window.localStorage.setItem(BLOCKED_KEY, JSON.stringify(items.slice(-20))); } catch { /* best effort */ }
+}
+export function queueBlockedReport(r: Omit<BlockedReport, "id">): void {
+  writeBlocked([...readBlocked(), { ...r, id: crypto.randomUUID() }]);
+}
+export async function flushBlockedReports(workerId: string): Promise<void> {
+  for (const r of readBlocked().filter((x) => x.workerId === workerId)) {
+    try {
+      const res = await fetch("/shop/api/action", {
+        method: "POST", headers: { "Content-Type": "application/json" }, keepalive: true,
+        body: JSON.stringify({ type: "clock_in_blocked", reason: r.reason, tapAt: r.tapAt, userAgent: r.userAgent }),
+      });
+      if (!res.ok && res.status !== 400) return; // keep it; try on the next open
+    } catch { return; }
+    writeBlocked(readBlocked().filter((x) => x.id !== r.id));
+  }
 }
 
 export async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
@@ -53,6 +84,6 @@ export async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
     const data = await res.json(); // A proxy/invalid response is never a receipt.
     if (res.ok && data.ok === true) return { ok: true, shiftId: typeof data.shiftId === "string" ? data.shiftId : null, at: typeof data.at === "string" ? data.at : null, late: !!data.late };
     if (res.ok || res.status >= 500 || res.status === 408 || res.status === 429) throw new Error("Clock connection interrupted");
-    return { ok: false, error: data.error || "Could not update the clock", final: data.final === true, signIn: res.status === 401 };
+    return { ok: false, error: data.error || "Could not update the clock", final: data.final === true, signIn: res.status === 401, locationRequired: data.locationRequired === true };
   } finally { clearTimeout(timer); }
 }

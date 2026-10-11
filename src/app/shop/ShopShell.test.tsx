@@ -24,6 +24,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.clearAllMocks(); });
 it("updates the displayed clock from a confirmed save without depending on a page refresh", async () => {
+  vi.stubGlobal("navigator", { ...navigator, userAgent: navigator.userAgent, geolocation: { getCurrentPosition: (ok: PositionCallback) => ok({ coords: { latitude: 42.4, longitude: -71.06, accuracy: 10 } } as GeolocationPosition) } });
   render(<ShopShell {...props} />);
   await waitFor(() => expect(fetcher).toHaveBeenCalled());
   fireEvent.click(screen.getByRole("button", { name: "Clock in" }));
@@ -33,7 +34,8 @@ it("updates the displayed clock from a confirmed save without depending on a pag
   fireEvent.click(screen.getByRole("button", { name: "Clock out" }));
   await waitFor(() => expect(screen.queryByRole("button", { name: "Clock out" })).toBeNull());
   const requests = fetcher.mock.calls.filter(([url]) => url === "/shop/api/action");
-  expect(JSON.parse(requests[1][1]!.body as string).shiftId).toBe(shift.id);
+  const stop = requests.map(([, o]) => JSON.parse(o!.body as string)).find((b) => b.type === "shift_stop");
+  expect(stop.shiftId).toBe(shift.id);
 });
 it("preserves an unauthorized punch and offers sign-in instead of losing it", async () => {
   writeOutbox([{ punchId: "p", workerId: "worker", type: "shift_start", clientAt: new Date().toISOString() }]);

@@ -19,11 +19,35 @@ it("clock-in: the punch is saved first and survives a failing window step", asyn
   m.get.mockResolvedValue(null);
   m.start.mockResolvedValue({ id, started_at: tap.replace("Z", "+00:00"), ended_at: null });
   m.applyStart.mockRejectedValue(new Error("db down"));
-  const res = await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1", clientAt: tap }));
+  const res = await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1", clientAt: tap, lat: 42.4, lng: -71.06 }));
   expect(res.status).toBe(200);
   expect(await res.json()).toMatchObject({ ok: true, shiftId: id, at: tap, ask: false });
   expect(m.start).toHaveBeenCalledOnce();
   expect(m.applyStart).toHaveBeenCalledWith("worker", expect.objectContaining({ id }), tap);
+});
+
+it("clock-in without a location is refused before any shift is written", async () => {
+  m.get.mockResolvedValue(null);
+  const res = await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1", clientAt: new Date().toISOString() }));
+  expect(res.status).toBe(400);
+  expect(await res.json()).toMatchObject({ locationRequired: true });
+  expect(m.start).not.toHaveBeenCalled();
+});
+
+it("a re-sent clock-in that was already saved is replayed even without a location", async () => {
+  m.get.mockResolvedValue({ id, started_at: "2026-10-11T11:00:00Z", ended_at: null });
+  const res = await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1" }));
+  expect(res.status).toBe(200);
+});
+
+it("clock-out without a location is accepted", async () => {
+  const start = new Date(Date.now() - 3600_000).toISOString();
+  m.get.mockResolvedValue({ id, started_at: start, ended_at: null });
+  m.actualStart.mockResolvedValue(start);
+  m.stop.mockResolvedValue({ id, started_at: start, ended_at: new Date().toISOString() });
+  const res = await POST(request({ type: "shift_stop", workerId: "worker", shiftId: id, clientAt: new Date().toISOString() }));
+  expect(res.status).toBe(200);
+  expect(m.stop).toHaveBeenCalledWith("worker", null, expect.any(String), id);
 });
 
 it("clock-in: reports that a question is waiting", async () => {
@@ -31,7 +55,7 @@ it("clock-in: reports that a question is waiting", async () => {
   m.get.mockResolvedValue(null);
   m.start.mockResolvedValue({ id, started_at: tap, ended_at: null });
   m.applyStart.mockResolvedValue(true);
-  expect(await (await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1", clientAt: tap }))).json()).toMatchObject({ ask: true });
+  expect(await (await POST(request({ type: "shift_start", workerId: "worker", punchId: "p1", clientAt: tap, lat: 42.4, lng: -71.06 }))).json()).toMatchObject({ ask: true });
 });
 
 it("clock-out between the actual and the rounded start is accepted, not refused as stale", async () => {

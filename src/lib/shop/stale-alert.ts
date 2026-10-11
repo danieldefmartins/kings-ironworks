@@ -24,7 +24,7 @@ import { sendTelegram, tgEscape } from "./notify";
 import { fmtDateTime, fmtTime, type TimeShift } from "./shared";
 import { STALE_SHIFT_HOURS } from "./punch";
 import { sendSms, smsLang, type SmsLang } from "./sms";
-import { resolveWorkHours, toE164, windowFor } from "./work-hours";
+import { recordFromAudit, resolveWorkHours, toE164, windowFor } from "./work-hours";
 
 const THROTTLE_MS = 10 * 60 * 1000;
 /** Minutes after the work-hours end before "you're still clocked in". */
@@ -83,13 +83,23 @@ export async function alertStillClockedIn(open: OpenShift[], now: number): Promi
   if (!fresh.length) return 0;
   const workers = await workersFor(fresh);
   const link = shopLink();
+  // "Since" is the actual tap, not the 7:30 payroll start of a rounded shift.
+  const tapped = new Map<string, string>();
+  try {
+    const rows = await sbSelect<{ at: string; detail: unknown }[]>(
+      "kiw_shop_audit",
+      `select=at,detail&org_id=eq.${ORG_ID}&action=eq.shift_window&entity_id=in.(${fresh.map((s) => s.id).join(",")})&order=at.asc`
+    );
+    for (const r of rows.map(recordFromAudit)) if (r?.edge === "start") tapped.set(r.shiftId, r.punchedAt);
+  } catch { /* fall back to started_at */ }
   for (const s of fresh) {
     const w = workers.get(s.worker_id);
     const name = w?.name || "A worker";
     const phone = toE164(w?.phone);
-    const sms = phone ? await sendSms(phone, stillClockedInMessage(smsLang(w?.lang), name, s.started_at, link)) : false;
+    const since = tapped.get(s.id) ?? s.started_at;
+    const sms = phone ? await sendSms(phone, stillClockedInMessage(smsLang(w?.lang), name, since, link)) : false;
     const telegram = await sendTelegram(
-      `🕔 <b>KIW payroll</b>: ${tgEscape(name)} is still clocked in (since ${tgEscape(fmtDateTime(s.started_at))}), ` +
+      `🕔 <b>KIW payroll</b>: ${tgEscape(name)} is still clocked in (since ${tgEscape(fmtDateTime(since))}), ` +
       `${WORK_END_GRACE_MIN} min after the work day ended. ${phone ? (sms ? "Texted them." : "Text FAILED.") : "No phone on file — not texted."}`
     );
     // Recorded either way: the audit row is the dedupe key, and a failing

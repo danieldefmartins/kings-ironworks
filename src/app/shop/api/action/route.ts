@@ -25,12 +25,13 @@ import {
   getOrgSettings,
   setJobArchived,
 } from "@/lib/shop/db";
-import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
-import { getOpenShift, getWorkerShift, appendShiftEmployeeNote } from "@/lib/shop/db";
-import { lateNote, resolvePunchAt } from "@/lib/shop/punch";
+import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { getOpenShift, getWorkerShift } from "@/lib/shop/db";
+import { resolvePunchAt } from "@/lib/shop/punch";
 import { alertStaleShifts } from "@/lib/shop/stale-alert";
 import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, reviewWindow } from "@/lib/shop/work-hours-db";
 import { resolveWorkHours } from "@/lib/shop/work-hours";
+import { reportClockInBlocked } from "@/lib/shop/clock-block";
 
 export const runtime = "nodejs";
 
@@ -417,6 +418,14 @@ export async function POST(req: NextRequest) {
         const id = hash ? `${hash.slice(0,8)}-${hash.slice(8,12)}-4${hash.slice(13,16)}-8${hash.slice(17,20)}-${hash.slice(20,32)}` : undefined;
         const saved = id ? await getWorkerShift(worker.id, id) : null;
         if (saved) { result = { shiftId: saved.id, at: saved.started_at, late: false }; break; }
+        // Owner rule (10/11): no location, no clock-in. Current phones never
+        // send one without it; this stops an old cached app from bypassing
+        // it. A re-sent punch that was already saved is replayed above, and a
+        // queued punch that carries its location is honoured as always.
+        // Clock-OUT is never refused for location.
+        if (!loc) {
+          return NextResponse.json({ error: "Location is required to clock in. Turn on Location for this app and try again.", locationRequired: true, final: true }, { status: 400 });
+        }
         const receivedAt = Date.now();
         const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "start" });
         if (punch.reason === "too_old") {
@@ -427,7 +436,9 @@ export async function POST(req: NextRequest) {
         // Compared as instants: PostgREST echoes "+00:00", the punch is "Z" — a
         // string compare called every normal clock-in "alreadyOpen".
         const created = Date.parse(shift.started_at) === Date.parse(punch.at);
-        if (created && punch.late) await appendShiftEmployeeNote(worker.id, shift.id, lateNote("in", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
+        // A late punch is provenance: it lives in the audit detail (late, delaySec)
+        // and shows as a badge on the owner payroll line — never as a shift note.
+        // Owner rule: shift notes stay clean.
         await audit("shift_clock_in", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: {
           locationStatus: loc?.status || "unavailable",
           clientAt: typeof body.clientAt === "string" ? body.clientAt : null,
@@ -482,7 +493,7 @@ export async function POST(req: NextRequest) {
         // requested; the real tap is kept on the window record below.
         const closeAt = open && Date.parse(punch.at) < Date.parse(open.started_at) ? open.started_at : punch.at;
         const closed = open ? await clockOut(worker.id, loc, closeAt, open.id) : null;
-        if (closed && punch.late) await appendShiftEmployeeNote(worker.id, closed.id, lateNote("out", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
+        // Late-punch provenance stays in the audit detail only (see shift_start).
         // Work-hours window, after the clock-out is saved (see shift_start).
         let asked = false;
         if (closed && open && !open.ended_at) {
@@ -575,6 +586,17 @@ export async function POST(req: NextRequest) {
       // right after a punch outside the work-hours window, or on the next app
       // open when the punch arrived from the outbox. Yes keeps the actual tap
       // time and tells the approval contacts; No keeps the window edge.
+      // The phone refused a clock-in because it had no location. Audited every
+      // time; the owners are texted (deduped per worker, 30 min).
+      case "clock_in_blocked": {
+        const reason = ["denied", "unavailable", "timeout"].includes(body.reason) ? body.reason : "unavailable";
+        const tap = typeof body.tapAt === "string" && Number.isFinite(Date.parse(body.tapAt)) ? new Date(body.tapAt).toISOString() : now;
+        const ua = typeof body.userAgent === "string" ? body.userAgent.slice(0, 300) : "";
+        const r = await reportClockInBlocked(worker, { reason, tapAt: tap, userAgent: ua });
+        result = { notified: r.notified };
+        break;
+      }
+
       case "shift_window_answer": {
         const { shiftId, edge } = body;
         if (typeof shiftId !== "string" || !UUID_RE.test(shiftId) || (edge !== "start" && edge !== "end") || typeof body.requested !== "boolean") {
