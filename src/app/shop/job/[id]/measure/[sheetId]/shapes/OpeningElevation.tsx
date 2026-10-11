@@ -94,6 +94,8 @@ export default function OpeningElevation({
       >
         {/* generous invisible hit area for a thumb */}
         {onPick && <rect x={x - tw / 2 - 6} y={y - 16} width={tw + 12} height={32} fill="transparent" />}
+        {/* the number being measured right now glows */}
+        {on && <rect x={x - tw / 2 - 5} y={y - 15} width={tw + 10} height={30} rx={15} fill={c.gov} opacity={0.18} />}
         <rect
           x={x - tw / 2}
           y={y - 10}

@@ -1,6 +1,8 @@
 import type { MeasureData, MeasureShape } from './measure';
 import type { Gap } from './measure-checks';
 import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace';
+import { isFaceMount, OPENING_DOOR_PRODUCTS, unitTag, type OpeningProduct } from './measure-opening';
+import { isBearingRole, isSpanning, isVertical, ROLE_PREFIX } from './measure-structural';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -32,6 +34,16 @@ export interface NextSlot {
   /** Free-text context (a level or side label, a joint tag). */
   tag?: string;
   unit: SlotUnit;
+  /** Other requirements the same number also answers (a column's 1st / 2nd height). */
+  alsoGaps?: string[];
+  /** Asked even before a requirement names it (wall thickness before the wall is chosen). */
+  ask?: (d: MeasureData) => boolean;
+  /** The thing this number belongs to on a sheet with its own form: one opening, one member. */
+  group?: { kind: 'opening' | 'member' | 'frame'; id: string; index: number; label: string };
+  /** Which dimension of the group, for pointing at it on the elevation. */
+  part?: string;
+  /** 1-based reading number when a dimension is read more than once. */
+  reading?: number;
   get: (d: MeasureData) => string;
   put: (d: MeasureData, value: string) => void;
 }
@@ -137,14 +149,15 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     ['gate_grade_rise', 'gateGradeRise', 'gradeRise'],
   ]);
   if (shape === 'fence' && data.fence) {
-    table('fence', d => d.fence as unknown as Bag, [
-      ['fence_total_run', 'fenceTotalRun', 'totalRun'], ['fence_height', 'fenceHeight', 'height'],
-      ['fence_post_spacing', 'fencePostSpacing', 'postSpacing'], ['fence_footing', 'fenceFooting', 'footingDepth'],
-    ]);
+    // Walk the line run by run, then the totals and heights that check it.
     data.fence.segments.forEach((sg, n) => {
       const tag = sg.label || `#${n + 1}`;
       field(`fence.seg${n}`, 'fence_seg_length', 'fenceSegLength', d => d.fence?.segments[n] as unknown as Bag | undefined, 'length', { detail: tag, tag });
     });
+    table('fence', d => d.fence as unknown as Bag, [
+      ['fence_total_run', 'fenceTotalRun', 'totalRun'], ['fence_height', 'fenceHeight', 'height'],
+      ['fence_post_spacing', 'fencePostSpacing', 'postSpacing'], ['fence_footing', 'fenceFooting', 'footingDepth'],
+    ]);
   }
   if (shape === 'balcony' && data.balcony) table('bal', d => d.balcony as unknown as Bag, [
     ['bal_edge_length', 'balEdgeLength', 'edgeLength'], ['bal_guard_height_f', 'balGuardHeight', 'guardHeight'],
@@ -153,10 +166,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     ['bal_door_opening', 'balDoorOpening', 'doorOpening'],
   ]);
   if (shape === 'deck' && data.deck) {
-    table('deck', d => d.deck as unknown as Bag, [
-      ['deck_total_perimeter', 'deckTotalPerimeter', 'totalPerimeter'], ['deck_guard_height_f', 'deckGuardHeight', 'guardHeight'],
-      ['deck_post_spacing_f', 'deckPostSpacing', 'postSpacing'],
-    ]);
+    // Round the deck side by side, then the totals that check the walk.
     data.deck.sides.forEach((sd, n) => {
       const tag = sd.label || `#${n + 1}`, side = (d: MeasureData) => d.deck?.sides[n] as unknown as Bag | undefined;
       table(`deck.side${n}`, side, [
@@ -164,6 +174,10 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
         ['deck_opening_width', 'deckSideOpeningWidth', 'openingWidth'],
       ], { detail: tag, tag });
     });
+    table('deck', d => d.deck as unknown as Bag, [
+      ['deck_total_perimeter', 'deckTotalPerimeter', 'totalPerimeter'], ['deck_guard_height_f', 'deckGuardHeight', 'guardHeight'],
+      ['deck_post_spacing_f', 'deckPostSpacing', 'postSpacing'],
+    ]);
   }
   if (shape === 'fire_escape' && data.fire) {
     table('fire', d => d.fire as unknown as Bag, [['fire_total_height', 'fireTotalHeight', 'totalHeight']]);
@@ -191,25 +205,120 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     ['well_ladder_rungs', 'wellLadderRungs', 'ladderRungs', 'count'], ['well_ladder_spacing', 'wellLadderSpacing', 'ladderSpacing'],
     ['well_ladder_standoff', 'wellLadderStandoff', 'ladderStandoff'],
   ]);
+  if (shape === 'opening' && data.opening) openingSlots(data, field);
+  if (shape === 'structural' && data.structural) structuralSlots(data, field);
   return out;
+}
+
+type FieldFn = (id: string, gap: string, labelKey: string, obj: (d: MeasureData) => Bag | null | undefined, key: string, extra?: Partial<NextSlot>) => void;
+
+/**
+ * An opening is read the way a tape goes round a hole in a wall: across the
+ * top, middle and bottom, down the left, centre and right, corner to corner,
+ * then into the reveal. Each opening is finished before the next one; the
+ * Juliet and door numbers that belong to the whole sheet come last.
+ */
+function openingSlots(data: MeasureData, field: FieldFn) {
+  const o = data.opening!;
+  o.units.forEach((u, n) => {
+    const detail = unitTag(u, n), id = u.id;
+    const unit = (d: MeasureData) => d.opening?.units.find(x => x.id === id) as unknown as Bag | undefined;
+    const group = { kind: 'opening' as const, id, index: n, label: u.label.trim() };
+    const at = (part: string): Partial<NextSlot> => ({ detail, group, part });
+    for (const k of ['wTop', 'wMid', 'wBot'] as const) field(`op.${id}.${k}`, 'op_widths', `nx_${k}`, unit, k, at(k));
+    for (const k of ['hLeft', 'hCenter', 'hRight'] as const) field(`op.${id}.${k}`, 'op_heights', `nx_${k}`, unit, k, at(k));
+    for (const k of ['diagA', 'diagB'] as const) field(`op.${id}.${k}`, 'op_diagonals', `nx_${k}`, unit, k, at(k));
+    // Inside the reveal the piece has to fit the jamb depth; face-mounted it never sees it.
+    if (!isFaceMount(o.mount)) field(`op.${id}.reveal`, 'op_reveal', 'nx_reveal', unit, 'reveal', at('reveal'));
+  });
+  const whole = (d: MeasureData) => d.opening as unknown as Bag | null;
+  if (o.product === 'juliet') {
+    field('op.julietSill', 'op_juliet_sill', 'nx_julietSill', whole, 'julietSill', { part: 'julietSill' });
+    field('op.julietProjection', 'op_juliet_projection', 'nx_julietProjection', whole, 'julietProjection', { part: 'julietProjection' });
+  }
+  if (o.product && OPENING_DOOR_PRODUCTS.includes(o.product as OpeningProduct)) {
+    field('op.threshold', 'op_door_threshold', 'nx_threshold', whole, 'threshold', { part: 'threshold' });
+  }
+}
+
+const MASONRY = new Set(['', 'brick', 'block', 'concrete', 'stone']);
+
+/**
+ * Structural steel is read member by member in the order they were laid out:
+ * the clear span twice (top and bottom, because once is how beams get cut
+ * short), then each end — how far the steel sits in and how thick that wall
+ * is — left before right; a column at every place its height was read. The
+ * frame that ties them together, and the longest piece the way in allows,
+ * close the walk.
+ */
+function structuralSlots(data: MeasureData, field: FieldFn) {
+  const s = data.structural!;
+  s.members.forEach((m, n) => {
+    const id = m.id, detail = m.mark || ROLE_PREFIX[m.role];
+    const member = (d: MeasureData) => d.structural?.members.find(x => x.id === id) as unknown as Bag | undefined;
+    const group = { kind: 'member' as const, id, index: n, label: detail };
+    const bearing = isBearingRole(m.role);
+    if (isSpanning(m.role)) {
+      field(`st.${id}.spanA`, 'struct_span', bearing ? 'nx_spanA' : 'nx_lengthA', member, 'spanA', { detail, group, part: 'span', reading: 1 });
+      field(`st.${id}.spanB`, 'struct_span_second', bearing ? 'nx_spanB' : 'nx_lengthB', member, 'spanB', { detail, group, part: 'span', reading: 2 });
+    }
+    if (bearing) {
+      for (const [end, key] of [['L', 'bearingL'], ['R', 'bearingR']] as const) {
+        const b = (d: MeasureData) => d.structural?.members.find(x => x.id === id)?.[key] as unknown as Bag | undefined;
+        const at = { detail: `${detail} ${end}`, group };
+        field(`st.${id}.${key}.length`, 'struct_bearing_len', `nx_bearing${end}`, b, 'length', { ...at, part: `bearing${end}` });
+        // Asked with the bearing while the wall is unknown or masonry: the tape is already there.
+        field(`st.${id}.${key}.wall`, 'struct_wall', `nx_wall${end}`, b, 'wall', {
+          ...at, part: `wall${end}`,
+          ask: d => {
+            const mm = d.structural?.members.find(x => x.id === id);
+            if (!mm || !isBearingRole(mm.role)) return false;
+            const framed = mm.role === 'beam' && !!d.structural?.frame.on && !mm.spanA.trim() && !mm.spanB.trim();
+            return !framed && MASONRY.has(mm[key].substrate);
+          },
+        });
+      }
+    }
+    if (isVertical(m.role)) {
+      m.heights.forEach((r, k) => {
+        const rid = r.id;
+        const reading = (d: MeasureData) => d.structural?.members.find(x => x.id === id)?.heights.find(x => x.id === rid) as unknown as Bag | undefined;
+        field(`st.${id}.h.${rid}`, 'struct_heights', m.role === 'cover' ? 'nx_coverHeight' : 'nx_colHeight', reading, 'value', {
+          detail, group, part: `height:${k}`, reading: k + 1, tag: r.label.trim() || undefined, alsoGaps: ['struct_heights_second'],
+        });
+      });
+    }
+  });
+  if (s.frame.on) {
+    const fr = (d: MeasureData) => d.structural?.frame as unknown as Bag | undefined;
+    const group = { kind: 'frame' as const, id: 'frame', index: 0, label: '' };
+    // Outside in: the hole first, then the steel that goes in it.
+    field('st.frame.opening', 'struct_frame_opening', 'nx_frameOpening', fr, 'opening', { group, part: 'opening' });
+    field('st.frame.cc', 'struct_frame_cc', 'nx_frameCc', fr, 'cc', { group, part: 'cc' });
+    field('st.frame.diagA', 'struct_frame_diag', 'nx_diagA', fr, 'diagA', { group, part: 'diagA' });
+    field('st.frame.diagB', 'struct_frame_diag', 'nx_diagB', fr, 'diagB', { group, part: 'diagB' });
+  }
+  if (s.members.length) field('st.access.maxLength', 'struct_max_length', 'nx_maxLength', d => d.structural?.access as unknown as Bag | undefined, 'maxLength', { part: 'maxLength' });
 }
 
 const gapId = (g: Gap) => `gap:${g.key}:${g.detail ?? ''}:${g.flight ?? ''}`;
 const matches = (slot: NextSlot, g: Gap) =>
-  g.key === slot.gap && (slot.detail === undefined || g.detail === slot.detail) && (slot.flight === undefined || g.flight === undefined || g.flight === slot.flight);
-// A gate, fence, balcony, deck, fire escape or well is measured by its own
-// dimensions first; the shared stair stages (rail height, posts) follow.
-const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well)_/;
+  (g.key === slot.gap || !!slot.alsoGaps?.includes(g.key)) && (slot.detail === undefined || g.detail === slot.detail) && (slot.flight === undefined || g.flight === undefined || g.flight === slot.flight);
+// A gate, fence, balcony, deck, fire escape, well, opening or steel member is
+// measured by its own dimensions first; the shared stair stages follow.
+const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct)_/;
 const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */
 export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: readonly Gap[]): MeasureQueue {
   const all = slotsFor(data, shape);
-  const listed = all.filter(s => has(s.get(data)) || gaps.some(g => matches(s, g)));
+  const listed = all.filter(s => has(s.get(data)) || s.ask?.(data) || gaps.some(g => matches(s, g)));
   // Stable sort: measuring stage first, then the walk order the slots were built in.
   const slots = listed.map((s, i) => ({ s, i })).sort((a, b) => stageRank(a.s.gap) - stageRank(b.s.gap) || a.i - b.i).map(x => x.s);
   const openSlots = slots.filter(s => !has(s.get(data)));
-  const covered = (g: Gap) => slots.some(s => matches(s, g));
+  // A requirement is answered by its numbers only while one of them is still
+  // empty; otherwise (a reading row deleted, say) it stays on the list itself.
+  const covered = (g: Gap) => openSlots.some(s => matches(s, g));
   const rest = gaps.filter(g => !covered(g)).map((g, i) => ({ g, i })).sort((a, b) => stageRank(a.g.key) - stageRank(b.g.key) || a.i - b.i).map(x => x.g);
   const open: NextItem[] = [
     ...openSlots.map(slot => ({ type: 'slot' as const, id: slot.id, slot })),

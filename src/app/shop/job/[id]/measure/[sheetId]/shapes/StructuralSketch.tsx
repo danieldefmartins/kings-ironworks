@@ -54,7 +54,7 @@ function fracIn(n: number): string {
   return whole ? `${whole} ${num}/${den}` : `${num}/${den}`;
 }
 
-const INK = { steel: "#4f46e5", steelFill: "#e0e7ff", dim: "#475569", text: "#0f172a", muted: "#64748b", red: "#dc2626", wall: "#94a3b8", wallFill: "#f1f5f9", ground: "#334155" };
+const INK = { hot: "#4f46e5", steel: "#4f46e5", steelFill: "#e0e7ff", dim: "#475569", text: "#0f172a", muted: "#64748b", red: "#dc2626", wall: "#94a3b8", wallFill: "#f1f5f9", ground: "#334155" };
 
 function Defs() {
   return (
@@ -104,28 +104,42 @@ function wallFill(b: StructBearing): string {
 }
 
 /** Horizontal dimension line with end ticks and a centred label. */
-function HDim({ x1, x2, y, label, color = INK.dim, above = true, bold = false }: { x1: number; x2: number; y: number; label: string; color?: string; above?: boolean; bold?: boolean }) {
+function HDim({ x1, x2, y, label, color = INK.dim, above = true, bold = false, hot = false }: { x1: number; x2: number; y: number; label: string; color?: string; above?: boolean; bold?: boolean; hot?: boolean }) {
   if (Math.abs(x2 - x1) < 1) return null;
+  const c = hot ? INK.hot : color;
   return (
-    <g>
-      <line x1={x1} y1={y} x2={x2} y2={y} stroke={color} strokeWidth={1.4} markerStart="url(#st-tick)" markerEnd="url(#st-tick)" />
-      <Label x={(x1 + x2) / 2} y={above ? y - 8 : y + 22} text={label} color={color} bold={bold} />
+    <g data-hot={hot || undefined}>
+      <line x1={x1} y1={y} x2={x2} y2={y} stroke={c} strokeWidth={hot ? 2.6 : 1.4} markerStart="url(#st-tick)" markerEnd="url(#st-tick)" />
+      <Label x={(x1 + x2) / 2} y={above ? y - 8 : y + 22} text={label} color={c} bold={bold || hot} hot={hot} />
     </g>
   );
 }
 
-function VDim({ x, y1, y2, label, color = INK.dim, left = true }: { x: number; y1: number; y2: number; label: string; color?: string; left?: boolean }) {
+function VDim({ x, y1, y2, label, color = INK.dim, left = true, hot = false }: { x: number; y1: number; y2: number; label: string; color?: string; left?: boolean; hot?: boolean }) {
   if (Math.abs(y2 - y1) < 1) return null;
   const my = (y1 + y2) / 2;
+  const c = hot ? INK.hot : color;
   return (
-    <g>
-      <line x1={x} y1={y1} x2={x} y2={y2} stroke={color} strokeWidth={1.4} markerStart="url(#st-tick)" markerEnd="url(#st-tick)" />
-      <Label x={left ? x - 8 : x + 8} y={my + 6} text={label} color={color} anchor={left ? "end" : "start"} />
+    <g data-hot={hot || undefined}>
+      <line x1={x} y1={y1} x2={x} y2={y2} stroke={c} strokeWidth={hot ? 2.6 : 1.4} markerStart="url(#st-tick)" markerEnd="url(#st-tick)" />
+      <Label x={left ? x - 8 : x + 8} y={my + 6} text={label} color={c} anchor={left ? "end" : "start"} hot={hot} />
     </g>
   );
 }
 
-function Label({ x, y, text, color = INK.text, anchor = "middle", bold = false, size = 19 }: { x: number; y: number; text: string; color?: string; anchor?: "start" | "middle" | "end"; bold?: boolean; size?: number }) {
+function Label({ x, y, text, color = INK.text, anchor = "middle", bold = false, size = 19, hot = false }: { x: number; y: number; text: string; color?: string; anchor?: "start" | "middle" | "end"; bold?: boolean; size?: number; hot?: boolean }) {
+  if (hot) {
+    // The number being measured right now: a filled pill, like the opening elevation.
+    const w = Math.max(44, text.length * size * 0.56 + 22);
+    const x0 = anchor === "middle" ? x - w / 2 : anchor === "end" ? x - w + 6 : x - 6;
+    return (
+      <g>
+        <rect x={x0 - 4} y={y - size - 4} width={w + 8} height={size + 18} rx={(size + 18) / 2} fill={INK.hot} opacity={0.18} />
+        <rect x={x0} y={y - size} width={w} height={size + 10} rx={(size + 10) / 2} fill={INK.hot} />
+        <text x={x0 + w / 2} y={y} textAnchor="middle" fontSize={size} fontWeight={700} fill="#fff" style={{ fontFeatureSettings: '"tnum"' }}>{text}</text>
+      </g>
+    );
+  }
   return (
     <text x={x} y={y} textAnchor={anchor} fontSize={size} fontWeight={bold ? 700 : 600} fill={color}
       stroke="#fff" strokeWidth={5} paintOrder="stroke" style={{ fontFeatureSettings: '"tnum"' }}>
@@ -137,7 +151,10 @@ function Label({ x, y, text, color = INK.text, anchor = "middle", bold = false, 
 const VW = 640;
 const VH = 320;
 
-export default function StructuralSketch({ s, lang, focusId, height }: { s: StructuralData | null; lang: string; focusId?: string | null; height?: number }) {
+/** A dimension to light up: the one the Next-measurement card is on. */
+export interface SketchHot { groupId?: string; part?: string }
+
+export default function StructuralSketch({ s, lang, focusId, height, hot }: { s: StructuralData | null; lang: string; focusId?: string | null; height?: number; hot?: SketchHot | null }) {
   const members = s?.members || [];
   const focus = members.find((m) => m.id === focusId);
   const beams = members.filter((m) => isBearingRole(m.role));
@@ -145,10 +162,10 @@ export default function StructuralSketch({ s, lang, focusId, height }: { s: Stru
   let body: React.ReactNode;
   const wantsFrame = !!s && (s.frame.on || (beams.length > 0 && cols.length > 0 && (!focus || !isBearingRole(focus.role) || spanReadings(focus).length === 0)));
   if (!s || members.length === 0) body = <Empty lang={lang} />;
-  else if (wantsFrame && cols.length) body = <Frame s={s} lang={lang} />;
-  else if (focus && isBearingRole(focus.role)) body = <Opening m={focus} lang={lang} />;
-  else if (beams.length && (!focus || !isVertical(focus.role))) body = <Opening m={beams[0]} lang={lang} />;
-  else if (cols.length) body = <Columns cols={focus && isVertical(focus.role) ? [focus, ...cols.filter((c) => c !== focus)] : cols} lang={lang} />;
+  else if (wantsFrame && cols.length) body = <Frame s={s} lang={lang} hot={hot} />;
+  else if (focus && isBearingRole(focus.role)) body = <Opening m={focus} lang={lang} hot={hot} />;
+  else if (beams.length && (!focus || !isVertical(focus.role))) body = <Opening m={beams[0]} lang={lang} hot={hot} />;
+  else if (cols.length) body = <Columns cols={focus && isVertical(focus.role) ? [focus, ...cols.filter((c) => c !== focus)] : cols} lang={lang} hot={hot} />;
   else body = <Empty lang={lang} />;
   return (
     <svg viewBox={`0 0 ${VW} ${VH}`} width="100%" height={height} role="img" aria-label={mt(lang, "st_sketchTitle")}
@@ -173,7 +190,8 @@ function Empty({ lang }: { lang: string }) {
 
 // ---- Beam or lintel in a wall opening --------------------------------------------
 
-function Opening({ m, lang }: { m: StructMember; lang: string }) {
+function Opening({ m, lang, hot }: { m: StructMember; lang: string; hot?: SketchHot | null }) {
+  const on = (part: string) => hot?.groupId === m.id && hot.part === part;
   const spans = spanReadings(m);
   const span = spans.length ? Math.max(...spans) : 96;
   const bl = parseMeas(m.bearingL.length);
@@ -223,11 +241,11 @@ function Opening({ m, lang }: { m: StructMember; lang: string }) {
       ) : null}
       <Label x={(xo1 + xo2) / 2} y={beamY + beamH / 2 + 4} text={`${m.mark}${m.profile ? ` · ${m.profile}` : ""}`} color={INK.steel} bold />
       {/* Bearings */}
-      <HDim x1={bLx} x2={xo1} y={beamY - 12} label={bl === null ? "—" : fmtLen(bl)} color={shortL ? INK.red : INK.dim} />
-      <HDim x1={xo2} x2={bRx} y={beamY - 12} label={br === null ? "—" : fmtLen(br)} color={shortR ? INK.red : INK.dim} />
+      <HDim x1={bLx} x2={xo1} y={beamY - 12} label={bl === null ? "—" : fmtLen(bl)} color={shortL ? INK.red : INK.dim} hot={on("bearingL")} />
+      <HDim x1={xo2} x2={bRx} y={beamY - 12} label={br === null ? "—" : fmtLen(br)} color={shortR ? INK.red : INK.dim} hot={on("bearingR")} />
       {/* Clear span inside the opening */}
       <HDim x1={xo1} x2={xo2} y={beamY + beamH + 34}
-        label={`${mt(lang, "st_clearSpan")} ${spans.length ? spans.map((v) => fmtLen(v)).join(" / ") : "—"}`} />
+        label={`${mt(lang, "st_clearSpan")} ${spans.length ? spans.map((v) => fmtLen(v)).join(" / ") : "—"}`} hot={on("span")} />
       {/* Floor */}
       <line x1={20} y1={groundY} x2={620} y2={groundY} stroke={INK.ground} strokeWidth={2} />
       <rect x={20} y={groundY} width={600} height={8} fill="url(#st-ground)" />
@@ -236,15 +254,16 @@ function Opening({ m, lang }: { m: StructMember; lang: string }) {
       {/* Wall labels */}
       {m.bearingL.substrate && <Label x={(x0 + xo1) / 2} y={groundY - 12} text={mt(lang, `st_sub_${m.bearingL.substrate}`)} color={INK.muted} size={15} />}
       {m.bearingR.substrate && <Label x={(xo2 + xEnd) / 2} y={groundY - 12} text={mt(lang, `st_sub_${m.bearingR.substrate}`)} color={INK.muted} size={15} />}
-      {wl !== null && <Label x={(x0 + xo1) / 2} y={groundY - 36} text={`${mt(lang, "st_wallShort")} ${fmtLen(wl)}`} color={INK.muted} size={15} />}
-      {wr !== null && <Label x={(xo2 + xEnd) / 2} y={groundY - 36} text={`${mt(lang, "st_wallShort")} ${fmtLen(wr)}`} color={INK.muted} size={15} />}
+      {(wl !== null || on("wallL")) && <Label x={(x0 + xo1) / 2} y={groundY - 36} text={`${mt(lang, "st_wallShort")} ${wl === null ? "—" : fmtLen(wl)}`} color={INK.muted} size={15} hot={on("wallL")} />}
+      {(wr !== null || on("wallR")) && <Label x={(xo2 + xEnd) / 2} y={groundY - 36} text={`${mt(lang, "st_wallShort")} ${wr === null ? "—" : fmtLen(wr)}`} color={INK.muted} size={15} hot={on("wallR")} />}
     </g>
   );
 }
 
 // ---- Moment frame / beam on columns -----------------------------------------------
 
-function Frame({ s, lang }: { s: StructuralData; lang: string }) {
+function Frame({ s, lang, hot }: { s: StructuralData; lang: string; hot?: SketchHot | null }) {
+  const onFrame = (part: string) => hot?.groupId === "frame" && hot.part === part;
   const cols = s.members.filter((m) => m.role === "column" || m.role === "post");
   const shown = cols.length ? cols : s.members.filter((m) => isVertical(m.role));
   const beam = s.members.find((m) => m.role === "beam");
@@ -285,10 +304,10 @@ function Frame({ s, lang }: { s: StructuralData; lang: string }) {
       <path d={`M20 ${groundL}L${xs[0]} ${groundL}L${xs[n - 1]} ${groundR}L620 ${groundR}`} fill="none" stroke={INK.ground} strokeWidth={2} />
       <path d={`M20 ${groundL}L${xs[0]} ${groundL}L${xs[n - 1]} ${groundR}L620 ${groundR}V${Math.max(groundL, groundR) + 10}H20Z`} fill="url(#st-concrete)" opacity={0.8} />
       {/* Diagonals of the opening */}
-      {s.frame.on && (s.frame.diagA || s.frame.diagB) && (
-        <g stroke={INK.muted} strokeDasharray="5 5" strokeWidth={1}>
-          <line x1={xs[0]} y1={topY} x2={xs[n - 1]} y2={groundR} />
-          <line x1={xs[n - 1]} y1={topY} x2={xs[0]} y2={groundL} />
+      {s.frame.on && (s.frame.diagA || s.frame.diagB || onFrame("diagA") || onFrame("diagB")) && (
+        <g strokeDasharray="5 5">
+          <line x1={xs[0]} y1={topY} x2={xs[n - 1]} y2={groundR} stroke={onFrame("diagA") ? INK.hot : INK.muted} strokeWidth={onFrame("diagA") ? 2.6 : 1} />
+          <line x1={xs[n - 1]} y1={topY} x2={xs[0]} y2={groundL} stroke={onFrame("diagB") ? INK.hot : INK.muted} strokeWidth={onFrame("diagB") ? 2.6 : 1} />
         </g>
       )}
       {/* Columns */}
@@ -303,7 +322,7 @@ function Frame({ s, lang }: { s: StructuralData; lang: string }) {
             {cpH > 0 && <rect x={x - colW / 2 - 4} y={topY} width={colW + 8} height={cpH} fill={INK.steel} />}
             <Label x={x} y={(topY + baseYs[i]) / 2 + 4} text={c?.mark || `C${i + 1}`} color={INK.steel} bold />
             <VDim x={i === 0 ? x - colW / 2 - 16 : x + colW / 2 + 16} y1={topY} y2={baseYs[i]}
-              label={heights[i] === null ? "—" : fmtLen(heights[i])} left={i === 0} />
+              label={heights[i] === null ? "—" : fmtLen(heights[i])} left={i === 0} hot={!!c && hot?.groupId === c.id && !!hot.part?.startsWith("height:")} />
           </g>
         );
       })}
@@ -312,19 +331,21 @@ function Frame({ s, lang }: { s: StructuralData; lang: string }) {
       <path d={`M${beamX1} 63H${beamX2}M${beamX1} ${topY - 3}H${beamX2}`} stroke={INK.steel} strokeWidth={0.9} />
       <Label x={cx} y={(60 + topY) / 2 + 4} text={`${beam?.mark || "B"}${beam?.profile ? ` · ${beam.profile}` : ""}`} color={INK.steel} bold />
       {/* Centre to centre */}
-      <HDim x1={xs[0]} x2={xs[n - 1]} y={40} label={`${mt(lang, "st_cc")} ${s.frame.cc ? fmtLen(parseMeas(s.frame.cc)) : "—"}`} />
+      <HDim x1={xs[0]} x2={xs[n - 1]} y={40} label={`${mt(lang, "st_cc")} ${s.frame.cc ? fmtLen(parseMeas(s.frame.cc)) : "—"}`} hot={onFrame("cc")} />
       {/* Opening width under the slab */}
-      {opX1 !== null && opX2 !== null && (
+      {opX1 !== null && opX2 !== null ? (
         <HDim x1={opX1} x2={opX2} y={Math.max(groundL, groundR) + 30} above
-          label={`${mt(lang, "st_opening")} ${fmtLen(opening)}`} color={fit !== null && fit < 0 ? INK.red : INK.dim} />
-      )}
+          label={`${mt(lang, "st_opening")} ${fmtLen(opening)}`} color={fit !== null && fit < 0 ? INK.red : INK.dim} hot={onFrame("opening")} />
+      ) : onFrame("opening") ? (
+        <HDim x1={beamX1 - 14} x2={beamX2 + 14} y={Math.max(groundL, groundR) + 30} above label={`${mt(lang, "st_opening")} —`} hot />
+      ) : null}
     </g>
   );
 }
 
 // ---- Columns under an existing beam -------------------------------------------------
 
-function Columns({ cols, lang }: { cols: StructMember[]; lang: string }) {
+function Columns({ cols, lang, hot }: { cols: StructMember[]; lang: string; hot?: SketchHot | null }) {
   const shown = cols.slice(0, 4);
   const heights = shown.map((c) => {
     const h = heightReadings(c);
@@ -353,7 +374,7 @@ function Columns({ cols, lang }: { cols: StructMember[]; lang: string }) {
             <line x1={x - 50} y1={base} x2={x + 50} y2={base} stroke={INK.ground} strokeWidth={2} />
             <rect x={x - 50} y={base} width={100} height={8} fill="url(#st-ground)" />
             <Label x={x} y={base + 26} text={`${c.mark}${c.qty && c.qty !== "1" ? ` ×${c.qty}` : ""}`} color={INK.steel} bold />
-            <VDim x={x + w / 2 + 14} y1={topY} y2={base} label={heights[i] === null ? "—" : fmtLen(heights[i])} left={false} />
+            <VDim x={x + w / 2 + 14} y1={topY} y2={base} label={heights[i] === null ? "—" : fmtLen(heights[i])} left={false} hot={hot?.groupId === c.id && !!hot.part?.startsWith("height:")} />
           </g>
         );
       })}

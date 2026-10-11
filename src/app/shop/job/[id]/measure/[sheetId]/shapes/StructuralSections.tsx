@@ -8,7 +8,8 @@
 // Every member card ends in its cut length with the terms that made it, so the
 // fabricator never has to guess what "span" meant on the porch.
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import type { MeasureData } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
@@ -51,7 +52,7 @@ import {
 import { parseMeas } from "@/lib/shop/measure-parse";
 import type { CheckLevel, CheckResult } from "@/lib/shop/measure-checks";
 import { MInput } from "../fields";
-import StructuralSketch, { fmtLen } from "./StructuralSketch";
+import StructuralSketch, { fmtLen, type SketchHot } from "./StructuralSketch";
 
 type SetFn = (fn: (d: MeasureData) => void) => void;
 
@@ -75,6 +76,15 @@ function worst(levels: CheckLevel[]): CheckLevel {
   return "na";
 }
 
+// Which panel answers a requirement that is not a member's own number.
+const GAP_PANEL: [RegExp, string][] = [
+  [/^struct_(eng_|permit)/, "eng"],
+  [/^struct_(members|datum)/, "members"],
+  [/^struct_frame_/, "frame"],
+  [/^struct_(finish|fire_rating)/, "finish"],
+  [/^struct_(max_length|access_path|lift)/, "access"],
+];
+
 export default function StructuralSections({ lang, data, set }: { lang: string; data: MeasureData; set: SetFn }) {
   const s = data.structural ?? null;
   const t = (k: string) => mt(lang, k);
@@ -82,6 +92,32 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
   const checks = useMemo(() => structuralChecks(s), [s]);
   const gaps = useMemo(() => structuralGaps(s), [s]);
   const summary = useMemo(() => structuralSummary(s), [s]);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sketchRef = useRef<HTMLDivElement>(null);
+  const [hot, setHot] = useState<SketchHot | null>(null);
+  // The Next-measurement card walks the members: open the one it is on, light
+  // that dimension on the elevation, and scroll there when asked.
+  useMeasureLocate((d) => {
+    const members = s?.members ?? [];
+    const byGap = d.gapDetail ? members.find((m) => m.mark && (d.gapDetail === m.mark || d.gapDetail!.startsWith(`${m.mark} `))) : undefined;
+    const member = d.groupKind === "member" ? members.find((m) => m.id === d.groupId) : byGap;
+    if (member) setOpenId(member.id);
+    if (d.groupId || d.part) setHot({ groupId: d.groupId, part: d.part });
+    if (!d.scroll) return;
+    requestAnimationFrame(() => {
+      const root = rootRef.current;
+      if (!root) return;
+      if (d.groupId) return revealElement(sketchRef.current);
+      const panel = d.gap ? GAP_PANEL.find(([re]) => re.test(d.gap!))?.[1] : undefined;
+      const target =
+        (d.part === "maxLength" && root.querySelector('[data-st-panel="access"]')) ||
+        (member && root.querySelector(`[data-member="${member.id}"]`)) ||
+        (d.gap === "photo" && document.querySelector("[data-st-photos]")) ||
+        (panel && root.querySelector(`[data-st-panel="${panel}"]`)) ||
+        root.firstElementChild;
+      revealElement(target);
+    });
+  });
 
   const up = (fn: (x: StructuralData) => void) =>
     set((d) => {
@@ -145,7 +181,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={rootRef} className="space-y-4">
       {/* ---- Summary + elevation ---- */}
       <Panel>
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -165,8 +201,8 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
             </div>
           )}
         </div>
-        <div className="mx-auto mt-3 max-w-[600px] overflow-hidden rounded-xl border border-slate-200">
-          <StructuralSketch s={s} lang={lang} focusId={openId} />
+        <div ref={sketchRef} className="mx-auto mt-3 max-w-[600px] scroll-mt-24 overflow-hidden rounded-xl border border-slate-200">
+          <StructuralSketch s={s} lang={lang} focusId={openId} hot={hot} />
         </div>
         {s.members.length > 0 && (
           <dl className="mt-3 grid grid-cols-3 gap-2">
@@ -178,7 +214,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
       </Panel>
 
       {/* ---- Engineering ---- */}
-      <Panel title={t("st_engTitle")}>
+      <Panel tag="eng" title={t("st_engTitle")}>
         <Seg label={t("st_stamped")} value={s.eng.stamped} options={[["yes", t("st_yes")], ["no", t("st_no")]]}
           required={!s.eng.stamped} onChange={(v) => up((x) => void (x.eng.stamped = v as StructuralData["eng"]["stamped"]))} />
         {stamped && (
@@ -202,7 +238,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
       </Panel>
 
       {/* ---- Members ---- */}
-      <Panel title={t("st_membersTitle")} aside={s.members.length ? `${s.members.length}` : undefined}>
+      <Panel tag="members" title={t("st_membersTitle")} aside={s.members.length ? `${s.members.length}` : undefined}>
           <>
             {(s.datum.trim() || s.members.some((m) => m.elevation.trim())) && (
               <div className="mb-3">
@@ -236,7 +272,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
 
       {/* ---- Moment frame ---- */}
       {s.frame.on && (
-        <Panel title={t("st_frameTitle")}>
+        <Panel tag="frame" title={t("st_frameTitle")}>
           <div className="grid grid-cols-2 gap-3">
             <MInput label={t("st_frameOpening")} value={s.frame.opening} gap="struct_frame_opening" onChange={(v) => up((x) => void (x.frame.opening = v))} />
             <MInput label={t("st_frameCc")} value={s.frame.cc} gap="struct_frame_cc" onChange={(v) => up((x) => void (x.frame.cc = v))} />
@@ -255,7 +291,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
 
       {/* ---- Finish, then getting it in: side by side on a tablet ---- */}
       <div className="grid items-start gap-4 md:grid-cols-2">
-      <Panel title={t("st_finishTitle")}>
+      <Panel tag="finish" title={t("st_finishTitle")}>
         <Seg label={t("st_finish")} value={s.finish} required={!s.finish}
           options={STRUCT_FINISHES.map((f) => [f, t(`st_fin_${f}`)] as [string, string])}
           onChange={(v) => up((x) => void (x.finish = v as StructuralData["finish"]))} />
@@ -312,7 +348,7 @@ function MemberCard({
   const status: CheckLevel = level === "red" ? "red" : gapCount > 0 ? "na" : level;
   const qty = memberQty(m);
   return (
-    <div className={`overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
+    <div data-member={m.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-sm font-bold text-indigo-700">{m.mark || ROLE_PREFIX[m.role]}</span>
         <span className="min-w-0 flex-1">
@@ -651,7 +687,7 @@ function AccessPanel({ lang, s, up, checks }: { lang: string; s: StructuralData;
   const wv = weightVerdict(s);
   const pieceCheck = checks.find((c) => c.key === "struct_piece_length");
   return (
-    <Panel title={t("st_accessTitle")}>
+    <Panel tag="access" title={t("st_accessTitle")}>
       <MInput label={t("st_accessPath")} placeholder={t("st_accessPathPh")} value={s.access.path} onChange={(v) => up((x) => void (x.access.path = v))} />
       <div className="mt-3 grid grid-cols-2 gap-3">
         <MInput label={t("st_maxLength")} value={s.access.maxLength} gap="struct_max_length" onChange={(v) => up((x) => void (x.access.maxLength = v))} />
@@ -691,9 +727,9 @@ function AccessPanel({ lang, s, up, checks }: { lang: string; s: StructuralData;
 
 // ---- Small building blocks ---------------------------------------------------------
 
-function Panel({ title, aside, children }: { title?: string; aside?: string; children: React.ReactNode }) {
+function Panel({ title, aside, tag, children }: { title?: string; aside?: string; tag?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+    <section data-st-panel={tag} className="scroll-mt-24 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
       {title && (
         <h3 className="mb-3 flex items-center gap-2 text-[15px] font-semibold text-slate-900">
           {title}
