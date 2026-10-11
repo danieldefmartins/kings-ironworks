@@ -271,7 +271,7 @@ export default function ShopShell({
     ? null : clock.weekEarningsBeforeShift + (currentWeek?.basePay ?? 0);
 
   return (
-    <ShopAccess.Provider value={isOwner}><div data-shop-theme={appearance} className={`shop-ui shop-app ${measuring ? "shop-measuring" : ""} min-h-screen max-w-full overflow-x-hidden ${focus ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(82px+env(safe-area-inset-bottom))]"}`}>
+    <ShopAccess.Provider value={isOwner}><div data-shop-theme={appearance} className={`shop-ui shop-app ${measuring ? "shop-measuring" : ""} min-h-screen max-w-full overflow-x-clip ${focus ? "pb-[env(safe-area-inset-bottom)]" : "pb-[calc(82px+env(safe-area-inset-bottom))]"}`}>
       {queued > 0 && (
         <div className="fixed inset-x-0 top-0 z-[70] bg-amber-400 px-4 py-2 pt-[max(8px,env(safe-area-inset-top))] text-center text-sm font-semibold text-black">
           {t(lang, "punchQueuedBanner", { n: String(queued) })}

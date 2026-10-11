@@ -161,7 +161,12 @@ export default function NextMeasurement({
             aria-label={`${tr(lang, "Next", "Próxima", "Siguiente")}: ${context ? `${context} · ` : ""}${label}`}
             data-m="1"
             value={value}
-            onChange={(e) => set((d) => slot.put(d, e.target.value))}
+            onChange={(e) => {
+              // Pin the card to this field: once it holds a value it leaves the
+              // open list, and the card must not jump mid-number.
+              if (currentId !== slot.id) setCurrentId(slot.id);
+              set((d) => slot.put(d, e.target.value));
+            }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); go(1); } }}
             placeholder={placeholder}
             autoComplete="off"

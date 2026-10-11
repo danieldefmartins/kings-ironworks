@@ -197,7 +197,10 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
 const gapId = (g: Gap) => `gap:${g.key}:${g.detail ?? ''}:${g.flight ?? ''}`;
 const matches = (slot: NextSlot, g: Gap) =>
   g.key === slot.gap && (slot.detail === undefined || g.detail === slot.detail) && (slot.flight === undefined || g.flight === undefined || g.flight === slot.flight);
-const stageRank = (key: string) => STAGE_ORDER.indexOf(legacyStageForGap(key));
+// A gate, fence, balcony, deck, fire escape or well is measured by its own
+// dimensions first; the shared stair stages (rail height, posts) follow.
+const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well)_/;
+const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */
 export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: readonly Gap[]): MeasureQueue {
