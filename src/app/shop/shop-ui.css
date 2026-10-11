@@ -199,3 +199,11 @@
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] text { fill: #cbd5e1; stroke: none; }
  .shop-ui[data-shop-theme="dark"] [data-measure-ui] svg[data-site-sketch] [stroke="#2563eb"] { stroke: #93c5fd; }
 }
+
+/* Legible type floor for field use (phones in sunlight, gloves): nothing in the
+ * shop renders below 12px on screen; captions and body step up one notch. */
+@media screen {
+  .shop-ui :is(.text-\[9px\], .text-\[10px\], .text-\[11px\]) { font-size: 12px; line-height: 1.35; }
+  .shop-ui .text-xs { font-size: 13px; line-height: 1.4; }
+  .shop-ui .text-sm { font-size: 15px; line-height: 1.45; }
+}
