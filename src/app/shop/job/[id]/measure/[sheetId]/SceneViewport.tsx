@@ -5,6 +5,7 @@ import {Maximize2,Scan,X} from 'lucide-react';
 import {useShopAppearance} from '../../../../ShopAppearance';
 import type {MeasureData,MeasureShape} from '@/lib/shop/measure';
 import {measureScene,type SceneFocus,type SceneSelection} from '@/lib/shop/measure-scene';
+import {mirrorScene,sheetSelection} from '@/lib/shop/scene-mirror';
 import type {createSceneViewport,ViewportOptions} from '@/lib/shop/scene-viewport-engine';
 import type {ScenePostDrop,SceneView} from '@/lib/shop/scene-viewport-utils';
 export type PostDropTarget=ScenePostDrop;
@@ -13,7 +14,10 @@ export type SceneViewportProps={data:MeasureData;lang:string;/** The sheet's sha
 export default function SceneViewport({data,lang,shape,selectedId,onSelect,onPostDrop,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onWallEdge,onUnavailable,className='',compact=false,initialView='iso',menuExtra,focus}:SceneViewportProps){
  const dark=useShopAppearance()==='dark',host=useRef<HTMLDivElement>(null),overlay=useRef<HTMLDivElement>(null),engine=useRef<ReturnType<typeof createSceneViewport>|null>(null);
  const [status,setStatus]=useState<'loading'|'ready'|'unavailable'>('loading'),[site,setSite]=useState(true),[rails,setRails]=useState(true),[view,setView]=useState<SceneView>(initialView);
- const model=useMemo(()=>measureScene(data,shape),[data,shape]);
+ // Shown mirrored so the sheet's left is the viewer's left; picks are mirrored back.
+ const model=useMemo(()=>mirrorScene(measureScene(data,shape)),[data,shape]);
+ const pick=useMemo(()=>onSelect&&((selection:SceneSelection)=>onSelect(sheetSelection(selection))),[onSelect]);
+ const drop=useMemo(()=>onPostDrop&&((target:ScenePostDrop)=>onPostDrop(sheetSelection(target))),[onPostDrop]);
  // Full screen: the real Fullscreen API where the element supports it, a
  // fixed edge-to-edge layer otherwise (iPhone Safari has no element
  // fullscreen). Leaving returns to the same scroll position.
@@ -31,7 +35,7 @@ export default function SceneViewport({data,lang,shape,selectedId,onSelect,onPos
  useEffect(()=>{const id=window.setTimeout(()=>engine.current?.fit(viewRef.current),120);return()=>window.clearTimeout(id);},[full]);
  const draggablePostIds=useMemo(()=>data.posts.filter(post=>post.pointType==='railing_post').map(post=>post.id),[data.posts]);
  const latest=useRef<{model:ReturnType<typeof measureScene>;options:ViewportOptions}|null>(null);
- useEffect(()=>{latest.current={model,options:{dark,selectedId,site,rails,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onSelect,onPostDrop,draggablePostIds,onWallEdge,lang,focus}};engine.current?.update(model,latest.current.options);},[model,dark,selectedId,site,rails,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onSelect,onPostDrop,draggablePostIds,onWallEdge,lang,focus]);
+ useEffect(()=>{latest.current={model,options:{dark,selectedId,site,rails,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onSelect:pick,onPostDrop:drop,draggablePostIds,onWallEdge,lang,focus}};engine.current?.update(model,latest.current.options);},[model,dark,selectedId,site,rails,surfacePick,groundPick,wallPlacement,wallPlacementSegment,pick,drop,draggablePostIds,onWallEdge,lang,focus]);
  useEffect(()=>{let cancelled=false;import('@/lib/shop/scene-viewport-engine').then(({createSceneViewport})=>{if(cancelled||!host.current||!overlay.current)return;try{const next=createSceneViewport(host.current,overlay.current,()=>setStatus('unavailable'));engine.current=next;if(latest.current)next.update(latest.current.model,latest.current.options);next.fit(initialView);setStatus('ready');}catch{setStatus('unavailable');}}).catch(()=>{if(!cancelled)setStatus('unavailable');});return()=>{cancelled=true;engine.current?.dispose();engine.current=null;};},[initialView]);
  const t=lang==='pt'?{top:'Planta',front:'Frente',fit:'Enquadrar',plus:'Ampliar',minus:'Reduzir',site:'Local',rails:'Metal',layers:'Camadas',fallback:'Usar desenho 2D',failed:'3D indisponível neste dispositivo',loading:'Carregando 3D',hint:'Arraste para girar · Dois dedos para mover e ampliar',select:'Selecionar elemento',full:'Tela cheia',exitFull:'Sair da tela cheia',views:'Vistas'}:lang==='es'?{top:'Planta',front:'Frente',fit:'Encuadrar',plus:'Acercar',minus:'Alejar',site:'Sitio',rails:'Metal',layers:'Capas',fallback:'Usar dibujo 2D',failed:'3D no disponible en este dispositivo',loading:'Cargando 3D',hint:'Arrastre para girar · Dos dedos para mover y ampliar',select:'Seleccionar elemento',full:'Pantalla completa',exitFull:'Salir de pantalla completa',views:'Vistas'}:{top:'Top',front:'Front',fit:'Fit',plus:'Zoom in',minus:'Zoom out',site:'Site',rails:'Steel',layers:'Layers',fallback:'Use 2D drawing',failed:'3D unavailable on this device',loading:'Loading 3D',hint:'Drag to rotate · Two fingers to pan and zoom',select:'Select element',full:'Full screen',exitFull:'Exit full screen',views:'Views'};
  const legend=lang==='pt'?{amber:'Âmbar: medidas incompletas ou não conferidas',layout:'Linhas e volumes dos postes: referências de posição',house:'Casa: referência sem medidas',pending:'objetos pendentes',pendingOne:'objeto pendente'}:lang==='es'?{amber:'Ámbar: medidas incompletas o sin verificar',layout:'Líneas y volúmenes de postes: referencias de posición',house:'Casa: referencia sin medidas',pending:'objetos pendientes',pendingOne:'objeto pendiente'}:{amber:'Amber: incomplete or unverified measurements',layout:'Rail lines/post envelopes: layout references',house:'House: unmeasured reference',pending:'pending objects',pendingOne:'pending object'};
