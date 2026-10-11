@@ -13,6 +13,10 @@ import { structuralCutReady } from './measure-dims-structural';
 import { spiralSlotCalc as SLOT_CALC_SPIRAL } from './measure-dims-spiral';
 import { fireSlotCalc as SLOT_CALC_FIRE } from './measure-dims-fire';
 import { shopPieceSlotCalc as SLOT_CALC_SP } from './measure-dims-shop-piece';
+import { planPaths } from './measure';
+import { planLineSlot } from './measure-dims-custom';
+import { deckHasCorner } from './measure-run-calc';
+import { tagRunCopies } from './measure-next-runs';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -57,7 +61,7 @@ export interface NextSlot {
   /** Slots sharing a copy key repeat the same number ("Same for all floors / columns / pieces"). */
   copyKey?: string;
   /** What the copy row calls its siblings. */
-  copyNoun?: 'levels' | 'columns' | 'pieces';
+  copyNoun?: 'levels' | 'columns' | 'pieces' | 'sides' | 'segments' | 'posts';
   get: (d: MeasureData) => string;
   put: (d: MeasureData, value: string) => void;
 }
@@ -201,6 +205,8 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
         ['deck_side_length', 'deckSideLength', 'length'], ['deck_side_height', 'deckSideHeight', 'heightAboveGrade'],
         ['deck_opening_width', 'deckSideOpeningWidth', 'openingWidth'],
       ], { detail: tag, tag });
+      // The corner this side ends on: the 3D chains the sides by it. Approved or read (measure-run-calc).
+      if (deckHasCorner(data, n)) field(`deck.side${n}.turnDeg`, 'deck_side_turn', 'deckSideTurn', side, 'turnDeg', { detail: tag, tag, unit: 'deg', ask: () => true });
     });
     table('deck', d => d.deck as unknown as Bag, [
       ['deck_total_perimeter', 'deckTotalPerimeter', 'totalPerimeter'], ['deck_guard_height_f', 'deckGuardHeight', 'guardHeight'],
@@ -239,6 +245,8 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
   if (shape === 'canopy' && data.canopy?.kind) canopySlots(data, field);
   if (shape === 'wall_cap' && data.wallCap) wallCapSlots(data, field);
   if (shape === 'shop_piece' && data.shopPiece) shopPieceSlots(data, field);
+  if (shape === 'custom') planLineSlots(data, field);
+  tagRunCopies(out);
   return out;
 }
 
@@ -490,6 +498,18 @@ function shopPieceSlots(data: MeasureData, field: FieldFn) {
       field(`sp.${id}.w`, 'sp_width', 'sp_w', piece, DESIGN_KEYS.w, same(DESIGN_KEYS.w));
       field(`sp.${id}.h`, 'sp_height', 'sp_h', piece, DESIGN_KEYS.h, same(DESIGN_KEYS.h));
       field(`sp.${id}.d`, 'sp_depth', 'sp_d', piece, DESIGN_KEYS.d, same(DESIGN_KEYS.d));
+    }
+  });
+}
+
+/** A drawn railing is walked run by run, line by line, in the order it was drawn. */
+function planLineSlots(data: MeasureData, field: FieldFn) {
+  planPaths(data.plan).filter((p) => p.points.length > 1).forEach((p, pi) => {
+    const n = p.closed && p.points.length > 2 ? p.points.length : p.points.length - 1, id = p.id;
+    for (let i = 0; i < n; i++) {
+      const tag = `${p.label.trim() || `#${pi + 1}`} · ${i + 1}`;
+      const line = (d: MeasureData) => planPaths(d.plan).find((x) => x.id === id)?.segs[i] as unknown as Bag | undefined;
+      field(planLineSlot(id, i), 'plan_lengths', 'nx_planLine', line, 'len', { tag });
     }
   });
 }

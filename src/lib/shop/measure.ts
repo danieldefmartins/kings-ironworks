@@ -953,6 +953,8 @@ export interface RailSpec {
   segSides?: Record<string, "left" | "right" | "both">;
   /** The suggested post layout: posts per side (absent = suggested count), whether the two sides move together. */
   postPlan?: { left?: number; right?: number; linked?: boolean; sig?: string };
+  /** Post plan for railed runs that are not stair sides (deck sides, fence segments, balcony, drawn runs): posts per run id, approved. */
+  runPlan?: { counts?: Record<string, number>; approved?: boolean; sig?: string };
 
   kind: string; // Guardrail | Handrail | Both
   height: string;

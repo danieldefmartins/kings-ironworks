@@ -113,6 +113,8 @@ import NextMeasurement from './NextMeasurement';
 import WallRailBrackets from "./WallRailBrackets";
 import { StairPostSuggest, POST_SUGGEST_SHAPES } from './PostSuggest';
 import { stairSuggestion, reconcileSuggestedPosts, withSuggestionGhosts } from '@/lib/shop/measure-post-suggest-stair';
+import { RunPostSuggest } from './RunPostSuggest';
+import { reconcileRunSuggestions, withRunGhosts } from '@/lib/shop/measure-post-suggest-registry';
 import LaserControl, { LaserBrowserHint } from './LaserControl';
 import {locateMeasure} from '@/lib/shop/measure-locate';
 import {Check,ChevronDown,ChevronLeft,Redo2,Undo2} from 'lucide-react';
@@ -189,7 +191,7 @@ export default function MeasureEditor({
   // Suggested posts that nobody has touched follow the stair: every edit
   // re-spaces them in the same step, so one undo takes back both.
   const orgMaxSpacing=orgSettings?.defaults?.maxPostSpacing;
-  const set=(fn:(d:MeasureData)=>void)=>historySet(d=>{fn(d);reconcileSuggestedPosts(d,orgMaxSpacing);});
+  const set=(fn:(d:MeasureData)=>void)=>historySet(d=>{fn(d);reconcileSuggestedPosts(d,orgMaxSpacing);reconcileRunSuggestions(d,sheet.shape,orgMaxSpacing);});
   // The step face the Next card is asking about, lit on the 3D while the card is on it.
   const [sceneFocus,setSceneFocus]=useState<SceneFocus|null>(null);
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
@@ -700,7 +702,7 @@ export default function MeasureEditor({
   // A measured stair with no posts yet: offer the whole layout, shown as ghosts in the 3D until accepted.
   const offerPosts = POST_SUGGEST_SHAPES.includes(sheet.shape) && !data.posts.some(p=>!p.pathId);
   const postSuggestion = useMemo(()=>offerPosts?stairSuggestion(data,orgMaxSpacing):null,[offerPosts,data,orgMaxSpacing]);
-  const sceneData = useMemo(()=>withSuggestionGhosts(data,postSuggestion),[data,postSuggestion]);
+  const sceneData = useMemo(()=>withRunGhosts(withSuggestionGhosts(data,postSuggestion),sheet.shape,orgMaxSpacing),[data,postSuggestion,sheet.shape,orgMaxSpacing]);
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
   const isFire = sheet.shape === "fire_escape";
@@ -1293,7 +1295,8 @@ export default function MeasureEditor({
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
           {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}
-          {sheet.shape==='wall_rail'&&workspace!=='review'&&<WallRailBrackets lang={lang} data={data} set={set}/>}</>}
+          {sheet.shape==='wall_rail'&&workspace!=='review'&&<WallRailBrackets lang={lang} data={data} set={set}/>}
+          {workspace!=='review'&&<RunPostSuggest lang={lang} data={data} shape={sheet.shape} set={set} orgMaxSpacing={orgMaxSpacing}/>}</>}
           nav={<nav aria-label={lang === 'pt' ? "Área de trabalho" : lang === 'es' ? "Área de trabajo" : "Professional workspace"} className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
           </nav>}

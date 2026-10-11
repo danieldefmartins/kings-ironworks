@@ -549,6 +549,7 @@ const MeasureDataSchema = z.object({
       linked: z.boolean().optional(),
       sig: z.string().max(4000).optional(),
     }).optional(),
+    runPlan: z.object({ counts: z.record(z.string().max(80), z.number().int().min(0).max(80)).optional(), approved: z.boolean().optional(), sig: z.string().max(4000).optional() }).optional(),
     kind: z.string().max(40),
     height: meas,
     side: z.string().max(20),

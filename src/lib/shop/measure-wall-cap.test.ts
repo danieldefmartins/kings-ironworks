@@ -248,7 +248,7 @@ describe("wall-cap 3D", () => {
     expect(s.pending).toEqual([]);
   });
   it("is registered and feeds measureScene; other sheets get nothing from it", () => {
-    expect(SCENE_SHAPES.wall_cap).toBe(wallCapScene);
+    expect(SCENE_SHAPES.wall_cap).toBeTypeOf("function"); // wrapped by the pre-mirror (scene-shapes/index.ts)
     const d = newMeasureData("wall_cap", 0);
     d.wallCap = wall();
     expect(measureScene(d).meshes.some((m) => m.id.startsWith("wallcap:"))).toBe(true);

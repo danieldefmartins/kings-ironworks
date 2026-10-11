@@ -11,7 +11,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { MeasureData } from "@/lib/shop/measure";
 import { formatMeas } from "@/lib/shop/measure-parse";
-import { pointAlong, stepCounts, type RunLayout } from "@/lib/shop/measure-post-suggest";
+import { isGap, pointAlong, stepCounts, type RunLayout } from "@/lib/shop/measure-post-suggest";
 import type { Point3 } from "@/lib/shop/measure-geometry";
 import {
   stairSuggestion, applyStairSuggestion, isUntouchedSuggestion, ownPostsOnSides, adoptOwnPosts,
@@ -34,7 +34,13 @@ export function PostPlanPreview({ outlines, walls, layouts, ghost, label }: {
     const tf = (p: Point3) => { const lx = p.x * c - p.y * s, ly = p.x * s + p.y * c; return { x: ly, y: -lx }; };
     const polys = outlines.map((o) => o.map(tf));
     const wallLines = walls.map(([a, b]) => [tf(a), tf(b)]);
-    const runs = layouts.map((l) => ({ id: l.run.id, pts: l.posts.map((p) => ({ ...tf(pointAlong(l.run.path, p.at)), anchor: p.anchor })) }));
+    const runs = layouts.map((l) => {
+      const pts = l.posts.map((p) => ({ ...tf(pointAlong(l.run.path, p.at)), anchor: p.anchor }));
+      // The rail line stops at an opening (a deck's stair or gate).
+      const lines: typeof pts[] = [[]];
+      l.posts.forEach((p, i) => { if (i > 0 && isGap(l.run, l.posts[i - 1], p)) lines.push([]); lines[lines.length - 1].push(pts[i]); });
+      return { id: l.run.id, pts, lines };
+    });
     const all = [...polys.flat(), ...runs.flatMap((r) => r.pts)];
     if (!all.length) return null;
     const minX = Math.min(...all.map((p) => p.x)), maxX = Math.max(...all.map((p) => p.x));
@@ -56,8 +62,10 @@ export function PostPlanPreview({ outlines, walls, layouts, ghost, label }: {
       ))}
       {view.runs.map((r) => (
         <g key={r.id}>
-          <polyline points={r.pts.map((q) => `${q.x},${q.y}`).join(" ")} fill="none" className={ghost ? "stroke-amber-500" : "stroke-indigo-500"}
-            strokeWidth={2} strokeDasharray={ghost ? "5 4" : undefined} vectorEffect="non-scaling-stroke" />
+          {r.lines.map((line, k) => (
+            <polyline key={k} points={line.map((q) => `${q.x},${q.y}`).join(" ")} fill="none" className={ghost ? "stroke-amber-500" : "stroke-indigo-500"}
+              strokeWidth={2} strokeDasharray={ghost ? "5 4" : undefined} vectorEffect="non-scaling-stroke" />
+          ))}
           {r.pts.map((q, i) => (
             <circle key={i} cx={q.x} cy={q.y} r={view.r} className={ghost ? "fill-amber-400 stroke-white" : "fill-indigo-600 stroke-white"} strokeWidth={2} vectorEffect="non-scaling-stroke" />
           ))}
@@ -70,6 +78,8 @@ export function PostPlanPreview({ outlines, walls, layouts, ghost, label }: {
 export interface PlanRow {
   layout: RunLayout;
   label: string;
+  /** A short fact after the span (a fence's grade per bay). */
+  note?: string;
 }
 
 /** Generic card: preview, one stepper row per run, caller's controls and actions. */
@@ -106,7 +116,7 @@ export function PostPlanCard({ lang, title, summary, rows, maxSpacing, outlines,
         {controls && <div className="mt-3 @2xl:mt-0">{controls}</div>}
         {rows.length > 0 && (
           <ul className="mt-3 divide-y divide-slate-100 rounded-2xl border border-slate-200">
-            {rows.map(({ layout: l, label }) => {
+            {rows.map(({ layout: l, label, note }) => {
               const bad = l.overMax || l.underMin;
               const span = l.spans.length === 0 ? "" : l.spanEach !== null ? ps(lang, "spanEach", { v: ft(l.spanEach) })
                 : ps(lang, "spans", { a: ft(Math.min(...l.spans)), b: ft(l.longest) });
@@ -118,6 +128,7 @@ export function PostPlanCard({ lang, title, summary, rows, maxSpacing, outlines,
                       {span}
                       {l.overMax && <> · {ps(lang, "overMax", { v: ft(maxSpacing) })}</>}
                       {!l.overMax && l.underMin && <> · {ps(lang, "tooClose")}</>}
+                      {note && <> · {note}</>}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center rounded-full bg-slate-100 p-1">

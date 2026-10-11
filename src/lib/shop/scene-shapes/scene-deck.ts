@@ -5,42 +5,28 @@
 // (stairs, gates). Sides that are not railed — and the closing edge of an open
 // outline — are the house. The model is turned so the house sits at the back
 // (+Y) and the camera's default view looks at the open front.
-import type {DeckSide,MeasureData} from '../measure';
+import type {MeasureData} from '../measure';
+import {deckPlan,outwardOf,type DeckEdge} from '../measure-deck-plan';
+import {deckPostStations} from '../measure-post-suggest-deck';
 import type {Point3} from '../measure-geometry';
-import {Geo,Guard,SceneOut,emptyScene,guardBay,len,p3,section,signed,type ShapeSceneOutput} from './build-kit';
-
-type Edge={side:DeckSide|null;a:{x:number;y:number};b:{x:number;y:number};index:number};
+import {Geo,Guard,SceneOut,emptyScene,guardBay,len,p3,section,type ShapeSceneOutput} from './build-kit';
 
 export function deckScene(data:MeasureData):ShapeSceneOutput{
  const d=data.deck;if(!d)return emptyScene();
  const out=new SceneOut(),m=data.materials;
- // 1. Plan: chain every side; stop at the first one without a length.
- const pts=[{x:0,y:0}],used:DeckSide[]=[];let heading=0;
- for(const [i,sd] of d.sides.entries()){
-  const L=len(sd.length);if(L===null){out.need(`Deck side ${sd.label||i+1} · length`);break;}
-  const last=pts[pts.length-1];pts.push({x:last.x+Math.cos(heading)*L,y:last.y+Math.sin(heading)*L});used.push(sd);
-  heading+=((signed(sd.turnDeg)??0)*Math.PI)/180;
- }
- if(!used.length){if(!d.sides.length)out.need('Deck · sides');return out.done();}
- const complete=used.length===d.sides.length,closeGap=Math.hypot(pts[pts.length-1].x-pts[0].x,pts[pts.length-1].y-pts[0].y);
- if(d.closedLoop&&complete&&closeGap<=1)pts.pop();
- const edges:Edge[]=used.map((side,i)=>({side,a:pts[i],b:pts[(i+1)%pts.length],index:i}));
- if(!(d.closedLoop&&complete&&closeGap<=1)&&pts.length>2)edges.push({side:null,a:pts[pts.length-1],b:pts[0],index:edges.length});
- if(d.closedLoop&&complete&&closeGap>1)out.need('Deck · outline does not close');
- // Interior is left of travel for a counter-clockwise outline.
- let area=0;for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];area+=a.x*b.y-b.x*a.y;}
- const ccw=area>=0,outward=(e:Edge)=>{const dx=e.b.x-e.a.x,dy=e.b.y-e.a.y,l=Math.hypot(dx,dy)||1;return ccw?{x:dy/l,y:-dx/l}:{x:-dy/l,y:dx/l};};
- // Turn the plan so the house (unrailed edges) faces +Y.
- const house=edges.filter(e=>!e.side||!e.side.railed);
- let rot=0;if(house.length){const n=house.reduce((s,e)=>{const o=outward(e),l=Math.hypot(e.b.x-e.a.x,e.b.y-e.a.y);return {x:s.x+o.x*l,y:s.y+o.y*l};},{x:0,y:0});if(Math.hypot(n.x,n.y)>1e-6)rot=Math.PI/2-Math.atan2(n.y,n.x);}
- const c=Math.cos(rot),s=Math.sin(rot),R=(p:{x:number;y:number})=>({x:p.x*c-p.y*s,y:p.x*s+p.y*c});
- for(const e of edges){e.a=R(e.a);e.b=R(e.b);}
- const plan=pts.map(R);
+ // 1. Plan (shared with the dimension lines and the post suggestion).
+ const dp=deckPlan(data);
+ const missing=d.sides.find(sd=>len(sd.length)===null);
+ if(missing)out.need(`Deck side ${missing.label||d.sides.indexOf(missing)+1} · length`);
+ if(!dp){if(!d.sides.length)out.need('Deck · sides');return out.done();}
+ if(d.closedLoop&&dp.complete&&dp.closeGap>1)out.need('Deck · outline does not close');
+ const edges=dp.edges,plan=dp.plan,used=d.sides.slice(0,edges.filter(e=>e.side).length);
+ const outward=(e:DeckEdge)=>outwardOf(dp,e);
 
  // 2. Heights: the surface sits at the highest measured side; grade drops away per side.
- const heights=used.map(sd=>len(sd.heightAboveGrade)),known=heights.filter((h):h is number=>h!==null);
+ const heights=dp.heights,known=used.map((_,i)=>heights[i]).filter((h):h is number=>h!==null);
  used.forEach((sd,i)=>{if(heights[i]===null)out.need(`Deck side ${sd.label||i+1} · height above grade`);});
- const top=known.length?Math.max(...known):0;
+ const top=dp.top;
  const decking=len(d.deckingThickness),rim=section(d.rimJoistSize)?.depth??null,mount=d.mount;
  const deckGeo=new Geo().polygon(plan.map(p=>p3(p.x,p.y,top)));
  out.mesh('deck:surface','Deck surface','surface',deckGeo,{provisional:!known.length,referenceOnly:false,entity:{part:'deck-surface'}});
@@ -67,25 +53,25 @@ export function deckScene(data:MeasureData):ShapeSceneOutput{
  const gap=len(d.picketSpacing)??len(m.picketSpacing),spacing=len(d.postSpacing)??len(d.maxPostSpacing),clear=len(data.fab.bottomClearance)??0;
  if(gap===null)out.need('Deck · picket spacing');if(spacing===null)out.need('Deck · post spacing');if(!mount)out.need('Deck · post mount');
  const fascia=mount==='fascia'||mount==='through_bolt',postBase=fascia&&depth>0?top-depth:top;
+ const stations=deckPostStations(data),approved=!!data.rail.runPlan?.approved;
  for(const e of edges){
   const sd=e.side;if(!sd||!sd.railed||guardH===null)continue;
   // Fascia posts sit outside the rim; surface posts just inside the edge.
   const o=outward(e),inset=fascia?pw/2:-pw/2;
   const A={x:e.a.x+o.x*inset,y:e.a.y+o.y*inset},B={x:e.b.x+o.x*inset,y:e.b.y+o.y*inset},L=Math.hypot(B.x-A.x,B.y-A.y);if(!(L>0))continue;
   const ux=(B.x-A.x)/L,uy=(B.y-A.y)/L,at=(t:number)=>p3(A.x+ux*t,A.y+uy*t,top);
-  // Runs of rail either side of an opening. Its position along the side is not measured: centred, flagged.
+  // Posts where the post plan puts them (measure-post-suggest-deck): corners and
+  // opening edges fixed, the rest evenly spaced. Not yet approved = amber ghosts.
   const opens=!!sd.opening&&sd.opening!=='none',ow=opens?len(sd.openingWidth):null;
   if(opens&&ow===null)out.need(`Deck side ${sd.label||e.index+1} · opening width`);
-  const runs:[number,number][]=ow!==null&&ow<L?[[0,(L-ow)/2],[(L+ow)/2,L]]:[[0,L]];
+  const plan2=stations.get(sd.id),scaleK=L/Math.hypot(e.b.x-e.a.x,e.b.y-e.a.y);
+  const ats=(plan2?.at??[0,L]).map(a=>a*scaleK),blocked=new Set(plan2?.blocked??[]);
   const guard=new Guard(),posts=new Guard(),entity={part:`deck-side-${sd.id}`},label=`Deck side ${sd.label||e.index+1}`;
-  for(const [r0,r1] of runs){
-   const rl=r1-r0;if(rl<=pw)continue;const n=spacing?Math.max(1,Math.ceil(rl/spacing-1e-6)):1;
-   for(let k=0;k<=n;k++){const p=at(r0+rl*k/n);posts.add(p3(p.x,p.y,postBase),p3(p.x,p.y,top+guardH),post,{x:ux,y:uy,z:0});}
-   for(let k=0;k<n;k++)guardBay(guard,{a:at(r0+rl*k/n),b:at(r0+rl*(k+1)/n),bottomA:top+clear,bottomB:top+clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});
-  }
+  for(const a of ats){const p=at(a);posts.add(p3(p.x,p.y,postBase),p3(p.x,p.y,top+guardH),post,{x:ux,y:uy,z:0});}
+  for(let k=1;k<ats.length;k++){if(blocked.has(k-1)||ats[k]-ats[k-1]<=pw)continue;guardBay(guard,{a:at(ats[k-1]),b:at(ats[k]),bottomA:top+clear,bottomB:top+clear,height:guardH-clear,topRail,bottomRail,picket,gap,postWidth:pw});}
   guard.emit(out,`deck:guard:${sd.id}`,`${label} · guard`,{provisional:spacing===null,entity});
-  out.mesh(`deck:posts:${sd.id}`,`${label} · posts`,'post',posts.geo,{entity});
-  posts.axes.forEach(points=>out.line(`deck:posts:${sd.id}`,`${label} · posts`,'post',points,{entity}));
+  out.mesh(`deck:posts:${sd.id}`,`${label} · posts`,'post',posts.geo,{entity,provisional:!approved});
+  posts.axes.forEach(points=>out.line(`deck:posts:${sd.id}`,`${label} · posts`,'post',points,{entity,provisional:!approved}));
   if(ow!==null&&ow<L){
    const a=at((L-ow)/2),b=at((L+ow)/2),kind=sd.opening==='stairs'?'Stair opening':sd.opening==='gate'?'Gate opening':'Opening';
    const h=heights[e.index];

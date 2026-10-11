@@ -36,6 +36,8 @@
 //     blocked   Indices i of anchor intervals (anchor i → i+1) where no
 //               intermediate post may go: across a turn the adapter cannot
 //               address, through a gate opening, over a wall return.
+//     gaps      Blocked intervals with no rail at all (a stair or gate opening):
+//               not spans, so never counted, flagged or drawn as one.
 //
 //   layoutRun(run, settings, count?) → RunLayout
 //     posts     Every post on the run, in order: anchors plus intermediates,
@@ -69,6 +71,7 @@ export interface PostRun {
   path: Point3[];
   anchors: RunAnchor[];
   blocked?: number[];
+  gaps?: number[];
 }
 
 export interface RunPost {
@@ -152,6 +155,11 @@ export function allocate(lengths: number[], open: boolean[], extra: number, maxS
   return k;
 }
 
+/** Two neighbouring posts either side of an opening (no rail between them). */
+export function isGap(run: PostRun, a: RunPost, b: RunPost, gaps = new Set(run.gaps ?? [])): boolean {
+  return a.anchor && b.anchor && gaps.has(a.interval) && b.interval === a.interval + 1;
+}
+
 /** One run: anchors fixed, the rest spread evenly. `count` is total posts (absent = suggested). */
 export function layoutRun(run: PostRun, settings: SuggestSettings, count?: number | null): RunLayout {
   const max = settings.maxSpacing > 0 ? settings.maxSpacing : DEFAULT_MAX_POST_SPACING;
@@ -177,7 +185,9 @@ export function layoutRun(run: PostRun, settings: SuggestSettings, count?: numbe
   });
   const spans: number[] = [];
   let underMin = false;
+  const gaps = new Set(run.gaps ?? []);
   for (let i = 1; i < posts.length; i++) {
+    if (isGap(run, posts[i - 1], posts[i], gaps)) continue;
     const s = posts[i].at - posts[i - 1].at;
     spans.push(s);
     if ((!posts[i].anchor || !posts[i - 1].anchor) && s < min - EPS) underMin = true;
