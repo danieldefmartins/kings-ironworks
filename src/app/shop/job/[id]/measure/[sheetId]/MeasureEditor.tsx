@@ -1225,7 +1225,7 @@ export default function MeasureEditor({
           </div>
         )}
         <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||openingForm}
-          lead={<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
+          lead={openingForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
             onOpenGap={g=>{jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>setWorkspace('review')}/>}
