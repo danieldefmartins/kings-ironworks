@@ -1228,7 +1228,7 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||ownForm}
+        <ProWorkspace data={data} shape={sheet.shape} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'} stacked={ownForm}
           lead={ownForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
             onOpenGap={g=>{jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}

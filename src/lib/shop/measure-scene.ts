@@ -1,4 +1,4 @@
-import {flightWalls,segmentIdAt,type MeasureData} from './measure';
+import {flightWalls,segmentIdAt,type MeasureData,type MeasureShape} from './measure';
 import {stairGeometry,type Point3} from './measure-geometry';
 import {drawingPosts} from './measure-drawing';
 import {previewSiteObject} from './measure-site-placement';
@@ -33,7 +33,7 @@ function postEnvelope(base:Point3,top:Point3,section:{width:number;depth:number;
  return {vertices,faces:[Array.from({length:n},(_,i)=>n-1-i),Array.from({length:n},(_,i)=>n+i),...ring.map((_,i)=>[i,(i+1)%n,(i+1)%n+n,i+n])]};
 }
 /** Pure display adapter. Inches / Z up. It never writes defaults back or supplies fabrication cuts. */
-export function measureScene(data:MeasureData):MeasureScene{
+export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureScene{
  const meshes:SceneMesh[]=[],lines:SceneLine[]=[],pending:string[]=[],model=stairGeometry(data),site=resolveSite(data);
  const realSite=siteMeshes(site),realIds=new Set(realSite.map(m=>m.id));
  for(const m of realSite)meshes.push({...m,id:`site:${m.id}`,kind:'site',referenceOnly:false,entity:{siteId:m.id}});
@@ -84,7 +84,7 @@ export function measureScene(data:MeasureData):MeasureScene{
  for(const edge of wallPlacementEdges(data))lines.push({id:`placement-edge:${edge.segmentId}:${edge.side}`,label:`Place wall · ${edge.side}`,kind:'wall-edge',provisional:edge.provisional,referenceOnly:true,entity:{segmentId:edge.segmentId,segmentIndex:edge.segmentIndex,side:edge.side},points:[{...edge.start},{...edge.end}]});
  const house=houseContext(data);
  if(house){const item={kind:'house' as const,provisional:true,referenceOnly:true,entity:{},label:'House · unmeasured reference'};meshes.push({...item,id:'house:reference',vertices:house.vertices.map(p=>({...p})),faces:house.faces.map(f=>[...f])});house.roof.forEach((points,i)=>lines.push({...item,id:`house:roof:${i}`,points:points.map(p=>({...p}))}));}
- const shape=sceneShapeOf(data),adapter=shape?SCENE_SHAPES[shape]:undefined;
+ const kind=shape||sceneShapeOf(data),adapter=kind?SCENE_SHAPES[kind]:undefined;
  if(adapter){const extra=adapter(data);meshes.push(...extra.meshes);lines.push(...extra.lines);pending.push(...extra.pending);}
  const points=[...meshes.flatMap(m=>m.vertices),...lines.flatMap(l=>l.points)];
  const bounds={min:{x:0,y:0,z:0},max:{x:0,y:0,z:0}};
