@@ -31,6 +31,7 @@ import {
   type MeasureSheet,
 } from "@/lib/shop/measure";
 import { drawingIssues } from "@/lib/shop/measure-drawing";
+import { SIGNATURE_MAX_CHARS } from "@/lib/shop/measure-signoff";
 import { SiteModelSchema, preserveSiteExtensions } from '@/lib/shop/measure-site';
 import { runChecks, submitBlockers, mergeTolerances } from "@/lib/shop/measure-checks";
 
@@ -447,7 +448,30 @@ const SpanSchema = z.object({
   note: z.string().max(300),
 });
 
+// Code profile (measure-code.ts) and customer sign-off (measure-signoff.ts).
+const CodeSettingsSchema = z.object({
+  profile: z.enum(["ma780", "irc2021", "ibc2021", "custom"]),
+  occupancy: z.enum(["", "residential", "commercial"]),
+  base: z.enum(["ma780", "irc2021", "ibc2021"]).optional(),
+  overrides: z.object({
+    guardHeight: meas.optional(), stairGuardHeight: meas.optional(), handrailMin: meas.optional(),
+    handrailMax: meas.optional(), riserMax: meas.optional(), treadMin: meas.optional(), sphere: meas.optional(),
+  }).optional(),
+});
+const SignoffSchema = z.object({
+  name: z.string().max(120),
+  email: z.string().max(200),
+  lang: z.enum(["en", "pt", "es"]),
+  signedAt: z.string().max(40),
+  // Small PNG data URL only — size capped (SIGNATURE_MAX_CHARS).
+  signature: z.string().max(SIGNATURE_MAX_CHARS).regex(/^data:image\/png;base64,[A-Za-z0-9+/=]+$/),
+  hash: z.string().max(40),
+  summary: z.array(z.object({ label: z.string().max(120), value: z.string().max(300) })).max(40),
+});
+
 const MeasureDataSchema = z.object({
+  code: CodeSettingsSchema.optional(),
+  signoff: SignoffSchema.nullable().optional(),
   site: SiteModelSchema.optional(),
   steelPlan: SteelPlanSchema.optional(),
   specialtySteel: SpecialtySteelListSchema.optional(),

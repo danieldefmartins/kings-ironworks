@@ -631,7 +631,13 @@ export async function POST(req: NextRequest) {
             colors: list(inOptions.colors).length ? list(inOptions.colors) : prev.options.colors || [],
           },
           rules: { allowSelfApproval: inRules.allowSelfApproval === true },
-          defaults: prev.defaults,
+          // Only keys a client actually sends change; everything else is kept.
+          defaults: {
+            ...prev.defaults,
+            ...(["ma780", "irc2021", "ibc2021", "custom"].includes(String((inb.defaults as Record<string, unknown> | undefined)?.codeProfile))
+              ? { codeProfile: String((inb.defaults as Record<string, unknown>).codeProfile) }
+              : {}),
+          },
         };
         await saveOrgSettings(next, worker.id);
         await audit("org_settings_change", {

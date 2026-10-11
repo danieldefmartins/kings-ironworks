@@ -1065,6 +1065,8 @@ export default function MeasureEditor({
           submitDrawing={submitDrawing}
           approveSheet={approveSheet}
           sendBackSheet={sendBackSheet}
+          set={set}
+          codeDefault={orgSettings?.defaults?.codeProfile}
         />  </SetupLockCtx.Provider></StageCtx.Provider>;
 
   return (
@@ -1303,6 +1305,7 @@ export default function MeasureEditor({
         checks={checks}
         gapCount={gaps.length}
         branding={orgSettings?.branding}
+        codeDefault={orgSettings?.defaults?.codeProfile}
       />
     </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
