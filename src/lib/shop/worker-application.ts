@@ -22,6 +22,6 @@ export const applicationSchema = z.object({
 export type WorkerApplicationData = z.infer<typeof applicationSchema>;
 export type WorkerApplication = { id: string; full_name: string; email: string; phone: string; status: "pending" | "approved" | "declined"; data: WorkerApplicationData; created_at: string; reviewed_at: string | null; review_note: string | null; worker_id: string | null };
 export const applicationReviewSchema = z.discriminatedUnion("decision", [
-  z.object({ id: z.uuid(), decision: z.literal("approved"), role: z.enum(APPLICATION_ROLES), hourlyRate: z.number().positive().max(1000), pin: z.string().regex(/^\d{4,8}$/, "Use a 4–8 digit PIN."), note: optional(1000) }),
+  z.object({ id: z.uuid(), decision: z.literal("approved"), role: z.enum(APPLICATION_ROLES), hourlyRate: z.number().positive().max(1000), pin: z.string().regex(/^\d{4}$/, "Use a 4-digit PIN."), note: optional(1000) }),
   z.object({ id: z.uuid(), decision: z.literal("declined"), note: required(1000) }),
 ]);

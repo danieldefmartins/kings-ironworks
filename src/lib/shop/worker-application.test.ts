@@ -11,7 +11,8 @@ it("requires owner-provided role, pay rate and PIN to approve, and a reason to d
  const id = "10000000-0000-4000-8000-000000000001";
  expect(applicationReviewSchema.safeParse({ id, decision: "approved" }).success).toBe(false);
  expect(applicationReviewSchema.safeParse({ id, decision: "approved", role: "Owner", hourlyRate: 25, pin: "1234" }).success).toBe(false);
- expect(applicationReviewSchema.safeParse({ id, decision: "approved", role: "Welder", hourlyRate: 25, pin: "012345" }).success).toBe(true);
+ expect(applicationReviewSchema.safeParse({ id, decision: "approved", role: "Welder", hourlyRate: 25, pin: "5829" }).success).toBe(true);
+ expect(applicationReviewSchema.safeParse({ id, decision: "approved", role: "Welder", hourlyRate: 25, pin: "012345" }).success).toBe(false); // login keypad takes exactly 4
  expect(applicationReviewSchema.safeParse({ id, decision: "declined", note: "" }).success).toBe(false);
 });
 it("accepts optional Zelle contacts and keeps older applications valid", () => {
