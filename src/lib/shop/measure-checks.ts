@@ -8,6 +8,7 @@ import {resolveSite} from './measure-wall-placement';
 
 import { landingConnections, landingConnectionMeasured } from "./measure-landings";
 import { parseMeas } from "./measure-parse";
+import { postLayout, calculatedFromFirst, POST_CHECK_TOL } from "./measure-post-layout";
 import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
@@ -770,7 +771,19 @@ export function runChecks(
     ...shapeChecks(data, shape, tolIn),
     ...mountingChecks(data, shape, orderedPosts(data)),
     ...finishChecks(data, shape),
+    ...postDistanceChecks(data),
   ];
+}
+
+// A typed first-step → post distance is a redundant measurement once the
+// treads and setbacks place the post: compare the two instead of trusting either.
+function postDistanceChecks(data: MeasureData): CheckResult[] {
+  if (!data.posts.some((p) => p.firstStepToPostEdge?.trim())) return [];
+  const layout = postLayout(data, orderedPosts(data));
+  return (layout?.posts || []).filter((p) => p.fromFirstStep !== null && p.measuredFromFirst !== null && !p.provisional).map((p) => {
+    const delta = p.measuredFromFirst! - p.fromFirstStep!;
+    return { key: "post_first_distance", level: Math.abs(delta) <= POST_CHECK_TOL ? "green" : "yellow", expected: Math.round(p.fromFirstStep! * 16) / 16, actual: p.measuredFromFirst, delta: Math.round(delta * 16) / 16, unit: "in", detail: p.label };
+  });
 }
 
 function shapeChecks(
@@ -1561,12 +1574,14 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 
   // posts: position + mount always; the rest depends on how it mounts
   const postPhotos = new Set(data.photos.map((p) => p.slot));
+  const layout = data.posts.length ? postLayout(data) : null;
   data.posts.forEach((p, i) => {
     const tag = `P${i + 1}`;
     // A linked existing support is positioned by its surveyed face, not by a fabricated post setback.
     if(p.supportAttachment)return;
     const posOk = p.stepIdx !== null ? has(p.fromNosing) : has(p.pos);
-    if (p.stepIdx !== null && !has(p.firstStepToPostEdge)) {
+    // Calculated from the treads and setbacks once those are in; typed only as a cross-check.
+    if (p.stepIdx !== null && !has(p.firstStepToPostEdge) && calculatedFromFirst(layout, p.id) === null) {
       gaps.push({ key: "post_first_post_edge", detail: tag });
     }
     if (!posOk || !has(p.fromEdge) || (p.pointType === "railing_post" && !has(p.mount))) {

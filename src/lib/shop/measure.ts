@@ -915,6 +915,7 @@ export function railSideSetback(data:MeasureData):string {
 
 export interface RailSpec {
   sideSetback?: string; // usual stair-edge setback for new posts; editable
+  postCentered?: boolean; // new stair posts sit centred on their tread (front setback = half the run)
 
   kind: string; // Guardrail | Handrail | Both
   height: string;

@@ -5,20 +5,26 @@ import type { MeasureData } from './measure';
 import { orderedPosts } from './measure-checks';
 import { parseMeas } from './measure-parse';
 import { stairGeometry, surfacePoint, type Point3 } from './measure-geometry';
+import { postLayout } from './measure-post-layout';
 import { siteRailProblems } from './measure-site-rails';
 import { siteIssues } from './measure-site';
 
 export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<typeof stairGeometry>>) {
   const site=resolveSite(data);
-  return orderedPosts(data).map((post,index)=> {
+  // Post base and rail-line top come from the post layout — the same numbers the
+  // Posts card, the 3D labels and the print show — so the drawn post, the
+  // Blender payload (and the post cuts it derives) and the label all agree.
+  const ordered=orderedPosts(data),layout=postLayout(data,ordered);
+  return ordered.map((post,index)=> {
     if(post.supportAttachment&&post.pointType!=='railing_post')return {post,label:`P${index+1}`,...supportTerminal(data,site,post)};
     const t=model.treads.find(t=>t.segIdx===post.segIdx && t.stepIdx===post.stepIdx);
     const along=parseMeas(post.stepIdx===null?post.pos:post.fromNosing),edge=parseMeas(post.fromEdge);
     const height=parseMeas(data.rail.height);
     const provisional=!t||t.provisional||along===null||edge===null||!post.side||data.datums.postRef!=='centerline'
       ||(along!==null&&t!==undefined&&along>t.run)||(edge!==null&&t!==undefined&&edge>t.width)||height===null||height<=0;
-    const base=t?surfacePoint(t,Math.min(t.run,along??0),post.side==='right'?t.width-Math.min(t.width,edge??0):Math.min(t.width,edge??0)):null;
-    const top:Point3|null=base?{...base,z:base.z+(height&&height>0?height:36)}:null;
+    const lp=layout?.posts.find(p=>p.post.id===post.id);
+    const base=lp?{...lp.base}:t?surfacePoint(t,Math.min(t.run,along??0),post.side==='right'?t.width-Math.min(t.width,edge??0):Math.min(t.width,edge??0)):null;
+    const top:Point3|null=lp?{...lp.top}:base?{...base,z:base.z+(height&&height>0?height:36)}:null;
     return {post,label:`P${index+1}`,base,top,provisional};
   });
 }

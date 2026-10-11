@@ -1,6 +1,7 @@
 import {blankLandingTransition,type LandingTransition,type MeasureData,type PostMeasure} from './measure';
 import {parseMeas} from './measure-parse';
 import {stairGeometry,surfacePoint,type Point3} from './measure-geometry';
+import {postLayout} from './measure-post-layout';
 const number=(v:string)=>{const n=parseMeas(v);return n!==null&&Number.isFinite(n)&&n>=0?n:null;};
 export const transitionKey=(t:LandingTransition)=>`${t.landingSegIdx}-${t.upperFlightIdx}-${t.side}`;
 
@@ -28,6 +29,8 @@ export function landingConnections(data:MeasureData):LandingTransition[]{
 export function landingConnectionGeometry(data:MeasureData,t:LandingTransition){
   const model=stairGeometry(data);if(!model)return null;
   const height=number(data.rail.height);if(height===null||height===0)return null;
+  // Rail-line tops from the post layout, the single source the drawings and 3D use.
+  const layout=postLayout(data);
   const endpoint=(id:string,segIdx:number,reach:string,sign:number):{point:Point3;post:PostMeasure;base:Point3;direction:{x:number;y:number};provisional:boolean}|null=>{
     const post=data.posts.find(p=>p.id===id&&p.segIdx===segIdx&&p.pointType==='railing_post'&&p.stepIdx!==null);
     if(!post||!post.side)return null;
@@ -37,7 +40,7 @@ export function landingConnectionGeometry(data:MeasureData,t:LandingTransition){
     const base=surfacePoint(tread,along,post.side==='right'?tread.width-edge:edge);
     const start=surfacePoint(tread,0,post.side==='right'?tread.width-edge:edge),end=surfacePoint(tread,tread.run,post.side==='right'?tread.width-edge:edge);
     const length=Math.hypot(end.x-start.x,end.y-start.y);if(!length)return null;
-    return {post,base,direction:{x:(end.x-start.x)/length,y:(end.y-start.y)/length},point:{x:base.x+sign*extension*(end.x-start.x)/length,y:base.y+sign*extension*(end.y-start.y)/length,z:base.z+height+sign*extension*tread.rise/tread.run},provisional:model.provisional||data.datums.postRef!=='centerline'};
+    return {post,base,direction:{x:(end.x-start.x)/length,y:(end.y-start.y)/length},point:{x:base.x+sign*extension*(end.x-start.x)/length,y:base.y+sign*extension*(end.y-start.y)/length,z:(layout?.posts.find(p=>p.post.id===post.id)?.top.z??base.z+height)+sign*extension*tread.rise/tread.run},provisional:model.provisional||data.datums.postRef!=='centerline'};
   };
   const lower=endpoint(t.lowerPostId,t.lowerFlightIdx,t.lowerReach,1),upper=endpoint(t.upperPostId,t.upperFlightIdx,t.upperReach,-1);
   if(!lower||!upper||lower.post.side!==t.side)return null;

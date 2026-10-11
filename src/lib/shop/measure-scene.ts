@@ -1,6 +1,9 @@
 import {flightWalls,segmentIdAt,type MeasureData,type MeasureShape} from './measure';
 import {stairGeometry,type Point3} from './measure-geometry';
 import {drawingPosts} from './measure-drawing';
+import {orderedPosts} from './measure-checks';
+import {postLayout} from './measure-post-layout';
+import {formatIn} from './measure-parse';
 import {previewSiteObject} from './measure-site-placement';
 import {siteMeshes,siteNumber} from './measure-site';
 import {resolveSite,previewWall,wallPlacementEdges} from './measure-wall-placement';
@@ -9,12 +12,13 @@ import {attachedCuts} from './measure-attached-fab';
 import {landingConnections,landingConnectionGeometry} from './measure-landings';
 import {houseContext} from './measure-house-context';
 import {SCENE_SHAPES,sceneShapeOf} from './scene-shapes';
-export type SceneKind='surface'|'site'|'wall-preview'|'post'|'rail'|'attached'|'wall-edge'|'house';
+export type SceneKind='surface'|'site'|'wall-preview'|'post'|'rail'|'attached'|'wall-edge'|'house'|'dim';
 export type SceneEntity={segmentId?:string;segmentIndex?:number;stepIndex?:number|null;siteId?:string;postId?:string;railId?:string;part?:string;role?:string;side?:'left'|'right'|'start'|'end'};
 export type SceneSelection=SceneEntity&{point?:Point3};
 type SceneItem={id:string;label:string;kind:SceneKind;provisional:boolean;referenceOnly:boolean;entity:SceneEntity};
 export type SceneMesh=SceneItem&{vertices:Point3[];faces:number[][]};
-export type SceneLine=SceneItem&{points:Point3[]};
+/** `dim` lines carry a calculated label and show only while one of their two posts is selected. */
+export type SceneLine=SceneItem&{points:Point3[];text?:string;between?:[string,string]};
 export type MeasureScene={meshes:SceneMesh[];lines:SceneLine[];bounds:{min:Point3;max:Point3};pending:string[]};
 /** What the Next card is asking for, lit on the 3D: a step's riser (rise), its tread (run), or a landing's top (surface). */
 export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface';/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string};
@@ -90,6 +94,13 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
    for(let i=1;i<list.length;i++)lines.push({id:`rail:${list[i-1].post.id}:${list[i].post.id}`,label:`Railing ${group}`,kind:'rail',provisional:list[i-1].provisional||list[i].provisional,referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[list[i].post.segIdx],list[i].post.segIdx),segmentIndex:list[i].post.segIdx},points:[{...list[i-1].top!},{...list[i].top!}]});
   }
  }
+ // Calculated post-to-post dimensions: run · rail length · rake, drawn just above the rail line.
+ const DIM_LIFT=10;
+ if(model&&data.posts.length>1){const layout=postLayout(data,orderedPosts(data));for(const sp of layout?.spans||[]){
+  const angle=sp.kind==='level'?'0°':sp.pieces.filter(p=>p.kind==='rake').map(p=>`${Math.abs(p.angle).toFixed(1)}°`).join(' / ');
+  lines.push({id:`dim:${sp.from.post.id}:${sp.to.post.id}`,label:`${sp.from.label} → ${sp.to.label}`,kind:'dim',provisional:sp.provisional,referenceOnly:true,entity:{},between:[sp.from.post.id,sp.to.post.id],
+   text:`${sp.from.label}→${sp.to.label}   ↔ ${formatIn(sp.run)}   ⟋ ${formatIn(sp.length)}   ∠ ${angle}`,points:sp.path.map(p=>({...p,z:p.z+DIM_LIFT}))});
+ }}
  for(const [i,t] of landingConnections(data).entries()){
   if(t.kind!=='drop'&&t.kind!=='level')continue;const g=landingConnectionGeometry(data,t);if(!g)continue;
   lines.push({id:`transition:${t.lowerPostId}:${t.upperPostId}:${i}`,label:`Connection ${i+1}`,kind:'rail',provisional:g.provisional,referenceOnly:true,entity:{segmentIndex:t.landingSegIdx,segmentId:segmentIdAt(data.segments[t.landingSegIdx],t.landingSegIdx)},points:g.path.map(p=>({...p}))});

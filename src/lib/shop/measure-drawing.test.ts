@@ -9,7 +9,12 @@ const fixture=()=>{
 };
 describe('drawing release readiness',()=>{
   it('positions post centerlines on the selected tread',()=>{
-    const d=fixture(),p=drawingPosts(d,stairGeometry(d)!)[0];expect(p.base?.x).toBeCloseTo(2);expect(p.base?.y).toBeCloseTo(33);expect(p.base?.z).toBeCloseTo(7);expect(p.top?.z).toBeCloseTo(43);expect(p.provisional).toBe(false);expect(drawingIssues(d)).toEqual([]);
+    const d=fixture(),p=drawingPosts(d,stairGeometry(d)!)[0];expect(p.base?.x).toBeCloseTo(2);expect(p.base?.y).toBeCloseTo(33);expect(p.base?.z).toBeCloseTo(7);// Rail height is from the nosing line: 2" behind the nosing on a 7/11 pitch the rail is 2·7/11 higher.
+    expect(p.top?.z).toBeCloseTo(43+2*7/11);expect(p.provisional).toBe(false);expect(drawingIssues(d)).toEqual([]);
+  });
+  it('measures the post height from the surface under it when the sheet records that datum',()=>{
+    const d=fixture();d.fab.railHeightDatum='finished_top_at_post';
+    expect(drawingPosts(d,stairGeometry(d)!)[0].top?.z).toBeCloseTo(43);
   });
   it('does not accept absent offsets or face-based dimensions as measured centerlines',()=>{
     const d=fixture();d.posts[0].fromEdge='';expect(drawingIssues(d)).toContain('drawingPostsOpen');

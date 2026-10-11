@@ -8,6 +8,7 @@ import { CANOPY_STR } from "./measure-canopy-i18n";
 import { SHOTS_STR } from "./measure-shots-i18n";
 import { WALL_CAP_STR } from "./measure-wall-cap-i18n";
 import { SHOP_PIECE_STR } from "./measure-shop-piece-i18n";
+import { POST_LAYOUT_STR } from "./measure-post-layout-i18n";
 
 type Dict = Record<string, string>;
 
@@ -4330,7 +4331,7 @@ for (const l of Object.keys(SUBSTRATE_STR) as Lang[]) Object.assign(STR[l], SUBS
 for (const l of Object.keys(CANOPY_STR) as Lang[]) Object.assign(STR[l], CANOPY_STR[l]);
 for (const l of Object.keys(SHOTS_STR) as Lang[]) Object.assign(STR[l], SHOTS_STR[l]);
 // Wall-cap railings and shop pieces bring their own vocabulary too.
-for (const l of Object.keys(WALL_CAP_STR) as Lang[]) Object.assign(STR[l], WALL_CAP_STR[l], SHOP_PIECE_STR[l]);
+for (const l of Object.keys(WALL_CAP_STR) as Lang[]) Object.assign(STR[l], WALL_CAP_STR[l], SHOP_PIECE_STR[l], POST_LAYOUT_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);
