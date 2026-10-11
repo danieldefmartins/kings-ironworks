@@ -45,7 +45,7 @@ import SubstrateEditor from "../SubstrateEditor";
 import type { SubMaterial } from "@/lib/shop/measure-substrate";
 import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import { CapSection, WallCapElevation } from "./WallCapSketch";
-import { CheckList, Chips, DOT, fmtIn, fmtLen, Group, More, Notes, Panel, PILL, Seg, Stat, StatusPills, Verdict, ViewToggle, worst, type CheckLabels } from "./MeasureFormKit";
+import { CheckList, Chips, DOT, useMeasFmt, Group, More, Notes, Panel, PILL, Seg, Stat, StatusPills, Verdict, ViewToggle, worst, type CheckLabels } from "./MeasureFormKit";
 
 type SetFn = (fn: (d: MeasureData) => void) => void;
 
@@ -69,6 +69,7 @@ const WC_GAP_PANEL: [RegExp, string][] = [
 ];
 
 export default function WallCapSections({ lang, data, set }: { lang: string; data: MeasureData; set: SetFn }) {
+  const fm = useMeasFmt();
   const w = data.wallCap ?? null;
   const t = (k: string) => mt(lang, k);
   const limits = useMemo(() => wallCapLimits(data), [data]);
@@ -183,10 +184,10 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
           </div>
         )}
         <dl className="mt-3 grid grid-cols-3 gap-2">
-          <Stat label={t("wc_railLength")} value={summary.railLength === null ? "—" : fmtLen(summary.railLength)} />
-          <Stat label={t("wc_guard")} value={fmtIn(have)} tone={guardCheck?.level}
-            sub={req.required !== null ? `${t("wc_lbl_needs")} ${fmtIn(req.required)}` : req.drop !== null ? t("wc_noGuardShort") : undefined} />
-          <Stat label={t("wc_minCap")} value={fmtIn(summary.minCap)} sub={summary.maxRise !== null ? `${t("wc_capFalls")} ${fmtIn(summary.maxRise)}` : undefined} />
+          <Stat label={t("wc_railLength")} value={summary.railLength === null ? "—" : fm(summary.railLength)} />
+          <Stat label={t("wc_guard")} value={fm(have)} tone={guardCheck?.level}
+            sub={req.required !== null ? `${t("wc_lbl_needs")} ${fm(req.required)}` : req.drop !== null ? t("wc_noGuardShort") : undefined} />
+          <Stat label={t("wc_minCap")} value={fm(summary.minCap)} sub={summary.maxRise !== null ? `${t("wc_capFalls")} ${fm(summary.maxRise)}` : undefined} />
         </dl>
       </Panel>
 
@@ -241,7 +242,7 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
             <MInput label={t("wc_railHeight")} value={w.railHeight} gap="wc_rail_height" onChange={(v) => up((x) => void (x.railHeight = v))} />
             {!w.railHeight.trim() && (
               <Chips value={w.railHeight} onPick={(v) => up((x) => void (x.railHeight = v))}
-                options={(req.required !== null ? [Math.max(0, req.required - (parseMeas(w.capAboveWalk) ?? 0))] : [36, 42]).map((n) => [fmtIn(n), fmtIn(n)] as [string, string])} />
+                options={(req.required !== null ? [Math.max(0, req.required - (parseMeas(w.capAboveWalk) ?? 0))] : [36, 42]).map((n) => [fm(n), fm(n)] as [string, string])} />
             )}
           </div>
           <div className="mt-3">
@@ -252,10 +253,10 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
           {req.drop !== null && (
             <div className="mt-3">
               {req.required === null ? (
-                <Verdict level="green" title={t("wc_noGuardReq")} text={`${t("wc_drop")} ${fmtIn(req.drop)} ≤ ${fmtIn(limits.guardDrop)}`} />
+                <Verdict level="green" title={t("wc_noGuardReq")} text={`${t("wc_drop")} ${fm(req.drop)} ≤ ${fm(limits.guardDrop)}`} />
               ) : (
-                <Verdict level={guardCheck?.level ?? "yellow"} title={`${t("wc_guardRequired")} ${fmtIn(req.required)}`}
-                  text={have === null ? t("wc_guardFromWalk") : `${t("wc_lbl_have")} ${fmtIn(have)} · ${t("wc_guardFromWalk")}`} />
+                <Verdict level={guardCheck?.level ?? "yellow"} title={`${t("wc_guardRequired")} ${fm(req.required)}`}
+                  text={have === null ? t("wc_guardFromWalk") : `${t("wc_lbl_have")} ${fm(have)} · ${t("wc_guardFromWalk")}`} />
               )}
             </div>
           )}
@@ -299,10 +300,10 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
           <div className="mt-3 rounded-xl bg-indigo-50 p-3">
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-[13px] font-semibold uppercase tracking-wider text-indigo-700">{t("wc_postCut")}</span>
-              <span className="text-xl font-bold tabular-nums text-indigo-900">{fmtIn(cut.length)}</span>
+              <span className="text-xl font-bold tabular-nums text-indigo-900">{fm(cut.length)}</span>
             </div>
             <div className="mt-1 flex flex-wrap gap-x-1.5 text-[13px] text-slate-600">
-              {cut.parts.map((p, i) => <span key={i} className="whitespace-nowrap">{i ? "+ " : ""}{t(`wc_part_${p.key}`)} {fmtIn(p.value)}</span>)}
+              {cut.parts.map((p, i) => <span key={i} className="whitespace-nowrap">{i ? "+ " : ""}{t(`wc_part_${p.key}`)} {fm(p.value)}</span>)}
             </div>
           </div>
         )}
@@ -356,6 +357,7 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
   lang: string; w: WallCapData; r: WallCapRun; i: number; open: boolean; focus: string | null; checks: CheckResult[];
   onToggle: () => void; update: (fn: (r: WallCapRun) => void) => void; onRemove: () => void; onFocus: (m: string) => void; markOffset: number;
 }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const tag = runTag(i);
   const corner = cornerTop(w, i);
@@ -371,7 +373,7 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[15px] font-bold text-indigo-700">{tag}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-slate-900">
-            {r.length.trim() ? fmtLen(parseMeas(r.length)) : "—"}
+            {r.length.trim() ? fm(parseMeas(r.length)) : "—"}
             {i > 0 && r.turnDir ? <span className="font-medium text-slate-500"> · {r.turn || "—"}° {t(r.turnDir === "left" ? "wc_leftShort" : "wc_rightShort")}</span> : null}
           </span>
           <span className="block truncate text-[13px] text-slate-500">
@@ -397,7 +399,7 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
           )}
           <div data-wc-field={`${r.id}:length`}><MInput label={t("wc_runLength")} value={r.length} gap="wc_run_length" onChange={(v) => update((x) => void (x.length = v))} /></div>
 
-          <Group title={t("wc_postsTitle")} badge={rise ? <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${sloped ? PILL.yellow : PILL.green}`}>{t("wc_capFalls")} {fmtIn(rise.rise)}</span> : null}>
+          <Group title={t("wc_postsTitle")} badge={rise ? <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${sloped ? PILL.yellow : PILL.green}`}>{t("wc_capFalls")} {fm(rise.rise)}</span> : null}>
             <div className="space-y-2">
               {r.posts.map((p, j) => (
                 <PostRow key={p.id} lang={lang} w={w} p={p} mark={marks[j]} first={markOffset + j === 0} differs={!!p.material || (!!p.sub?.condition && p.sub.condition !== w.runs[0]?.posts[0]?.sub?.condition)} on={focus === marks[j]} checks={checks.filter((c) => c.detail === marks[j] || (c.detail || "").startsWith(`${marks[j]} `))}
@@ -415,7 +417,7 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
               options={[["raked", t("wc_rail_raked")], ["stepped", t("wc_rail_stepped")]]}
               onChange={(v) => update((x) => void (x.rail = v as WallCapRun["rail"]))} />
             {sloped && rise && (
-              <p className="mt-1 text-[13px] text-slate-500">{t("wc_slopeHint")} {fmtIn(rise.rise)}{railLen !== null && r.rail === "raked" ? ` · ${t("wc_railLength")} ${fmtLen(railLen)}` : ""}</p>
+              <p className="mt-1 text-[13px] text-slate-500">{t("wc_slopeHint")} {fm(rise.rise)}{railLen !== null && r.rail === "raked" ? ` · ${t("wc_railLength")} ${fm(railLen)}` : ""}</p>
             )}
           </div>
           <div className="flex items-center gap-2">

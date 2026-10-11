@@ -4,7 +4,9 @@
 // segmented controls, chips, steppers, switches, verdict tiles and a check
 // list. Same look as the structural sheet (one system, Apple-style).
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useContext, useLayoutEffect, useRef, useState } from "react";
+import { formatMeas } from "@/lib/shop/measure-parse";
+import { MeasUnits } from "../MeasUnits";
 import type { CheckLevel, CheckResult } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
 import { fmtLen } from "./StructuralSketch";
@@ -29,6 +31,18 @@ export function useBoxWidth(fallback: number) {
     return () => ro.disconnect();
   }, []);
   return [ref, w] as const;
+}
+
+export type Fmt = (n: number | null | undefined) => string;
+
+/**
+ * Shop notation in the sheet's units (MeasUnits): 36 1/8" on an inch sheet,
+ * 3' 1/8" on a feet+inches sheet. Every number these sheets draw or print goes
+ * through it.
+ */
+export function useMeasFmt(): Fmt {
+  const units = useContext(MeasUnits);
+  return (n) => (n === null || n === undefined || !Number.isFinite(n) ? "—" : `${n < 0 ? "−" : ""}${formatMeas(Math.abs(n), units)}`);
 }
 
 /** Inches only, to the 1/16 — for heights and edge distances the crew reads in inches (42", not 3' 6"). */
@@ -179,8 +193,9 @@ export function More({ lang, children }: { lang: string; children: React.ReactNo
 }
 
 export function DeltaBadge({ delta, tol }: { delta: number; tol: { green: number; yellow: number } }) {
+  const fm = useMeasFmt();
   const level: CheckLevel = delta <= tol.green ? "green" : delta <= tol.yellow ? "yellow" : "red";
-  return <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${PILL[level]}`}>Δ {fmtIn(delta)}</span>;
+  return <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${PILL[level]}`}>Δ {fm(delta)}</span>;
 }
 
 export function Verdict({ level, title, text }: { level: CheckLevel; title: string; text: string }) {
@@ -206,14 +221,15 @@ export function StatusPills({ lang, checks, gaps }: { lang: string; checks: Chec
 
 /** One line of numbers under a check: "<expected label> 3" · <actual label> 2 1/2"". */
 export type CheckLabels = Record<string, [string, string]>;
-export function checkNumbers(lang: string, c: CheckResult, labels: CheckLabels): string {
+export function checkNumbers(lang: string, c: CheckResult, labels: CheckLabels, fm: Fmt = fmtIn): string {
   if (c.expected === null || c.actual === null) return "";
   const l = labels[c.key];
-  if (l) return `${mt(lang, l[0])} ${fmtIn(c.expected)} · ${mt(lang, l[1])} ${fmtIn(c.actual)}`;
-  return `${fmtIn(c.expected)} / ${fmtIn(c.actual)} · Δ ${fmtIn(Math.abs(c.delta ?? 0))}`;
+  if (l) return `${mt(lang, l[0])} ${fm(c.expected)} · ${mt(lang, l[1])} ${fm(c.actual)}`;
+  return `${fm(c.expected)} / ${fm(c.actual)} · Δ ${fm(Math.abs(c.delta ?? 0))}`;
 }
 
 export function CheckList({ lang, checks, labels, issuesOnly = false, collapsePassed = false }: { lang: string; checks: CheckResult[]; labels: CheckLabels; issuesOnly?: boolean; collapsePassed?: boolean }) {
+  const fm = useMeasFmt();
   const [showPassed, setShowPassed] = useState(false);
   const order: Record<CheckLevel, number> = { red: 0, yellow: 1, green: 2, na: 3 };
   const sorted = [...checks].filter((c) => c.level !== "na").sort((a, b) => order[a.level] - order[b.level]);
@@ -230,7 +246,7 @@ export function CheckList({ lang, checks, labels, issuesOnly = false, collapsePa
               <span aria-hidden="true" className={`mt-1.5 size-2.5 shrink-0 rounded-full ${DOT[c.level]}`} />
               <span className="min-w-0 flex-1">
                 <span className="block text-[15px] text-slate-800">{mt(lang, `check_${c.key}`)}{c.detail ? <span className="text-slate-500"> · {c.detail}</span> : null}</span>
-                {checkNumbers(lang, c, labels) && <span className="block text-[13px] tabular-nums text-slate-500">{checkNumbers(lang, c, labels)}</span>}
+                {checkNumbers(lang, c, labels, fm) && <span className="block text-[13px] tabular-nums text-slate-500">{checkNumbers(lang, c, labels, fm)}</span>}
               </span>
               <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[12px] font-bold uppercase ${PILL[c.level]}`}>
                 {mt(lang, c.level === "green" ? "st_ok" : c.level === "yellow" ? "st_review" : "st_fix")}

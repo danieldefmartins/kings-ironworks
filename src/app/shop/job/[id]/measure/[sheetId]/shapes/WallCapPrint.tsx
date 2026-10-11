@@ -22,9 +22,8 @@ import {
   type WallCapData,
   type WcLimits,
 } from "@/lib/shop/measure-wall-cap";
-import { fmtLen } from "./StructuralSketch";
 import { CapSection } from "./WallCapSketch";
-import { checkNumbers, fmtIn } from "./MeasureFormKit";
+import { checkNumbers, useMeasFmt, type Fmt } from "./MeasureFormKit";
 import { WC_CHECK_LABELS } from "./WallCapSections";
 
 const GOLD = "#b8860b";
@@ -36,10 +35,11 @@ function Title({ children }: { children: React.ReactNode }) {
   return <div style={{ fontWeight: 800, textTransform: "uppercase", fontSize: 11, letterSpacing: 0.5, borderBottom: `2px solid ${GOLD}`, margin: "10px 0 4px" }}>{children}</div>;
 }
 const v = (s: string | undefined | null) => (s && s.trim() ? s : "—");
-const m = (s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fmtLen(parseMeas(s)));
-const mi = (s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fmtIn(parseMeas(s)));
+const m = (fm: Fmt, s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fm(parseMeas(s)));
+const mi = (fm: Fmt, s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fm(parseMeas(s)));
 
 export default function WallCapPrint({ w, lang, limits }: { w: WallCapData; lang: string; limits: WcLimits }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const checks = wallCapChecks(w, limits).filter((c) => c.level !== "na");
   const sum = wallCapSummary(w);
@@ -60,15 +60,15 @@ export default function WallCapPrint({ w, lang, limits }: { w: WallCapData; lang
       </div>
       <div>
         {t("wc_dropSide")}: <b>{w.dropSide ? t(w.dropSide === "left" ? "wc_left" : "wc_right") : "—"}</b>
-        {" "}· {t("wc_drop")}: <b>{m(w.drop)}</b> · {t("wc_capAboveWalk")}: <b>{mi(w.capAboveWalk)}</b> · {t("wc_railHeight")}: <b>{mi(w.railHeight)}</b>
-        {" "}· {t("wc_guard")}: <b>{fmtIn(have)}</b>{req.required !== null ? <> ({t("wc_lbl_required")} {fmtIn(req.required)})</> : req.drop !== null ? <> ({t("wc_noGuardReq")})</> : null}
+        {" "}· {t("wc_drop")}: <b>{m(fm, w.drop)}</b> · {t("wc_capAboveWalk")}: <b>{mi(fm, w.capAboveWalk)}</b> · {t("wc_railHeight")}: <b>{mi(fm, w.railHeight)}</b>
+        {" "}· {t("wc_guard")}: <b>{fm(have)}</b>{req.required !== null ? <> ({t("wc_lbl_required")} {fm(req.required)})</> : req.drop !== null ? <> ({t("wc_noGuardReq")})</> : null}
       </div>
       <div>
         {t("wc_mount")}: <b>{w.mount ? t(`wc_mount_${w.mount}`) : "—"}</b>
-        {w.mount === "core" && <> · {t("wc_coreDia")}: <b>{mi(w.coreDia)}</b> · {t("wc_coreDepth")}: <b>{mi(w.coreDepth)}</b></>}
+        {w.mount === "core" && <> · {t("wc_coreDia")}: <b>{mi(fm, w.coreDia)}</b> · {t("wc_coreDepth")}: <b>{mi(fm, w.coreDepth)}</b></>}
         {w.mount === "plate" && <> · {t("wc_plateSize")}: <b>{v(w.plateSize)}</b></>}
-        {(w.mount === "side_high" || w.mount === "side_low") && <> · {t("wc_faceDepth")}: <b>{mi(w.faceDepth)}</b></>}
-        {cut.length !== null && <> · {t("wc_postCut")}: <b>{fmtIn(cut.length)}</b> ({cut.parts.map((p) => `${t(`wc_part_${p.key}`)} ${fmtIn(p.value)}`).join(" + ")})</>}
+        {(w.mount === "side_high" || w.mount === "side_low") && <> · {t("wc_faceDepth")}: <b>{mi(fm, w.faceDepth)}</b></>}
+        {cut.length !== null && <> · {t("wc_postCut")}: <b>{fm(cut.length)}</b> ({cut.parts.map((p) => `${t(`wc_part_${p.key}`)} ${fm(p.value)}`).join(" + ")})</>}
         {" "}· {t("st_finish")}: <b>{w.finish ? t(`wc_fin_${w.finish}`) : "—"}</b>{w.color ? <> · {w.color}</> : null}
       </div>
       {w.datum && <div>{t("wc_datum")}: <b>{w.datum}</b></div>}
@@ -97,13 +97,13 @@ export default function WallCapPrint({ w, lang, limits }: { w: WallCapData; lang
         </thead>
         <tbody>
           {posts.map(({ p, mark, run }) => {
-            const edge = (s: string) => { const n = parseMeas(s); return <td style={{ ...cell, color: n !== null && n < WC_TOL.edgeMin ? LEVEL_COLOR.red : undefined, fontWeight: n !== null && n < WC_TOL.edgeMin ? 700 : undefined }}>{mi(s)}</td>; };
+            const edge = (s: string) => { const n = parseMeas(s); return <td style={{ ...cell, color: n !== null && n < WC_TOL.edgeMin ? LEVEL_COLOR.red : undefined, fontWeight: n !== null && n < WC_TOL.edgeMin ? 700 : undefined }}>{mi(fm, s)}</td>; };
             return (
               <tr key={p.id} style={{ breakInside: "avoid" }}>
                 <td style={cell}>{runTag(run)}</td>
                 <td style={{ ...cell, fontWeight: 700 }}>{mark}</td>
-                <td style={cell}>{m(p.at)}</td>
-                <td style={cell}>{mi(p.capWidth)}{p.material ? ` · ${t(`wc_mat_${p.material}`)}` : ""}</td>
+                <td style={cell}>{m(fm, p.at)}</td>
+                <td style={cell}>{mi(fm, p.capWidth)}{p.material ? ` · ${t(`wc_mat_${p.material}`)}` : ""}</td>
                 <td style={cell}>{v(p.top)}</td>
                 {w.mount === "core" && edge(p.edgeHigh)}
                 {w.mount === "core" && edge(p.edgeLow)}
@@ -127,16 +127,16 @@ export default function WallCapPrint({ w, lang, limits }: { w: WallCapData; lang
           {w.runs.map((r, i) => (
             <tr key={r.id} style={{ breakInside: "avoid" }}>
               <td style={{ ...cell, fontWeight: 700 }}>{runTag(i)}</td>
-              <td style={cell}>{m(r.length)}</td>
+              <td style={cell}>{m(fm, r.length)}</td>
               <td style={cell}>{i === 0 ? "—" : `${v(r.turn)}° ${r.turnDir ? t(r.turnDir === "left" ? "wc_left" : "wc_right") : ""}`}</td>
-              <td style={cell}>{fmtIn(runRise(r, cornerTop(w, i))?.rise ?? null)}</td>
+              <td style={cell}>{fm(runRise(r, cornerTop(w, i))?.rise ?? null)}</td>
               <td style={cell}>{r.rail ? t(`wc_rail_${r.rail}`) : "—"}</td>
-              <td style={cell}>{fmtLen(runRailLength(r, cornerTop(w, i)))}</td>
+              <td style={cell}>{fm(runRailLength(r, cornerTop(w, i)))}</td>
             </tr>
           ))}
           <tr>
             <td style={{ ...cell, fontWeight: 700 }} colSpan={5}>{`${sum.posts} ${t(sum.posts === 1 ? "wc_post" : "wc_posts")}`}</td>
-            <td style={{ ...cell, fontWeight: 700 }}>{fmtLen(sum.railLength)}</td>
+            <td style={{ ...cell, fontWeight: 700 }}>{fm(sum.railLength)}</td>
           </tr>
         </tbody>
       </table>
@@ -149,7 +149,7 @@ export default function WallCapPrint({ w, lang, limits }: { w: WallCapData; lang
           {checks.filter((c) => c.level !== "green").map((c, i) => (
             <div key={i} style={{ color: LEVEL_COLOR[c.level] }}>
               {c.level === "green" ? "✓" : c.level === "red" ? "✕" : "!"} {t(`check_${c.key}`)}{c.detail ? ` · ${c.detail}` : ""}
-              {checkNumbers(lang, c, WC_CHECK_LABELS) ? <span style={{ color: "#475569" }}> — {checkNumbers(lang, c, WC_CHECK_LABELS)}</span> : null}
+              {checkNumbers(lang, c, WC_CHECK_LABELS, fm) ? <span style={{ color: "#475569" }}> — {checkNumbers(lang, c, WC_CHECK_LABELS, fm)}</span> : null}
             </div>
           ))}
         </>

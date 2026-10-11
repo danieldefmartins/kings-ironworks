@@ -29,8 +29,7 @@ import {
   type WallCapData,
   type WallCapPost,
 } from "@/lib/shop/measure-wall-cap";
-import { fmtLen } from "./StructuralSketch";
-import { fmtIn, useBoxWidth } from "./MeasureFormKit";
+import { useBoxWidth, useMeasFmt, type Fmt } from "./MeasureFormKit";
 
 const INK = { steel: "#4f46e5", steelFill: "#e0e7ff", dim: "#475569", text: "#0f172a", muted: "#64748b", red: "#dc2626", amber: "#b45309", cap: "#475569", wall: "#94a3b8", ground: "#334155" };
 const TYP = { run: 96, rail: 36, drop: 36, cap: 8 };
@@ -86,10 +85,10 @@ function Label({ x, y, text, color = INK.text, bold = false, size = 13, anchor =
   );
 }
 
-const len = (s: string) => (parseMeas(s) === null ? "—" : fmtLen(parseMeas(s)));
+const len = (fm: Fmt, s: string) => (parseMeas(s) === null ? "—" : fm(parseMeas(s)));
 /** Rough width of a label in px (system UI font, tabular figures). */
 const textW = (s: string, size = 13) => s.length * size * 0.56;
-const tocText = (top: string) => { const n = signedMeas(top); return n === null ? "—" : `${n < 0 ? "−" : "+"}${fmtIn(Math.abs(n))}`; };
+const tocText = (fm: Fmt, top: string) => { const n = signedMeas(top); return n === null ? "—" : `${n < 0 ? "−" : "+"}${fm(Math.abs(n))}`; };
 
 type Pt = { x: number; z: number | null; mark: string; run: number; post: WallCapPost };
 /** Runs laid end to end along x (inches), each post at its station. */
@@ -112,6 +111,7 @@ function unrollRuns(w: WallCapData, marks: string[]) {
  * a check flagged red.
  */
 export function WallCapElevation({ w, lang, red = [], focus, onPost }: { w: WallCapData | null; lang: string; red?: string[]; focus?: string | null; onPost?: (mark: string) => void }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const [box, W] = useBoxWidth(680);
   if (!w || !w.runs.length) return null;
@@ -154,7 +154,7 @@ export function WallCapElevation({ w, lang, red = [], focus, onPost }: { w: Wall
   const groundZ = zMin - shownDrop;
   // Posts closer than a label is wide get their top-of-cap figure on its side.
   const gaps = all.map((p, i) => Math.min(i > 0 ? X(p.x) - X(all[i - 1].x) : 999, i < all.length - 1 ? X(all[i + 1].x) - X(p.x) : 999));
-  const tight = gaps.some((g, i) => g < textW(tocText(all[i].post.top), 12) + 6);
+  const tight = gaps.some((g, i) => g < textW(tocText(fm, all[i].post.top), 12) + 6);
 
   // Wall outline: cap tops along every run, then the ground.
   const capPts: [number, number][] = [];
@@ -218,9 +218,9 @@ export function WallCapElevation({ w, lang, red = [], focus, onPost }: { w: Wall
             <rect x={X(p.x) - 2.5} y={top} width={5} height={cap - top} fill={c} rx={1} />
             <Label x={X(p.x)} y={top - 9} text={p.mark} bold color={c} size={13} />
             {tight ? (
-              <Label x={X(p.x) + 4} y={cap + 8} anchor="end" rotate size={12} color={signedMeas(p.post.top) === null ? INK.muted : INK.text} text={tocText(p.post.top)} />
+              <Label x={X(p.x) + 4} y={cap + 8} anchor="end" rotate size={12} color={signedMeas(p.post.top) === null ? INK.muted : INK.text} text={tocText(fm, p.post.top)} />
             ) : (
-              <Label x={X(p.x)} y={cap + 18} size={12} color={signedMeas(p.post.top) === null ? INK.muted : INK.text} text={tocText(p.post.top)} />
+              <Label x={X(p.x)} y={cap + 18} size={12} color={signedMeas(p.post.top) === null ? INK.muted : INK.text} text={tocText(fm, p.post.top)} />
             )}
             {onPost && <rect x={X(p.x) - 20} y={top - 28} width={40} height={cap - top + 40} fill="transparent" />}
           </g>
@@ -231,23 +231,23 @@ export function WallCapElevation({ w, lang, red = [], focus, onPost }: { w: Wall
       {all[0] && (
         <g>
           <line x1={X(all[0].x) - 16} x2={X(all[0].x) - 16} y1={Z(all[0].z! + railH)} y2={Z(all[0].z!)} stroke={INK.dim} strokeWidth={1.2} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-          <Label x={X(all[0].x) - 22} y={Z(all[0].z! + railH / 2)} rotate size={12} bold color={railRaw === null ? INK.muted : INK.text} text={railRaw === null ? "—" : fmtIn(railRaw)} />
+          <Label x={X(all[0].x) - 22} y={Z(all[0].z! + railH / 2)} rotate size={12} bold color={railRaw === null ? INK.muted : INK.text} text={railRaw === null ? "—" : fm(railRaw)} />
         </g>
       )}
 
       {/* drop, right of the wall */}
       <g>
         <line x1={X(total) + 16} x2={X(total) + 16} y1={Z(endZ)} y2={Z(groundZ)} stroke={INK.dim} strokeWidth={1.2} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-        <Label x={X(total) + 30} y={Z((endZ + groundZ) / 2)} rotate size={12} bold color={dropRaw === null ? INK.muted : INK.text} text={`${t("wc_dropShort")} ${dropRaw === null ? "—" : fmtLen(dropRaw)}`} />
+        <Label x={X(total) + 30} y={Z((endZ + groundZ) / 2)} rotate size={12} bold color={dropRaw === null ? INK.muted : INK.text} text={`${t("wc_dropShort")} ${dropRaw === null ? "—" : fm(dropRaw)}`} />
       </g>
 
       {/* run lengths: one line when it fits, two when the run is short */}
       {runs.map((rr) => {
         const width = X(rr.x1) - X(rr.x0);
-        const head = `${runTag(rr.ri)} · ${len(rr.r.length)}`;
+        const head = `${runTag(rr.ri)} · ${len(fm, rr.r.length)}`;
         const style = rr.r.rail ? t(`wc_rail_${rr.r.rail}`) : "";
         const full = `${head}${style ? ` · ${style}` : ""}`;
-        const lines = textW(full) < width - 6 ? [full] : textW(head) < width - 4 ? [head, style] : [runTag(rr.ri), len(rr.r.length), style];
+        const lines = textW(full) < width - 6 ? [full] : textW(head) < width - 4 ? [head, style] : [runTag(rr.ri), len(fm, rr.r.length), style];
         const y = Z(groundZ) + 30;
         return (
           <g key={`d${rr.ri}`}>
@@ -265,6 +265,7 @@ export function WallCapElevation({ w, lang, red = [], focus, onPost }: { w: Wall
 
 /** Section through the cap at one post. The cap is drawn to scale; the rail and the drop are broken. */
 export function CapSection({ w, post, mark, lang }: { w: WallCapData; post: WallCapPost | null; mark?: string; lang: string }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const P = "wcs";
   const capRaw = parseMeas(post?.capWidth);
@@ -309,7 +310,7 @@ export function CapSection({ w, post, mark, lang }: { w: WallCapData; post: Wall
       <line x1={lowX} x2={lowX + toLow * 150} y1={wallBottom} y2={wallBottom} stroke={INK.ground} strokeWidth={1.6} />
       <rect x={Math.min(lowX, lowX + toLow * 150)} y={wallBottom} width={150} height={9} fill={`url(#${P}-ground)`} />
       <line x1={lowX + toLow * 40} x2={lowX + toLow * 40} y1={capTop} y2={wallBottom} stroke={INK.dim} strokeWidth={1.2} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-      <Label x={lowX + toLow * 48} y={(capTop + wallBottom) / 2} anchor={lowRight ? "start" : "end"} size={12} bold color={drop === null ? INK.muted : INK.text} text={drop === null ? "—" : fmtLen(drop)} />
+      <Label x={lowX + toLow * 48} y={(capTop + wallBottom) / 2} anchor={lowRight ? "start" : "end"} size={12} bold color={drop === null ? INK.muted : INK.text} text={drop === null ? "—" : fm(drop)} />
       <Label x={lowX + toLow * 48} y={(capTop + wallBottom) / 2 + 17} anchor={lowRight ? "start" : "end"} size={12} color={INK.muted} text={t("wc_dropSide")} />
       {/* wall */}
       <path d={`M${cx - half} ${capTop} H${cx + half} V${wallBottom - 30} l${-half * 0.5} 9 l${-half * 0.9} -12 l${-half * 0.6} 9 Z`} fill={fill(P, post?.material || w.material)} stroke={INK.wall} />
@@ -324,20 +325,20 @@ export function CapSection({ w, post, mark, lang }: { w: WallCapData; post: Wall
       <Label x={postX} y={postTop - 8} bold color={INK.steel} text={mark || ""} />
       {/* guard from the walk side, rail above cap */}
       <line x1={highX - toLow * 30} x2={highX - toLow * 30} y1={postTop} y2={walkY} stroke={INK.dim} strokeWidth={1.2} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-      <Label x={highX - toLow * 38} y={postTop + 30} anchor={lowRight ? "end" : "start"} size={13} bold color={guard === null ? INK.muted : INK.text} text={`${t("wc_guardShort")} ${fmtIn(guard)}`} />
-      <Label x={highX - toLow * 38} y={postTop + 48} anchor={lowRight ? "end" : "start"} size={12} color={INK.muted} text={`${t("wc_railShort")} ${fmtIn(rail)}`} />
+      <Label x={highX - toLow * 38} y={postTop + 30} anchor={lowRight ? "end" : "start"} size={13} bold color={guard === null ? INK.muted : INK.text} text={`${t("wc_guardShort")} ${fm(guard)}`} />
+      <Label x={highX - toLow * 38} y={postTop + 48} anchor={lowRight ? "end" : "start"} size={12} color={INK.muted} text={`${t("wc_railShort")} ${fm(rail)}`} />
       {/* edge distances, each outside its own face */}
       {core && (
         <g>
           <line x1={highX} x2={postX} y1={edgeY} y2={edgeY} stroke={red(eh) ? INK.red : INK.dim} strokeWidth={1.4} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
           <line x1={postX} x2={lowX} y1={edgeY} y2={edgeY} stroke={red(el) ? INK.red : INK.dim} strokeWidth={1.4} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-          <Label x={highX - toLow * 8} y={edgeY + 5} anchor={lowRight ? "end" : "start"} bold size={13} color={eh === null ? INK.muted : red(eh) ? INK.red : INK.text} text={`▲ ${fmtIn(eh)}`} />
-          <Label x={lowX + toLow * 8} y={edgeY + 5} anchor={lowRight ? "start" : "end"} bold size={13} color={el === null ? INK.muted : red(el) ? INK.red : INK.text} text={`▼ ${fmtIn(el)}`} />
+          <Label x={highX - toLow * 8} y={edgeY + 5} anchor={lowRight ? "end" : "start"} bold size={13} color={eh === null ? INK.muted : red(eh) ? INK.red : INK.text} text={`▲ ${fm(eh)}`} />
+          <Label x={lowX + toLow * 8} y={edgeY + 5} anchor={lowRight ? "start" : "end"} bold size={13} color={el === null ? INK.muted : red(el) ? INK.red : INK.text} text={`▼ ${fm(el)}`} />
         </g>
       )}
       {/* cap width, under the core */}
       <line x1={cx - half} x2={cx + half} y1={capDimY} y2={capDimY} stroke={capRaw === null ? INK.muted : INK.dim} strokeWidth={1.2} markerStart={`url(#${P}-tick)`} markerEnd={`url(#${P}-tick)`} />
-      <Label x={cx} y={capDimY + 18} bold size={13} color={capRaw === null ? INK.muted : INK.text} text={`${t("wc_cap")} ${fmtIn(capRaw)}`} />
+      <Label x={cx} y={capDimY + 18} bold size={13} color={capRaw === null ? INK.muted : INK.text} text={`${t("wc_cap")} ${fm(capRaw)}`} />
     </svg>
   );
 }

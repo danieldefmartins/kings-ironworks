@@ -40,7 +40,7 @@ import { MInput } from "../fields";
 import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
 import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import ShopPieceSketch from "./ShopPieceSketch";
-import { CheckList, Chips, DeltaBadge, DOT, fmtIn, Group, More, Notes, Panel, Seg, Stat, StatusPills, Stepper, SwitchRow, worst, type CheckLabels } from "./MeasureFormKit";
+import { CheckList, Chips, DeltaBadge, DOT, useMeasFmt, Group, More, Notes, Panel, Seg, Stat, StatusPills, Stepper, SwitchRow, worst, type CheckLabels } from "./MeasureFormKit";
 
 type SetFn = (fn: (d: MeasureData) => void) => void;
 
@@ -62,6 +62,7 @@ const SP_GAP_PANEL: [RegExp, string][] = [
 ];
 
 export default function ShopPieceSections({ lang, data, set }: { lang: string; data: MeasureData; set: SetFn }) {
+  const fm = useMeasFmt();
   const d = data.shopPiece ?? null;
   const t = (k: string) => mt(lang, k);
   const checks = useMemo(() => shopPieceChecks(d), [d]);
@@ -131,9 +132,9 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
           </div>
         )}
         <dl className="mt-3 grid grid-cols-3 gap-2">
-          <Stat label={t("sp_buildW")} value={fmtIn(shownFab?.width)} />
-          <Stat label={t("sp_buildH")} value={fmtIn(shownFab?.height)} />
-          <Stat label={t("sp_buildD")} value={fmtIn(shownFab?.depth)} />
+          <Stat label={t("sp_buildW")} value={fm(shownFab?.width)} />
+          <Stat label={t("sp_buildH")} value={fm(shownFab?.height)} />
+          <Stat label={t("sp_buildD")} value={fm(shownFab?.depth)} />
         </dl>
       </Panel>
 
@@ -254,6 +255,7 @@ function PieceCard({ lang, d, p, i, open, checks, gapCount, onToggle, update, on
   lang: string; d: ShopPieceData; p: ShopPiece; i: number; open: boolean; checks: CheckResult[]; gapCount: number;
   onToggle: () => void; update: (fn: (p: ShopPiece) => void) => void; onRemove?: () => void; onDuplicate: () => void;
 }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const f = spFabSize(d, p);
   const level = worst(checks.map((c) => c.level));
@@ -272,7 +274,7 @@ function PieceCard({ lang, d, p, i, open, checks, gapCount, onToggle, update, on
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[15px] font-bold text-indigo-700">{`#${i + 1}`}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-slate-900">{p.type ? t(`sp_type_${p.type}`) : t("sp_noType")}{qty > 1 ? ` ×${qty}` : ""}</span>
-          <span className="block truncate text-[13px] tabular-nums text-slate-500">{`${fmtIn(f.width)} × ${fmtIn(f.height)} × ${fmtIn(f.depth)}`}</span>
+          <span className="block truncate text-[13px] tabular-nums text-slate-500">{`${fm(f.width)} × ${fm(f.height)} × ${fm(f.depth)}`}</span>
         </span>
         <span aria-hidden="true" className={`size-2.5 shrink-0 rounded-full ${DOT[status]}`} />
         <span aria-hidden="true" className={`shrink-0 text-slate-400 transition ${open ? "rotate-90" : ""}`}>›</span>
@@ -329,13 +331,13 @@ function PieceCard({ lang, d, p, i, open, checks, gapCount, onToggle, update, on
           <div className="rounded-xl bg-indigo-50 p-3">
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
               <span className="text-[13px] font-semibold uppercase tracking-wider text-indigo-700">{t("sp_buildTo")}</span>
-              <span className="text-xl font-bold tabular-nums text-indigo-900">{`${fmtIn(f.width)} × ${fmtIn(f.height)} × ${fmtIn(f.depth)}`}</span>
+              <span className="text-xl font-bold tabular-nums text-indigo-900">{`${fm(f.width)} × ${fm(f.height)} × ${fm(f.depth)}`}</span>
             </div>
             {f.niche && (
               <div className="mt-1 space-y-0.5 text-[13px] tabular-nums text-slate-600">
-                {f.open.w !== null && <div>W = {t(`sp_r_${f.from.w}`)} {fmtIn(f.open.w)} − 2 × {fmtIn(f.clearance)}</div>}
-                {f.open.h !== null && <div>H = {t(`sp_r_${f.from.h}`)} {fmtIn(f.open.h)} − {fmtIn(f.clearance)}</div>}
-                {f.open.d !== null && <div>D = {t(`sp_r_${f.from.d}`)} {fmtIn(f.open.d)} − {fmtIn(f.clearance)}</div>}
+                {f.open.w !== null && <div>W = {t(`sp_r_${f.from.w}`)} {fm(f.open.w)} − 2 × {fm(f.clearance)}</div>}
+                {f.open.h !== null && <div>H = {t(`sp_r_${f.from.h}`)} {fm(f.open.h)} − {fm(f.clearance)}</div>}
+                {f.open.d !== null && <div>D = {t(`sp_r_${f.from.d}`)} {fm(f.open.d)} − {fm(f.clearance)}</div>}
               </div>
             )}
             {!f.niche && <div className="mt-1 text-[13px] text-slate-600">{t("sp_designSize")}</div>}

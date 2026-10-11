@@ -104,6 +104,24 @@ export function shotList(shape: MeasureShape, data?: Pick<MeasureData, "segments
         TAPE,
         OBSTRUCTION,
       ];
+    case "wall_cap":
+      return [
+        R("wc_overall", "wide"),
+        R("wc_cap", "closeup", true),
+        R("wc_drop", "grade"),
+        R("wc_ends", "wide"),
+        r("wc_walk", "grade"),
+        EXISTING_RAIL,
+        TAPE,
+      ];
+    case "shop_piece":
+      return [
+        R("sp_reference", "closeup"),
+        R("sp_site", "wide", true),
+        r("sp_mount_surface", "closeup", true),
+        TAPE,
+        OBSTRUCTION,
+      ];
     case "window_well":
       return [
         R("well_overall", "overhead"),

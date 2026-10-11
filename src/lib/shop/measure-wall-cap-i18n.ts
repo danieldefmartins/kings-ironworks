@@ -13,6 +13,7 @@ const ROWS: Row[] = [
   ["slot_wc_overall", "The whole wall, end to end", "O muro inteiro, de ponta a ponta", "El muro completo, de punta a punta"],
   ["slot_wc_cap", "The cap close up, both faces", "O capeamento de perto, as duas faces", "La albardilla de cerca, ambas caras"],
   ["slot_wc_drop", "The drop side, with grade", "O lado da queda, com o terreno", "El lado de la caída, con el terreno"],
+  ["slot_wc_walk", "The walk side, along the wall", "O lado do piso, ao longo do muro", "El lado de paso, a lo largo del muro"],
   ["slot_wc_ends", "Each end and corner", "Cada ponta e canto", "Cada extremo y esquina"],
 
   // Views

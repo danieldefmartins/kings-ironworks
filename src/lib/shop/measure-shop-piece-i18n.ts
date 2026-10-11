@@ -12,6 +12,7 @@ const ROWS: Row[] = [
 
   // Photos
   ["slot_sp_reference", "Drawing or reference picture", "Desenho ou foto de referência", "Dibujo o foto de referencia"],
+  ["slot_sp_mount_surface", "What it fastens to, close up", "Onde vai fixar, de perto", "Dónde se fija, de cerca"],
   ["slot_sp_site", "Where it goes", "Onde vai ser instalada", "Dónde va"],
 
   // Types

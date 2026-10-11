@@ -19,7 +19,7 @@ import {
   type ShopPieceData,
 } from "@/lib/shop/measure-shop-piece";
 import ShopPieceSketch from "./ShopPieceSketch";
-import { checkNumbers, fmtIn } from "./MeasureFormKit";
+import { checkNumbers, useMeasFmt, type Fmt } from "./MeasureFormKit";
 import { SP_CHECK_LABELS } from "./ShopPieceSections";
 
 const GOLD = "#b8860b";
@@ -30,9 +30,10 @@ const LEVEL_COLOR = { green: "#166534", yellow: "#92400e", red: "#b91c1c", na: "
 function Title({ children }: { children: React.ReactNode }) {
   return <div style={{ fontWeight: 800, textTransform: "uppercase", fontSize: 11, letterSpacing: 0.5, borderBottom: `2px solid ${GOLD}`, margin: "10px 0 4px" }}>{children}</div>;
 }
-const m = (s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fmtIn(parseMeas(s)));
+const m = (fm: Fmt, s: string) => (parseMeas(s) === null ? (s.trim() || "—") : fm(parseMeas(s)));
 
 export default function ShopPiecePrint({ d, lang }: { d: ShopPieceData; lang: string }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const checks = shopPieceChecks(d).filter((c) => c.level !== "na");
   const lb = bottleLoad(d);
@@ -41,7 +42,7 @@ export default function ShopPiecePrint({ d, lang }: { d: ShopPieceData; lang: st
       <Title>{t("sp_title")}</Title>
       <div>
         {t("sp_mount")}: <b>{d.mount ? t(`sp_mount_${d.mount}`) : "—"}</b>
-        {d.niche && <> · <b>{t("sp_inNiche")}</b> · {t("sp_clearance")}: <b>{m(d.clearance)}</b></>}
+        {d.niche && <> · <b>{t("sp_inNiche")}</b> · {t("sp_clearance")}: <b>{m(fm, d.clearance)}</b></>}
         {(d.mount === "wall" || d.mount === "counter") && <> · {t("sp_substrate")}: <b>{d.substrate ? t(`sp_sub_${d.substrate}`) : "—"}</b>{d.fastener ? <> · {d.fastener}</> : null}</>}
       </div>
       <div>
@@ -67,19 +68,19 @@ export default function ShopPiecePrint({ d, lang }: { d: ShopPieceData; lang: st
                     {keys.map((k) => (
                       <tr key={k}>
                         <td style={head}>{d.niche ? t(`sp_r_${k}`) : t(k === DESIGN_KEYS.w ? "sp_w" : k === DESIGN_KEYS.h ? "sp_h" : "sp_d")}</td>
-                        <td style={{ ...cell, fontWeight: f.from.w === k || f.from.h === k || f.from.d === k ? 700 : undefined }}>{m(p[k])}</td>
+                        <td style={{ ...cell, fontWeight: f.from.w === k || f.from.h === k || f.from.d === k ? 700 : undefined }}>{m(fm, p[k])}</td>
                       </tr>
                     ))}
                     {d.niche && (
-                      <tr><td style={head}>{t("sp_diagTitle")}</td><td style={cell}>{m(p.diagA)} / {m(p.diagB)}</td></tr>
+                      <tr><td style={head}>{t("sp_diagTitle")}</td><td style={cell}>{m(fm, p.diagA)} / {m(fm, p.diagB)}</td></tr>
                     )}
                     {p.squareFix && <tr><td style={head}>{t("sp_squareFix")}</td><td style={cell}>{t(`sp_fix_${p.squareFix}`)}</td></tr>}
                   </tbody>
                 </table>
                 <div style={{ marginTop: 6, padding: 6, background: "#eef2ff", fontWeight: 800, fontSize: 13 }}>
-                  {t("sp_buildTo")}: {fmtIn(f.width)} × {fmtIn(f.height)} × {fmtIn(f.depth)}
+                  {t("sp_buildTo")}: {fm(f.width)} × {fm(f.height)} × {fm(f.depth)}
                 </div>
-                {f.niche && <div style={{ fontSize: 10, color: "#475569" }}>{t("sp_printRule")} {fmtIn(f.clearance)}</div>}
+                {f.niche && <div style={{ fontSize: 10, color: "#475569" }}>{t("sp_printRule")} {fm(f.clearance)}</div>}
                 {p.notes && <div style={{ fontSize: 11 }}>{p.notes}</div>}
               </div>
             </div>
@@ -105,7 +106,7 @@ export default function ShopPiecePrint({ d, lang }: { d: ShopPieceData; lang: st
           {checks.filter((c) => c.level !== "green").map((c, i) => (
             <div key={i} style={{ color: LEVEL_COLOR[c.level] }}>
               {c.level === "green" ? "✓" : c.level === "red" ? "✕" : "!"} {t(`check_${c.key}`)}{c.detail ? ` · ${c.detail}` : ""}
-              {checkNumbers(lang, c, SP_CHECK_LABELS) ? <span style={{ color: "#475569" }}> — {checkNumbers(lang, c, SP_CHECK_LABELS)}</span> : null}
+              {checkNumbers(lang, c, SP_CHECK_LABELS, fm) ? <span style={{ color: "#475569" }}> — {checkNumbers(lang, c, SP_CHECK_LABELS, fm)}</span> : null}
             </div>
           ))}
         </>

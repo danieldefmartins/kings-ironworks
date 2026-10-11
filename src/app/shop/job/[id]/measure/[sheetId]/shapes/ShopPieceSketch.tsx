@@ -11,7 +11,7 @@
 import { parseMeas } from "@/lib/shop/measure-parse";
 import { mt } from "@/lib/shop/measure-i18n";
 import { spFabSize, type ShopPiece, type ShopPieceData } from "@/lib/shop/measure-shop-piece";
-import { fmtIn, useBoxWidth } from "./MeasureFormKit";
+import { useBoxWidth, useMeasFmt, type Fmt } from "./MeasureFormKit";
 
 const INK = { steel: "#4f46e5", steelFill: "#eef0ff", dim: "#475569", text: "#0f172a", muted: "#64748b", red: "#dc2626", niche: "#94a3b8", nicheFill: "#f1f5f9", gov: "#b45309" };
 const TYP = { w: 36, h: 30, d: 14 };
@@ -33,7 +33,7 @@ function Tick({ id }: { id: string }) {
   );
 }
 
-const v = (s: string) => { const n = parseMeas(s); return n === null ? "—" : fmtIn(n); };
+const v = (fm: Fmt, s: string) => { const n = parseMeas(s); return n === null ? "—" : fm(n); };
 
 /** Type-specific infill inside a W×H frame drawn at (x, y). */
 function Infill({ type, x, y, w, h }: { type: string; x: number; y: number; w: number; h: number }) {
@@ -70,6 +70,7 @@ function Infill({ type, x, y, w, h }: { type: string; x: number; y: number; w: n
 }
 
 export default function ShopPieceSketch({ d, piece, lang }: { d: ShopPieceData | null; piece: ShopPiece | null; lang: string }) {
+  const fm = useMeasFmt();
   const t = (k: string) => mt(lang, k);
   const [box, boxW] = useBoxWidth(680);
   if (!d || !piece) return null;
@@ -113,15 +114,15 @@ export default function ShopPieceSketch({ d, piece, lang }: { d: ShopPieceData |
       {/* niche readings where they were taken */}
       {niche && (
         <g>
-          <Label x={fx + (W0 * s) / 2} y={base - H0 * s - 8} size={12} color={f.from.w === "wTop" ? INK.gov : INK.muted} text={`${t("sp_r_wTop")} ${v(piece.wTop)}`} />
-          <Label x={fx + (W0 * s) / 2} y={base + 16} size={12} color={f.from.w === "wBottom" ? INK.gov : INK.muted} text={`${t("sp_r_wBottom")} ${v(piece.wBottom)}`} />
-          <Label x={fx - 10} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hLeft" ? INK.gov : INK.muted} text={`${t("sp_r_hLeft")} ${v(piece.hLeft)}`} />
-          <Label x={fx + W0 * s + 18} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hRight" ? INK.gov : INK.muted} text={`${t("sp_r_hRight")} ${v(piece.hRight)}`} />
+          <Label x={fx + (W0 * s) / 2} y={base - H0 * s - 8} size={12} color={f.from.w === "wTop" ? INK.gov : INK.muted} text={`${t("sp_r_wTop")} ${v(fm, piece.wTop)}`} />
+          <Label x={fx + (W0 * s) / 2} y={base + 16} size={12} color={f.from.w === "wBottom" ? INK.gov : INK.muted} text={`${t("sp_r_wBottom")} ${v(fm, piece.wBottom)}`} />
+          <Label x={fx - 10} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hLeft" ? INK.gov : INK.muted} text={`${t("sp_r_hLeft")} ${v(fm, piece.hLeft)}`} />
+          <Label x={fx + W0 * s + 18} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hRight" ? INK.gov : INK.muted} text={`${t("sp_r_hRight")} ${v(fm, piece.hRight)}`} />
         </g>
       )}
       {/* build size */}
       <line x1={fx + (niche ? c : 0)} x2={fx + (niche ? c : 0) + pw * s} y1={base + 32} y2={base + 32} stroke={gov(f.from.w)} strokeWidth={1.3} markerStart="url(#spt)" markerEnd="url(#spt)" />
-      <Label x={fx + (niche ? c : 0) + (pw * s) / 2} y={base + 50} bold color={f.width === null ? INK.muted : INK.steel} text={`W ${fmtIn(f.width)}`} />
+      <Label x={fx + (niche ? c : 0) + (pw * s) / 2} y={base + 50} bold color={f.width === null ? INK.muted : INK.steel} text={`W ${fm(f.width)}`} />
 
       {/* ---- side ---- */}
       <Label x={sxv + (D0 * s) / 2} y={20} text={t("sp_side")} size={13} bold color={INK.muted} />
@@ -130,16 +131,16 @@ export default function ShopPieceSketch({ d, piece, lang }: { d: ShopPieceData |
       <rect x={sxv} y={base - ph * s} width={pd * s} height={ph * s} fill={INK.steelFill} stroke={INK.steel} strokeWidth={5} strokeDasharray={sized ? undefined : "8 5"} />
       {niche && (
         <g>
-          <Label x={sxv + (D0 * s) / 2} y={base - H0 * s - 8} size={12} color={f.from.d === "dTop" ? INK.gov : INK.muted} text={`${t("sp_r_dTop")} ${v(piece.dTop)}`} />
-          <Label x={sxv + (D0 * s) / 2} y={base + 16} size={12} color={f.from.d === "dBottom" ? INK.gov : INK.muted} text={`${t("sp_r_dBottom")} ${v(piece.dBottom)}`} />
-          <Label x={sxv + (D0 * s) / 2 + 5} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hBack" ? INK.gov : INK.muted} text={`${t("sp_r_hBack")} ${v(piece.hBack)}`} />
+          <Label x={sxv + (D0 * s) / 2} y={base - H0 * s - 8} size={12} color={f.from.d === "dTop" ? INK.gov : INK.muted} text={`${t("sp_r_dTop")} ${v(fm, piece.dTop)}`} />
+          <Label x={sxv + (D0 * s) / 2} y={base + 16} size={12} color={f.from.d === "dBottom" ? INK.gov : INK.muted} text={`${t("sp_r_dBottom")} ${v(fm, piece.dBottom)}`} />
+          <Label x={sxv + (D0 * s) / 2 + 5} y={base - (H0 * s) / 2} size={12} rotate color={f.from.h === "hBack" ? INK.gov : INK.muted} text={`${t("sp_r_hBack")} ${v(fm, piece.hBack)}`} />
         </g>
       )}
       <line x1={sxv} x2={sxv + pd * s} y1={base + 32} y2={base + 32} stroke={gov(f.from.d)} strokeWidth={1.3} markerStart="url(#spt)" markerEnd="url(#spt)" />
-      <Label x={sxv + (pd * s) / 2} y={base + 50} bold color={f.depth === null ? INK.muted : INK.steel} text={`D ${fmtIn(f.depth)}`} />
+      <Label x={sxv + (pd * s) / 2} y={base + 50} bold color={f.depth === null ? INK.muted : INK.steel} text={`D ${fm(f.depth)}`} />
       {/* height between the views */}
       <line x1={sxv + D0 * s + 16} x2={sxv + D0 * s + 16} y1={base - ph * s} y2={base} stroke={gov(f.from.h)} strokeWidth={1.3} markerStart="url(#spt)" markerEnd="url(#spt)" />
-      <Label x={sxv + D0 * s + 34} y={base - (ph * s) / 2} rotate bold color={f.height === null ? INK.muted : INK.steel} text={`H ${fmtIn(f.height)}`} />
+      <Label x={sxv + D0 * s + 34} y={base - (ph * s) / 2} rotate bold color={f.height === null ? INK.muted : INK.steel} text={`H ${fm(f.height)}`} />
       {/* floor */}
       <line x1={fx - 20} x2={sxv + D0 * s + 30} y1={base} y2={base} stroke="#334155" strokeWidth={1.4} />
     </svg>
