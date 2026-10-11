@@ -121,9 +121,10 @@ export default function StairSections({
           <Grid>
             <MInput help="stairAngle" label={mt(lang, "stairAngle")} value={seg.angleDeg} placeholder="°"
               onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleDeg = v))} />
-            <ChoiceMInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
+            {/* Angle change is a multi-flight question: never asked on a single flight. */}
+            {flights.length > 1 && <ChoiceMInput label={`${mt(lang, "angleBreak")} — ${mt(lang, "angleBreakHint")}`}
               choices={[["No change", mt(lang, "choiceNoChange")]]} placeholder="—" value={seg.angleBreak}
-              onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />
+              onChange={(v) => set((d) => void ((d.segments[i] as FlightSegment).angleBreak = v))} />}
           </Grid>
           <DerivedAngle seg={seg} lang={lang} />
           {/* Per flight, because a switchback puts the same wall on your other

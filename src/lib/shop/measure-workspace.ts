@@ -5,7 +5,8 @@ export const DETAIL_TOPICS:readonly ProDetailsTopic[]=['project','structure','su
 const stages:Record<ProDetailsTopic,readonly LegacyMeasureStage[]>={project:['setup'],structure:['steps'],survey:['level'],connections:['posts','locations'],specifications:['specs'],photos:['photos'],review:['review']};
 export function detailStagesForTopic(topic:ProDetailsTopic):readonly LegacyMeasureStage[]{return stages[topic];}
 export function detailTopicForStage(stage:LegacyMeasureStage):ProDetailsTopic{return DETAIL_TOPICS.find(topic=>stages[topic].includes(stage))!;}
-export function detailTopicLabel(topic:ProDetailsTopic,lang:string):string{
+export function detailTopicLabel(topic:ProDetailsTopic,lang:string,opts?:{landings?:boolean}):string{
+ if(topic==='survey'&&opts?.landings===false)return lang==='pt'?'Nivelamento':lang==='es'?'Nivelación':'Level checks';
  const labels:Record<ProDetailsTopic,readonly [string,string,string]>={project:['Project settings','Configurações do projeto','Ajustes del proyecto'],structure:['Structure details','Detalhes da estrutura','Detalles de estructura'],survey:['Landings & level checks','Patamares e nivelamento','Descansos y nivelación'],connections:['Railing & connections','Corrimãos e ligações','Barandillas y conexiones'],specifications:['Build specification','Especificação de fabricação','Especificación de fabricación'],photos:['Photos','Fotos','Fotos'],review:['Shop review','Revisão da oficina','Revisión del taller']};
  return labels[topic][lang==='pt'?1:lang==='es'?2:0];
 }
