@@ -3,6 +3,7 @@
 // client components import from here, never from db.ts (whose org guard is
 // server-only and would crash the browser bundle).
 import type { OrgBranding } from "./org-brand";
+import type { WorkHoursSettings } from "./work-hours";
 
 export const STAGES = [
   "Awarded",
@@ -337,6 +338,9 @@ export interface OrgSettings {
   options: Record<string, string[]>;
   rules: { allowSelfApproval: boolean };
   defaults: Record<string, string>;
+  /** Payroll work-hours window + who approves extra time (see work-hours.ts).
+   *  Optional in storage; getOrgSettings always fills it from the defaults. */
+  workHours?: WorkHoursSettings;
 }
 
 // numeric columns arrive as strings over PostgREST; normalise once.
@@ -486,9 +490,9 @@ export function fmtDateTime(iso: string | number | Date, lang = "en"): string {
 }
 
 /** The calendar date in shop time, as YYYY-MM-DD. */
-export function shopDateKey(iso: string | number | Date): string {
+export function shopDateKey(iso: string | number | Date, timeZone: string = SHOP_TZ): string {
   // en-CA formats as YYYY-MM-DD, which saves hand-assembling the parts.
-  return new Date(iso).toLocaleDateString("en-CA", { timeZone: SHOP_TZ });
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone });
 }
 
 /** Monday of the shop-time week containing `iso`, as YYYY-MM-DD. */
@@ -521,12 +525,12 @@ export function toShopInput(iso: string | number | Date): string {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
-export function fromShopInput(value: string): string {
+export function fromShopInput(value: string, timeZone: string = SHOP_TZ): string {
   // Read the wall-clock string as if it were UTC, then measure how far that
   // instant's shop-time rendering sits from its UTC rendering and undo it.
   // Deriving the offset per instant is what keeps DST correct.
   const asIfUtc = new Date(`${value}:00Z`).getTime();
-  const shopWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone: SHOP_TZ })).getTime();
+  const shopWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone })).getTime();
   const utcWall = new Date(new Date(asIfUtc).toLocaleString("en-US", { timeZone: "UTC" })).getTime();
   return new Date(asIfUtc - (shopWall - utcWall)).toISOString();
 }

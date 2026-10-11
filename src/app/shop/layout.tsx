@@ -31,7 +31,7 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   let clock;
   let clockReady = true;
   try { clock = await loadClockState(worker); }
-  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null }; }
+  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null, windowQuestions: [] }; }
   const { branding } = await getOrgSettings();
   // The running job feeds the persistent job-time bar; never blocks the shell.
   const runningJob = worker ? await getRunningJob(worker.id).catch(() => null) : null;

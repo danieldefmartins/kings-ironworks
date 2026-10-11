@@ -16,6 +16,7 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 // Shared constants and row types live in shared.ts so client components can
 // use them without pulling this server-only module into the browser bundle.
 export * from "./shared";
+import { DEFAULT_WORK_HOURS, resolveWorkHours } from "./work-hours";
 import { MAX_PROJECT_ENTRY_HOURS, type TimeEntry, type TimeShift, type TimeBreak, type TimeCorrection, type ShiftLocation, type Job, type Photo, type Worker, type CutItem, type JobPiece, type Material, type QcCheck, type OrgSettings, type CatalogItem, type InventoryRow, type SupplierPrice } from "./shared";
 
 // Multi-tenant: this deployment serves exactly ONE organization. Every query
@@ -773,6 +774,7 @@ const FALLBACK_SETTINGS: OrgSettings = {
   options: {},
   rules: { allowSelfApproval: false },
   defaults: { units: "in" },
+  workHours: DEFAULT_WORK_HOURS,
 };
 
 export async function getOrgSettings(): Promise<OrgSettings> {
@@ -789,6 +791,7 @@ export async function getOrgSettings(): Promise<OrgSettings> {
       options: sdb.options || {},
       rules: { ...FALLBACK_SETTINGS.rules, ...(sdb.rules || {}) },
       defaults: { ...FALLBACK_SETTINGS.defaults, ...(sdb.defaults || {}) },
+      workHours: resolveWorkHours(sdb.workHours),
     };
   } catch {
     return FALLBACK_SETTINGS;

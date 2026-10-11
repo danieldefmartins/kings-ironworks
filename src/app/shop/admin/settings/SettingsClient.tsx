@@ -11,6 +11,8 @@ import type { OrgSettings } from "@/lib/shop/shared";
 import { CODE_PROFILES, DEFAULT_CODE_PROFILE } from "@/lib/shop/measure-code";
 import { ct } from "@/lib/shop/measure-code-i18n";
 import BrandingCard from "./BrandingCard";
+import WorkHoursCard from "./WorkHoursCard";
+import { resolveWorkHours } from "@/lib/shop/work-hours";
 
 const TOL_LABELS: [keyof OrgSettings["tolerances"] & string, string, string][] = [
   ["riseSum", "Riser sum vs floor-to-floor", "in"],
@@ -38,6 +40,7 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
   const [allowSelf, setAllowSelf] = useState(initial.rules.allowSelfApproval);
   const [codeProfile, setCodeProfile] = useState(initial.defaults?.codeProfile || DEFAULT_CODE_PROFILE);
   const [maxPostSpacing, setMaxPostSpacing] = useState(initial.defaults?.maxPostSpacing || "");
+  const [workHours, setWorkHours] = useState(() => resolveWorkHours(initial.workHours));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -68,6 +71,7 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
             },
             rules: { allowSelfApproval: allowSelf },
             defaults: { codeProfile, maxPostSpacing },
+            workHours,
           },
         }),
       });
@@ -91,6 +95,8 @@ export default function SettingsClient({ initial, lang = "en" }: { initial: OrgS
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24 space-y-4">
       <BrandingCard lang={lang} value={branding} onChange={setBranding} />
+
+      <WorkHoursCard value={workHours} onChange={setWorkHours} />
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
         <div className="font-bold mb-3">📘 Building code (default for new checks)</div>

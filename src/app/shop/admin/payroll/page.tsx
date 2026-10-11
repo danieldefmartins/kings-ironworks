@@ -3,6 +3,7 @@ import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials, shopWeekKey } from "@/lib/shop/shared";
 import { addPayrollDays, calculatePayroll, payrollMidnight, payrollWeek } from "@/lib/shop/payroll";
 import { earliestPayrollDate, loadPayrollWeek } from "@/lib/shop/payroll-db";
+import { loadShiftPlaces } from "@/lib/shop/punch-place-db";
 import ShopTopBar from "../../ShopTopBar";
 import PayrollClient from "./PayrollClient";
 
@@ -24,6 +25,8 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   for (let key = current; key >= first; key = addPayrollDays(key, -7)) weeks.push(key);
   if (!weeks.includes(week.key)) weeks.push(week.key);
   weeks.sort().reverse();
+  // Owner-only page: where each punch happened. Best-effort, never blocks pay.
+  const places = await loadShiftPlaces(shifts).catch(() => ({}));
   const rows = calculatePayroll(workers, shifts, breaks, week, now);
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addPayrollDays(week.key, i);
@@ -34,5 +37,5 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   for (const row of rows) row.basePay = Math.round(days.reduce((sum, day) => sum + (day.rows.find(daily => daily.id === row.id)?.basePay || 0), 0) * 100) / 100;
   const lang = worker.lang || "en";
   const title = lang === "pt" ? "Folha de pagamento" : lang === "es" ? "Nómina" : "Payroll";
-  return <div><ShopTopBar workerName={worker.name} title={title} back="/shop/admin" lang={lang} /><main className="mx-auto max-w-4xl px-4 pb-28 pt-5"><h1 className="mb-5 text-3xl font-semibold">{title}</h1><PayrollClient rows={rows} days={days} weeks={weeks} selected={week.key} sunday={week.sunday} lang={lang} /></main></div>;
+  return <div><ShopTopBar workerName={worker.name} title={title} back="/shop/admin" lang={lang} /><main className="mx-auto max-w-4xl px-4 pb-28 pt-5"><h1 className="mb-5 text-3xl font-semibold">{title}</h1><PayrollClient rows={rows} places={places} days={days} weeks={weeks} selected={week.key} sunday={week.sunday} lang={lang} /></main></div>;
 }

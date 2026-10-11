@@ -10,6 +10,9 @@ import {
   shiftHours,
 } from "@/lib/shop/db";
 import ShopTopBar from "../../ShopTopBar";
+import WindowChecks from "./WindowChecks";
+import { listWindowRecords } from "@/lib/shop/work-hours-db";
+import { toCheck } from "@/lib/shop/work-hours";
 import TimesheetClient, { type ShiftRow } from "../../time/TimesheetClient";
 import { t } from "@/lib/shop/i18n";
 import { canViewOwnerFinancials, fmtDateTime, shopWeekKey } from "@/lib/shop/shared";
@@ -22,12 +25,14 @@ export default async function TeamTimePage() {
   if (!canViewOwnerFinancials(worker)) redirect("/shop");
   const lang = worker.lang || "en";
 
-  const [shifts, breaks, workers, corrections, locations] = await Promise.all([
+  const [shifts, breaks, workers, corrections, locations, windowRecords] = await Promise.all([
     listShifts(),
     listBreaks(),
     listWorkersWithRates(),
     listCorrections(),
     listShiftLocations(),
+    // Best-effort: the page must load even if this lookup fails.
+    listWindowRecords({ sinceDays: 45 }).catch(() => []),
   ]);
   const excludedWorkers = new Set(workers.filter(w => w.payroll_excluded || canViewOwnerFinancials(w)).map(w => w.id));
   const names = new Map(workers.map((w) => [w.id, w.name]));
@@ -74,6 +79,7 @@ export default async function TeamTimePage() {
           <h1 className="text-3xl font-semibold tracking-tight">{t(lang, "timeReview")}</h1>
           <p className="mt-1 text-sm text-neutral-500">{t(lang, "timeReviewHint")}</p>
         </div>
+        <WindowChecks lang={lang} rows={toCheck(windowRecords).map((r) => ({ shiftId: r.shiftId, edge: r.edge, worker: names.get(r.workerId) || "Unknown", punchedAt: r.punchedAt, edgeAt: r.edgeAt }))} />
         <TimesheetClient shifts={rows} corrections={correctionRows} admin lang={lang} />
 
         <section className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">

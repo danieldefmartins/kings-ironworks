@@ -19,12 +19,15 @@ const req = (body: unknown) => new Request("http://x/shop/api/action", { method:
 
 beforeEach(() => vi.clearAllMocks());
 
-it("ends running job time at the payroll clock-out instant", async () => {
+it("ends running job time at the real clock-out tap", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-10T21:00:00.000Z"));
   m.getOpenShift.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", started_at: "2026-10-10T12:00:00Z", ended_at: null });
   m.clockOut.mockResolvedValue({ id: "11111111-1111-4111-8111-111111111111", ended_at: "2026-10-10T21:00:00.000Z" });
   const res = await POST(req({ type: "shift_stop", workerId: "w1" }));
   expect(res.status).toBe(200);
   expect(m.endJob).toHaveBeenCalledWith("w1", "2026-10-10T21:00:00.000Z");
+  vi.useRealTimers();
 });
 
 it("does nothing to job time when there was no shift to close", async () => {

@@ -2,9 +2,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { newMeasureData } from '@/lib/shop/measure';
 import { NextRequest } from 'next/server';
-const m = vi.hoisted(() => ({ select: vi.fn(), rpc: vi.fn(), update: vi.fn(), exists: vi.fn(), upload: vi.fn() }));
+const m = vi.hoisted(() => ({ select: vi.fn(), rpc: vi.fn(), update: vi.fn(), exists: vi.fn(), upload: vi.fn(), clock: vi.fn() }));
 vi.mock('@/lib/shop/db', () => ({ ORG_ID: 'tenant', sbSelect: m.select, sbRpc: m.rpc, sbUpdate: m.update }));
 vi.mock('@/lib/shop/drawing-storage', () => ({ drawingObjectExists: m.exists, drawingUploadUrl: m.upload }));
+vi.mock('@/lib/shop/stale-alert', () => ({ runClockChecks: m.clock }));
 import { POST } from './route';
 const id = 'a0000000-0000-4000-8000-000000000001';
 const request = (body: object, token = 'a'.repeat(64)) => POST(new NextRequest('https://shop.test/shop/api/shop-drawings/worker', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({engine:"blender",...body}) }));

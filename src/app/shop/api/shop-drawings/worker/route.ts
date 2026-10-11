@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ORG_ID, sbSelect, sbRpc, sbUpdate } from '@/lib/shop/db';
 import { blenderPayload, type DrawingRequest } from '@/lib/shop/shop-drawings';
 import { drawingUploadUrl, drawingObjectExists } from '@/lib/shop/drawing-storage';
+import { runClockChecks } from '@/lib/shop/stale-alert';
 export const runtime = 'nodejs';
 const bad = (error: string, status: number) => NextResponse.json({ error }, { status });
 export async function POST(req: NextRequest) {
@@ -13,6 +14,9 @@ export async function POST(req: NextRequest) {
     const hash = createHash('sha256').update(token).digest('hex');
     const workers = await sbSelect<{ id: string }[]>('kiw_shop_drawing_workers', `select=id&org_id=eq.${ORG_ID}&token_hash=eq.${hash}&revoked=eq.false&limit=1`);
     if (!workers[0]) return bad('Unauthorized', 401);
+    // This worker polls every ~15s around the clock, so it doubles as the
+    // payroll clock check's heartbeat (throttled, deduped, never awaited).
+    void runClockChecks();
     const worker = workers[0];
     const body = await req.json();
     if (body.engine !== 'blender') return bad('Use the Blender drawing worker', 400);
