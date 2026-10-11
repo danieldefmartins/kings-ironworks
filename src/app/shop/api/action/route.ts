@@ -632,6 +632,10 @@ export async function POST(req: NextRequest) {
             ...(["ma780", "irc2021", "ibc2021", "custom"].includes(String((inb.defaults as Record<string, unknown> | undefined)?.codeProfile))
               ? { codeProfile: String((inb.defaults as Record<string, unknown>).codeProfile) }
               : {}),
+            // Post suggestion spacing: any short measurement ("72", "6'"); empty clears it.
+            ...(typeof (inb.defaults as Record<string, unknown> | undefined)?.maxPostSpacing === "string"
+              ? { maxPostSpacing: String((inb.defaults as Record<string, unknown>).maxPostSpacing).trim().slice(0, 20) }
+              : {}),
           },
         };
         await saveOrgSettings(next, worker.id);

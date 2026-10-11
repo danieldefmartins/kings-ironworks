@@ -1,7 +1,7 @@
 "use client";
 
 import { specValue } from "@/lib/shop/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Job, OrgSettings } from "@/lib/shop/shared";
 import {
@@ -110,6 +110,8 @@ import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
 import NextMeasurement from './NextMeasurement';
+import { StairPostSuggest, POST_SUGGEST_SHAPES } from './PostSuggest';
+import { stairSuggestion, reconcileSuggestedPosts, withSuggestionGhosts } from '@/lib/shop/measure-post-suggest-stair';
 import LaserControl, { LaserBrowserHint } from './LaserControl';
 import {locateMeasure} from '@/lib/shop/measure-locate';
 import {Check,ChevronDown,ChevronLeft,Redo2,Undo2} from 'lucide-react';
@@ -182,7 +184,11 @@ export default function MeasureEditor({
     onServerStatus: (next) => setStatus(next),
     onReopened: () => setInfo(mt(lang, "editWarning")),
   });
-  const {set,undo,redo,canUndo,canRedo}=useMeasureHistory(dataRef,syncSet,data);
+  const {set:historySet,undo,redo,canUndo,canRedo}=useMeasureHistory(dataRef,syncSet,data);
+  // Suggested posts that nobody has touched follow the stair: every edit
+  // re-spaces them in the same step, so one undo takes back both.
+  const orgMaxSpacing=orgSettings?.defaults?.maxPostSpacing;
+  const set=(fn:(d:MeasureData)=>void)=>historySet(d=>{fn(d);reconcileSuggestedPosts(d,orgMaxSpacing);});
   // The step face the Next card is asking about, lit on the 3D while the card is on it.
   const [sceneFocus,setSceneFocus]=useState<SceneFocus|null>(null);
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
@@ -236,6 +242,7 @@ export default function MeasureEditor({
   function selectScene(target:SceneSelection){
     setWorkspace('design');
     if(target.siteId){setVisualSite(target.siteId);setDesignTool('site');}
+    else if(target.postId?.startsWith('sg-')){document.querySelector('[data-post-suggest]')?.scrollIntoView?.({block:'center',behavior:'smooth'});}
     else if(target.postId){setVisualPost(target.postId);setVisualTarget(undefined);setDesignTool('measure');}
     else if(target.railId){setVisualRail(target.railId);setDesignTool('panels');}
     else if(target.segmentIndex!==undefined){setVisualPost(undefined);setVisualTarget({segment:target.segmentIndex,step:target.stepIndex??null});setDesignTool('measure');}
@@ -689,6 +696,10 @@ export default function MeasureEditor({
   }, []);
 
   const isSpiral = sheet.shape === "spiral";
+  // A measured stair with no posts yet: offer the whole layout, shown as ghosts in the 3D until accepted.
+  const offerPosts = POST_SUGGEST_SHAPES.includes(sheet.shape) && !data.posts.some(p=>!p.pathId);
+  const postSuggestion = useMemo(()=>offerPosts?stairSuggestion(data,orgMaxSpacing):null,[offerPosts,data,orgMaxSpacing]);
+  const sceneData = useMemo(()=>withSuggestionGhosts(data,postSuggestion),[data,postSuggestion]);
   const isWallRail = sheet.shape === "wall_rail";
   const isCustom = sheet.shape === "custom";
   const isFire = sheet.shape === "fire_escape";
@@ -1031,6 +1042,8 @@ export default function MeasureEditor({
           isFence={isFence}
           isBalcony={isBalcony}
           isDeck={isDeck}
+          orgMaxSpacing={orgMaxSpacing}
+          onUndo={undo}
         />
         <RailSections
           lang={lang}
@@ -1273,11 +1286,12 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={data} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
-          lead={workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
+        <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
+          lead={<>{workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?null:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
             onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
+          {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}</>}
           nav={<nav aria-label={lang === 'pt' ? "Área de trabalho" : lang === 'es' ? "Área de trabajo" : "Professional workspace"} className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
           </nav>}

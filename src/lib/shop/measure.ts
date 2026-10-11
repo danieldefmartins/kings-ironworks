@@ -178,6 +178,11 @@ export interface PostMeasure {
   columnToWall: string; // clear distance from existing column/post face to wall
   columnToPlatformEdge: string; // clear distance from column/post face to platform edge
   clipDetail: string;
+  /** Placed by the post suggestion (measure-post-suggest.ts): a fingerprint of
+   *  the fields it was placed with. While they still match, the post is an
+   *  untouched suggestion that re-spaces with the stair; any edit makes it the
+   *  measurer's own and it is never moved again. */
+  suggested?: string;
 }
 
 export interface FlightSegment {
@@ -916,6 +921,12 @@ export function railSideSetback(data:MeasureData):string {
 export interface RailSpec {
   sideSetback?: string; // usual stair-edge setback for new posts; editable
   postCentered?: boolean; // new stair posts sit centred on their tread (front setback = half the run)
+  /** Most the shop allows between posts on this sheet (falls back to the org default, then 6'). */
+  maxPostSpacing?: string;
+  /** Railing sides per flight / landing (segment id or index) when they differ from `side`. */
+  segSides?: Record<string, "left" | "right" | "both">;
+  /** The suggested post layout: posts per side (absent = suggested count), whether the two sides move together. */
+  postPlan?: { left?: number; right?: number; linked?: boolean; sig?: string };
 
   kind: string; // Guardrail | Handrail | Both
   height: string;
