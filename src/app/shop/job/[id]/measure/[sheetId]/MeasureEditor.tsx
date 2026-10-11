@@ -51,6 +51,7 @@ import GateSections from "./shapes/GateSections";
 import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
 import DeckSections from "./shapes/DeckSections";
+import OpeningSections from "./shapes/OpeningSections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
@@ -1241,7 +1242,7 @@ export default function MeasureEditor({
         </nav>
         <div hidden={workspace!=='design'}>
           {postDropError&&<div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{postDropError}{data.datums.postRef!=='centerline'&&<button type="button" className="mt-2 block min-h-11 rounded-xl bg-white px-3 font-semibold" onClick={()=>{set(d=>{d.datums.postRef='centerline';});setPostDropError('');}}>{tx('Use measurements to post centerlines','Usar medidas ao centro dos postes','Usar medidas al centro de postes')}</button>}</div>}
-          <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} toolbar={designTool!=='materials'?<div className="flex flex-wrap items-center gap-2">
+          {sheet.shape==='opening'&&data.opening&&designTool!=='materials'?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:<ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} toolbar={designTool!=='materials'?<div className="flex flex-wrap items-center gap-2">
             {([['site',tx('Existing site','Local existente','Sitio existente')],['measure',tx('Dimensions & posts','Medidas e postes','Medidas y postes')],['panels',tx('Railing panels','Painéis de corrimão','Paneles de barandilla')],['specialty',tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')]] as const).map(([tool,label])=><button type="button" key={tool} aria-pressed={designTool===tool} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${designTool===tool?'bg-indigo-50 text-indigo-800':'bg-white text-slate-600'}`} onClick={()=>setDesignTool(tool)}>{label}</button>)}
             <label className="ml-auto"><span className="sr-only">{tx('Project controls','Controles do projeto','Controles del proyecto')}</span><select aria-label={tx('Project controls','Controles do projeto','Controles del proyecto')} className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" value={designTool==='details'?detailTopic:''} onChange={e=>{if(e.target.value)openDetails(e.target.value as ProDetailsTopic);}}><option value="">{tx('Project controls','Controles do projeto','Controles del proyecto')}</option>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang)}</option>)}</select></label>
           </div>:undefined}>
@@ -1252,7 +1253,7 @@ export default function MeasureEditor({
             {designTool==='materials'&&<><SteelWorkspace embedded onSceneSelect={selectScene} data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/><button type="button" className="mt-3 min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" onClick={()=>openDetails('specifications')}>{detailTopicLabel('specifications',lang)}</button></>}
             {designTool==='specialty'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></>}
             {designTool==='details'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><h2 className="mb-3 text-lg font-bold">{detailTopicLabel(detailTopic,lang)}</h2>{detailContent}</>}
-          </ProWorkspace>
+          </ProWorkspace>}
         </div>
         {workspace==='review'&&<div className="mx-auto max-w-5xl"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{tx('Shop package','Pacote da oficina','Paquete del taller')}</h2><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold" onClick={()=>{setWorkspace('design');setDesignTool('materials');}}>{tx('Materials & stock','Materiais e barras','Materiales y barras')}</button></div>{reviewContent}</div>}
       </div>

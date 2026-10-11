@@ -9,7 +9,7 @@ it('shows location and work choices together and preserves measured work when ei
  const original=newMeasureData('straight',3);original.materials.post='Existing measured steel';const next=vi.fn(),saved=vi.fn();
  function Harness(){const [data,setData]=useState<typeof original&{sceneSetup?:SceneSetup}>(original);return <SceneStart data={data} set={fn=>setData(old=>{const d=structuredClone(old);fn(d);saved(d);return d;})} lang="en" onProjectChange={next}/>;}
  const {container}=render(<Harness/>);
- expect(container.querySelectorAll('svg')).toHaveLength(15);
+ expect(container.querySelectorAll('svg')).toHaveLength(SceneSetupSchema.shape.projectType.options.length-1);
  expect(screen.getByRole('button',{name:'Window well'})).toBeTruthy();
  expect(screen.queryByRole('button',{name:/Continue/})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Window well'}));

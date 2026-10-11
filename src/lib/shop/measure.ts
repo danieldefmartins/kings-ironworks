@@ -9,6 +9,7 @@ import type {SpecialtySteel} from './measure-specialty-steel-schema';
 // are free-text strings ("23 3/4") because crews work in inches + fractions.
 
 import type { SiteModel } from './measure-site';
+import { blankOpening, normalizeOpening, openingProgressValues, OPENING_PHOTO_SLOTS, type OpeningData } from './measure-opening';
 
 export type MeasureShape =
   | "straight"
@@ -25,6 +26,7 @@ export type MeasureShape =
   | "fence"
   | "balcony"
   | "deck"
+  | "opening"
   | "builder"
   | "custom";
 
@@ -43,6 +45,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "fence",
   "balcony",
   "deck",
+  "opening",
   "builder",
   "custom",
 ];
@@ -64,6 +67,7 @@ export const PICKER_SHAPES: MeasureShape[] = [
   "fence",
   "balcony",
   "deck",
+  "opening",
   "custom",
 ];
 
@@ -1243,6 +1247,8 @@ export interface MeasureData {
   fence: FenceData | null;
   balcony: BalconyData | null;
   deck: DeckData | null;
+  /** Window / door openings — see measure-opening.ts. */
+  opening?: OpeningData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -1375,6 +1381,7 @@ export function newMeasureData(
   let fence: FenceData | null = null;
   let balcony: BalconyData | null = null;
   let deck: DeckData | null = null;
+  let opening: OpeningData | null = null;
 
   switch (shape) {
     case "straight":
@@ -1425,6 +1432,9 @@ export function newMeasureData(
       // steps1 carries the number of sides around the perimeter.
       deck = blankDeck(steps1);
       break;
+    case "opening":
+      opening = blankOpening(1);
+      break;
     case "spiral":
       spiral = {
         floorToFloor: "",
@@ -1450,6 +1460,7 @@ export function newMeasureData(
     fence,
     balcony,
     deck,
+    opening,
     // A deck that is not a simple rectangle gets the same tap-to-draw top view
     // the custom shape uses, so odd corners and bump-outs can be drawn and then
     // dimensioned segment by segment.
@@ -1736,6 +1747,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
           sides: (d.deck.sides || []).map((sd) => ({ ...newDeckSide(), ...sd })),
         }
       : null,
+    opening: d.opening ? normalizeOpening(d.opening) : null,
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -1821,6 +1833,8 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
     case "deck":
       // The framing photo is the one that proves the post has something to hold.
       return ["deck_overall", "deck_framing", "deck_edge", "deck_grade"];
+    case "opening":
+      return [...OPENING_PHOTO_SLOTS];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -2030,6 +2044,7 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
       data.spiral.columnSize
     );
   }
+  if (data.opening) vals.push(...openingProgressValues(data.opening));
   if (data.plan) for (const seg of data.plan.segs) {
     vals.push(seg.len, seg.kind, seg.steps, seg.rise, seg.run, seg.width);
     for (const st of seg.stepMeasures || []) vals.push(st.rise, st.run, st.nosing);
