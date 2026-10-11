@@ -35,6 +35,7 @@ import SpecialtySteelPrint from './SpecialtySteelPrint';
 import SteelTakeoffPrint from './SteelTakeoffPrint';
 import OpeningPrint from "./OpeningPrint";
 import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
+import StructuralPrint from './shapes/StructuralPrint';
 
 const GOLD = "#b8860b";
 
@@ -271,7 +272,8 @@ export default function PrintSheet({
       >
         <span>
           {[
-            sheet.shape !== "opening" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
+            sheet.shape === "structural" && shapeLabel(lang, sheet.shape),
+            sheet.shape !== "opening" && sheet.shape !== "structural" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
             data.routing?.setting && mt(lang, data.routing.setting === "interior" ? "routingInterior" : "routingExterior"),
           ].filter(Boolean).join(" · ")}
         </span>
@@ -366,6 +368,8 @@ export default function PrintSheet({
         )
       ))}
 
+      {/* Structural steel: its own member and cut tables replace the stair and rail blocks. */}
+      {data.structural && sheet.shape === "structural" ? <StructuralPrint s={data.structural} lang={lang} /> : <>
       <div className="grid grid-cols-2 gap-4">
         {/* Steps */}
         {flights.length > 0 && (
@@ -1054,6 +1058,8 @@ export default function PrintSheet({
           )}
         </div>
       </div>
+
+      </>}
 
       {/* Notes */}
       <div className="mt-3">

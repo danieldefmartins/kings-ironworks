@@ -2,6 +2,7 @@
 import { asLang, type Lang } from "./i18n";
 import type { MeasureShape } from "./measure";
 import { OPENING_STR } from "./measure-opening-i18n";
+import { STRUCTURAL_STR } from "./measure-structural-i18n";
 
 type Dict = Record<string, string>;
 
@@ -4316,6 +4317,8 @@ const STR: Record<Lang, Dict> = {
 
 // Opening sheet vocabulary lives in its own module.
 for (const l of ["en", "pt", "es"] as const) Object.assign(STR[l], OPENING_STR[l]);
+// Structural steel strings live in their own file and join the main dictionary.
+for (const l of Object.keys(STRUCTURAL_STR) as Lang[]) Object.assign(STR[l], STRUCTURAL_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);

@@ -168,6 +168,17 @@ export default function ShapeIcon({
           <path d="M7 42h34" strokeWidth={2.6} />
         </svg>
       );
+    case "structural":
+      // a wide-flange beam on two columns, base plates on the slab
+      return (
+        <svg {...common}>
+          <path d="M5 10h38M5 17h38" strokeWidth={2.4} />
+          <path d="M24 10v7" strokeWidth={1.4} />
+          <path d="M12 17v22M36 17v22" strokeWidth={2.6} />
+          <path d="M8 39h8M32 39h8" strokeWidth={2.2} />
+          <path d="M3 43h42" strokeDasharray="3 3" strokeWidth={1.5} />
+        </svg>
+      );
     case "deck":
       // deck in plan: an outline off the house, one side open for stairs
       return (

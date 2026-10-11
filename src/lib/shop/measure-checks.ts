@@ -10,6 +10,7 @@ import { parseMeas } from "./measure-parse";
 import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
+import { structuralChecks, structuralGaps } from "./measure-structural";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -761,6 +762,7 @@ export function runChecks(
   if (shape === "gate") return gateChecks(data, tol);
   if (shape === "fence") return fenceChecks(data, tol);
   if (shape === "balcony") return balconyChecks(data);
+  if (shape === "structural") return structuralChecks(data.structural);
   if (shape === "deck") {
     // An irregular deck can also be drawn, in which case the same
     // scale-independent closure test the custom shape uses applies here.
@@ -1125,6 +1127,8 @@ export function flightGaps(
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // An opening sheet carries its own frame, sizes and photo list.
   if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
+  // Structural steel carries its own member list; no rail, stair or post rules apply.
+  if (shape === "structural") return [...structuralGaps(data.structural), ...photoGaps(data, shape)];
   const gaps: Gap[] = [];
   const supportSite=data.posts.some(p=>p.supportAttachment)?resolveSite(data):undefined;
   data.posts.forEach((p,i)=>{if(p.supportAttachment&&supportTerminal(data,supportSite,p).provisional)gaps.push({key:'post',detail:`P${i+1} · support connection`});});
@@ -1608,6 +1612,13 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   }
 
   return gaps;
+}
+
+function photoGaps(data: MeasureData, shape: MeasureShape): Gap[] {
+  const filled = new Set(data.photos.map((p) => p.slot));
+  return requiredPhotoSlots(shape)
+    .filter((slot) => !filled.has(slot))
+    .map((slot) => ({ key: "photo", detail: slot, tier: isFabCriticalPhoto(slot) ? "fab" : "doc" }));
 }
 
 // The single completeness model. Everything on screen — the header line, the

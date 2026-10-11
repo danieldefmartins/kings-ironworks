@@ -4,6 +4,7 @@ import {NativeSteelSnapshotSchema} from '@/lib/shop/measure-native-steel';
 import {SteelPlanSchema} from '@/lib/shop/measure-steel';
 import {SpecialtySteelListSchema} from '@/lib/shop/measure-specialty-steel-schema';
 import { OpeningSchema } from '@/lib/shop/measure-opening-schema';
+import {StructuralSchema} from '@/lib/shop/measure-structural-schema';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -501,6 +502,7 @@ const MeasureDataSchema = z.object({
   balcony: BalconySchema.optional(),
   deck: DeckSchema.optional(),
   opening: OpeningSchema.optional(),
+  structural: StructuralSchema.optional(),
   rail: z.object({
     sideSetback: meas.optional(),
     kind: z.string().max(40),

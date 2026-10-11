@@ -52,6 +52,7 @@ import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
 import DeckSections from "./shapes/DeckSections";
 import OpeningSections from "./shapes/OpeningSections";
+import StructuralSections from "./shapes/StructuralSections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
@@ -203,6 +204,9 @@ export default function MeasureEditor({
   const toolLabels={site:tx('Existing site','Local existente','Sitio existente'),measure:tx('Dimensions & posts','Medidas e postes','Medidas y postes'),panels:tx('Railing panels','Painéis de corrimão','Paneles de barandilla'),specialty:tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')} as const;
   // Openings are measured on a form of their own; the scene has nothing to show yet.
   const openingForm=sheet.shape==='opening'&&!!data.opening&&designTool!=='materials';
+  // Structural steel is a member list, not a stair scene: its own form is the primary content.
+  const structuralForm=sheet.shape==='structural'&&designTool!=='materials';
+  const ownForm=openingForm||structuralForm;
   function saveAndClose(){requestSave();router.push(`/shop/job/${job.id}/measure`);}
   function openDetails(topic:ProDetailsTopic){setDetailTopic(topic);if(topic==='review'){setWorkspace('review');return;}setWorkspace('design');setDesignTool('details');}
   function selectScene(target:SceneSelection){
@@ -1224,15 +1228,15 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||openingForm}
-          lead={openingForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
+        <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||ownForm}
+          lead={ownForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
             onOpenGap={g=>{jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>setWorkspace('review')}/>}
           nav={<nav aria-label="Professional workspace" className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
           </nav>}
-          toolbar={designTool==='materials'||openingForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
+          toolbar={designTool==='materials'||ownForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
             <span className="min-w-0 flex-1 truncate">{designTool==='details'?detailTopicLabel(detailTopic,lang):toolLabels[designTool as keyof typeof toolLabels]}</span><ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-slate-500"/>
             <select aria-label={tx('Tool','Ferramenta','Herramienta')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" value={designTool==='details'?detailTopic:designTool} onChange={e=>{const v=e.target.value;if(v in toolLabels){setDesignTool(v as keyof typeof toolLabels);}else openDetails(v as ProDetailsTopic);}}>
               <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
@@ -1241,7 +1245,7 @@ export default function MeasureEditor({
           </label>}>
           <div hidden={workspace!=='design'}>
           {postDropError&&<div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{postDropError}{data.datums.postRef!=='centerline'&&<button type="button" className="mt-2 block min-h-11 rounded-xl bg-white px-3 font-semibold" onClick={()=>{set(d=>{d.datums.postRef='centerline';});setPostDropError('');}}>{tx('Use measurements to post centerlines','Usar medidas ao centro dos postes','Usar medidas al centro de postes')}</button>}</div>}
-          {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:<>
+          {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:structuralForm?<><StructuralSections lang={lang} data={data} set={set}/><div className="mt-4"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div></>:<>
             {designTool==='site'&&!hasExistingStructures&&<h2 className="mb-3 px-1 text-lg font-semibold tracking-tight text-slate-900">{tx('Start with the existing structures','Comece pelas estruturas existentes','Comience con las estructuras existentes')}</h2>}
             {designTool==='site'&&<SiteWorkspace embedded key={`site:${visualSite||''}`} initialObjectId={visualSite} data={data} set={set} lang={lang} onPanels={()=>setDesignTool('panels')} onContinue={()=>setDesignTool('measure')} onDetails={()=>openDetails('photos')} onPost={id=>selectScene({postId:id})} onMeasure={(segment,step)=>{if(segment!==undefined)selectScene({segmentIndex:segment,stepIndex:step??null});else setDesignTool('measure');}}/>}
             {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3"><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang)}</button>)}</div></>}
