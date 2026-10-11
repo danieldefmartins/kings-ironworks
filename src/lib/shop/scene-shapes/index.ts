@@ -14,6 +14,7 @@ import {fireEscapeScene} from './scene-fire-escape';
 import {spiralScene} from './scene-spiral';
 import {wallRailScene} from './scene-wall-rail';
 import {customScene} from './scene-custom';
+import {canopyScene} from './scene-canopy';
 
 export type {ShapeSceneAdapter,ShapeSceneOutput} from './build-kit';
 /** @deprecated name kept for the opening/structural/... adapters; same type. */
@@ -33,6 +34,7 @@ export const SCENE_SHAPES:Partial<Record<MeasureShape,ShapeSceneAdapter>>={
  // and a custom sheet is a drawing, which a deck also carries.
  wall_rail:wallRailScene,
  custom:customScene,
+ canopy:canopyScene,
 };
 
 /** The scene may only receive the sheet's data, so the shape is read from the
@@ -48,5 +50,6 @@ export function sceneShapeOf(data:MeasureData):MeasureShape|null{
  if(data.spiral)return 'spiral';
  if(data.opening)return 'opening';
  if(data.structural)return 'structural';
+ if(data.canopy)return 'canopy';
  return null;
 }

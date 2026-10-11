@@ -11,6 +11,7 @@ import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import { structuralChecks, structuralGaps } from "./measure-structural";
+import { canopyChecks, canopyGaps } from "./measure-canopy";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -763,6 +764,7 @@ export function runChecks(
   if (shape === "fence") return fenceChecks(data, tol);
   if (shape === "balcony") return balconyChecks(data);
   if (shape === "structural") return structuralChecks(data.structural);
+  if (shape === "canopy") return canopyChecks(data.canopy);
   if (shape === "deck") {
     // An irregular deck can also be drawn, in which case the same
     // scale-independent closure test the custom shape uses applies here.
@@ -1129,6 +1131,8 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
   // Structural steel carries its own member list; no rail, stair or post rules apply.
   if (shape === "structural") return [...structuralGaps(data.structural), ...photoGaps(data, shape)];
+  // A canopy carries its own wall, heights, support and roof.
+  if (shape === "canopy") return [...canopyGaps(data.canopy), ...(data.canopy?.kind ? photoGaps(data, shape) : [])];
   const gaps: Gap[] = [];
   const supportSite=data.posts.some(p=>p.supportAttachment)?resolveSite(data):undefined;
   data.posts.forEach((p,i)=>{if(p.supportAttachment&&supportTerminal(data,supportSite,p).provisional)gaps.push({key:'post',detail:`P${i+1} · support connection`});});

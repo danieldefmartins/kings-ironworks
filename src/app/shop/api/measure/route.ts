@@ -5,6 +5,7 @@ import {SteelPlanSchema} from '@/lib/shop/measure-steel';
 import {SpecialtySteelListSchema} from '@/lib/shop/measure-specialty-steel-schema';
 import { OpeningSchema } from '@/lib/shop/measure-opening-schema';
 import {StructuralSchema} from '@/lib/shop/measure-structural-schema';
+import {CanopySchema} from '@/lib/shop/measure-canopy-schema';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -503,6 +504,7 @@ const MeasureDataSchema = z.object({
   deck: DeckSchema.optional(),
   opening: OpeningSchema.optional(),
   structural: StructuralSchema.optional(),
+  canopy: CanopySchema.optional(),
   rail: z.object({
     sideSetback: meas.optional(),
     kind: z.string().max(40),
