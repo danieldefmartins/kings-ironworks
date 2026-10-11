@@ -10,6 +10,8 @@ vi.mock("@/lib/shop/db", () => ({
   listWorkers: async () => [], getOrgSettings: async () => ({tolerances:{}}), getSheetHistory: async () => [], getCarryover: async () => null, audit: async () => {},
   listCatalog: async () => [{id:"steel",display:"Steel",unit_cost:98765}], listInventory: async () => [], listSupplierPrices: m.prices, signPhotoUrls: async () => new Map(),
 }));
+// These pages are behind the job gate; the crew member is timing this job.
+vi.mock("@/lib/shop/job-timer-db", () => ({ loadJobGate: async () => ({ locked: false, runningElsewhere: null }) }));
 vi.mock("./ShopTopBar", () => ({default: () => null}));
 vi.mock("./inventory/InventoryClient", () => ({default: () => null}));
 vi.mock("./job/[id]/measure/MeasureListClient", () => ({default: () => null}));

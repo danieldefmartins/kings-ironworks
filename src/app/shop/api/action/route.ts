@@ -29,6 +29,7 @@ import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
 import { getOpenShift, getWorkerShift, appendShiftEmployeeNote } from "@/lib/shop/db";
 import { lateNote, resolvePunchAt } from "@/lib/shop/punch";
 import { alertStaleShifts } from "@/lib/shop/stale-alert";
+import { alertForgottenJobTimers, endJobTimeOnClockOut } from "@/lib/shop/job-timer-db";
 
 export const runtime = "nodejs";
 
@@ -456,6 +457,8 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: "That clock-out belongs to an earlier shift that is already closed", final: true }, { status: 409 });
         }
         const closed = open ? await clockOut(worker.id, loc, punch.at, open.id) : null;
+        // Owner rule: clocking out ends job time too (one-directional).
+        if (closed?.ended_at) await endJobTimeOnClockOut(worker.id, closed.ended_at);
         if (closed && punch.late) await appendShiftEmployeeNote(worker.id, closed.id, lateNote("out", punch.at, new Date(receivedAt).toISOString(), fmtDateTime));
         await audit("shift_clock_out", { workerId: worker.id, entity: "shift", entityId: closed?.id, detail: {
           locationStatus: loc?.status || "unavailable",
@@ -695,9 +698,9 @@ export async function POST(req: NextRequest) {
         if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
         const end = typeof endedAt === "string" ? new Date(endedAt) : null;
         if (!end || Number.isNaN(end.getTime())) return NextResponse.json({ error: "Bad end time" }, { status: 400 });
-        const rows = await sbSelect<{ started_at: string }[]>(
+        const rows = await sbSelect<{ started_at: string; worker_id: string }[]>(
           "kiw_shop_shifts",
-          `select=started_at&org_id=eq.${ORG_ID}&id=eq.${shiftId}&ended_at=is.null&limit=1`
+          `select=started_at,worker_id&org_id=eq.${ORG_ID}&id=eq.${shiftId}&ended_at=is.null&limit=1`
         );
         const started = rows[0]?.started_at;
         if (!started) return NextResponse.json({ error: "Shift not found or already closed" }, { status: 404 });
@@ -711,6 +714,7 @@ export async function POST(req: NextRequest) {
           manager_note: typeof note === "string" && note.trim() ? note.slice(0, 500) : "Closed by owner — worker did not tap out.",
           updated_at: now,
         });
+        await endJobTimeOnClockOut(rows[0].worker_id, end.toISOString());
         await audit("shift_force_stop", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { endedAt: end.toISOString() } });
         break;
       }
@@ -788,6 +792,7 @@ export async function POST(req: NextRequest) {
     // Opportunistic, throttled, never awaited: a missed clock-out gets a
     // Telegram the same evening instead of surfacing as a 24h day at payroll.
     void alertStaleShifts();
+    void alertForgottenJobTimers();
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     return NextResponse.json(

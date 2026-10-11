@@ -5,6 +5,8 @@ import { listCatalog, getJob, getMeasureSheet, listWorkers, getOrgSettings, getS
 import { normalizeMeasureData } from "@/lib/shop/measure";
 import {steelCatalog} from '@/lib/shop/measure-steel';
 import MeasureEditor from "./MeasureEditor";
+import JobGateScreen from "@/app/shop/JobGateScreen";
+import { loadJobGate } from "@/lib/shop/job-timer-db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,12 @@ export default async function MeasureSheetPage({
   const lang = worker.lang || "en";
 
   const { id, sheetId } = await params;
+  const gate = await loadJobGate(worker, id);
+  if (gate.locked) {
+    const gated = await getJob(id);
+    if (!gated) notFound();
+    return <JobGateScreen worker={worker} job={gated} gate={gate} />;
+  }
   const [job, sheet, workers, orgSettings, history, carryover, catalog] = await Promise.all([
     getJob(id),
     getMeasureSheet(sheetId),

@@ -81,6 +81,8 @@ export default async function ShopToday() {
   const lang = worker.lang || "en";
   const label = (en: string, pt: string, es: string) => lang === "pt" ? pt : lang === "es" ? es : en;
   const isOwner = canViewOwnerFinancials(worker);
+  // While a crew member's job time runs he sees that job only (job gate).
+  const focusedOnJob = !!current && !worker.is_admin;
   const onClock = isOwner ? await buildOnClockRows(jobs) : [];
   let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
   if (isOwner) {
@@ -138,12 +140,12 @@ export default async function ShopToday() {
         {current ? <Link href={`/shop/job/${current.id}`} className="flex items-center gap-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-5">
           <div className="min-w-0 flex-1"><div className="mb-2 text-xs font-semibold text-emerald-300">● {t(lang, "workingNowShort")}</div><div className="text-xl font-semibold">{current.customer_name}</div><div className="mt-1 flex items-start gap-1.5 text-sm text-neutral-400"><MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0" />{current.address || current.job_number}</div><div className="mt-3 text-sm font-medium text-emerald-300">{t(lang, "continueWork")}</div></div><ArrowRight aria-hidden className="h-5 w-5 shrink-0 text-emerald-300" />
         </Link> : !isOwner && <Link href="/shop/jobs" className="flex items-center justify-between gap-4 rounded-2xl border border-amber-400/25 bg-amber-400/5 p-5"><div><h2 className="font-semibold">{label("Choose a job to start", "Escolha uma obra para começar", "Elige un proyecto para comenzar")}</h2><p className="mt-1 text-sm text-neutral-400">{label("Open your job for drawings, instructions, and progress.", "Abra a obra para ver desenhos, instruções e progresso.", "Abre tu proyecto para ver planos, instrucciones y avance.")}</p></div><ArrowRight aria-hidden className="h-5 w-5 shrink-0 text-amber-300" /></Link>}
-        {!isOwner && assigned.length > 0 && jobSection(label("Assigned to you", "Atribuídas a você", "Asignados a ti"), assigned, "")}
+        {!isOwner && !focusedOnJob && assigned.length > 0 && jobSection(label("Assigned to you", "Atribuídas a você", "Asignados a ti"), assigned, "")}
         {isOwner && <OnTheClock rows={onClock} lang={lang} />}
-        <div className="grid gap-7 lg:grid-cols-2">
+        {!focusedOnJob && <div className="grid gap-7 lg:grid-cols-2">
           {jobSection(t(lang, "onTheFloor"), floor, t(lang, "nothingInFab"))}
           {jobSection(label("Deadlines", "Prazos", "Plazos"), upcoming, label("No scheduled deadlines yet.", "Nenhum prazo agendado ainda.", "Todavía no hay plazos programados."))}
-        </div>
+        </div>}
 
       </main>
     </div>

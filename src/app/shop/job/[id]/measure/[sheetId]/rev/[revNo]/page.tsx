@@ -8,6 +8,8 @@ import { runChecks, orderedPosts } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
 import ShopTopBar from "../../../../../../ShopTopBar";
 import RevisionPrintButton, { RevisionSheet } from "./RevisionClient";
+import JobGateScreen from "@/app/shop/JobGateScreen";
+import { loadJobGate } from "@/lib/shop/job-timer-db";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,12 @@ export default async function RevisionPage({
   const lang = worker.lang || "en";
 
   const { id, sheetId, revNo } = await params;
+  const gate = await loadJobGate(worker, id);
+  if (gate.locked) {
+    const gated = await getJob(id);
+    if (!gated) notFound();
+    return <JobGateScreen worker={worker} job={gated} gate={gate} />;
+  }
   const revN = parseInt(revNo, 10);
   if (!Number.isFinite(revN) || revN < 1) notFound();
 

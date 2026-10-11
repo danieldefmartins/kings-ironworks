@@ -6,6 +6,8 @@ import ShopTopBar from "../../../ShopTopBar";
 import { normalizeMeasureData } from "@/lib/shop/measure";
 import { mergeTolerances } from "@/lib/shop/measure-checks";
 import MeasureListClient from "./MeasureListClient";
+import JobGateScreen from "@/app/shop/JobGateScreen";
+import { loadJobGate } from "@/lib/shop/job-timer-db";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,8 @@ export default async function MeasureListPage({
   const { id } = await params;
   const job = await getJob(id);
   if (!job) notFound();
+  const gate = await loadJobGate(worker, id);
+  if (gate.locked) return <JobGateScreen worker={worker} job={job} gate={gate} />;
 
   const [sheets, workers, settings] = await Promise.all([getMeasureSheets(id), listWorkers(), getOrgSettings()]);
   const normalizedSheets = sheets.map(s => ({ ...s, data: normalizeMeasureData(s.data) }));
