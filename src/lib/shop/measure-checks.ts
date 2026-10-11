@@ -7,6 +7,7 @@ import {resolveSite} from './measure-wall-placement';
 
 import { landingConnections, landingConnectionMeasured } from "./measure-landings";
 import { parseMeas } from "./measure-parse";
+import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import {
@@ -755,6 +756,7 @@ export function runChecks(
   const joints = jointChecks(data, tol);
   if (shape === "custom") return [...customChecks(data), ...spanChecks(data), ...skirt, ...joints];
   if (shape === "window_well") return wellChecks(data, tol);
+  if (shape === "opening") return openingChecks(data.opening);
   if (shape === "fire_escape") return fireChecks(data, tol);
   if (shape === "gate") return gateChecks(data, tol);
   if (shape === "fence") return fenceChecks(data, tol);
@@ -1121,6 +1123,8 @@ export function flightGaps(
 // are conditional: what a base-plate post needs differs from a core-drilled
 // one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
+  // An opening sheet carries its own frame, sizes and photo list.
+  if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
   const gaps: Gap[] = [];
   const supportSite=data.posts.some(p=>p.supportAttachment)?resolveSite(data):undefined;
   data.posts.forEach((p,i)=>{if(p.supportAttachment&&supportTerminal(data,supportSite,p).provisional)gaps.push({key:'post',detail:`P${i+1} · support connection`});});

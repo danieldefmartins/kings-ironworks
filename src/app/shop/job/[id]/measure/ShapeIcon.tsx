@@ -158,6 +158,16 @@ export default function ShapeIcon({
           <path d="M2 42h44" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "opening":
+      // an opening in a wall with a grille set in it, on its sill
+      return (
+        <svg {...common}>
+          <rect x="11" y="7" width="26" height="31" />
+          <path d="M17.5 7v31M24 7v31M30.5 7v31" strokeWidth={1.5} />
+          <path d="M11 22.5h26" strokeWidth={1.5} />
+          <path d="M7 42h34" strokeWidth={2.6} />
+        </svg>
+      );
     case "deck":
       // deck in plan: an outline off the house, one side open for stairs
       return (

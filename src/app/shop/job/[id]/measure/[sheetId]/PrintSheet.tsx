@@ -33,6 +33,7 @@ import Sketch, { sketchViews } from "./Sketch";
 import SitePrint from './SitePrint';
 import SpecialtySteelPrint from './SpecialtySteelPrint';
 import SteelTakeoffPrint from './SteelTakeoffPrint';
+import OpeningPrint from "./OpeningPrint";
 
 const GOLD = "#b8860b";
 
@@ -266,8 +267,8 @@ export default function PrintSheet({
         }}
       >
         <span>
-          {mt(lang, "orientBanner")}
-          {orientation ? ` · ${mt(lang, `orient_${orientation}`)}` : " · ______________"}
+          {sheet.shape !== "opening" && mt(lang, "orientBanner")}
+          {sheet.shape === "opening" ? "" : orientation ? ` · ${mt(lang, `orient_${orientation}`)}` : " · ______________"}
           {data.routing?.setting
             ? ` · ${mt(lang, data.routing.setting === "interior" ? "routingInterior" : "routingExterior")}`
             : ""}
@@ -441,6 +442,7 @@ export default function PrintSheet({
 
         {/* Posts */}
         <div>
+          {sheet.shape !== "opening" && <>
           <SectionTitle>
             {lang === "pt" ? "Postes e pontos de ligação" : lang === "es" ? "Postes y puntos de conexión" : "Posts & connection points"} ({posts.length})
             {data.datums?.postRef
@@ -495,6 +497,7 @@ export default function PrintSheet({
             </div>
           )}
 
+          </>}
           {/* Platforms */}
           {platforms.map((pl, i) => (
             <div key={i} className="mt-2">
@@ -526,6 +529,7 @@ export default function PrintSheet({
             </div>
           )}
 
+          {data.opening && <OpeningPrint data={data} lang={lang} />}
           {data.gate && (
             <div className="mt-2">
               <SectionTitle>{mt(lang, "gateTitle")}</SectionTitle>
@@ -823,7 +827,7 @@ export default function PrintSheet({
           )}
 
           {/* Datums */}
-          <div className="mt-2">
+          <div className="mt-2" style={sheet.shape === "opening" ? { display: "none" } : undefined}>
             <SectionTitle>{mt(lang, "datumsTitle")}</SectionTitle>
             <div>
               {mt(lang, "bottomDatum")}: <Val v={data.datums.bottomDatum} />
@@ -848,7 +852,7 @@ export default function PrintSheet({
 
       {/* Rail + materials */}
       <div className="grid grid-cols-2 gap-4 mt-3">
-        <div>
+        <div style={sheet.shape === "opening" ? { display: "none" } : undefined}>
           <SectionTitle>{mt(lang, "railSection")}</SectionTitle>
           <div>
             {mt(lang, "railKind")}: {data.rail.kind ? optLabel(lang, data.rail.kind) : <Val v="" />} ·{" "}

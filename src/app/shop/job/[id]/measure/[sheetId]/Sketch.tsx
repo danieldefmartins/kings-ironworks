@@ -1,5 +1,6 @@
 "use client";
 import {useShopAppearance} from "../../../../ShopAppearance";
+import { OpeningSketch } from "./OpeningPrint";
 
 // Auto-generated measurement sketch. Draws the chosen railing shape with a
 // value box on every step/field — entered numbers show in gold, missing ones
@@ -103,6 +104,7 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
       ["plan", "planView"],
     ];
   if (shape === "gate") return [["front", "elevationView"]];
+  if (shape === "opening") return [["front", "elevationView"]];
   if (shape === "fence") return [["front", "elevationView"]];
   if (shape === "balcony")
     return [
@@ -180,6 +182,7 @@ export default function Sketch({
         onHoldPost={onHoldPost}
       />
     );
+  if (shape === "opening") return <OpeningSketch opening={data.opening} lang={lang} light={light} />;
   if (shape === "gate") return staticZoom(<GateSketch gate={data.gate} p={p} lang={lang} />);
   if (shape === "fence") return staticZoom(<FenceSketch fence={data.fence} p={p} lang={lang} />);
   if (shape === "balcony")

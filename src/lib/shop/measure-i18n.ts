@@ -1,6 +1,7 @@
 // Field Measure strings (EN/PT/ES), kept separate from the main shop dict.
 import { asLang, type Lang } from "./i18n";
 import type { MeasureShape } from "./measure";
+import { OPENING_STR } from "./measure-opening-i18n";
 
 type Dict = Record<string, string>;
 
@@ -4312,6 +4313,9 @@ const STR: Record<Lang, Dict> = {
     pageOf: "Página 1 de 1",
   },
 };
+
+// Opening sheet vocabulary lives in its own module.
+for (const l of ["en", "pt", "es"] as const) Object.assign(STR[l], OPENING_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);

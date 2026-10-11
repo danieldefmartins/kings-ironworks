@@ -183,6 +183,9 @@
 .shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] { grid-column: 1 / -1; padding: 18px 16px; }
 .shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] dd { font-size: clamp(24px, 11cqi, 40px); }
 
+/* Required-and-empty measure fields: a light red wash in the light appearance, not the dark gradient. */
+.shop-ui[data-shop-theme="light"] [data-measure-ui] .from-red-950\/60 { --tw-gradient-from: color-mix(in srgb, #b32c35 10%, white); --tw-gradient-to: color-mix(in srgb, #b32c35 3%, white); color: #7f1d1d; }
+
 /* Measuring cards use the same surfaces; the printed sheets keep white paper. */
 @media screen {
  .shop-ui [data-measure-ui] :is(.bg-white,.bg-slate-50) { background-color: var(--shop-card); }
