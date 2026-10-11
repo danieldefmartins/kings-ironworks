@@ -1,3 +1,4 @@
+import {MeasureSurveySchema} from '@/lib/shop/measure-survey-schema';
 import {SupportAttachmentSchema} from '@/lib/shop/measure-support-attachment';
 import {SceneSetupSchema} from '@/lib/shop/measure-scene-setup';
 import {NativeSteelSnapshotSchema} from '@/lib/shop/measure-native-steel';
@@ -471,6 +472,7 @@ const SignoffSchema = z.object({
 });
 
 const MeasureDataSchema = z.object({
+  survey: MeasureSurveySchema.optional(),
   code: CodeSettingsSchema.optional(),
   signoff: SignoffSchema.nullable().optional(),
   site: SiteModelSchema.optional(),
@@ -699,8 +701,9 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (parsed.data.posts.some(p=>p.supportAttachment===undefined) || parsed.data.segments.some(s=>s.id===undefined) || parsed.data.site?.objects.some(o=>o.wallAnchor===undefined || o.material===undefined) || parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
+        if (parsed.data.survey === undefined || parsed.data.posts.some(p=>p.supportAttachment===undefined) || parsed.data.segments.some(s=>s.id===undefined) || parsed.data.site?.objects.some(o=>o.wallAnchor===undefined || o.material===undefined) || parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
+          if(parsed.data.survey === undefined && existing?.data.survey) parsed.data.survey=existing.data.survey;
           for(const post of parsed.data.posts){if(post.supportAttachment===undefined){const old=existing?.data.posts.find(p=>p.id===post.id);if(old?.supportAttachment!==undefined)post.supportAttachment=old.supportAttachment;}}
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
           // Old clients may omit stable segment identities. Match by complete,

@@ -15,6 +15,8 @@ export async function GET(req:NextRequest) {
   const snapshot=revision?await getMeasureRevision(id,Number(revision)):null;
   if(revision&&!snapshot)return new NextResponse('Not found',{status:404});
   const photo=normalizeMeasureData(snapshot?.data??sheet.data).photos[index];
+  const expectedPath=req.nextUrl.searchParams.get('expectedPath');
+  if(expectedPath&&photo?.path!==expectedPath)return new NextResponse('Photo save pending',{status:404});
   if(!photo||!photo.path.startsWith(`${sheet.job_id}/`)||photo.path.includes('..'))return new NextResponse('Not found',{status:404});
   const record=(await getPhotos(sheet.job_id)).find(p=>p.url===photo.path);
   if(!record || isJobDocument(record) || ([PRICE_CATEGORY, 'Original Estimate'].includes(record.category || '')&&!canViewOwnerFinancials(worker)))return new NextResponse('Not found',{status:404});

@@ -38,7 +38,7 @@ export const NativeSteelSnapshotSchema=z.object({signature:z.string().max(500000
 export type NativeSteelSnapshot=z.infer<typeof NativeSteelSnapshotSchema>;
 /** Stable snapshot of geometry only; assigning stock and importing cuts do not invalidate it. */
 export function nativeGeometrySignature(data:Record<string,unknown>|object):string{
- const omitted=new Set(['steelPlan','nativeSteel']);
+ const omitted=new Set(['steelPlan','nativeSteel','survey']); // Site survey evidence does not change fitted steel cuts.
  const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,canonical(v)])):value;
  // Segment IDs identify wall anchors; adding them to legacy records does not change native cuts.
  const physical=Object.fromEntries(Object.entries(data).filter(([k])=>!omitted.has(k)).map(([k,v])=>[k,k==='segments'&&Array.isArray(v)?v.map(segment=>Object.fromEntries(Object.entries(segment).filter(([key])=>key!=='id'))):v]));
