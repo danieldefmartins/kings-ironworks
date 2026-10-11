@@ -104,7 +104,7 @@ describe("shop piece gaps", () => {
     expect(shopPieceGaps(sheet({ drawingRef: "A-3" }), []).filter((g) => (g.tier || "fab") === "fab")).toEqual([]);
   });
   it("wall mounts must say what they fasten to; bottles need a count", () => {
-    expect(shopPieceGaps(sheet({ mount: "wall" }), []).map((g) => g.key)).toContain("sp_substrate");
+    expect(shopPieceGaps(sheet({ mount: "wall" }), []).map((g) => g.key)).toContain("sub_shoppiece");
     expect(shopPieceGaps(sheet({ bottles: "" }), []).map((g) => g.key)).toContain("sp_bottles");
   });
 });
@@ -146,7 +146,8 @@ describe("shop piece 3D", () => {
     const d = newMeasureData("shop_piece", 0);
     d.shopPiece = sheet();
     const s = shopPieceScene(d);
-    expect(s.meshes).toHaveLength(12);
+    expect(s.meshes).toHaveLength(1);
+    expect(s.meshes[0].vertices.length).toBe(12 * 8);
     expect(s.lines.filter((l) => l.entity.role === "niche")).toHaveLength(6);
     const xs = s.meshes.flatMap((m) => m.vertices.map((v) => v.x));
     expect(Math.max(...xs) - Math.min(...xs)).toBeCloseTo(35.5);
@@ -158,7 +159,7 @@ describe("shop piece 3D", () => {
     d.shopPiece = blankShopPiece();
     d.shopPiece.pieces.push(newShopPiece());
     const s = shopPieceScene(d);
-    expect(s.meshes).toHaveLength(24);
+    expect(s.meshes).toHaveLength(2);
     expect(s.meshes.every((m) => m.provisional)).toBe(true);
     expect(s.pending).toHaveLength(2);
   });

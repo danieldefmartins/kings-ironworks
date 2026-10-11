@@ -41,7 +41,9 @@ import {
 } from "@/lib/shop/measure-wall-cap";
 import type { CheckLevel, CheckResult } from "@/lib/shop/measure-checks";
 import { MInput } from "../fields";
-import SceneViewport from "../SceneViewport";
+import SubstrateEditor from "../SubstrateEditor";
+import type { SubMaterial } from "@/lib/shop/measure-substrate";
+import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import { CapSection, WallCapElevation } from "./WallCapSketch";
 import { CheckList, Chips, DOT, fmtIn, fmtLen, Group, More, Notes, Panel, PILL, Seg, Stat, StatusPills, Verdict, ViewToggle, worst, type CheckLabels } from "./MeasureFormKit";
 
@@ -56,6 +58,16 @@ export const WC_CHECK_LABELS: CheckLabels = {
   wc_slope_decision: ["wc_lbl_tol", "wc_lbl_rise"],
 };
 
+const WC_SUB_MATERIALS: SubMaterial[] = ["poured_concrete", "precast", "stone", "brick", "block_filled", "block_hollow", "wood_framing"];
+
+/** Where a requirement that is not one number is answered. */
+const WC_GAP_PANEL: [RegExp, string][] = [
+  [/^wc_(kind|material|condition|membrane|no_penetration)$/, "wc-wall"],
+  [/^wc_(drop_side|drop|rail_height)$/, "wc-guard"],
+  [/^wc_(mount|core_dia|core_depth|plate|face_depth)$/, "wc-mount"],
+  [/^wc_(finish)$/, "wc-finish"],
+];
+
 export default function WallCapSections({ lang, data, set }: { lang: string; data: MeasureData; set: SetFn }) {
   const w = data.wallCap ?? null;
   const t = (k: string) => mt(lang, k);
@@ -66,6 +78,37 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
   const [openRun, setOpenRun] = useState<string | null>(() => w?.runs[0]?.id ?? null);
   const [focus, setFocus] = useState<string | null>(null);
   const [view, setView] = useState("elev");
+  // The Next card points at a number: open its run, light its post, bring the field up.
+  useMeasureLocate((d) => {
+    const wc = w;
+    if (!wc) return;
+    const runOf = (pid?: string) => wc.runs.find((r) => r.posts.some((p) => p.id === pid));
+    let field: string | null = null;
+    if (d.groupKind === "post" && d.groupId) {
+      const r = runOf(d.groupId);
+      if (r) setOpenRun(r.id);
+      const mark = postsOf(wc).find((x) => x.p.id === d.groupId)?.mark;
+      if (mark) setFocus(mark);
+      field = `${d.groupId}:${d.part}`;
+    } else if (d.groupKind === "run" && d.groupId) {
+      setOpenRun(d.groupId);
+      field = `${d.groupId}:${d.part}`;
+    } else if (d.part) field = `wall:${d.part}`;
+    if (!d.scroll) return;
+    const panel = d.gap ? WC_GAP_PANEL.find(([re]) => re.test(d.gap!))?.[1] : undefined;
+    const runGap = d.gap && d.gapDetail ? wc.runs.find((_, i) => runTag(i) === d.gapDetail) : undefined;
+    const postGap = d.gap && d.gapDetail ? postsOf(wc).find((x) => x.mark === d.gapDetail) : undefined;
+    if (runGap) setOpenRun(runGap.id);
+    if (postGap) { setOpenRun(wc.runs[postGap.run].id); setFocus(postGap.mark); }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = field ? document.querySelector(`[data-wc-field="${field}"]`)
+        : postGap ? document.getElementById(`wc-post-${postGap.mark}`)
+        : runGap ? document.querySelector(`[data-wc-run="${runGap.id}"]`)
+        : panel ? document.getElementById(panel) : null;
+      revealElement(el);
+      (el?.querySelector("input") as HTMLInputElement | null)?.focus({ preventScroll: true });
+    }));
+  });
 
   const up = (fn: (x: WallCapData) => void) =>
     set((d) => {
@@ -119,7 +162,7 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
         </div>
         <div className="mt-3 flex justify-center">
           <ViewToggle label={t("wc_views")} value={view} onChange={setView}
-            options={[["elev", t("wc_elevation")], ["section", t("wc_section")], ["3d", "3D"]]} />
+            options={[["elev", t("wc_elevation")], ["section", t("wc_section")]]} />
         </div>
         <div className="mx-auto mt-3 max-w-[960px] overflow-hidden rounded-xl border border-slate-200">
           {view === "elev" && <WallCapElevation w={w} lang={lang} red={redMarks} focus={focus} onPost={pickPost} />}
@@ -128,7 +171,6 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
               <CapSection w={w} post={sectionPost?.p ?? null} mark={sectionPost?.mark} lang={lang} />
             </div>
           )}
-          {view === "3d" && <SceneViewport data={data} lang={lang} className="!rounded-none !border-0 !shadow-none" />}
         </div>
         {view === "section" && posts.length > 1 && (
           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
@@ -150,7 +192,7 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
 
       {/* ---- The wall ---- */}
       <div className="grid items-start gap-4 md:grid-cols-2">
-        <Panel title={t("wc_wallTitle")}>
+        <Panel id="wc-wall" title={t("wc_wallTitle")}>
           <Seg label={t("wc_kind")} value={w.kind} required={!w.kind} cols={2}
             options={WC_KINDS.map((k) => [k, t(`wc_kind_${k}`)] as [string, string])}
             onChange={(v) => up((x) => void (x.kind = v as WallCapData["kind"]))} />
@@ -186,16 +228,16 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
         </Panel>
 
         {/* ---- Drop & guard ---- */}
-        <Panel title={t("wc_guardTitle")}>
+        <Panel id="wc-guard" title={t("wc_guardTitle")}>
           <Seg label={t("wc_dropSide")} value={w.dropSide} required={!w.dropSide}
             options={[["left", t("wc_left")], ["right", t("wc_right")]]}
             onChange={(v) => up((x) => void (x.dropSide = v as WallCapData["dropSide"]))} />
           <p className="mt-1 text-[13px] text-slate-500">{t("wc_dropSideHint")}</p>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <MInput label={t("wc_drop")} value={w.drop} gap="wc_drop" onChange={(v) => up((x) => void (x.drop = v))} />
-            <MInput label={t("wc_capAboveWalk")} placeholder="0" value={w.capAboveWalk} onChange={(v) => up((x) => void (x.capAboveWalk = v))} />
+            <div data-wc-field="wall:drop"><MInput label={t("wc_drop")} value={w.drop} gap="wc_drop" onChange={(v) => up((x) => void (x.drop = v))} /></div>
+            <MInput label={t("wc_capAboveWalk")} placeholder="0" laserUnit="len" value={w.capAboveWalk} onChange={(v) => up((x) => void (x.capAboveWalk = v))} />
           </div>
-          <div className="mt-3">
+          <div className="mt-3" data-wc-field="wall:railHeight">
             <MInput label={t("wc_railHeight")} value={w.railHeight} gap="wc_rail_height" onChange={(v) => up((x) => void (x.railHeight = v))} />
             {!w.railHeight.trim() && (
               <Chips value={w.railHeight} onPick={(v) => up((x) => void (x.railHeight = v))}
@@ -221,17 +263,17 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
       </div>
 
       {/* ---- Mount ---- */}
-      <Panel title={t("wc_mountTitle")}>
+      <Panel id="wc-mount" title={t("wc_mountTitle")}>
         <Seg label={t("wc_mount")} value={w.mount} required={!w.mount} cols={2}
           options={WC_MOUNTS.map((k) => [k, t(`wc_mount_${k}`)] as [string, string])}
           onChange={(v) => up((x) => void (x.mount = v as WallCapData["mount"]))} />
         {w.mount === "core" && (
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <div>
+            <div data-wc-field="wall:coreDia">
               <MInput label={t("wc_coreDia")} value={w.coreDia} gap="wc_core_dia" onChange={(v) => up((x) => void (x.coreDia = v))} />
               {!w.coreDia.trim() && <Chips value={w.coreDia} onPick={(v) => up((x) => void (x.coreDia = v))} options={[['2"', '2"'], ['2 1/2"', '2 1/2"'], ['3"', '3"']]} />}
             </div>
-            <div>
+            <div data-wc-field="wall:coreDepth">
               <MInput label={t("wc_coreDepth")} value={w.coreDepth} gap="wc_core_depth" onChange={(v) => up((x) => void (x.coreDepth = v))} />
               {!w.coreDepth.trim() && <Chips value={w.coreDepth} onPick={(v) => up((x) => void (x.coreDepth = v))} options={[['4"', '4"'], ['5"', '5"'], ['6"', '6"']]} />}
             </div>
@@ -239,13 +281,18 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
         )}
         {w.mount === "plate" && (
           <div className="mt-3">
-            <MInput label={t("wc_plateSize")} placeholder="4x4x3/8" value={w.plateSize} gap="wc_plate" onChange={(v) => up((x) => void (x.plateSize = v))} />
+            <MInput label={t("wc_plateSize")} placeholder="4x4x3/8" laserUnit="text" value={w.plateSize} gap="wc_plate" onChange={(v) => up((x) => void (x.plateSize = v))} />
             {!w.plateSize.trim() && <Chips value={w.plateSize} onPick={(v) => up((x) => void (x.plateSize = v))} options={[["4x4x3/8", "4×4×3/8"], ["5x5x1/2", "5×5×1/2"], ["4x6x3/8", "4×6×3/8"]]} />}
           </div>
         )}
         {(w.mount === "side_high" || w.mount === "side_low") && (
-          <div className="mt-3">
+          <div className="mt-3" data-wc-field="wall:faceDepth">
             <MInput label={t("wc_faceDepth")} value={w.faceDepth} gap="wc_face_depth" onChange={(v) => up((x) => void (x.faceDepth = v))} />
+          </div>
+        )}
+        {posts[0] && (
+          <div className="mt-3">
+            <SubstrateEditor locKey={`wallcap:${posts[0].p.id}`} title={t("wc_capMount")} materials={WC_SUB_MATERIALS} hide={["mount", "edge", "depth"]} />
           </div>
         )}
         {cut.length !== null && (
@@ -283,7 +330,7 @@ export default function WallCapSections({ lang, data, set }: { lang: string; dat
       </Panel>
 
       {/* ---- Finish ---- */}
-      <Panel title={t("wc_finishTitle")}>
+      <Panel id="wc-finish" title={t("wc_finishTitle")}>
         <Seg label={t("st_finish")} value={w.finish} cols={2}
           options={WC_FINISHES.map((f) => [f, t(`wc_fin_${f}`)] as [string, string])}
           onChange={(v) => up((x) => void (x.finish = v as WallCapData["finish"]))} />
@@ -319,7 +366,7 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
   const mine = checks.filter((c) => c.detail === tag || marks.some((m) => c.detail === m || (c.detail || "").startsWith(`${m} `)));
   const level: CheckLevel = worst(mine.map((c) => c.level));
   return (
-    <div className={`overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
+    <div data-wc-run={r.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left">
         <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[15px] font-bold text-indigo-700">{tag}</span>
         <span className="min-w-0 flex-1">
@@ -343,17 +390,17 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
                 <Seg label={t("wc_turnDir")} value={r.turnDir} required={!r.turnDir}
                   options={[["left", t("wc_left")], ["right", t("wc_right")]]}
                   onChange={(v) => update((x) => void (x.turnDir = v as WallCapRun["turnDir"]))} />
-                <MInput label={t("wc_turnAngle")} placeholder="90" value={r.turn} gap="wc_turn" onChange={(v) => update((x) => void (x.turn = v))} />
+                <div data-wc-field={`${r.id}:turn`}><MInput label={t("wc_turnAngle")} placeholder="90°" laserUnit="deg" value={r.turn} gap="wc_turn" onChange={(v) => update((x) => void (x.turn = v))} /></div>
               </div>
               <Chips value={r.turn} onPick={(v) => update((x) => void (x.turn = v))} options={[["90", "90°"], ["45", "45°"], ["135", "135°"]]} />
             </Group>
           )}
-          <MInput label={t("wc_runLength")} value={r.length} gap="wc_run_length" onChange={(v) => update((x) => void (x.length = v))} />
+          <div data-wc-field={`${r.id}:length`}><MInput label={t("wc_runLength")} value={r.length} gap="wc_run_length" onChange={(v) => update((x) => void (x.length = v))} /></div>
 
           <Group title={t("wc_postsTitle")} badge={rise ? <span className={`rounded-full border px-2 py-0.5 text-[13px] font-semibold ${sloped ? PILL.yellow : PILL.green}`}>{t("wc_capFalls")} {fmtIn(rise.rise)}</span> : null}>
             <div className="space-y-2">
               {r.posts.map((p, j) => (
-                <PostRow key={p.id} lang={lang} w={w} p={p} mark={marks[j]} on={focus === marks[j]} checks={checks.filter((c) => c.detail === marks[j] || (c.detail || "").startsWith(`${marks[j]} `))}
+                <PostRow key={p.id} lang={lang} w={w} p={p} mark={marks[j]} first={markOffset + j === 0} differs={!!p.material || (!!p.sub?.condition && p.sub.condition !== w.runs[0]?.posts[0]?.sub?.condition)} on={focus === marks[j]} checks={checks.filter((c) => c.detail === marks[j] || (c.detail || "").startsWith(`${marks[j]} `))}
                   onFocus={() => onFocus(marks[j])}
                   update={(fn) => update((x) => { const pp = x.posts[j]; if (pp && pp.id === p.id) fn(pp); })}
                   onRemove={r.posts.length > 1 ? () => update((x) => void (x.posts = x.posts.filter((o) => o.id !== p.id))) : undefined} />
@@ -381,15 +428,15 @@ function RunCard({ lang, w, r, i, open, focus, checks, onToggle, update, onRemov
   );
 }
 
-function PostRow({ lang, w, p, mark, on, checks, update, onRemove, onFocus }: {
-  lang: string; w: WallCapData; p: WallCapPost; mark: string; on: boolean; checks: CheckResult[];
+function PostRow({ lang, w, p, mark, on, first, differs, checks, update, onRemove, onFocus }: {
+  lang: string; w: WallCapData; p: WallCapPost; mark: string; on: boolean; first: boolean; differs: boolean; checks: CheckResult[];
   update: (fn: (p: WallCapPost) => void) => void; onRemove?: () => void; onFocus: () => void;
 }) {
   const t = (k: string) => mt(lang, k);
   const level = worst(checks.map((c) => c.level));
   const core = w.mount === "core";
   const edgeBad = (v: string) => { const n = parseMeas(v); return core && n !== null && n < WC_TOL.edgeMin; };
-  const [more, setMore] = useState(!!(p.at || p.material));
+  const [more, setMore] = useState(!!p.at);
   return (
     <div id={`wc-post-${mark}`} onFocusCapture={onFocus} className={`scroll-mt-24 rounded-xl border p-2.5 ${on ? "border-indigo-300 bg-indigo-50/40" : "border-slate-200"}`}>
       <div className="mb-2 flex items-center gap-2">
@@ -399,31 +446,29 @@ function PostRow({ lang, w, p, mark, on, checks, update, onRemove, onFocus }: {
         {onRemove && <button type="button" aria-label={`${t("st_remove")} ${mark}`} onClick={onRemove} className="size-9 rounded-lg text-lg text-slate-400">×</button>}
       </div>
       <div className="grid grid-cols-2 gap-2.5">
-        <MInput label={t("wc_capWidth")} value={p.capWidth} gap="wc_cap_width" onChange={(v) => update((x) => void (x.capWidth = v))} />
-        <MInput label={t("wc_top")} placeholder="+0" value={p.top} gap="wc_top" onChange={(v) => update((x) => void (x.top = v))} />
+        <div data-wc-field={`${p.id}:capWidth`}><MInput label={t("wc_capWidth")} value={p.capWidth} gap="wc_cap_width" onChange={(v) => update((x) => void (x.capWidth = v))} /></div>
+        <div data-wc-field={`${p.id}:top`}><MInput label={t("wc_top")} placeholder="+0" laserUnit="len" value={p.top} gap="wc_top" onChange={(v) => update((x) => void (x.top = v))} /></div>
         {core && (
           <>
-            <div className={edgeBad(p.edgeHigh) ? "rounded-lg ring-2 ring-red-400" : ""}>
+            <div data-wc-field={`${p.id}:edgeHigh`} className={edgeBad(p.edgeHigh) ? "rounded-lg ring-2 ring-red-400" : ""}>
               <MInput label={`▲ ${t("wc_edgeHigh")}`} value={p.edgeHigh} gap="wc_edges" onChange={(v) => update((x) => void (x.edgeHigh = v))} />
             </div>
-            <div className={edgeBad(p.edgeLow) ? "rounded-lg ring-2 ring-red-400" : ""}>
+            <div data-wc-field={`${p.id}:edgeLow`} className={edgeBad(p.edgeLow) ? "rounded-lg ring-2 ring-red-400" : ""}>
               <MInput label={`▼ ${t("wc_edgeLow")}`} value={p.edgeLow} gap="wc_edges" onChange={(v) => update((x) => void (x.edgeLow = v))} />
             </div>
           </>
         )}
       </div>
       <CheckList lang={lang} labels={WC_CHECK_LABELS} checks={checks} issuesOnly />
+      {/* The cap under P1 is set once under Mount; a post whose cap differs shows its own. */}
+      {!first && (differs || more) && (
+        <div className="mt-2.5">
+          <SubstrateEditor locKey={`wallcap:${p.id}`} title={`${t("wc_capAt")} ${mark}`} materials={WC_SUB_MATERIALS} hide={["mount", "edge", "depth"]} />
+        </div>
+      )}
       {more && (
-        <div className="mt-2.5 grid grid-cols-2 gap-2.5">
-          <MInput label={t("wc_at")} placeholder="—" value={p.at} onChange={(v) => update((x) => void (x.at = v))} />
-          <label className="block min-w-0">
-            <span className="mb-1 block text-[13px] text-neutral-400">{t("wc_material")}</span>
-            <select value={p.material} onChange={(e) => update((x) => void (x.material = e.target.value as WallCapPost["material"]))}
-              className="min-h-[46px] w-full rounded-lg border border-slate-200 bg-white px-2.5 text-base">
-              <option value="">{t("wc_sameAsWall")}</option>
-              {WC_MATERIALS.map((m) => <option key={m} value={m}>{t(`wc_mat_${m}`)}</option>)}
-            </select>
-          </label>
+        <div className="mt-2.5 grid grid-cols-1 gap-2.5">
+          <MInput label={t("wc_at")} placeholder="—" laserUnit="len" value={p.at} onChange={(v) => update((x) => void (x.at = v))} />
         </div>
       )}
     </div>

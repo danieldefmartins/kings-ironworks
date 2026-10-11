@@ -693,6 +693,23 @@ export function codeCheck(dataIn: MeasureData, shape: MeasureShape, orgDefault?:
     if (bc !== null && bc >= 0) maxRule("bottom_clearance", bc, L.sphere, "openings");
   }
 
+  // ---- Railing on a wall cap ---------------------------------------------------
+  // The drop is beside the wall; the guard is measured from the walk side, so
+  // it is the cap above the walk plus the rail above the cap.
+  if (shape === "wall_cap" && data.wallCap) {
+    const w = data.wallCap;
+    const WL = w.occupancy ? codeLimits(s, w.occupancy) : L;
+    const drop = pos(w.drop);
+    const rail = pos(w.railHeight);
+    if (drop !== null && drop > WL.guardDrop) {
+      push({ rule: "guard_required", level: rail !== null ? "green" : "yellow", actual: drop, op: "max", limit: WL.guardDrop, unit: "in", cite: cite("guardReq") });
+      if (rail !== null) {
+        const gh = (num(w.capAboveWalk) ?? 0) + rail;
+        push({ rule: "guard_height", level: gradeMin(gh, WL.guardHeight), actual: gh, op: "min", limit: WL.guardHeight, unit: "in", cite: cite("guardH") });
+      }
+    }
+  }
+
   // ---- Pool gates --------------------------------------------------------------
   if (data.gate && data.gate.use === "pool") {
     const g = data.gate;

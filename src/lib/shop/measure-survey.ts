@@ -55,7 +55,7 @@ export function actionTotals(items: ConditionItem[]) {
 }
 // Stable identity segments make a reordered member keep its verification. Legacy
 // index-only children are tied to their parent identity and original value.
-const DIMENSIONS = new Set(['width','height','length','depth','rise','run','rake','ctrlRise','ctrlRun','totalRise','totalRun','floorToFloor','rakeLength','diameter','clearWidth','widthTop','widthBottom','heightHinge','heightLatch','diagA','diagB','groundClearance','panelWidth','postSpacing','totalPerimeter','guardHeight','edgeLength','lengthAtHouse','projection','topSpan','lowerSpan','span','cutLength','overallLength','bearingLength','openingWidth','openingHeight']);
+const DIMENSIONS = new Set(['width','height','length','depth','rise','run','rake','ctrlRise','ctrlRun','totalRise','totalRun','floorToFloor','rakeLength','diameter','clearWidth','widthTop','widthBottom','heightHinge','heightLatch','diagA','diagB','groundClearance','panelWidth','postSpacing','totalPerimeter','guardHeight','edgeLength','lengthAtHouse','projection','topSpan','lowerSpan','span','cutLength','overallLength','bearingLength','openingWidth','openingHeight','capWidth','drop','railHeight','wBack','wFront','wTop','wBottom','hLeft','hRight','hBack','dTop','dBottom']);
 const EXCLUDE = new Set(['survey','signoff','photos','annotations','nativeSteel','steelPlan','code','sceneSetup','materials']);
 export interface SurveyDimension { source: string; keys: string[]; value: string }
 export function surveyDimensions(data: MeasureData): SurveyDimension[] {

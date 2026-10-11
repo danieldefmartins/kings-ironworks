@@ -1,6 +1,7 @@
 // Server-side validation for the wall-cap railing payload. zod strips unknown
 // keys, so every WallCapData field must be listed here or it is lost on save.
 import { z } from "zod";
+import { SubstrateSchema } from "./measure-substrate-schema";
 import { WC_FINISHES, WC_KINDS, WC_MATERIALS, WC_MOUNTS, WC_RAILS } from "./measure-wall-cap";
 
 const meas = z.string().max(60);
@@ -15,6 +16,7 @@ const Post = z.object({
   edgeHigh: meas,
   edgeLow: meas,
   material: opt(WC_MATERIALS),
+  sub: SubstrateSchema.optional(),
 });
 
 const Run = z.object({

@@ -26,6 +26,7 @@
 import { parseMeas } from "./measure-parse";
 import type { CheckLevel, CheckResult, Gap } from "./measure-checks";
 import type { MeasureData } from "./measure";
+import type { Substrate } from "./measure-substrate";
 import { codeLimits, effectiveCodeSettings, effectiveOccupancy } from "./measure-code";
 
 // ---- Model ------------------------------------------------------------------
@@ -62,6 +63,8 @@ export interface WallCapPost {
   edgeLow: string;
   /** Only when this post's cap differs from the wall's ("" = same). */
   material: "" | WcMaterial;
+  /** Shared mounting model (measure-substrate): material, condition, hidden services, anchor. */
+  sub?: Substrate;
 }
 
 export interface WallCapRun {

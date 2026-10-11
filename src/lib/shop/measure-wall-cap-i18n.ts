@@ -73,7 +73,7 @@ const ROWS: Row[] = [
   ["wc_occ_commercial", "Commercial", "Comercial", "Comercial"],
   ["wc_noGuardReq", "No guard required", "Guarda não exigida", "No se exige guarda"],
   ["wc_noGuardShort", "none required", "não exigida", "no exigida"],
-  ["wc_positionMore", "Position", "Posição", "Posición"],
+  ["wc_positionMore", "More", "Mais", "Más"],
   ["wc_positionLess", "Done", "Pronto", "Listo"],
   ["wc_guardRequired", "Guard required", "Guarda exigida", "Guarda exigida"],
   ["wc_guardFromWalk", "measured from the walk side", "medida a partir do piso", "medida desde el piso"],
@@ -118,6 +118,8 @@ const ROWS: Row[] = [
   ["wc_datum", "Elevations measured from", "Cotas medidas a partir de", "Cotas medidas desde"],
   ["wc_datumPh", "laser at P1, top of cap = 0", "laser no P1, topo = 0", "láser en P1, albardilla = 0"],
   ["wc_cap", "Cap", "Topo", "Albardilla"],
+  ["wc_capAt", "Cap at", "Topo no", "Albardilla en"],
+  ["wc_capMount", "Cap under the posts", "Topo sob os postes", "Albardilla bajo los postes"],
 
   // Finish
   ["wc_finishTitle", "Finish", "Acabamento", "Acabado"],

@@ -19,6 +19,7 @@
 
 import { parseMeas } from "./measure-parse";
 import type { CheckLevel, CheckResult, Gap } from "./measure-checks";
+import type { Substrate } from "./measure-substrate";
 
 // ---- Model ------------------------------------------------------------------
 
@@ -89,6 +90,8 @@ export interface ShopPieceData {
   bottles: string;
   loadNote: string;
   drawingRef: string; // drawing no. / designer / "photo from client"
+  /** Shared mounting model for a wall / counter mount (measure-substrate). */
+  sub?: Substrate;
   pieces: ShopPiece[];
   notes: string;
 }
@@ -299,7 +302,8 @@ export function shopPieceGaps(d: ShopPieceData | null | undefined, photos: { slo
   if (!d) return [{ key: "sp_missing" }];
   if (!has(d.mount)) gaps.push({ key: "sp_mount" });
   if (isNiche(d) && !has(d.clearance)) gaps.push({ key: "sp_clearance" });
-  if ((d.mount === "wall" || d.mount === "counter") && !has(d.substrate)) gaps.push({ key: "sp_substrate" });
+  // Answered in the shared mounting editor; same key as its blank-mounting gap so the two never double up.
+  if ((d.mount === "wall" || d.mount === "counter") && !has(d.substrate)) gaps.push({ key: "sub_shoppiece", detail: "shoppiece" });
   if (!d.pieces.length) gaps.push({ key: "sp_pieces" });
   d.pieces.forEach((p, i) => {
     const tag = pieceTag(p, i);

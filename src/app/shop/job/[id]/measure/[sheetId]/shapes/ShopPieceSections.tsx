@@ -26,7 +26,7 @@ import {
   SP_FINISHES,
   SP_LOADS,
   SP_MOUNTS,
-  SP_SUBSTRATES,
+
   SP_TOL,
   SP_TYPES,
   spFabSize,
@@ -37,9 +37,10 @@ import {
 } from "@/lib/shop/measure-shop-piece";
 import type { CheckResult } from "@/lib/shop/measure-checks";
 import { MInput } from "../fields";
-import SceneViewport from "../SceneViewport";
+import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
+import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import ShopPieceSketch from "./ShopPieceSketch";
-import { CheckList, Chips, DeltaBadge, DOT, fmtIn, Group, More, Notes, Panel, Seg, Stat, StatusPills, Stepper, SwitchRow, ViewToggle, worst, type CheckLabels } from "./MeasureFormKit";
+import { CheckList, Chips, DeltaBadge, DOT, fmtIn, Group, More, Notes, Panel, Seg, Stat, StatusPills, Stepper, SwitchRow, worst, type CheckLabels } from "./MeasureFormKit";
 
 type SetFn = (fn: (d: MeasureData) => void) => void;
 
@@ -52,13 +53,35 @@ export const SP_CHECK_LABELS: CheckLabels = {
 
 const MATERIAL_PRESETS = ['1 1/2" sq tube 11ga', '1" sq tube 14ga', '2x1 tube 11ga', '1 1/2" angle 3/16', '1/4" plate', '3/4" sq bar', '1/2" round bar'];
 
+/** Where a requirement that is not one number is answered. */
+const SP_GAP_PANEL: [RegExp, string][] = [
+  [/^(sp_mount|sp_clearance|sub_shoppiece)$/, "sp-mount"],
+  [/^sp_materials$/, "sp-materials"],
+  [/^sp_finish$/, "sp-finish"],
+  [/^(sp_load|sp_bottles)$/, "sp-load"],
+];
+
 export default function ShopPieceSections({ lang, data, set }: { lang: string; data: MeasureData; set: SetFn }) {
   const d = data.shopPiece ?? null;
   const t = (k: string) => mt(lang, k);
   const checks = useMemo(() => shopPieceChecks(d), [d]);
   const gaps = useMemo(() => shopPieceGaps(d, data.photos), [d, data.photos]);
   const [openId, setOpenId] = useState<string | null>(() => d?.pieces[0]?.id ?? null);
-  const [view, setView] = useState("draw");
+  useMeasureLocate((m) => {
+    const pieces = d?.pieces ?? [];
+    const byGap = m.gapDetail ? pieces.find((p, i) => pieceTag(p, i) === m.gapDetail) : undefined;
+    const piece = m.groupKind === "piece" ? pieces.find((p) => p.id === m.groupId) : byGap;
+    if (piece) setOpenId(piece.id);
+    if (!m.scroll) return;
+    const panel = m.gap ? SP_GAP_PANEL.find(([re]) => re.test(m.gap!))?.[1] : undefined;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = piece && m.part ? document.querySelector(`[data-sp-field="${piece.id}:${m.part}"]`)
+        : piece ? document.querySelector(`[data-sp-piece="${piece.id}"]`)
+        : panel ? document.getElementById(panel) : null;
+      revealElement(el);
+      (el?.querySelector("input") as HTMLInputElement | null)?.focus({ preventScroll: true });
+    }));
+  });
 
   const up = (fn: (x: ShopPieceData) => void) =>
     set((m) => {
@@ -94,13 +117,10 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
           </div>
           <StatusPills lang={lang} checks={checks} gaps={fabGaps} />
         </div>
-        <div className="mt-3 flex justify-center">
-          <ViewToggle label={t("wc_views")} value={view} onChange={setView} options={[["draw", t("sp_drawing")], ["3d", "3D"]]} />
-        </div>
         <div className="mx-auto mt-3 max-w-[960px] overflow-hidden rounded-xl border border-slate-200">
-          {view === "draw" ? <ShopPieceSketch d={d} piece={shown} lang={lang} /> : <SceneViewport data={data} lang={lang} className="!rounded-none !border-0 !shadow-none" />}
+          <ShopPieceSketch d={d} piece={shown} lang={lang} />
         </div>
-        {d.pieces.length > 1 && view === "draw" && (
+        {d.pieces.length > 1 && (
           <div className="mt-2 flex flex-wrap justify-center gap-1.5">
             {d.pieces.map((p, i) => (
               <button key={p.id} type="button" aria-pressed={shown?.id === p.id} onClick={() => setOpenId(p.id)}
@@ -118,7 +138,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
       </Panel>
 
       {/* ---- Mounting ---- */}
-      <Panel title={t("sp_mountTitle")}>
+      <Panel id="sp-mount" title={t("sp_mountTitle")}>
         <Seg label={t("sp_mount")} value={d.mount} required={!d.mount} cols={3}
           options={SP_MOUNTS.map((k) => [k, t(`sp_mount_${k}`)] as [string, string])}
           onChange={(v) => up((x) => void (x.mount = v as ShopPieceData["mount"]))} />
@@ -133,9 +153,8 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
         )}
         {(d.mount === "wall" || d.mount === "counter") && (
           <div className="mt-3">
-            <Seg label={t("sp_substrate")} value={d.substrate} required={!d.substrate} cols={3}
-              options={SP_SUBSTRATES.map((k) => [k, t(`sp_sub_${k}`)] as [string, string])}
-              onChange={(v) => up((x) => void (x.substrate = v as ShopPieceData["substrate"]))} />
+            {/* What it fastens to: the shared mounting editor (material, condition, edge, anchor). */}
+            <SubstrateEditor locKey="shoppiece" title={t("sp_substrate")} materials={[...MATERIALS_WALL, "tile_slab", "existing_iron"]} hide={["depth"]} />
             <More lang={lang}>
               <MInput label={t("sp_fastener")} placeholder={t("sp_fastenerPh")} value={d.fastener} onChange={(v) => up((x) => void (x.fastener = v))} />
             </More>
@@ -163,7 +182,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
       </Panel>
 
       {/* ---- Materials ---- */}
-      <Panel title={t("sp_materialsTitle")}>
+      <Panel id="sp-materials" title={t("sp_materialsTitle")}>
         <div className="space-y-2">
           {d.materials.map((m, i) => (
             <div key={m.id} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] items-end gap-2">
@@ -184,7 +203,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
 
       <div className="grid items-start gap-4 md:grid-cols-2">
         {/* ---- Finish ---- */}
-        <Panel title={t("wc_finishTitle")}>
+        <Panel id="sp-finish" title={t("wc_finishTitle")}>
           <Seg label={t("st_finish")} value={d.finish} required={!d.finish} cols={3}
             options={SP_FINISHES.map((f) => [f, t(`sp_fin_${f}`)] as [string, string])}
             onChange={(v) => up((x) => void (x.finish = v as ShopPieceData["finish"]))} />
@@ -194,13 +213,13 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
         </Panel>
 
         {/* ---- Load ---- */}
-        <Panel title={t("sp_loadTitle")}>
+        <Panel id="sp-load" title={t("sp_loadTitle")}>
           <Seg label={t("sp_load")} value={d.load} required={!d.load} cols={3}
             options={SP_LOADS.map((k) => [k, t(`sp_load_${k}`)] as [string, string])}
             onChange={(v) => up((x) => void (x.load = v as ShopPieceData["load"]))} />
           {d.load === "bottles" && (
             <div className="mt-3 grid grid-cols-2 items-end gap-3">
-              <MInput label={t("sp_bottles")} placeholder="120" value={d.bottles} gap="sp_bottles" onChange={(v) => up((x) => void (x.bottles = v.replace(/[^0-9]/g, "")))} />
+              <MInput label={t("sp_bottles")} placeholder="120" laserUnit="count" value={d.bottles} gap="sp_bottles" onChange={(v) => up((x) => void (x.bottles = v.replace(/[^0-9]/g, "")))} />
               <div className="pb-3 text-[15px] font-semibold tabular-nums text-slate-700">{lb !== null ? `≈ ${Math.round(lb)} lb` : ""}</div>
             </div>
           )}
@@ -214,7 +233,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
       </div>
 
       {/* ---- Reference ---- */}
-      <Panel title={t("sp_referenceTitle")}>
+      <Panel id="sp-reference" title={t("sp_referenceTitle")}>
         <MInput label={t("sp_drawingRef")} placeholder={t("sp_drawingRefPh")} value={d.drawingRef} onChange={(v) => up((x) => void (x.drawingRef = v))} />
       </Panel>
 
@@ -245,12 +264,12 @@ function PieceCard({ lang, d, p, i, open, checks, gapCount, onToggle, update, on
   const spread = (keys: readonly string[]) => spreadOf<string>(p as unknown as Record<string, string>, keys);
   const badge = (keys: readonly string[]) => { const s = spread(keys); return s && s.count >= 2 ? <DeltaBadge delta={s.spread} tol={SP_TOL.spread} /> : null; };
   const field = (k: keyof ShopPiece, gap?: string, label?: string) => (
-    <MInput key={k} label={label ?? t(`sp_r_${k}`)} value={p[k] as string} gap={gap} onChange={(v) => update((x) => void ((x as unknown as Record<string, string>)[k] = v))} />
+    <div key={k} data-sp-field={`${p.id}:${k}`}><MInput label={label ?? t(`sp_r_${k}`)} value={p[k] as string} gap={gap} onChange={(v) => update((x) => void ((x as unknown as Record<string, string>)[k] = v))} /></div>
   );
   return (
-    <div className={`overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
+    <div data-sp-piece={p.id} className={`scroll-mt-24 overflow-hidden rounded-2xl border bg-white ${open ? "border-indigo-200 shadow-sm" : "border-slate-200"}`}>
       <button type="button" onClick={onToggle} aria-expanded={open} className="flex min-h-16 w-full items-center gap-3 px-3 py-2.5 text-left">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[15px] font-bold text-indigo-700">{p.label.trim() ? p.label.trim().slice(0, 3) : `#${i + 1}`}</span>
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-[15px] font-bold text-indigo-700">{`#${i + 1}`}</span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-semibold text-slate-900">{p.type ? t(`sp_type_${p.type}`) : t("sp_noType")}{qty > 1 ? ` ×${qty}` : ""}</span>
           <span className="block truncate text-[13px] tabular-nums text-slate-500">{`${fmtIn(f.width)} × ${fmtIn(f.height)} × ${fmtIn(f.depth)}`}</span>
@@ -272,7 +291,7 @@ function PieceCard({ lang, d, p, i, open, checks, gapCount, onToggle, update, on
             </div>
           </div>
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-            <MInput label={t("sp_label")} placeholder={`#${i + 1}`} value={p.label} onChange={(v) => update((x) => void (x.label = v.slice(0, 40)))} />
+            <MInput label={t("sp_label")} placeholder={`#${i + 1}`} laserUnit="text" value={p.label} onChange={(v) => update((x) => void (x.label = v.slice(0, 40)))} />
             <Stepper label={t("st_qty")} value={qty} onChange={(n) => update((x) => void (x.qty = String(n)))} />
           </div>
 
