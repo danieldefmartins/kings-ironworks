@@ -34,6 +34,31 @@ describe('fabrication release endpoint',()=>{
 });
 
 describe('measurement persistence',()=>{
+  it('saves stable segment ids and raw anchored-wall measurements without substituting derived geometry',async()=>{
+    data.segments[0].id='flight-A';data.site=porchSiteFixture().site;
+    const wall=data.site!.objects.find(o=>o.kind==='wall')!;wall.wallAnchor={segmentId:'flight-A',side:'left',gap:'2',startExtension:'3',endExtension:'4',baseOffset:'0'};
+    const raw=structuredClone(wall);mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.segments[0].id).toBe('flight-A');expect(mocks.update.mock.calls[0][2].data.site.objects.find((o:{id:string})=>o.id===wall.id)).toEqual(raw);
+  });
+  it('recovers unique old-client segment ids across reorder and preserves omitted wall anchors',async()=>{
+    data.segments[0].id='flight-A';const other=structuredClone(data.segments[0]) as FlightSegment;other.id='flight-B';other.steps[0].run='17';data.segments.push(other);data.site=porchSiteFixture().site;
+    const wall=data.site!.objects.find(o=>o.kind==='wall')!;wall.wallAnchor={segmentId:'flight-A',side:'right',gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'};
+    const legacy=structuredClone(data);legacy.segments.reverse();legacy.segments.forEach(s=>delete s.id);delete legacy.site!.objects.find(o=>o.id===wall.id)!.wallAnchor;
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    const saved=mocks.update.mock.calls[0][2].data;expect(saved.segments.map((s:{id:string})=>s.id)).toEqual(['flight-B','flight-A']);expect(saved.site.objects.find((o:{id:string})=>o.id===wall.id).wallAnchor.segmentId).toBe('flight-A');
+  });
+  it('rejects ambiguous legacy wall anchors and duplicate ids rather than reassigning a wall',async()=>{
+    data.segments[0].id='flight-A';data.segments.push({...structuredClone(data.segments[0]),id:'flight-B'});data.site=porchSiteFixture().site;
+    data.site!.objects.find(o=>o.kind==='wall')!.wallAnchor={segmentId:'flight-A',side:'left',gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'};
+    const legacy=structuredClone(data);legacy.segments.forEach(s=>delete s.id);expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(409);expect(mocks.update).not.toHaveBeenCalled();
+    const duplicate=structuredClone(data);duplicate.segments[1].id='flight-A';expect((await request({type:'update',data:duplicate})).status).toBe(400);expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it('allows explicit wall detachment without reviving the stored anchor',async()=>{
+    data.segments[0].id='flight-A';data.site=porchSiteFixture().site;const wall=data.site!.objects.find(o=>o.kind==='wall')!;wall.wallAnchor={segmentId:'flight-A',side:'left',gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'};
+    const incoming=structuredClone(data);incoming.site!.objects.find(o=>o.id===wall.id)!.wallAnchor=null;mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:incoming,baseUpdatedAt:stamp})).status).toBe(200);expect(mocks.update.mock.calls[0][2].data.site.objects.find((o:{id:string})=>o.id===wall.id).wallAnchor).toBeNull();
+  });
   it('preserves optional house and placement from older scene clients, while allowing house removal',async()=>{
     data.sceneSetup={environment:'exterior',projectType:'stairs',house:{side:'left',offset:'12'},placement:{x:'24',y:'0',z:'0',rotation:90}};
     const legacy=structuredClone(data);delete legacy.sceneSetup!.house;delete legacy.sceneSetup!.placement;

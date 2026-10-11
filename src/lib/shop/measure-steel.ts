@@ -1,3 +1,4 @@
+import {resolveSite} from './measure-wall-placement';
 import {z} from 'zod';
 import type {MeasureData} from './measure';
 import type {CatalogItem} from './shared';
@@ -65,9 +66,10 @@ function compatibleProfile(source:SteelSource,item:SteelCatalogItem){
  return p.section===s.section&&((near(w,sw)&&near(h,sh))||(near(w,sh)&&near(h,sw)))&&(s.section!=='tube'||near(siteNumber(p.wall),siteNumber(s.wall)));
 }
 export function steelSources(data:MeasureData):SteelSource[]{
- const attached=(data.site?.rails||[]).flatMap(r=>{
-  const result=attachedCuts(data.site,r,siteRailLayout(data.site,r));
-  return result.parts.map(p=>({key:`${r.id}:${p.mark.split('-').at(-1)}`,label:`${r.label} · ${p.mark}`,role:p.kind==='top'?'toprail':p.kind==='secondTop'?'second_toprail':p.kind==='bottom'?'bottomrail':'picket',length:p.stockLength,profile:p.profile,signature:siteRailSignature(data.site,r),section:p.kind==='secondTop'?r.fabrication?.secondTop?.profile:r.fabrication?.[p.kind]}));
+ const site=resolveSite(data);
+ const attached=(site?.rails||[]).flatMap(r=>{
+  const result=attachedCuts(site,r,siteRailLayout(site,r));
+  return result.parts.map(p=>({key:`${r.id}:${p.mark.split('-').at(-1)}`,label:`${r.label} · ${p.mark}`,role:p.kind==='top'?'toprail':p.kind==='secondTop'?'second_toprail':p.kind==='bottom'?'bottomrail':'picket',length:p.stockLength,profile:p.profile,signature:siteRailSignature(site,r),section:p.kind==='secondTop'?r.fabrication?.secondTop?.profile:r.fabrication?.[p.kind]}));
  });
  return [...attached,...specialtySteelSources(data.specialtySteel),...(data.nativeSteel?.signature===nativeGeometrySignature(data)?data.nativeSteel.sources:[])];
 }

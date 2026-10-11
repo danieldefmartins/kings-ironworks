@@ -153,6 +153,7 @@ export interface PostMeasure {
 }
 
 export interface FlightSegment {
+  id?: string; // Stable attachment identity; legacy sheets gain deterministic IDs on load.
   kind: "flight";
   // Bifurcated stairs have one common lower flight and two alternative upper
   // branches. Branches are measured independently and are never added to one
@@ -182,6 +183,7 @@ export interface FlightSegment {
 }
 
 export interface PlatformSegment {
+  id?: string; // Stable attachment identity; legacy sheets gain deterministic IDs on load.
   wallSide?: "left" | "right" | "both" | "none";
   kind: "platform";
   length: string; // along the rail run
@@ -196,6 +198,7 @@ export interface PlatformSegment {
 }
 
 export interface RampSegment {
+  id?: string; // Stable attachment identity; legacy sheets gain deterministic IDs on load.
   kind: "ramp";
   length: string; // sloped length, along the ramp surface
   runH: string; // horizontal run
@@ -208,6 +211,7 @@ export interface RampSegment {
 // chord = 2R·sin(θ/2) and arc = R·θ — so radius, chord and arc are
 // cross-checked against each other.
 export interface CurveSegment {
+  id?: string; // Stable attachment identity; legacy sheets gain deterministic IDs on load.
   kind: "curve";
   radius: string; // to the rail centerline
   chord: string; // straight line end-to-end
@@ -307,6 +311,8 @@ export function syncJoints(segments: Segment[], existing: JointMeasure[] = []): 
  * and the joints on either side of it describe the wrong two pieces.
  */
 export function insertSegment(data: MeasureData, at: number, seg: Segment): void {
+  ensureSegmentIds(data);
+  if(!seg.id||data.segments.some(s=>s.id===seg.id))seg={...seg,id:`segment-${newPostId()}`};
   const idx = Math.max(0, Math.min(at, data.segments.length));
   data.segments.splice(idx, 0, seg);
   for(const t of data.landingTransitions||[])for(const key of ['landingSegIdx','lowerFlightIdx','upperFlightIdx'] as const)if(t[key]>=idx)t[key]++;
@@ -323,6 +329,7 @@ export function insertSegment(data: MeasureData, at: number, seg: Segment): void
 /** Take a piece back out, and everything measured on it with it. */
 export function removeSegment(data: MeasureData, at: number): void {
   if (at < 0 || at >= data.segments.length || data.segments.length <= 1) return;
+  ensureSegmentIds(data);
   data.segments.splice(at, 1);
   data.landingTransitions=(data.landingTransitions||[]).filter(t=>![t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx].includes(at));
   for(const t of data.landingTransitions)for(const key of ['landingSegIdx','lowerFlightIdx','upperFlightIdx'] as const)if(t[key]>at)t[key]--;
@@ -339,6 +346,9 @@ export function removeSegment(data: MeasureData, at: number): void {
 }
 
 export type Segment = FlightSegment | PlatformSegment | RampSegment | CurveSegment;
+export const segmentIdAt=(segment:Segment,index:number)=>segment.id||`legacy-segment-${index+1}`;
+/** Persist legacy identities before changing list order. Never retarget deleted hosts. */
+export function ensureSegmentIds(data:{segments:Segment[]}):void {data.segments.forEach((s,i)=>{if(!s.id)s.id=segmentIdAt(s,i);});}
 
 export interface SpiralData {
   floorToFloor: string;
@@ -1649,7 +1659,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     nativeSteel: d.nativeSteel,
     landingTransitions: (d.landingTransitions || []).map(t=>({...blankLandingTransition(t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx,t.side),...t})),
     units: d.units === "ftin" ? "ftin" : "in",
-    segments: (d.segments || []).map((seg) => {
+    segments: (d.segments || []).map((original,index) => {
+      const seg={...original,id:segmentIdAt(original,index)};
       if (seg.kind === "flight") {
         return {
           ...seg,

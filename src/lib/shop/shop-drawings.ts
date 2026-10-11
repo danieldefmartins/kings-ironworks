@@ -1,3 +1,4 @@
+import {resolveSite} from './measure-wall-placement';
 import { flightWalls, normalizeMeasureData, type MeasureData } from './measure';
 import { stairGeometry } from './measure-geometry';
 import { drawingIssues, drawingPosts } from './measure-drawing';
@@ -18,6 +19,7 @@ export type DrawingRequest = {
 export function blenderPayload(request: DrawingRequest) {
   const data = normalizeMeasureData(request.snapshot.data);
   const model = stairGeometry(data);
+  const site = resolveSite(data);
   const surfaces = model?.treads ?? [];
   const posts = model ? drawingPosts(data, model) : [];
   return {
@@ -38,6 +40,6 @@ export function blenderPayload(request: DrawingRequest) {
     }),
     // Preserve field records alongside geometry for the shop reviewer.
     measurements: data,
-    site: {datum: data.site?.datum || '', objects: data.site?.objects || [], meshes: siteMeshes(data.site), rails: siteRailPayload(data.site)},
+    site: {datum: site?.datum || '', objects: site?.objects || [], meshes: siteMeshes(site), rails: siteRailPayload(site)},
   };
 }

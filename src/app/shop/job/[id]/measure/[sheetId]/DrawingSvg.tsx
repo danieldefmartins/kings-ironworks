@@ -1,4 +1,5 @@
 "use client";
+import {resolveSite,previewWall} from '@/lib/shop/measure-wall-placement';
 import {useShopAppearance} from "../../../../ShopAppearance";
 import { drawingProjection, drawingPointOccluded } from '@/lib/shop/measure-projection';
 import type { CSSProperties } from 'react';
@@ -12,8 +13,8 @@ import {houseContext} from '@/lib/shop/measure-house-context';
 import {siteMeshes} from '@/lib/shop/measure-site';
 import { mt } from '@/lib/shop/measure-i18n';
 export type DrawingView='side'|'plan'|'iso';
-export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,showSiteContext=false,onDimension,onMeasureStep,onTapPost,onTapPlatform,style}: {
-  data:MeasureData;lang:string;focusSeg?:number;view:DrawingView;azimuth?:number;light?:boolean;details?:boolean;showSiteContext?:boolean;
+export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,showSiteContext=false,draftSiteObjects=false,onDimension,onMeasureStep,onTapPost,onTapPlatform,style}: {
+  data:MeasureData;lang:string;focusSeg?:number;view:DrawingView;azimuth?:number;light?:boolean;details?:boolean;showSiteContext?:boolean;draftSiteObjects?:boolean;
   onDimension?:(segment:number,step:number|null,key:'run'|'rise'|'width')=>void;
   onTapPlatform?:(segIdx:number)=>void;
   onMeasureStep?:(segIdx:number,stepIdx:number)=>void;onTapPost?:(id:string)=>void;style?:CSSProperties;
@@ -29,8 +30,9 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   const postDistances=posts.filter(p=>p.post.firstStepToPostEdge?.trim());
   const transitions=details&&focusSeg===undefined?landingConnections(data).map((t,i)=>({t,i,geometry:landingConnectionGeometry(data,t)})).filter(x=>x.geometry&&(x.t.kind==='drop'||x.t.kind==='level')):[];
   const distanceOrder=[...postDistances].sort((a,b)=>project(a.base!)[1]-project(b.base!)[1]);
-  const context=showSiteContext?siteMeshes(data.site):[],house=showSiteContext?houseContext(data):null;
-  const all=[...(house?[...house.vertices,...house.roof.flat(),house.label]:[]),...context.flatMap(m=>m.vertices),...model.treads.flatMap(t=>[...t.corners,{...t.corners[0],z:t.corners[0].z-t.rise}]),...posts.flatMap(p=>[p.base!,p.top!]),...transitions.flatMap(x=>x.geometry!.path)].map(project);
+  const context=showSiteContext?siteMeshes(resolveSite(data)):[],house=showSiteContext?houseContext(data):null;
+  const draftWalls=showSiteContext&&draftSiteObjects?(data.site?.objects||[]).filter(o=>o.wallAnchor&&!context.some(m=>m.id===o.id)).flatMap(o=>{const m=previewWall(data,o);return m?[m]:[];}):[];
+  const all=[...(house?[...house.vertices,...house.roof.flat(),house.label]:[]),...context.flatMap(m=>m.vertices),...draftWalls.flatMap(m=>m.vertices),...model.treads.flatMap(t=>[...t.corners,{...t.corners[0],z:t.corners[0].z-t.rise}]),...posts.flatMap(p=>[p.base!,p.top!]),...transitions.flatMap(x=>x.geometry!.path)].map(project);
   const minX=Math.min(...all.map(p=>p[0]))-70,minY=Math.min(...all.map(p=>p[1]))-80;
   const geometryRight=Math.max(...all.map(p=>p[0]))+70;
   const width=geometryRight-minX+(postDistances.length?270:0),height=Math.max(Math.max(...all.map(p=>p[1]))-minY+80,postDistances.length*54+100);
@@ -41,6 +43,7 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
     <title>{title}</title>
     <rect x={minX} y={minY} width={width} height={height} fill={light?'#fff':'#171717'}/>
     {house&&<g data-house-reference pointerEvents="none" aria-label={lang==='pt'?'Casa ilustrativa — sem medidas':lang==='es'?'Casa ilustrativa — sin medidas':'Illustrative house — not measured'}>{house.faces.map((face,i)=><polygon key={i} points={pts(face.map(j=>house.vertices[j]))} fill={light?'#e2e8f0':'#334155'} fillOpacity={.25} stroke={light?'#94a3b8':'#64748b'} strokeWidth={.8} strokeDasharray="5 4"/>)}{house.roof.map((line,i)=><polyline key={i} points={pts(line)} fill="none" stroke={light?'#94a3b8':'#64748b'} strokeWidth={1.2} strokeDasharray="5 4"/>)}<text x={project(house.label)[0]} y={project(house.label)[1]} textAnchor="middle" fontSize={10} fill={light?'#64748b':'#94a3b8'}>{lang==='pt'?'CASA · REFERÊNCIA SEM MEDIDAS':lang==='es'?'CASA · REFERENCIA SIN MEDIDAS':'HOUSE · UNMEASURED REFERENCE'}</text></g>}
+    {draftWalls.map(m=><g key={`draft-wall-${m.id}`} data-draft-wall={m.id} pointerEvents="none"><title>{m.label} · Not measured</title>{m.faces.map((face,i)=><polygon key={i} points={pts(face.map(v=>m.vertices[v]))} fill={light?'#fef3c7':'#854d0e'} fillOpacity=".22" stroke={accent} strokeDasharray="5 4" strokeWidth="1"/>)}<text x={project(m.vertices[4])[0]} y={project(m.vertices[4])[1]-10} fill={accent} fontSize="11">{m.label} · {lang==='pt'?'Não medido':lang==='es'?'Sin medir':'Not measured'}</text></g>)}
     {context.flatMap(mesh=>mesh.faces.map((face,index)=>({mesh,index,points:face.map(i=>mesh.vertices[i])}))).sort((a,b)=>depth(a.points)-depth(b.points)).map(({mesh,index,points})=><polygon key={`site-${mesh.id}-${index}`} data-site-context={mesh.id} points={pts(points)} fill={light?'#cbd5e1':'#475569'} fillOpacity={mesh.kind==='opening'?.12:.4} stroke={mesh.provisional?accent:light?'#64748b':'#94a3b8'} strokeWidth={.8} strokeDasharray={mesh.provisional?'5 4':undefined} pointerEvents="none"><title>{mesh.label}</title></polygon>)}
     {context.map(mesh=>{const at=project(mesh.vertices[mesh.vertices.length/2]);return <text key={`site-label-${mesh.id}`} x={at[0]+4} y={at[1]-10} fill={light?'#475569':'#cbd5e1'} fontSize={11} pointerEvents="none">{mesh.label}</text>;})}
     {view!=='side'&&model.treads.flatMap(t=>{

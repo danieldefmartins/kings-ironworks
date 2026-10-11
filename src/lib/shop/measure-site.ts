@@ -6,6 +6,7 @@ import { parseMeas } from './measure-parse';
 const dimension = z.string().max(40);
 export const SiteObjectSchema = z.object({
   id: z.string().min(1).max(60),
+  wallAnchor:z.object({segmentId:z.string().min(1).max(80),side:z.enum(['left','right','start','end']),gap:dimension,startExtension:dimension,endExtension:dimension,baseOffset:dimension,checkedSignature:z.string().max(24000).optional()}).nullable().optional(),
   kind: z.enum(['wall', 'column', 'post', 'slab', 'opening', 'obstruction']),
   label: z.string().min(1).max(80),
   section: z.enum(['rectangular', 'round']),
@@ -103,12 +104,12 @@ export function pointDistance(a: Point3, b: Point3) {
 /** Old clients omit new optional fields. An explicit [] still means intentional removal. */
 export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:SiteModel|undefined):SiteModel|undefined {
   if(!incoming)return existing;
-  if(incoming.rails===undefined&&existing?.rails!==undefined)return {...incoming,rails:existing.rails};
-  if(incoming.rails&&existing?.rails)return {...incoming,rails:incoming.rails.map(r=>{
-    const stored=existing.rails!.find(old=>old.id===r.id);
+  const objects=incoming.objects.map(o=>{const stored=existing?.objects.find(p=>p.id===o.id);return o.wallAnchor===undefined&&stored?.wallAnchor!==undefined?{...o,wallAnchor:stored.wallAnchor}:o;});
+  const rails=incoming.rails===undefined?existing?.rails:incoming.rails.map(r=>{
+    const stored=existing?.rails?.find(old=>old.id===r.id);
     if(r.fabrication===undefined&&stored?.fabrication)return {...r,fabrication:stored.fabrication};
     if(r.fabrication&&stored?.fabrication?.secondTop!==undefined&&r.fabrication.secondTop===undefined)return {...r,fabrication:{...r.fabrication,secondTop:stored.fabrication.secondTop}};
     return r;
-  })};
-  return incoming;
+  });
+  return {...incoming,objects,...(rails!==undefined?{rails}:{})};
 }

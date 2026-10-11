@@ -18,3 +18,17 @@ it('uses a recorded origin for the placeholder but replaces it only when actual 
  object.length='6';object.depth='6';object.height='96';view.rerender(<SiteDrawing data={data} draftObjects onSelect={()=>{}}/>);
  expect(screen.queryByRole('button',{name:'New column · Not measured'})).toBeNull();expect(siteMeshes(data.site).some(m=>m.id===object.id)).toBe(true);
 });
+
+it('places walls through real sketch edge targets and previews unfinished walls at that edge only',()=>{
+ const data=porchSiteFixture(),before=JSON.stringify(data),pick=vi.fn();
+ const view=render(<SiteDrawing data={data} wallPlacement onWallEdge={pick}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Place wall · Left · segment 1'}));
+ const [segmentId,side]=pick.mock.calls[0];expect(side).toBe('left');expect(JSON.stringify(data)).toBe(before);
+ const wall={...newSiteObject('wall','anchored','Left stair wall'),wallAnchor:{segmentId,side,gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'}};
+ data.site!.objects.push(wall);
+ view.rerender(<SiteDrawing data={data} draftObjects onSelect={()=>{}}/>);
+ expect(document.querySelector('[data-wall-preview="anchored"]')).toBeTruthy();
+ expect(document.querySelector('[data-site-ghost="anchored"]')).toBeNull();
+ expect(siteAnchors(data).some(a=>a.id.startsWith('anchored:'))).toBe(false);
+ view.rerender(<SiteDrawing data={data}/>);expect(document.querySelector('[data-wall-preview]')).toBeNull();
+});

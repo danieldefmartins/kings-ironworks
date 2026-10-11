@@ -32,6 +32,7 @@ it('opens the site-tapped step and repeats dimensions only within its flight, wi
 it('records wall sides and connection type without creating house geometry or changing offsets',()=>{
  render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'Segment 1 · flight'}));
  const before=saved();fireEvent.click(screen.getByRole('button',{name:'Both'}));expect(saved().segments[0]).toMatchObject({wallSide:'both',steps:before.segments[0].kind==='flight'?before.segments[0].steps:[]});
+ fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));
  expect(document.querySelectorAll('[data-wall-segment]')).toHaveLength(4);expect(saved().site).toEqual(before.site);
  fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));fireEvent.change(screen.getByLabelText('From side edge'),{target:{value:'3'}});
  fireEvent.change(screen.getByLabelText('Connection type'),{target:{value:'concrete_wall'}});expect(saved().posts[0]).toMatchObject({pointType:'concrete_wall',fromEdge:'3',segIdx:0,stepIdx:0});

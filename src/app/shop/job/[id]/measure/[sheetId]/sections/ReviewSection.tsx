@@ -1,4 +1,5 @@
 "use client";
+import {resolveSite} from '@/lib/shop/measure-wall-placement';
 
 // Where a sheet is judged: what the geometry checks say, what is still
 // missing and what is merely still owed, and the gate itself — submit,
@@ -89,7 +90,7 @@ export default function ReviewSection({
       {!!data.site?.objects.length&&<Card stage="review" title={siteLabels(lang).title}>
         <p className="mb-3 text-sm">{data.site.datum}</p>
         <SiteDrawing data={data}/>
-        {siteIssues(data.site).map(issue=><p key={issue} className="mt-2 text-sm text-amber-600">{mt(lang,issue)}</p>)}
+        {siteIssues(resolveSite(data)).map(issue=><p key={issue} className="mt-2 text-sm text-amber-600">{mt(lang,issue)}</p>)}
       </Card>}
       {history.length > 0 && (
         <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>

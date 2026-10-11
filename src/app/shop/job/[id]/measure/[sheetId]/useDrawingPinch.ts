@@ -2,8 +2,9 @@
 
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 
-/** Own two-finger zoom inside the drawing; keep one-finger browser scrolling. */
-export function useDrawingPinch(viewport: RefObject<HTMLDivElement | null>, content: RefObject<HTMLDivElement | null>, zoom: number, setZoom: (zoom: number) => void) {
+/** Own two-finger zoom inside the drawing; keep one-finger browser scrolling.
+ * Pass a renderer/mount key when the referenced drawing mounts conditionally. */
+export function useDrawingPinch(viewport: RefObject<HTMLDivElement | null>, content: RefObject<HTMLDivElement | null>, zoom: number, setZoom: (zoom: number) => void, mountKey?: unknown) {
   const currentZoom = useRef(zoom);
   const anchor = useRef<{ x: number; y: number; fractionX: number; fractionY: number } | null>(null);
   useLayoutEffect(() => {
@@ -72,5 +73,5 @@ export function useDrawingPinch(viewport: RefObject<HTMLDivElement | null>, cont
       el.removeEventListener('touchend', end); el.removeEventListener('touchcancel', end);
       el.removeEventListener('click', click, true);
     };
-  }, [viewport, content, setZoom]);
+  }, [viewport, content, setZoom, mountKey]);
 }

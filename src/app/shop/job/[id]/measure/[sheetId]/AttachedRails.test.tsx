@@ -10,7 +10,7 @@ function Harness({fabrication=false}:{fabrication?:boolean}){
 }
 afterEach(()=>{cleanup();vi.restoreAllMocks();});
 it('updates the visible panel with the host and revokes its previous field verification',()=>{
- render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
  const panel=document.querySelector('[data-attached-rail] polygon')!;const before=panel.getAttribute('points');
  fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
  const check=screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement;expect(check.checked).toBe(true);
@@ -22,7 +22,7 @@ it('updates the visible panel with the host and revokes its previous field verif
  expect((screen.getByRole('checkbox',{name:/Field measurements verified/}) as HTMLInputElement).checked).toBe(false);
 });
 it('adds a blank railing and supports removal with undo',()=>{
- const confirm=vi.spyOn(window,'confirm').mockReturnValue(true);render(<Harness/>);
+ const confirm=vi.spyOn(window,'confirm').mockReturnValue(true);render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));
  fireEvent.click(screen.getByRole('button',{name:'＋ Add attached railing'}));
  expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('');
  expect(document.querySelectorAll('[data-attached-rail]')).toHaveLength(1);
@@ -35,7 +35,7 @@ it('adds a blank railing and supports removal with undo',()=>{
 });
 
 it('records shop review separately and clears both checks after changing a cut gap',()=>{
- render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
  fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
  const field=screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement;
  const shop=screen.getByRole('checkbox',{name:/Shop details checked/}) as HTMLInputElement;
@@ -49,7 +49,7 @@ it('records shop review separately and clears both checks after changing a cut g
 });
 
 it('shows one task at a time and preserves edits when switching steps',()=>{
- render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
  expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
  expect(screen.queryByRole('group',{name:'Top rail'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Continue: Members & gaps →'}));
@@ -64,7 +64,7 @@ it('shows one task at a time and preserves edits when switching steps',()=>{
 });
 
 it('reuses member sizes without reusing the original opening or verification',()=>{
- render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
  fireEvent.click(screen.getByRole('button',{name:'Use design for another opening'}));
  expect((within(screen.getByRole('group',{name:'Start connection'})).getByLabelText('Attach to') as HTMLSelectElement).value).toBe('');
  expect((within(screen.getByRole('group',{name:'End connection'})).getByLabelText(/Floor elevation above structure bottom/) as HTMLInputElement).value).toBe('');
@@ -81,7 +81,7 @@ it('reuses member sizes without reusing the original opening or verification',()
 });
 
 it('adds and removes a second top rail with explicit dimensions and a new cut mark',()=>{
- render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
  fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
  fireEvent.click(screen.getByRole('button',{name:'Add second top rail'}));
  const second=screen.getByRole('group',{name:'Second top rail'});

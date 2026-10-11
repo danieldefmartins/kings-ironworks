@@ -1,4 +1,5 @@
 "use client";
+import {resolveSite} from '@/lib/shop/measure-wall-placement';
 import AttachedFabrication from './AttachedFabrication';
 import {useState} from 'react';
 import type {MeasureData} from '@/lib/shop/measure';
@@ -12,7 +13,7 @@ const field='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px
 const button='min-h-12 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm disabled:opacity-40';
 export type PanelStage = 'design'|'members'|'review';
 export default function AttachedRails({data,set,lang,stage:controlledStage,onStageChange,autoSelect=false}:{stage?:PanelStage;onStageChange?:(stage:PanelStage)=>void;autoSelect?:boolean;data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string}){
- const l=siteRailLabels(lang),site=data.site,rails=site?.rails||[],hosts=railHosts(site);
+ const l=siteRailLabels(lang),site=resolveSite(data),rails=site?.rails||[],hosts=railHosts(site);
  const [localStage,setLocalStage]=useState<PanelStage>('design');
  const stage=controlledStage??localStage;
  const setStage=(next:PanelStage)=>{setLocalStage(next);onStageChange?.(next);};
@@ -43,7 +44,7 @@ export default function AttachedRails({data,set,lang,stage:controlledStage,onSta
    <details className="rounded-xl border border-slate-200 p-3"><summary className="min-h-10 cursor-pointer font-semibold text-slate-700">{l.extras}{rail.profiles||rail.notes?' •':''}</summary>{(['profiles','notes'] as const).map(key=><label key={key} className="block text-sm font-semibold text-slate-600">{l[key]}<textarea className={field} rows={2} value={rail[key]} maxLength={1000} onChange={e=>update({[key]:e.target.value})}/></label>)}</details>
    </div>
    {layout&&<div className="rounded-2xl bg-indigo-50 p-3"><h4 className="mb-2 text-sm font-bold text-indigo-900">{l.dimensions}</h4><dl className="grid grid-cols-2 gap-3">{[[l.horizontal,formatIn(layout.horizontal)],[l.rise,`${layout.rise<0?'−':''}${formatIn(Math.abs(layout.rise))}`],[l.length,formatIn(layout.length)],[l.pitch,`${layout.pitch.toFixed(2)}°`]].map(([label,value])=><div key={label}><dt className="text-xs text-indigo-700">{label}</dt><dd className="text-lg font-bold text-indigo-950">{value}</dd></div>)}</dl></div>}
-   <div hidden={stage!=='review'}><label className="flex gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700"><input className="mt-1 size-5 shrink-0" type="checkbox" checked={siteRailVerified(site,rail)} disabled={!layout||!site?.datum.trim()||[rail.start,rail.end].some(e=>{const h=hosts.find(o=>o.id===e.objectId);return !h?.verified||h.source==='unknown';})} onChange={e=>{const checked=e.target.checked;set(d=>{const r=d.site?.rails?.find(r=>r.id===rail.id);if(r)r.checkedSignature=checked?siteRailSignature(d.site,r):'';});}}/><span><strong className="block">{l.check}</strong>{l.checkHint}</span></label></div>
+   <div hidden={stage!=='review'}><label className="flex gap-3 rounded-xl border border-slate-200 p-3 text-sm text-slate-700"><input className="mt-1 size-5 shrink-0" type="checkbox" checked={siteRailVerified(site,rail)} disabled={!layout||!site?.datum.trim()||[rail.start,rail.end].some(e=>{const h=hosts.find(o=>o.id===e.objectId);return !h?.verified||h.source==='unknown';})} onChange={e=>{const checked=e.target.checked;set(d=>{const r=d.site?.rails?.find(r=>r.id===rail.id);if(r)r.checkedSignature=checked?siteRailSignature(resolveSite(d),r):'';});}}/><span><strong className="block">{l.check}</strong>{l.checkHint}</span></label></div>
    <div hidden={stage==='design'}><AttachedFabrication mode={stage==='review'?'review':'members'} site={site} rail={rail} lang={lang} onChange={fabrication=>update({fabrication})} onReview={signature=>set(d=>{const r=d.site?.rails?.find(r=>r.id===rail.id);if(r?.fabrication)r.fabrication.reviewedSignature=signature;})}/></div>
    <ul hidden={stage!=='review'||!siteRailProblems(site,rail).length} className="space-y-1 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{siteRailProblems(site,rail).map(issue=><li key={issue}>{mt(lang,issue)}</li>)}</ul>
    {stage!=='review'&&<button type="button" className="min-h-12 w-full rounded-xl bg-indigo-600 px-4 font-bold text-white" onClick={()=>setStage(stage==='design'?'members':'review')}>{l.next}: {stage==='design'?l.members:l.review} →</button>}

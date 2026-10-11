@@ -54,6 +54,7 @@ const StepSchema = z.object({
   turnDirection: z.enum(["left", "right"]).optional(),
 });
 const FlightSchema = z.object({
+  id: z.string().min(1).max(80).optional(),
   kind: z.literal("flight"),
   branch: z.enum(["left", "right"]).optional(),
   branchOffset: meas.optional(),
@@ -67,6 +68,7 @@ const FlightSchema = z.object({
   ctrlRun: meas,
 });
 const PlatformSchema = z.object({
+  id: z.string().min(1).max(80).optional(),
   kind: z.literal("platform"),
   wallSide: z.enum(["left", "right", "both", "none"]).optional(),
   length: meas,
@@ -80,6 +82,7 @@ const PlatformSchema = z.object({
   exitOffset: meas.optional(),
 });
 const RampSchema = z.object({
+  id: z.string().min(1).max(80).optional(),
   kind: z.literal("ramp"),
   length: meas,
   runH: meas,
@@ -88,6 +91,7 @@ const RampSchema = z.object({
   width: meas,
 });
 const CurveSchema = z.object({
+  id: z.string().min(1).max(80).optional(),
   kind: z.literal("curve"),
   radius: meas,
   chord: meas,
@@ -447,7 +451,7 @@ const MeasureDataSchema = z.object({
   nativeSteel: NativeSteelSnapshotSchema.optional(),
   segments: z
     .array(z.discriminatedUnion("kind", [FlightSchema, PlatformSchema, RampSchema, CurveSchema]))
-    .max(12),
+    .max(12).refine(segments=>{const ids=segments.flatMap(s=>s.id?[s.id]:[]);return new Set(ids).size===ids.length;},"Duplicate segment identities"),
   posts: z.array(PostSchema).max(120),
   joints: z.array(z.object({
     afterSegment:z.number().int().min(0).max(30),gap:meas,offsetV:meas,offsetH:meas,angleChange:meas,
@@ -664,9 +668,27 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
+        if (parsed.data.segments.some(s=>s.id===undefined) || parsed.data.site?.objects.some(o=>o.wallAnchor===undefined) || parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
+          // Old clients may omit stable segment identities. Match by complete,
+          // unique content, never by array position: a reordered flight must not
+          // silently move its attached wall onto a different flight.
+          if(existing&&parsed.data.segments.some(segment=>segment.id===undefined)){
+            const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,canonical(v)])):value;
+            const signature=(segment:unknown)=>{const checked=z.discriminatedUnion('kind',[FlightSchema,PlatformSchema,RampSchema,CurveSchema]).safeParse(segment);if(!checked.success)return null;const plain={...checked.data};delete plain.id;return JSON.stringify(canonical(plain));};
+            const claimed=new Set(parsed.data.segments.flatMap(segment=>segment.id?[segment.id]:[]));
+            const incomingCounts=new Map<string,number>();
+            for(const segment of parsed.data.segments){if(segment.id)continue;const key=signature(segment)!;incomingCounts.set(key,(incomingCounts.get(key)||0)+1);}
+            for(const segment of parsed.data.segments){
+              if(segment.id)continue;const key=signature(segment);
+              const matches=existing.data.segments.filter(old=>old.id&&!claimed.has(old.id)&&signature(old)===key);
+              if(key&&incomingCounts.get(key)===1&&matches.length===1){segment.id=matches[0].id;claimed.add(matches[0].id!);}
+            }
+            const oldIds=new Set(existing.data.segments.flatMap(segment=>segment.id?[segment.id]:[]));
+            const unsafe=(parsed.data.site?.objects||[]).some(object=>object.wallAnchor&&oldIds.has(object.wallAnchor.segmentId)&&!claimed.has(object.wallAnchor.segmentId));
+            if(unsafe)return bad('This older tab cannot safely match walls to the changed stair sections. Reload the latest sheet before saving.',409);
+          }
           if(parsed.data.sceneSetup === undefined && existing?.data.sceneSetup) parsed.data.sceneSetup=existing.data.sceneSetup;
           else if(parsed.data.sceneSetup&&existing?.data.sceneSetup){
             if(parsed.data.sceneSetup.house===undefined)parsed.data.sceneSetup.house=existing.data.sceneSetup.house;

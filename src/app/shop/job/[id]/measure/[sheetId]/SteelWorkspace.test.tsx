@@ -5,12 +5,13 @@ import {attachedFabricationFixture} from '@/lib/shop/measure-site.fixture';
 import SteelWorkspace from './SteelWorkspace';
 import type {MeasureData} from '@/lib/shop/measure';
 import {nativeGeometrySignature} from '@/lib/shop/measure-native-steel';
+vi.mock('./SceneViewport',()=>({default:({onSelect,onUnavailable,data}:{data:MeasureData;onSelect:(s:{railId?:string;part?:string;segmentIndex?:number;postId?:string})=>void;onUnavailable:()=>void})=><div aria-label="Measured 3D canvas"><button onClick={()=>onSelect({railId:'panel-1',part:'V1'})}>Pick measured 3D picket</button><button onClick={()=>onSelect({segmentIndex:0})}>Pick native reference</button><button onClick={()=>onSelect({postId:data.posts[0].id})}>Pick native post</button><button onClick={onUnavailable}>WebGL unavailable</button></div>}));
 const catalog=[{id:'steel',sku:'FB-TEST',display:'Test flat bar',spec:'1 1/2 x 3/8',category:'flat_bar',grade:'A36',unit:'ft',stock_length_ft:24}];
 function Harness({sheetId,initialData}:{sheetId?:string;initialData?:MeasureData}={}){const [data,setData]=useState(()=>initialData||attachedFabricationFixture());return <SteelWorkspace data={data} set={fn=>setData(prev=>{const next=structuredClone(prev);fn(next);return next;})} catalog={catalog} lang="en" sheetId={sheetId}/>;}
 beforeEach(()=>{vi.stubGlobal('requestAnimationFrame',(fn:()=>void)=>{fn();return 1;});HTMLElement.prototype.scrollIntoView=vi.fn();});
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 it('assigns catalog stock to a tapped component, calculates whole bars and supports undo',()=>{
- render(<Harness/>);fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Second top rail'}));
+ render(<Harness/>);fireEvent.change(screen.getByLabelText('Choose assembly'),{target:{value:'railing'}});fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Second top rail'}));
  fireEvent.click(screen.getByRole('button',{name:/Test flat bar/}));
  expect((screen.getByLabelText('Stock bar length') as HTMLInputElement).value).toBe("24'");
  fireEvent.change(screen.getByLabelText('Length 1'),{target:{value:'150'}});
@@ -30,7 +31,7 @@ it('assigns catalog stock to a tapped component, calculates whole bars and suppo
 });
 it('links a tapped measured picket and assigns the same SKU to the remaining pickets',()=>{
  render(<Harness/>);fireEvent.change(screen.getByLabelText('Choose assembly'),{target:{value:'measured'}});
- fireEvent.click(screen.getByRole('button',{name:'Assign material SR1-V1'}));
+ fireEvent.click(screen.getByRole('button',{name:'Pick measured 3D picket'}));
  expect(screen.getByText('Linked measured member')).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:/Test flat bar/}));
  fireEvent.click(screen.getByRole('button',{name:'Use for unassigned pickets in this panel'}));
@@ -40,7 +41,7 @@ it('links a tapped measured picket and assigns the same SKU to the remaining pic
 it('keeps the canvas and stock review in separate steps without losing the selected member',()=>{
  render(<Harness/>);
  expect(screen.queryByRole('heading',{name:'Stock needed'})).toBeNull();
- fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Top rail'}));
+ fireEvent.change(screen.getByLabelText('Choose assembly'),{target:{value:'railing'}});fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Top rail'}));
  fireEvent.change(screen.getByLabelText('Member name'),{target:{value:'Entry top rail'}});
  fireEvent.click(screen.getByRole('button',{name:'Review stock →'}));
  expect(screen.getByRole('heading',{name:'Stock needed'})).toBeTruthy();
@@ -61,7 +62,7 @@ it('opens a measured member directly by name without creating a duplicate',()=>{
 it('imports native drawing cuts without replacing manual assignments and reports stale-drawing errors',async()=>{
  const fetch=vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({snapshot:{signature:'geometry',sourceUpdatedAt:'today',drawingId:'drawing',sources:[],pending:['Post connection']}}))).mockResolvedValueOnce(new Response(JSON.stringify({error:'Generate a new drawing for these measurements.'}),{status:409}));
  vi.stubGlobal('fetch',fetch);render(<Harness sheetId="sample-sheet"/>);
- fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Top rail'}));
+ fireEvent.change(screen.getByLabelText('Choose assembly'),{target:{value:'railing'}});fireEvent.click(within(screen.getByRole('group',{name:'Select member material'})).getByRole('button',{name:'Top rail'}));
  fireEvent.change(screen.getByLabelText('Member name'),{target:{value:'Keep this assignment'}});
  const button=screen.getByRole('button',{name:'Import stair & railing cuts from drawing'});fireEvent.click(button);
  await waitFor(()=>expect(screen.getByText('Cuts imported. Some members still need review in the drawing.')).toBeTruthy());
@@ -85,4 +86,19 @@ it('limits native bulk assignment to the selected section and hides unsupported 
  expect(screen.queryByRole('button',{name:'Use this catalog size in the drawing'})).toBeNull();
  fireEvent.click(screen.getByRole('button',{name:'Use for unassigned pickets in this panel'}));
  const assigned=within(screen.getByLabelText('Assigned members'));expect(assigned.getAllByRole('button')).toHaveLength(2);expect(assigned.queryByRole('button',{name:/F02/})).toBeNull();
+});
+
+it('defaults to measured 3D and refuses to turn native references into invented cut assignments',()=>{
+ render(<Harness/>);expect(screen.getByLabelText('Measured 3D canvas')).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Pick native reference'}));expect(screen.getByText(/This is a layout reference, not a finished cut/)).toBeTruthy();expect(screen.queryByLabelText('Member name')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Pick measured 3D picket'}));expect(screen.getByText('Linked measured member')).toBeTruthy();expect(screen.queryByText(/This is a layout reference/)).toBeNull();
+});
+it('retains measured 2D selection when WebGL is unavailable',()=>{
+ render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'WebGL unavailable'}));expect(screen.queryByLabelText('Measured 3D canvas')).toBeNull();fireEvent.click(screen.getByRole('button',{name:'Assign material SR1-V1'}));expect(screen.getByText('Linked measured member')).toBeTruthy();
+});
+
+it('only links native posts to current exact imported cut marks',()=>{
+ const data=attachedFabricationFixture();data.nativeSteel={signature:nativeGeometrySignature(data),sourceUpdatedAt:'today',drawingId:'drawing',pending:[],sources:[{key:'native:P1',label:'P1',role:'post',length:40,profile:'2 sq tube',signature:'drawing'}]};render(<Harness initialData={data}/>);fireEvent.click(screen.getByRole('button',{name:'Pick native post'}));expect(screen.getByText('Linked measured member')).toBeTruthy();expect((screen.getByLabelText('Member name') as HTMLInputElement).value).toBe('P1');
+});
+
+it('rejects stale native post sources without creating a manual assignment',()=>{
+ const data=attachedFabricationFixture();data.nativeSteel={signature:'old geometry',sourceUpdatedAt:'today',drawingId:'drawing',pending:[],sources:[{key:'native:P1',label:'P1',role:'post',length:40,profile:'2 sq tube',signature:'drawing'}]};render(<Harness initialData={data}/>);fireEvent.click(screen.getByRole('button',{name:'Pick native post'}));expect(screen.queryByLabelText('Member name')).toBeNull();expect(screen.getByText(/This is a layout reference, not a finished cut/)).toBeTruthy();
 });

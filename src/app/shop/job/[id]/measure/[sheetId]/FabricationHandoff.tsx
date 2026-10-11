@@ -1,4 +1,5 @@
 'use client';
+import {resolveSite} from '@/lib/shop/measure-wall-placement';
 import type {MeasureData,MeasureShape} from '@/lib/shop/measure';
 import {sheetReadiness} from '@/lib/shop/measure-checks';
 import {drawingIssues} from '@/lib/shop/measure-drawing';
@@ -9,7 +10,7 @@ const action='min-h-12 rounded-xl border border-slate-200 bg-white px-4 py-3 tex
 export default function FabricationHandoff({data,shape,lang,onMaterials,onReview,onPrint}:{data:MeasureData;shape:MeasureShape;lang:string;onMaterials:()=>void;onReview:()=>void;onPrint:()=>void}){
  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
  const readiness=sheetReadiness(data,shape),drawing=drawingIssues(data),sources=steelSources(data),coverage=steelCoverage(data,sources),takeoff=steelTakeoff(data,sources);
- const objects=data.site?.objects||[],rows=data.steelPlan?.rows||[],specialtyOpen=(data.specialtySteel||[]).filter(a=>!specialtyChecked(a)).length;
+ const objects=resolveSite(data)?.objects||[],rows=data.steelPlan?.rows||[],specialtyOpen=(data.specialtySteel||[]).filter(a=>!specialtyChecked(a)).length;
  const bars=takeoff.groups.reduce((n,g)=>n+g.bars.length,0),cutCount=takeoff.groups.reduce((n,g)=>n+g.bars.reduce((n,b)=>n+b.cuts.length,0),0);
  const connections=drawing.filter(key=>/Posts|Connections|Joints|landingDrawing|siteRail/.test(key));
  const open=readiness.remaining>0||drawing.length>0||!rows.length||takeoff.pending>0||coverage.unassigned>0||coverage.unresolved>0||coverage.stale||specialtyOpen>0;

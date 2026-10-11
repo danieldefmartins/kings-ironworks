@@ -26,3 +26,14 @@ it('shows the reference house only in context view, without adding site geometry
  expect(screen.getByText('HOUSE · UNMEASURED REFERENCE')).toBeTruthy();expect(document.querySelector('[data-house-reference]')?.getAttribute('pointer-events')).toBe('none');expect(siteMeshes(data.site)).toEqual(meshes);expect(JSON.stringify(data)).toBe(before);
  view.rerender(<DrawingSvg data={data} lang="en" view="iso"/>);expect(document.querySelector('[data-house-reference]')).toBeNull();
 });
+
+it('carries an anchored draft into the measuring sketch but excludes it from printable geometry',async()=>{
+ const {wallPlacementEdges}=await import('@/lib/shop/measure-wall-placement');
+ const data=porchSiteFixture(),edge=wallPlacementEdges(data)[0];
+ data.site!.objects.push({...newSiteObject('wall','draft-anchor','Stair wall'),wallAnchor:{segmentId:edge.segmentId,side:edge.side,gap:'0',startExtension:'0',endExtension:'0',baseOffset:'0'}});
+ const view=render(<DrawingSvg data={data} lang="en" view="iso" showSiteContext draftSiteObjects/>);
+ expect(document.querySelector('[data-draft-wall="draft-anchor"]')).toBeTruthy();
+ expect(document.querySelector('[data-site-context="draft-anchor"]')).toBeNull();
+ view.rerender(<DrawingSvg data={data} lang="en" view="iso" showSiteContext/>);
+ expect(document.querySelector('[data-draft-wall="draft-anchor"]')).toBeNull();
+});

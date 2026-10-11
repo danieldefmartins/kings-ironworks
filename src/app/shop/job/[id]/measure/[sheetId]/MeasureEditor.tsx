@@ -46,6 +46,7 @@ import { SPEC_OPTIONS } from "@/lib/shop/i18n";
 import { sketchViews, type SketchView } from "./Sketch";
 import { railSideSetback } from "@/lib/shop/measure";
 import PrintSheet from "./PrintSheet";
+import {useMeasureHistory} from "./useMeasureHistory";
 import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
 import FenceSections from "./shapes/FenceSections";
@@ -137,7 +138,7 @@ export default function MeasureEditor({
   // useSheetSync. Nothing below this line needs to know how a save happens.
   const {
     data,
-    set,
+    set: syncSet,
     dataRef,
     saveState,
     pendingLocal,
@@ -158,6 +159,7 @@ export default function MeasureEditor({
     onServerStatus: (next) => setStatus(next),
     onReopened: () => setInfo(mt(lang, "editWarning")),
   });
+  const {set,undo,redo,canUndo,canRedo}=useMeasureHistory(dataRef,syncSet,data);
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
@@ -178,6 +180,8 @@ export default function MeasureEditor({
   const [activeStage, setActiveStage] = useState<EditorStage>("steps");
   const [workspace, setWorkspace] = useState<'start'|'site'|'visual'|'tune'|'handoff'|'details'|'panels'|'steel'>(sheet.data.sceneSetup?.projectType?'site':'start');
   const [railingMode,setRailingMode]=useState<'details'|'panels'>(sheet.data.site?.rails?.length?'panels':'details');
+  const [visualSite,setVisualSite]=useState<string|undefined>();
+  const [visualPost,setVisualPost]=useState<string|undefined>();
   const [visualTarget,setVisualTarget]=useState<{segment:number;step:number|null}|undefined>();
   const [panelStage,setPanelStage]=useState<PanelStage>('design');
   const siteText = siteLabels(lang);
@@ -1096,24 +1100,26 @@ export default function MeasureEditor({
         </div>
 
         <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1"><button type="button" aria-label={lang==='pt'?'Desfazer':lang==='es'?'Deshacer':'Undo'} disabled={!canUndo} onClick={undo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↶</button><button type="button" aria-label={lang==='pt'?'Refazer':lang==='es'?'Rehacer':'Redo'} disabled={!canRedo} onClick={redo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↷</button></div>
           <details className="relative"><summary className="min-h-11 cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-slate-500">{lang==='pt'?'Aparência':lang==='es'?'Apariencia':'Appearance'}</summary><div className="absolute left-0 top-full z-40 min-w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl"><ShopAppearance lang={lang}/></div></details>
           <button type="button" className="min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-slate-500" onClick={()=>{setWorkspace(workspace==='details'?'visual':'details');setSetupUnlocked(true);goToStage('steps');}}>{workspace==='details'?(lang==='pt'?'Voltar ao desenho':lang==='es'?'Volver al dibujo':'Back to sketch'):(lang==='pt'?'Todas as ferramentas':lang==='es'?'Todas las herramientas':'All tools')}</button>
         </div>
         <SketchWorkflow lang={lang} stage={workspace==='start'?'project':workspace==='site'?'site':workspace==='visual'?'measure':workspace==='tune'||workspace==='panels'&&panelStage==='design'?'tune':workspace==='handoff'||workspace==='steel'||workspace==='panels'?'fabricate':null} onChange={(part:SketchStage)=>{setWorkspace(part==='project'?'start':part==='site'?'site':part==='measure'?'visual':part==='tune'?(railingMode==='panels'?'panels':'tune'):'handoff');if(part==='tune')setPanelStage('design');}}/>
         {workspace==='start'&&<SceneStart data={data} set={set} lang={lang} onContinue={()=>setWorkspace('site')}/>}
         {(workspace==='visual'||workspace==='tune')&&<>
-          {workspace==='visual'&&['grate','ladder'].includes(data.sceneSetup?.projectType||'')?<div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></div>:<VisualMeasureWorkspace initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode={workspace==='tune'?'tune':'measure'}/>}
+          {workspace==='visual'&&['grate','ladder'].includes(data.sceneSetup?.projectType||'')?<div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></div>:<VisualMeasureWorkspace initialPostId={visualPost} onSiteObject={id=>{setVisualSite(id);setWorkspace('site');}} onAttached={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode={workspace==='tune'?'tune':'measure'}/>}
           <div className="mt-5 flex flex-wrap justify-between gap-3"><button type="button" className="min-h-12 rounded-2xl px-4 font-semibold text-slate-500" onClick={()=>setWorkspace('site')}>← {lang==='pt'?'Editar local':lang==='es'?'Editar lugar':'Edit site'}</button><button type="button" className="min-h-12 rounded-2xl bg-indigo-600 px-6 font-semibold text-white shadow-md" onClick={()=>{if(workspace==='visual'){setWorkspace(['grate','ladder'].includes(data.sceneSetup?.projectType||'')?'handoff':railingMode==='panels'?'panels':'tune');setPanelStage('design');}else setWorkspace('handoff');}}>{workspace==='visual'&&!['grate','ladder'].includes(data.sceneSetup?.projectType||'')?(lang==='pt'?'Posicionar guarda-corpo':lang==='es'?'Colocar barandilla':'Position the railing'):(lang==='pt'?'Preparar fabricação':lang==='es'?'Preparar fabricación':'Prepare fabrication')} →</button></div>
           <button type="button" className="mt-3 min-h-11 rounded-xl px-4 text-sm font-semibold text-slate-500" onClick={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}>{siteText.panels} →</button>
         </>}
         {workspace==='handoff'&&<FabricationHandoff data={data} shape={sheet.shape} lang={lang} onMaterials={()=>setWorkspace('steel')} onReview={()=>{setWorkspace('details');goToStage('review');}} onPrint={()=>{fetch('/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'log_print',id:sheet.id,jobId:job.id,rev})}).catch(()=>{});window.print();}}/>}
         {workspace==='steel'&&<><button type="button" className="mb-3 min-h-11 px-3 text-sm font-semibold text-slate-500" onClick={()=>setWorkspace('handoff')}>← {lang==='pt'?'Pacote de fabricação':lang==='es'?'Paquete de fabricación':'Fabrication package'}</button><SteelWorkspace data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/></>}
         {workspace==='panels'&&<><div className="mb-3 flex flex-wrap gap-2"><button type="button" className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600" onClick={()=>{setRailingMode('details');setWorkspace('tune');}}>{lang==='pt'?'Postes da escada':lang==='es'?'Postes de escalera':'Stair railing posts'}</button><button type="button" className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600" onClick={()=>setWorkspace('handoff')}>{lang==='pt'?'Pacote de fabricação':lang==='es'?'Paquete de fabricación':'Fabrication package'} →</button></div><PanelWorkspace data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setWorkspace('site')} onReview={()=>{setWorkspace('details');goToStage('review');}}/></>}
-        {workspace==='site'&&<SiteWorkspace data={data} set={set} lang={lang}
+        {workspace==='site'&&<SiteWorkspace initialObjectId={visualSite} data={data} set={set} lang={lang}
           onPanels={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}
           onContinue={()=>setWorkspace('visual')}
           onDetails={()=>{setWorkspace('details');setSetupUnlocked(true);goToStage('photos');}}
-          onMeasure={(segment,step)=>{setVisualTarget(segment===undefined?undefined:{segment,step:step??null});setWorkspace('visual');}}
+          onPost={id=>{setVisualPost(id);setVisualTarget(undefined);setRailingMode('details');setWorkspace('tune');}}
+          onMeasure={(segment,step)=>{setVisualPost(undefined);setVisualTarget(segment===undefined?undefined:{segment,step:step??null});setWorkspace('visual');}}
         />}
         <div hidden={workspace!=='details'}>
         <div className="sticky top-0 z-30 -mx-4 px-4 py-2 mb-4 bg-neutral-950/95 backdrop-blur border-y border-neutral-800">

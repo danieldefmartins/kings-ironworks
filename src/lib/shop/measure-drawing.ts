@@ -1,3 +1,4 @@
+import {resolveSite} from './measure-wall-placement';
 import { landingConnections, landingConnectionComplete } from "./measure-landings";
 import type { MeasureData } from './measure';
 import { orderedPosts } from './measure-checks';
@@ -21,10 +22,10 @@ export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<ty
 
 /** Drawing completeness is separate from the existing field submission gate. */
 export function drawingIssues(data: MeasureData): string[] {
-  const model=stairGeometry(data);
-  const attachedIssues=[...new Set((data.site?.rails||[]).flatMap(r=>siteRailProblems(data.site,r)))];
-  if(!model)return [...(data.site?.rails?.length?[]:['drawingNoGeometry']), ...siteIssues(data.site), ...attachedIssues];
-  const issues:string[]=[...siteIssues(data.site),...attachedIssues];
+  const model=stairGeometry(data),site=resolveSite(data);
+  const attachedIssues=[...new Set((site?.rails||[]).flatMap(r=>siteRailProblems(site,r)))];
+  if(!model)return [...(site?.rails?.length?[]:['drawingNoGeometry']), ...siteIssues(site), ...attachedIssues];
+  const issues:string[]=[...siteIssues(site),...attachedIssues];
   if(landingConnections(data).some(t=>!landingConnectionComplete(data,t)))issues.push("landingDrawingOpen");
   if(model.provisional)issues.push('drawingGeometryOpen');
   const posts=drawingPosts(data,model).filter(p=>p.post.pointType==='railing_post');

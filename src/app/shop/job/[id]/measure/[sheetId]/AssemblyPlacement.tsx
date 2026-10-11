@@ -1,0 +1,33 @@
+'use client';
+import {useState} from 'react';
+import {RotateCcw,RotateCw,X} from 'lucide-react';
+import type {MeasureData} from '@/lib/shop/measure';
+import {updateSceneSetup} from '@/lib/shop/measure-scene-setup';
+import {siteNumber} from '@/lib/shop/measure-site';
+const field='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900';
+const button='min-h-12 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm disabled:opacity-40';
+const origin=()=>({x:'0',y:'0',z:'0',rotation:0});
+const measured=(s:string)=>siteNumber(s);
+const decimal=(n:number)=>Number(n.toFixed(8)).toString();
+export default function AssemblyPlacement({data,set,lang,onClose}:{data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string;onClose?:()=>void}){
+ const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
+ const placement=data.sceneSetup?.placement||origin(),[step,setStep]=useState('1'),[angleDraft,setAngleDraft]=useState<{text:string;source:number}|null>(null);
+ const angle=angleDraft?.source===placement.rotation?angleDraft.text:String(placement.rotation);
+ const parsedAngle=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(angle.trim())?Number(angle):null;
+ const angleInvalid=parsedAngle===null||!Number.isFinite(parsedAngle)||Math.abs(parsedAngle)>360;
+ const invalidAxes=(['x','y','z'] as const).filter(axis=>measured(placement[axis])===null),canMove=!invalidAxes.length&&!angleInvalid;
+ function position(axis:'x'|'y'|'z',value:string){set(d=>updateSceneSetup(d,{placement:{...(d.sceneSetup?.placement||origin()),[axis]:value}}));}
+ function rotate(delta:number){if(!canMove)return;set(d=>{const p=d.sceneSetup?.placement||origin();updateSceneSetup(d,{placement:{...p,rotation:((p.rotation+delta+180)%360+360)%360-180}});});setAngleDraft(null);}
+ function nudge(axis:'x'|'y',direction:number){if(!canMove)return;set(d=>{const p=d.sceneSetup?.placement||origin(),current=measured(p[axis]),increment=measured(step);if(current===null||increment===null)return;const next=decimal(current+direction*increment);if(measured(next)!==null)updateSceneSetup(d,{placement:{...p,[axis]:next}});});}
+ const canNudge=(axis:'x'|'y',direction:number)=>canMove&&measured(decimal(measured(placement[axis])!+direction*measured(step)!))!==null;
+ return <section data-assembly-placement aria-label={tx('Assembly placement','Posição do conjunto','Posición del conjunto')} className="rounded-2xl border border-slate-200 bg-white p-4 text-slate-900 shadow-sm">
+  <div className="mb-2 flex items-center justify-between gap-2"><h3 className="text-lg font-bold">{tx('Position assembly','Posicionar conjunto','Posicionar conjunto')}</h3>{onClose&&<button type="button" className={button} aria-label={tx('Close assembly placement','Fechar posição do conjunto','Cerrar posición del conjunto')} onClick={onClose}><X className="size-4"/></button>}</div>
+  <p className="mb-4 text-xs leading-relaxed text-slate-500">{tx('Stairs, railings and edge-linked walls move together. Surveyed walls stay fixed. Coordinates use the site axes.','Escadas, corrimãos e paredes vinculadas às bordas movem juntos. Paredes levantadas ficam fixas. Coordenadas nos eixos do local.','Escaleras, barandillas y paredes vinculadas se mueven juntas. Las paredes levantadas quedan fijas. Coordenadas en ejes del lugar.')}</p>
+  <div className="grid grid-cols-3 gap-2">{(['x','y','z'] as const).map(axis=><label key={axis} className="text-sm font-semibold">{axis.toUpperCase()} · {tx('inches','polegadas','pulgadas')}<input id={`assembly-placement-${axis}`} className={field} value={placement[axis]} aria-invalid={invalidAxes.includes(axis)} maxLength={40} placeholder="0" onChange={e=>position(axis,e.target.value)}/></label>)}</div>
+  {!!invalidAxes.length&&<p role="status" className="mt-2 text-xs text-amber-800">{tx('Enter valid signed dimensions. Incomplete coordinates remain saved as draft; movement buttons wait for valid values.','Informe medidas válidas com sinal. Coordenadas incompletas ficam como rascunho; botões aguardam valores válidos.','Introduzca medidas válidas con signo. Coordenadas incompletas quedan como borrador; botones esperan valores válidos.')}</p>}
+  <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto_auto] items-end gap-2"><label className="text-sm font-semibold">{tx('Rotation · degrees','Rotação · graus','Rotación · grados')}<input id="assembly-placement-rotation" className={field} value={angle} inputMode="decimal" aria-invalid={angleInvalid} maxLength={24} onChange={e=>{const text=e.target.value,value=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text.trim())?Number(text):null;const valid=value!==null&&Number.isFinite(value)&&Math.abs(value)<=360;setAngleDraft({text,source:valid?value:placement.rotation});if(valid)set(d=>updateSceneSetup(d,{placement:{...(d.sceneSetup?.placement||origin()),rotation:value}}));}}/></label><button type="button" className={button} disabled={!canMove} aria-label={tx('Rotate left 90 degrees','Girar 90 graus à esquerda','Girar 90 grados a izquierda')} onClick={()=>rotate(-90)}><RotateCcw className="mx-auto size-4"/>90°</button><button type="button" className={button} disabled={!canMove} aria-label={tx('Rotate right 90 degrees','Girar 90 graus à direita','Girar 90 grados a derecha')} onClick={()=>rotate(90)}><RotateCw className="mx-auto size-4"/>90°</button></div>
+  {angleInvalid&&<p role="status" className="mt-2 text-xs text-amber-800">{tx('Angle not saved. Enter a decimal angle from −360° to 360°.','Ângulo não salvo. Informe um ângulo decimal de −360° a 360°.','Ángulo sin guardar. Introduzca un ángulo decimal de −360° a 360°.')}</p>}
+  <div className="mt-4 rounded-xl bg-slate-100 p-3"><label className="text-sm font-semibold">{tx('Move increment','Incremento de movimento','Incremento de movimiento')}<select className={field} value={step} onChange={e=>setStep(e.target.value)}>{['1/16','1/4','1','6'].map(value=><option key={value} value={value}>{value}″</option>)}</select></label><div className="mt-3 grid grid-cols-2 gap-2">{(['x','y'] as const).flatMap(axis=>[-1,1].map(direction=><button type="button" key={`${axis}${direction}`} className={button} disabled={!canNudge(axis,direction)} onClick={()=>nudge(axis,direction)} aria-label={`${tx('Move','Mover','Mover')} ${axis.toUpperCase()} ${direction<0?'−':'+'}`}>{axis.toUpperCase()} {direction<0?'−':'+'} {step}″</button>))}</div></div>
+  <button type="button" className={`${button} mt-4 w-full`} onClick={()=>{set(d=>updateSceneSetup(d,{placement:origin()}));setAngleDraft(null);}}>{tx('Reset position & rotation to zero','Zerar posição e rotação','Restablecer posición y rotación a cero')}</button>
+ </section>;
+}

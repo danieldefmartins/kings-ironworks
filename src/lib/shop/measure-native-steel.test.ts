@@ -32,3 +32,9 @@ it('imports only validated outside profile dimensions, without inferring solid o
  expect(parseNativeCutSources(f,context).sources[0].envelope).toBeUndefined();
  input.members[0].section.width=-1;expect(()=>parseNativeCutSources(input,context)).toThrow(/invalid/);
 });
+
+it('does not stale existing native cuts when stable segment identifiers are introduced',()=>{
+ const original={segments:[{kind:'flight',width:'48',steps:[{rise:'7',run:'11'}]}],posts:[{id:'p1'}]};
+ expect(nativeGeometrySignature({...original,segments:original.segments.map(s=>({...s,id:'stable-flight'}))})).toBe(nativeGeometrySignature(original));
+ expect(nativeGeometrySignature({...original,posts:[{id:'p2'}]})).not.toBe(nativeGeometrySignature(original));
+});
