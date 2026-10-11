@@ -926,6 +926,17 @@ export async function uploadPhotoObject(
   }
 }
 
+// Read raw bytes back from the private bucket (server-side only; used for
+// objects that must never get a public or signed URL, like encrypted W-9s).
+export async function downloadPhotoObject(path: string): Promise<Buffer> {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${encodeURI(path)}`, {
+    headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Storage download ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
 // Remove an object from the private bucket (admin photo deletion).
 export async function deletePhotoObject(path: string): Promise<void> {
   await fetch(`${SUPABASE_URL}/storage/v1/object/${PHOTO_BUCKET}/${encodeURI(path)}`, {

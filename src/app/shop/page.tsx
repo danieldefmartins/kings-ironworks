@@ -13,6 +13,8 @@ import {
 } from "@/lib/shop/db";
 import ShopTopBar from "./ShopTopBar";
 import OnTheClock, { type OnClockRow } from "./OnTheClock";
+import ProfileBanner from "./ProfileBanner";
+import { getTeamRecord } from "@/lib/shop/team-db";
 import ProjectMoney from "./jobs/ProjectMoney";
 import { loadProjectMoney } from "@/lib/shop/project-money-db";
 import type { Job } from "@/lib/shop/shared";
@@ -61,7 +63,12 @@ async function buildOnClockRows(jobs: Awaited<ReturnType<typeof listJobs>>): Pro
 export default async function ShopToday() {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
-  const [jobs, mine] = await Promise.all([listJobs(), getRunningEntry(worker.id)]);
+  const [jobs, mine, profileRecord] = await Promise.all([
+    listJobs(),
+    getRunningEntry(worker.id),
+    // The profile card is a nicety: if it cannot load, Today still renders.
+    getTeamRecord(worker.id).catch(() => null),
+  ]);
   const active = jobs.filter((j) => !j.is_subcontractor && j.current_stage !== "Lead" && j.current_stage !== "Done");
   const current = mine ? jobs.find((j) => j.id === mine.job_id) : null;
   const inFab = active.filter(isInFabrication);
@@ -119,6 +126,7 @@ export default async function ShopToday() {
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">{label(isOwner ? "Your shop at a glance" : "Your work today", isOwner ? "Sua oficina em resumo" : "Seu trabalho hoje", isOwner ? "Tu taller de un vistazo" : "Tu trabajo de hoy")}</h1>
 
         </header>
+        <ProfileBanner record={profileRecord} lang={lang} />
         <nav aria-label={label("Quick access", "Acesso rápido", "Acceso rápido")} className="grid grid-cols-3 gap-2">
           {favorites.map(({ href, title, icon: Icon }) => <Link key={href} href={href} className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.025] px-2 py-3 text-center transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-amber-400 sm:flex-row sm:gap-3"><Icon aria-hidden className="h-5 w-5 shrink-0 text-amber-300" strokeWidth={1.8} /><span className="text-xs font-medium leading-snug text-neutral-200 sm:text-sm">{title}</span></Link>)}
         </nav>
