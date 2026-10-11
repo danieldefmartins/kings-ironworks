@@ -59,3 +59,20 @@ it('shows one task at a time and preserves edits when switching steps',()=>{
  fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
  expect((within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing') as HTMLInputElement).value).toBe('2');
 });
+
+it('reuses member sizes without reusing the original opening or verification',()=>{
+ render(<Harness fabrication/>);fireEvent.click(screen.getByRole('button',{name:/Porch side railing/}));
+ fireEvent.click(screen.getByRole('button',{name:'Use design for another opening'}));
+ expect((within(screen.getByRole('group',{name:'Start connection'})).getByLabelText('Attach to') as HTMLSelectElement).value).toBe('');
+ expect((within(screen.getByRole('group',{name:'End connection'})).getByLabelText(/Floor elevation above structure bottom/) as HTMLInputElement).value).toBe('');
+ expect(document.querySelectorAll('[data-attached-rail]')).toHaveLength(1);
+ fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
+ expect((within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing') as HTMLInputElement).value).toBe('1 1/2');
+ fireEvent.change(within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing'),{target:{value:'2'}});
+ fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
+ expect((screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement).checked).toBe(false);
+ expect((screen.getByRole('checkbox',{name:/Shop details checked/}) as HTMLInputElement).checked).toBe(false);
+ fireEvent.click(screen.getByRole('button',{name:/SR1 · Porch side railing.*Layout verified/}));
+ fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
+ expect((within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing') as HTMLInputElement).value).toBe('1 1/2');
+});

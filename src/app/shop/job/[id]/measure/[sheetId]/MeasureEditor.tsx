@@ -82,6 +82,8 @@ import {
 } from "./fields";
 import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 import SiteWorkspace from './SiteWorkspace';
+import PanelWorkspace from './PanelWorkspace';
+import type {PanelStage} from './AttachedRails';
 import { siteLabels } from '@/lib/shop/measure-site-i18n';
 
 // Where a multi-flight sheet should open. Reopening on flight 1 after a day
@@ -164,7 +166,9 @@ export default function MeasureEditor({
   const [activeFlight, setActiveFlight] = useState(() => firstOpenFlight(sheet.data));
   // Site modeling comes first; the existing detailed measuring stages remain available.
   const [activeStage, setActiveStage] = useState<EditorStage>("steps");
-  const [workspace, setWorkspace] = useState<'site'|'details'>('site');
+  const [workspace, setWorkspace] = useState<'site'|'details'|'panels'>('site');
+  const [railingMode,setRailingMode]=useState<'details'|'panels'>(sheet.data.site?.rails?.length?'panels':'details');
+  const [panelStage,setPanelStage]=useState<PanelStage>('design');
   const siteText = siteLabels(lang);
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
@@ -925,7 +929,7 @@ export default function MeasureEditor({
         colouring those red teaches a measurer to ignore the colour. */}
     <MissingCtx.Provider value={missingKeys}>
       {/* Room for the fixed action bar at the bottom. */}
-      <div className={`mx-auto ${workspace==='site'?'max-w-7xl':'max-w-4xl'} p-4 pb-44 print:hidden`}>
+      <div className={`mx-auto ${workspace!=='details'?'max-w-7xl':'max-w-4xl'} p-4 pb-44 print:hidden`}>
         {!online && (
           <div className="sticky top-0 z-30 -mx-4 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black">
             {mt(lang, "offlineBanner")}
@@ -1082,16 +1086,22 @@ export default function MeasureEditor({
 
         <nav className="mb-4 grid grid-cols-3 gap-2" aria-label="Site to fabrication">
           {(['site','railing','fabrication'] as const).map((part,i)=>{
-            const selected=part==='site'?workspace==='site':workspace==='details'&&(part==='fabrication'?['specs','review'].includes(activeStage):!['specs','review'].includes(activeStage));
-            return <button type="button" key={part} aria-current={selected?'step':undefined} className={`min-h-14 rounded-2xl border px-2 py-3 text-sm font-bold shadow-sm sm:text-base ${selected?'border-indigo-400 bg-indigo-50 text-indigo-900':'border-neutral-700 bg-neutral-900 text-neutral-300'}`} onClick={()=>{setWorkspace(part==='site'?'site':'details');if(part!=='site')setActiveStage(part==='fabrication'?'specs':'steps');}}>{i+1}. {siteText[part]}</button>;
+            const fabrication=workspace==='panels'?panelStage!=='design':['specs','review'].includes(activeStage);
+            const selected=part==='site'?workspace==='site':workspace!=='site'&&(part==='fabrication'?fabrication:!fabrication);
+            return <button type="button" key={part} aria-current={selected?'step':undefined} className={`min-h-14 rounded-2xl border px-2 py-3 text-sm font-bold shadow-sm sm:text-base ${selected?'border-indigo-400 bg-indigo-50 text-indigo-900':'border-neutral-700 bg-neutral-900 text-neutral-300'}`} onClick={()=>{setWorkspace(part==='site'?'site':railingMode);if(part!=='site'){setActiveStage(part==='fabrication'?'specs':'steps');setPanelStage(part==='fabrication'?'members':'design');}}}>{i+1}. {siteText[part]}</button>;
           })}
         </nav>
+        {workspace!=='site'&&<div className="mb-4 grid grid-cols-2 gap-2" aria-label={siteText.railing}>
+          {(['panels','details'] as const).map(mode=><button type="button" key={mode} aria-pressed={workspace===mode} className={`min-h-12 rounded-xl border px-3 py-2 text-sm font-bold ${workspace===mode?'border-indigo-400 bg-indigo-50 text-indigo-900':'border-neutral-700 bg-neutral-900 text-neutral-300'}`} onClick={()=>{const fabrication=workspace==='panels'?panelStage!=='design':['specs','review'].includes(activeStage);setRailingMode(mode);setWorkspace(mode);setPanelStage(fabrication?'members':'design');setActiveStage(fabrication?'specs':'steps');}}>{mode==='panels'?siteText.panels:siteText.native}</button>)}
+        </div>}
+        {workspace==='panels'&&<PanelWorkspace data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setWorkspace('site')} onReview={()=>{setWorkspace('details');goToStage('review');}}/>}
         {workspace==='site'&&<SiteWorkspace data={data} set={set} lang={lang}
-          onContinue={()=>{setWorkspace('details');goToStage('posts');}}
+          onPanels={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}
+          onContinue={()=>{setWorkspace(railingMode);if(railingMode==='panels')setPanelStage('design');else goToStage('posts');}}
           onDetails={()=>{setWorkspace('details');setSetupUnlocked(true);goToStage('photos');}}
           onMeasure={(segment,step,addedFlightIndex)=>{setWorkspace('details');goToStage('steps');if(segment!==undefined){const flightIndex=addedFlightIndex??(data.segments.slice(0,segment+1).filter(s=>s.kind==='flight').length-1);setActiveFlight(Math.max(0,flightIndex));if(step!==null&&step!==undefined)setStepEdit({segIdx:segment,stepIdx:step});}}}
         />}
-        <div hidden={workspace==='site'}>
+        <div hidden={workspace!=='details'}>
         <div className="sticky top-0 z-30 -mx-4 px-4 py-2 mb-4 bg-neutral-950/95 backdrop-blur border-y border-neutral-800">
           {/* The single truth, and the single next action. Everything else on
               this screen is secondary to it. */}
@@ -1563,7 +1573,7 @@ export default function MeasureEditor({
 
           It sits under the fraction bar deliberately: while a measurement
           field has focus, fractions are what the thumb is reaching for. */}
-      {status === "in_progress" && workspace !== 'site' && (
+      {status === "in_progress" && workspace === 'details' && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur print:hidden">
           <div className="mx-auto max-w-4xl">
             <div className="flex items-center gap-2">

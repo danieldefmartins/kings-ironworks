@@ -6,6 +6,12 @@ import { siteNumber, siteObjectProblems, type SiteModel, type SiteObject } from 
 
 export const newSiteRailEnd = (): SiteRailEnd => ({objectId:'',face:'near',along:.5,angle:0,elevation:'',connection:''});
 export const newSiteRail = (id:string,label:string): SiteRail => ({id,label,start:newSiteRailEnd(),end:newSiteRailEnd(),height:'',bottomClearance:'',infill:'',profiles:'',notes:'',checkedSignature:''});
+/** Reuse design dimensions only; the new opening needs its own measurements and checks. */
+export function reuseSiteRail(source:SiteRail,id:string,label:string):SiteRail {
+ const copy=structuredClone(source);
+ return {...copy,id,label:label.slice(0,80),start:newSiteRailEnd(),end:newSiteRailEnd(),checkedSignature:'',
+  ...(copy.fabrication?{fabrication:{...copy.fabrication,reviewedSignature:''}}:{})};
+}
 export const railHosts = (site?:SiteModel) => (site?.objects||[]).filter(o=>['wall','column','post'].includes(o.kind));
 
 /** Face coordinates stay attached to a stable object ID, including rotation and resizing.

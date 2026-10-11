@@ -11,6 +11,7 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: () => {} }) }));
 
 import MeasureEditor from "./MeasureEditor";
+import {attachedFabricationFixture} from "@/lib/shop/measure-site.fixture";
 
 const job: Job = {
   id: "job-1",
@@ -108,4 +109,27 @@ describe("three-flight stair", () => {
     click(/Save and finish later/);
     expect(push).toHaveBeenCalledWith("/shop/job/job-1/measure");
   });
+});
+
+it('opens saved attached panels from the main navigation and keeps edits across workspaces',()=>{
+ installFetch();const sheet=sheetWith(0);sheet.data=attachedFabricationFixture();
+ render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
+ fireEvent.click(screen.getByRole('button',{name:'2. Railing'}));
+ expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
+ expect(screen.getByRole('button',{name:'Zoom in'})).toBeTruthy();
+ fireEvent.change(screen.getByLabelText('Finished railing height above floor'),{target:{value:'43'}});
+ fireEvent.click(screen.getByRole('button',{name:'3. Fabrication'}));
+ expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
+ expect(screen.queryByRole('group',{name:'Start connection'})).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:'Stairs & specialty'}));
+ expect(screen.getByRole('button',{name:'Stairs & specialty'}).getAttribute('aria-pressed')).toBe('true');
+ fireEvent.click(screen.getByRole('button',{name:'Attached panels',exact:true}));
+ expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'1. Site'}));
+ fireEvent.click(screen.getByRole('button',{name:/Design attached panels/}));
+ expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
+ fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
+ expect(screen.getByRole('button',{name:'Review drawing package →'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Review drawing package →'}));
+ expect(screen.getByRole('button',{name:'Stairs & specialty'}).getAttribute('aria-pressed')).toBe('true');
 });

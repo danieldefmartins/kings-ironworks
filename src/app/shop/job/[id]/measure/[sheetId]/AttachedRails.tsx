@@ -3,17 +3,20 @@ import AttachedFabrication from './AttachedFabrication';
 import {useState} from 'react';
 import type {MeasureData} from '@/lib/shop/measure';
 import {newSiteModel} from '@/lib/shop/measure-site';
-import {newSiteRail,railHosts,siteRailLayout,siteRailProblems,siteRailSignature,siteRailVerified,type SiteRail,type SiteRailEnd} from '@/lib/shop/measure-site-rails';
+import {newSiteRail,reuseSiteRail,railHosts,siteRailLayout,siteRailProblems,siteRailSignature,siteRailVerified,type SiteRail,type SiteRailEnd} from '@/lib/shop/measure-site-rails';
 import {siteRailLabels} from '@/lib/shop/measure-site-rails-i18n';
 import {formatIn} from '@/lib/shop/measure-parse';
 import {mt} from '@/lib/shop/measure-i18n';
 
 const field='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900';
 const button='min-h-12 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm disabled:opacity-40';
-export default function AttachedRails({data,set,lang}:{data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string}){
+export type PanelStage = 'design'|'members'|'review';
+export default function AttachedRails({data,set,lang,stage:controlledStage,onStageChange,autoSelect=false}:{stage?:PanelStage;onStageChange?:(stage:PanelStage)=>void;autoSelect?:boolean;data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string}){
  const l=siteRailLabels(lang),site=data.site,rails=site?.rails||[],hosts=railHosts(site);
- const [stage,setStage]=useState<'design'|'members'|'review'>('design');
- const [selected,select]=useState(''),[removed,setRemoved]=useState<SiteRail|null>(null);
+ const [localStage,setLocalStage]=useState<PanelStage>('design');
+ const stage=controlledStage??localStage;
+ const setStage=(next:PanelStage)=>{setLocalStage(next);onStageChange?.(next);};
+ const [selected,select]=useState(autoSelect?rails[0]?.id||'':''),[removed,setRemoved]=useState<SiteRail|null>(null);
  const rail=rails.find(r=>r.id===selected),layout=rail?siteRailLayout(site,rail):null;
  function update(patch:Partial<SiteRail>){if(!rail)return;set(d=>{const item=d.site?.rails?.find(r=>r.id===rail.id);if(item)Object.assign(item,patch,{id:rail.id,checkedSignature:''});});}
  const text=(key:'label'|'height'|'bottomClearance',label:string)=><label className="block text-sm font-semibold text-slate-600">{label}<input className={field} value={rail?.[key]||''} maxLength={key==='label'?80:40} onChange={e=>update({[key]:e.target.value})}/></label>;
@@ -44,6 +47,7 @@ export default function AttachedRails({data,set,lang}:{data:MeasureData;set:(fn:
    <div hidden={stage==='design'}><AttachedFabrication mode={stage==='review'?'review':'members'} site={site} rail={rail} lang={lang} onChange={fabrication=>update({fabrication})} onReview={signature=>set(d=>{const r=d.site?.rails?.find(r=>r.id===rail.id);if(r?.fabrication)r.fabrication.reviewedSignature=signature;})}/></div>
    <ul hidden={stage!=='review'||!siteRailProblems(site,rail).length} className="space-y-1 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{siteRailProblems(site,rail).map(issue=><li key={issue}>{mt(lang,issue)}</li>)}</ul>
    {stage!=='review'&&<button type="button" className="min-h-12 w-full rounded-xl bg-indigo-600 px-4 font-bold text-white" onClick={()=>setStage(stage==='design'?'members':'review')}>{l.next}: {stage==='design'?l.members:l.review} →</button>}
+   <button type="button" className={button} disabled={rails.length>=100} onClick={()=>{const copy=reuseSiteRail(rail,crypto.randomUUID(),`${rail.label} · ${l.copy}`);set(d=>{d.site?.rails?.push(copy);});select(copy.id);setStage('design');}}>{l.reuse}</button>
    <button type="button" className={`${button} !text-red-700`} onClick={()=>{if(!window.confirm(l.confirm))return;setRemoved(rail);set(d=>{if(d.site?.rails)d.site.rails=d.site.rails.filter(r=>r.id!==rail.id);});select('');}}>{l.remove}</button>
   </div>}
   {removed&&<button type="button" className={`${button} mt-3`} disabled={rails.length>=100} onClick={()=>{set(d=>{d.site??=newSiteModel();d.site.rails??=[];d.site.rails.push(removed);});select(removed.id);setRemoved(null);}}>{l.restore}: {removed.label}</button>}
