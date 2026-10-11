@@ -12,6 +12,7 @@ import type {SceneViewportProps} from './SceneViewport';
 vi.mock('./SceneViewport',()=>({default:({data,onSelect}:SceneViewportProps)=><div>{data.segments.flatMap((s,i)=>s.kind==='flight'?s.steps.map((_,j)=><button key={`${i}-${j}`} onClick={()=>onSelect?.({segmentIndex:i,stepIndex:j})}>Pick step {j+1}</button>):[])}{data.posts.map((p,i)=><button key={p.id} onClick={()=>onSelect?.({postId:p.id})}>Pick post {i+1}</button>)}</div>}));
 vi.mock('./PrintSheet',()=>({default:()=>null}));
 import MeasureEditor from "./MeasureEditor";
+const tool=(value:string)=>fireEvent.change(screen.getByRole('combobox',{name:'Tool'}),{target:{value}});
 
 const job: Job = {
   id: "job-1", job_number: "KIW-1000", customer_name: "Test Customer",
@@ -45,14 +46,14 @@ describe('measuring with the shared scene',()=>{
  it('changes only the selected step and retains it across tool switches',()=>{
   show(3);fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));fireEvent.change(screen.getByLabelText('Riser height'),{target:{value:'7 1/4'}});
   fireEvent.click(screen.getByRole('button',{name:'Previous step'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('');
-  fireEvent.click(screen.getByRole('button',{name:'Existing site'}));fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('7 1/4');
+  tool('site');fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('7 1/4');
  });
  it('adds a post explicitly and returns to step dimensions',()=>{
   show(4);fireEvent.click(screen.getByRole('button',{name:'Pick step 1'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));expect(screen.getByRole('heading',{name:'Post position'})).toBeTruthy();expect(screen.getByRole('button',{name:'Pick post 1'})).toBeTruthy();
   fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect(screen.getByRole('heading',{name:'Step 2'})).toBeTruthy();
  });
  it('keeps the detailed row list optional and missing-field highlighting accurate',()=>{
-  show(3);fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'structure'}});
+  show(3);fireEvent.change(screen.getByRole('combobox',{name:'Tool'}),{target:{value:'structure'}});
   expect(screen.queryByRole('button',{name:/Copy step 1 to all/})).toBeNull();fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
   expect(screen.getByRole('button',{name:/Copy step 1 to all/})).toBeTruthy();
   const rise=screen.getAllByLabelText('Rise')[0] as HTMLInputElement,nosing=screen.getAllByLabelText('Nosing')[0] as HTMLInputElement;

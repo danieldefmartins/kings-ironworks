@@ -146,7 +146,7 @@ export default function NextMeasurement({
       <div className="mt-3 flex items-end justify-between gap-3">
         <div className="min-w-0">
           {context && <p className="truncate text-xs font-semibold text-slate-500">{context}</p>}
-          <label htmlFor="next-measure-input" className="block truncate text-xl font-semibold leading-tight tracking-tight">{label}</label>
+          <p aria-hidden className="truncate text-xl font-semibold leading-tight tracking-tight" onClick={() => input.current?.focus()}>{label}</p>
         </div>
         {onShow && slot.segIdx !== undefined && (
           <button type="button" onClick={() => onShow(slot)} aria-label={tr(lang, "Show on drawing", "Mostrar no desenho", "Mostrar en el dibujo")} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-indigo-600 active:bg-indigo-50"><Crosshair aria-hidden className="h-5 w-5" /></button>
@@ -158,6 +158,7 @@ export default function NextMeasurement({
           <input
             ref={input}
             id="next-measure-input"
+            aria-label={`${tr(lang, "Next", "Próxima", "Siguiente")}: ${context ? `${context} · ` : ""}${label}`}
             data-m="1"
             value={value}
             onChange={(e) => set((d) => slot.put(d, e.target.value))}
