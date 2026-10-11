@@ -11,6 +11,8 @@ import { calculatePayroll, payrollWeek, needsClockReview } from "@/lib/shop/payr
 import { t } from "@/lib/shop/i18n";
 import { useShopAppearance } from "./ShopAppearance";
 import "./shop-ui.css";
+import JobTimerBar from "./JobTimerBar";
+import type { JobTimerEventDetail } from "./JobGate";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
   return new Promise((resolve) => {
@@ -31,7 +33,7 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 import { readOutbox, writeOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, type QueuedPunch } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady,
+  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady, runningJob = null,
 }: {
   children: React.ReactNode;
   isOwner?: boolean;
@@ -44,6 +46,7 @@ export default function ShopShell({
   hourlyRate: number | null;
   weekHoursBeforeShift: number;
   weekEarningsBeforeShift: number | null;
+  runningJob?: JobTimerEventDetail["running"];
 }) {
   const path = usePathname();
   const appearance = useShopAppearance();
@@ -286,6 +289,7 @@ export default function ShopShell({
         {needsLogin ? <Link className="underline" href="/shop/login">{lang === "pt" ? "Entre novamente para sincronizar seu ponto salvo." : lang === "es" ? "Inicia sesión para sincronizar tu registro guardado." : "Sign in again to sync your saved punch."}</Link> : !ready ? (lang === "pt" ? "Carregando o ponto. Aguarde antes de registrar." : lang === "es" ? "Cargando el reloj. Espera antes de registrar." : "Clock status unavailable. Waiting to reconnect.") : <Link className="underline" href="/shop/time">{lang === "pt" ? "Um ponto salvo precisa de revisão. Peça ajuda ao escritório; o registro foi preservado neste aparelho." : lang === "es" ? "Un registro guardado necesita revisión. Pide ayuda a la oficina; se conservó en este dispositivo." : "A saved punch needs review. Ask the office for help; the record is preserved on this device."}</Link>}
       </div>}
       {children}
+      <JobTimerBar initial={runningJob} lang={lang} clockedIn={!!shift} payrollEnrolled={!isOwner} onClockIn={() => void clockIn()} hidden={focus} />
 
       {!focus && <nav aria-label={lang === "pt" ? "Navegação principal" : lang === "es" ? "Navegación principal" : "Main navigation"} className={measuring ? "shop-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-neutral-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl" : "shop-tabbar fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#111215]/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_rgba(0,0,0,0.15)] backdrop-blur-2xl"}>
         <div className="mx-auto grid h-[76px] max-w-2xl grid-cols-5">

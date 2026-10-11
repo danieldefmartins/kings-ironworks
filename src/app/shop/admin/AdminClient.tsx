@@ -13,14 +13,6 @@ interface WorkerRow {
   hourly_rate: number | null;
   address: string | null;
 }
-interface JobRow {
-  jobId: string;
-  label: string;
-  totalHours: number;
-  totalCost: number;
-  missingRate: boolean;
-  byWorker: Record<string, { hours: number; cost: number | null }>;
-}
 interface EntryRow {
   id: string;
   worker: string;
@@ -71,7 +63,7 @@ function fmtDT(iso: string) {
 
 export default function AdminClient({
   workers,
-  jobs,
+  jobCosts,
   entries,
   deposits,
   depositTotal,
@@ -80,7 +72,7 @@ export default function AdminClient({
   lang = "en",
 }: {
   workers: WorkerRow[];
-  jobs: JobRow[];
+  jobCosts?: React.ReactNode;
   entries: EntryRow[];
   deposits: DepositRow[];
   depositTotal: number;
@@ -97,7 +89,6 @@ export default function AdminClient({
   const [addresses, setAddresses] = useState<Record<string, string>>(
     Object.fromEntries(workers.map((w) => [w.id, w.address ?? ""]))
   );
-  const [open, setOpen] = useState<string | null>(null);
   const [openDep, setOpenDep] = useState<string | null>(null);
 
   async function act(payload: Record<string, unknown>) {
@@ -321,61 +312,8 @@ export default function AdminClient({
         </div>
       </section>
 
-      {/* Labor cost per project */}
-      <section id="jobcosts">
-        <h2 className="text-amber-500 font-display font-bold uppercase tracking-wide text-sm mb-2">
-          {t(lang, "admJobCosts")}
-        </h2>
-        {jobs.length === 0 && (
-          <p className="text-sm text-neutral-600 italic">
-            No time logged yet. Costs appear as the crew presses START/DONE on jobs.
-          </p>
-        )}
-        <div className="space-y-2">
-          {jobs.map((j) => (
-            <div key={j.jobId} className="bg-neutral-900 border border-neutral-800 rounded-lg">
-              <button
-                onClick={() => setOpen(open === j.jobId ? null : j.jobId)}
-                className="w-full flex items-center justify-between gap-3 p-3 text-left"
-              >
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{j.label}</div>
-                  <div className="text-xs text-neutral-500">
-                    {hoursToHm(j.totalHours)} total
-                    {j.missingRate && (
-                      <span className="text-amber-400"> · some workers have no rate set</span>
-                    )}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <div className="text-lg font-bold text-amber-400">
-                    {money(j.totalCost)}
-                    {j.missingRate ? "+" : ""}
-                  </div>
-                  <div className="text-[10px] text-neutral-500 uppercase">labor cost</div>
-                </div>
-              </button>
-              {open === j.jobId && (
-                <div className="border-t border-neutral-800 px-3 py-2 space-y-1">
-                  {Object.entries(j.byWorker).map(([name, v]) => (
-                    <div key={name} className="flex justify-between text-sm">
-                      <span className="text-neutral-300">{name}</span>
-                      <span className="text-neutral-400">
-                        {hoursToHm(v.hours)} ·{" "}
-                        {v.cost === null ? (
-                          <span className="text-amber-400">no rate</span>
-                        ) : (
-                          money(v.cost)
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Labor cost per project + utilization (owner job-cost board) */}
+      {jobCosts}
 
       {/* Recent sessions */}
       <section id="sessions">

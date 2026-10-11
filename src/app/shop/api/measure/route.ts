@@ -24,6 +24,7 @@ import {
   getCarryover,
   audit,
   ORG_ID,
+  startProjectEntry,
 } from "@/lib/shop/db";
 import {
   MEASURE_SHAPES,
@@ -732,6 +733,12 @@ export async function POST(req: NextRequest) {
           entityId: rows[0].id,
           detail: { customer },
         });
+        // Crew who create a lead are on site measuring it now: start its job
+        // time so the gate does not stop them on the way into the sheet.
+        if (!worker.is_admin) {
+          await startProjectEntry(worker.id, rows[0].id);
+          await audit("project_clock_start", { workerId: worker.id, entity: "job", entityId: rows[0].id, detail: { via: "lead_create" } });
+        }
         return NextResponse.json({ ok: true, jobId: rows[0].id });
       }
 

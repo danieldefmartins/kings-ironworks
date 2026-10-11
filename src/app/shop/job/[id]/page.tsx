@@ -19,6 +19,10 @@ import {
   listCatalog,
 } from "@/lib/shop/db";
 import JobDocuments from "./JobDocuments";
+import JobGateScreen from "@/app/shop/JobGateScreen";
+import { loadJobGate } from "@/lib/shop/job-timer-db";
+import { loadLaborBoard } from "@/lib/shop/labor-board-db";
+import { JobLaborRow } from "../../admin/labor/JobCostBoard";
 import ShopTopBar from "../../ShopTopBar";
 import TravelerClient from "./TravelerClient";
 import PiecesPanel from "./PiecesPanel";
@@ -44,9 +48,13 @@ export default async function JobTravelerPage({
   const { id } = await params;
   // Simplified traveler is the default. ?ui=legacy is a temporary rollback.
   const v2 = ((await searchParams)?.ui || "") !== "legacy";
-  const catalog = v2 ? await listCatalog() : [];
   const rawJob = await getJob(id);
   if (!rawJob) notFound();
+  // Crew see a job only while timing it. Enforced here, before anything about
+  // the job is loaded, so the details never reach a locked worker's payload.
+  const gate = await loadJobGate(worker, id);
+  if (gate.locked) return <JobGateScreen worker={worker} job={rawJob} gate={gate} />;
+  const catalog = v2 ? await listCatalog() : [];
   // Strip the money fields server-side rather than only hiding them: an
   // un-redacted row would still be readable in this page's RSC payload.
   const job = redactJobMoney(rawJob, canSeePrices);
@@ -64,6 +72,12 @@ export default async function JobTravelerPage({
 
   let estimates: Awaited<ReturnType<typeof getJobEstimates>> | null = null;
   try { estimates = await getJobEstimates(id, canSeePrices); } catch { /* Keep job work usable; show explicit estimate load error. */ }
+
+  // Owner: this job's labor — hours by worker × rate, against its budget.
+  let labor: Awaited<ReturnType<typeof loadLaborBoard>> | null = null;
+  if (canSeePrices) {
+    try { labor = await loadLaborBoard({ jobId: id }); } catch { /* the rest of the job still renders */ }
+  }
 
   let ledger: Awaited<ReturnType<typeof getJobMoneyLedger>> | null = null;
   if (canSeePrices) {
@@ -102,6 +116,11 @@ export default async function JobTravelerPage({
       />
       <JobEstimateDetails estimates={estimates} job={job} owner={canSeePrices} lang={lang} />
       {canSeePrices && <JobMoneyManager jobId={id} ledger={ledger} lang={lang} />}
+      {canSeePrices && labor?.jobs[0] && (
+        <div className="mx-auto max-w-4xl px-4 pt-4">
+          <JobLaborRow job={labor.jobs[0]} lang={lang} budgetsReady={labor.budgetsReady} showLink={false} />
+        </div>
+      )}
       {canSeePrices && <JobDocuments documents={documents} lang={lang} />}
       {v2 ? (
         <TravelerV2

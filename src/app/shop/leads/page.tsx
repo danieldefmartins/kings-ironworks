@@ -6,17 +6,21 @@ import { listJobs } from "@/lib/shop/db";
 import { mt } from "@/lib/shop/measure-i18n";
 import ShopTopBar from "../ShopTopBar";
 import NewFieldMeasure from "../NewFieldMeasure";
+import { getRunningEntry } from "@/lib/shop/db";
+import { visibleJobsFor } from "@/lib/shop/job-timer";
 
 export const dynamic = "force-dynamic";
 
 // Sales measurements: projects measured before the deal closes.
-export default async function LeadsPage() {
+export default async function LeadsPage({ searchParams }: { searchParams?: Promise<{ switch?: string }> } = {}) {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
 
   const jobs = await listJobs();
-  const leads = jobs.filter((j) => j.current_stage === "Lead");
+  // Job gate: while crew time runs on a job, other projects stay out of view.
+  const running = worker.is_admin ? null : await getRunningEntry(worker.id).catch(() => null);
+  const leads = visibleJobsFor(jobs.filter((j) => j.current_stage === "Lead"), worker, running, (await searchParams)?.switch === "1");
 
   return (
     <div>

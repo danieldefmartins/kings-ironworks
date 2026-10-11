@@ -15,6 +15,8 @@ import {
 } from "@/lib/shop/db";
 import ShopTopBar from "../../ShopTopBar";
 import AdminClient from "../AdminClient";
+import JobCostBoard from "./JobCostBoard";
+import { loadLaborBoard } from "@/lib/shop/labor-board-db";
 import { canViewOwnerFinancials } from "@/lib/shop/shared";
 import { t } from "@/lib/shop/i18n";
 
@@ -40,46 +42,11 @@ export default async function ShopAdminPage() {
   const workerById = new Map(workers.map((w) => [w.id, w]));
   const jobById = new Map(jobs.map((j) => [j.id, j]));
 
-  // Per-job rollup: hours & cost per worker
-  interface JobRow {
-    jobId: string;
-    label: string;
-    totalHours: number;
-    totalCost: number;
-    missingRate: boolean;
-    byWorker: Record<string, { hours: number; cost: number | null }>;
-  }
-  const rollup = new Map<string, JobRow>();
-  for (const e of entries) {
-    const j = jobById.get(e.job_id);
-    if (!j) continue;
-    let row = rollup.get(e.job_id);
-    if (!row) {
-      row = {
-        jobId: e.job_id,
-        label: `${j.job_number} — ${j.customer_name}`,
-        totalHours: 0,
-        totalCost: 0,
-        missingRate: false,
-        byWorker: {},
-      };
-      rollup.set(e.job_id, row);
-    }
-    const w = workerById.get(e.worker_id);
-    const name = w?.name || "?";
-    const hrs = entryHours(e);
-    const rate = w?.hourly_rate ?? null;
-    if (!row.byWorker[name]) row.byWorker[name] = { hours: 0, cost: rate === null ? null : 0 };
-    row.byWorker[name].hours += hrs;
-    row.totalHours += hrs;
-    if (rate === null) {
-      row.missingRate = true;
-      row.byWorker[name].cost = null;
-    } else {
-      row.byWorker[name].cost = (row.byWorker[name].cost ?? 0) + hrs * Number(rate);
-      row.totalCost += hrs * Number(rate);
-    }
-  }
+  // Job cost: every entry (paged), rated at the shift's pay rate when the
+  // work happened, against the job's labor budget. Replaces the old rollup,
+  // which read only the latest 500 entries and repriced history at today's rate.
+  const board = await loadLaborBoard({ withUtilization: true });
+  const laborByJob = new Map(board.jobs.map((j) => [j.jobId, j.cost]));
 
   // Serialize entries with names for the client table
   const entryRows = entries.slice(0, 100).map((e) => ({
@@ -112,7 +79,7 @@ export default async function ShopAdminPage() {
     address: j.address,
     followUp: j.notes,
     archived: !!j.archived,
-    laborCost: rollup.get(j.id)?.totalCost ?? 0,
+    laborCost: laborByJob.get(j.id) ?? 0,
   }));
   const depositTotal = deposits.reduce((s, d) => s + d.amount, 0);
   // Archived jobs drop off the board but the money is still held, so the
@@ -132,7 +99,7 @@ export default async function ShopAdminPage() {
           hourly_rate: w.hourly_rate ?? null,
           address: w.address ?? null,
         }))}
-        jobs={[...rollup.values()].sort((a, b) => b.totalHours - a.totalHours)}
+        jobCosts={<JobCostBoard board={board} lang={worker.lang || "en"} />}
         entries={entryRows}
         deposits={deposits}
         depositTotal={depositTotal}

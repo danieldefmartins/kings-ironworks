@@ -3,6 +3,7 @@ import { getSessionWorker } from '@/lib/shop/session';
 import { getPhotos, PRICE_CATEGORY, getJob, getMeasureSheet, getMeasureRevision, signPhotoUrl } from '@/lib/shop/db';
 import { canViewOwnerFinancials, isJobDocument } from '@/lib/shop/shared';
 import { normalizeMeasureData } from '@/lib/shop/measure';
+import { loadJobGate } from "@/lib/shop/job-timer-db";
 export const dynamic='force-dynamic';
 export async function GET(req:NextRequest) {
   const worker=await getSessionWorker();
@@ -12,6 +13,8 @@ export async function GET(req:NextRequest) {
   if(!/^[0-9a-f-]{36}$/i.test(id)||!Number.isInteger(index)||index<0||(revision!==null&&!/^[1-9]\d*$/.test(revision)))return new NextResponse('Invalid reference',{status:400});
   const sheet=await getMeasureSheet(id);
   if(!sheet||!await getJob(sheet.job_id))return new NextResponse('Not found',{status:404});
+  // Job gate: crew see a job's photos only while timing that job.
+  if((await loadJobGate(worker,sheet.job_id)).locked)return new NextResponse('Start job time first',{status:403});
   const snapshot=revision?await getMeasureRevision(id,Number(revision)):null;
   if(revision&&!snapshot)return new NextResponse('Not found',{status:404});
   // ?path= finds a photo by its stored path (shot-list thumbnails), ?index= by position.

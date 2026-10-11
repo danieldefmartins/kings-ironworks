@@ -6,6 +6,7 @@ import ShopShell from "./ShopShell";
 import { getOrgSettings } from "@/lib/shop/db";
 import { resolveBrand } from "@/lib/shop/org-brand";
 import { BrandProvider } from "./brand/BrandContext";
+import { getRunningJob } from "@/lib/shop/job-timer-db";
 
 // The tab title carries the organization's name (white-label); KIW's by default.
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,10 +33,12 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   try { clock = await loadClockState(worker); }
   catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null }; }
   const { branding } = await getOrgSettings();
+  // The running job feeds the persistent job-time bar; never blocks the shell.
+  const runningJob = worker ? await getRunningJob(worker.id).catch(() => null) : null;
   return (
     <div className="min-h-screen bg-[#09090b] text-neutral-100 font-body select-none">
       <BrandProvider branding={branding}>
-      <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock}>
+      <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock} runningJob={runningJob}>
         {children}
       </ShopShell>
       </BrandProvider>

@@ -13,10 +13,13 @@ import ShopTopBar from "../ShopTopBar";
 import { canViewOwnerFinancials, pieceProgress, redactJobMoney } from "@/lib/shop/shared";
 import JobsList from "./JobsList";
 import JobsBoardMap from "./JobsBoardMap";
+import RunningJobPanel from "./RunningJobPanel";
+import { getRunningJob } from "@/lib/shop/job-timer-db";
+import { isJobGateExempt, visibleJobsFor } from "@/lib/shop/job-timer";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopBoard() {
+export default async function ShopBoard({ searchParams }: { searchParams?: Promise<{ switch?: string }> } = {}) {
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";
@@ -40,6 +43,12 @@ export default async function ShopBoard() {
   // now, behind the In-House / Subcontractor tab in JobsList — defaulting to
   // In-House keeps the floor board's default view unchanged.
   jobs = jobs.filter((j) => j.current_stage !== "Lead");
+
+  // One job at a time: while a crew member's job time runs, the list (and the
+  // map below) shows that job only — filtered here, not hidden in the UI.
+  const switching = (await searchParams)?.switch === "1";
+  const running = isJobGateExempt(worker) ? null : await getRunningJob(worker.id).catch(() => null);
+  jobs = visibleJobsFor(jobs, worker, running ? { job_id: running.jobId } : null, switching);
 
   const progress: Record<string, { done: number; total: number }> = {};
   await Promise.all(
@@ -110,6 +119,7 @@ export default async function ShopBoard() {
             {error}
           </div>
         )}
+        {running && <RunningJobPanel lang={lang} running={running} switching={switching} />}
         {jobs.length === 0 && !error && (
           <p className="text-neutral-500 text-center py-16">{t(lang, "noJobs")}</p>
         )}

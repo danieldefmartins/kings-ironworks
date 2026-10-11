@@ -545,9 +545,11 @@ export async function closeStaleProjectEntries(workerId?: string): Promise<void>
 //   payroll  kiw_shop_shifts       what the company owes  — one open at a time
 //   project  kiw_shop_time_entries what a job costs       — one open at a time
 //
-// Neither starts, stops or truncates the other. Starting a project does not
-// require being on payroll (an owner costing his own time is not on the
-// payroll clock), and clocking out of payroll leaves the job clock alone.
+// Job time never starts, stops or truncates payroll. Starting a project does
+// not require being on payroll (an owner costing his own time is not on the
+// payroll clock). The one link is one-directional and the owner's call
+// (10/11): a payroll clock-out ends running job time at the clock-out
+// instant — see endJobTimeOnClockOut in job-timer-db.ts.
 //
 // The one rule kept from before is within the project clock itself: a person
 // can only be on one job at a time, so starting a second closes the first.
