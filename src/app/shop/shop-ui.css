@@ -162,26 +162,32 @@
 .shop-ui :where([class*="divide-neutral-"]) > :not(:last-child) { border-color: var(--shop-line); }
 .shop-ui :where(.text-white[class*="bg-neutral-"]) { color: var(--shop-fg); }
 
-/* Owner money totals: distinct, high-contrast surfaces in both appearances. */
+/* Owner money totals: calm, Wallet-style figures. Colour is an accent on the
+ * number and a small dot, never a filled block; Balance due is the one hero. */
 .shop-ui .shop-money-card {
-  background: var(--money-bg); color: var(--money-fg);
-  border-color: var(--money-border);
-  box-shadow: 0 2px 5px #172b4d08, inset 0 1px 0 #ffffff50;
+  background: transparent; border-color: transparent; box-shadow: none;
+  color: var(--shop-fg); padding: 4px 0;
 }
-.shop-ui [data-money-tone="total"] { --money-bg: #dbeafe; --money-fg: #173f83; --money-border: #b4cff6; }
-.shop-ui [data-money-tone="received"] { --money-bg: #fee2e2; --money-fg: #8b2323; --money-border: #f2b5b5; }
-.shop-ui [data-money-tone="balance"] { --money-bg: #d1fae5; --money-fg: #07583e; --money-border: #9be0bc; }
-.shop-ui[data-shop-theme="dark"] [data-money-tone="total"] { --money-bg: #193758; --money-fg: #dcecff; --money-border: #315b87; }
-.shop-ui[data-shop-theme="dark"] [data-money-tone="received"] { --money-bg: #4a252b; --money-fg: #ffdddd; --money-border: #85414b; }
-.shop-ui[data-shop-theme="dark"] [data-money-tone="balance"] { --money-bg: #123e32; --money-fg: #cdffe5; --money-border: #296c54; }
+.shop-ui .shop-money-card dt {
+  display: flex; align-items: center; gap: 6px; min-height: 0;
+  font-size: 13px; font-weight: 500; line-height: 1.3; color: var(--shop-muted, #6b7280);
+}
+.shop-ui .shop-money-card dt::before { content: ""; width: 7px; height: 7px; border-radius: 999px; background: var(--money-fg); flex: none; }
+.shop-ui .shop-money-card dd {
+  margin-top: 4px; font-weight: 600; letter-spacing: -0.02em; color: var(--money-fg);
+  font-size: clamp(15px, 4.6vw, 22px); line-height: 1.2;
+}
+.shop-ui [data-money-tone="total"] { --money-fg: #2456a6; }
+.shop-ui [data-money-tone="received"] { --money-fg: #b42318; }
+.shop-ui [data-money-tone="balance"] { --money-fg: #067647; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="total"] { --money-fg: #8ab4ff; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="received"] { --money-fg: #ff9b93; }
+.shop-ui[data-shop-theme="dark"] [data-money-tone="balance"] { --money-fg: #6ee7b7; }
 
-/* Home: two totals above a full-width balance, with room for larger amounts. */
-.shop-ui [data-money-layout="stacked"] > dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.shop-ui [data-money-layout="stacked"] .shop-money-card { padding: 16px 10px; container-type: inline-size; }
-.shop-ui [data-money-layout="stacked"] .shop-money-card dt { min-height: 0; font-size: 14px; line-height: 1.4; }
-.shop-ui [data-money-layout="stacked"] .shop-money-card dd { margin-top: 10px; font-size: clamp(12px, 13cqi, 32px); line-height: 1.2; }
-.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] { grid-column: 1 / -1; padding: 18px 16px; }
-.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] dd { font-size: clamp(24px, 11cqi, 40px); }
+/* Home: Balance due on top as the hero, the two totals beneath a hairline. */
+.shop-ui [data-money-layout="stacked"] > dl { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
+.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] { grid-column: 1 / -1; order: -1; padding-bottom: 16px; border-bottom: 1px solid var(--shop-line, #e5e7eb); border-radius: 0; }
+.shop-ui [data-money-layout="stacked"] [data-money-tone="balance"] dd { font-size: clamp(30px, 9vw, 40px); letter-spacing: -0.03em; }
 
 /* Measuring cards use the same surfaces; the printed sheets keep white paper. */
 @media screen {
