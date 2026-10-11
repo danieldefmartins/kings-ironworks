@@ -71,6 +71,7 @@ const FlightSchema = z.object({
   steps: z.array(StepSchema).min(1).max(60),
   width: meas,
   angleDeg: meas,
+  angleSource: z.enum(["", "calculated-approved", "measured"]).optional(),
   angleBreak: short,
   rake: meas,
   ctrlRise: meas,
@@ -503,7 +504,7 @@ const MeasureDataSchema = z.object({
     .max(12).refine(segments=>{const ids=segments.flatMap(s=>s.id?[s.id]:[]);return new Set(ids).size===ids.length;},"Duplicate segment identities"),
   posts: z.array(PostSchema).max(120),
   joints: z.array(z.object({
-    afterSegment:z.number().int().min(0).max(30),gap:meas,offsetV:meas,offsetH:meas,angleChange:meas,
+    afterSegment:z.number().int().min(0).max(30),gap:meas,offsetV:meas,offsetH:meas,angleChange:meas,angleChangeSource:z.enum(["","calculated-approved","measured"]).optional(),
     method:z.enum(["","post","weld","bolt","wall","one_piece"]),carriedBy:z.enum(["","lower","upper","both"]),leaveLong:meas,note:note,
   })).max(30).optional(),
   landingTransitions: z.array(z.object({
