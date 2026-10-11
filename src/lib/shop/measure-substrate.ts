@@ -497,10 +497,23 @@ function bearingAt(s: StructuralData | null | undefined, id: string, end: string
 export function getSub(data: MeasureData, key: string): Substrate | undefined {
   const [kind, a, b] = key.split(":");
   switch (kind) {
-    case "post": return normSub(data.posts.find((p) => p.id === a)?.sub);
+    case "post": {
+      // The post's own mount / edge fields are still edited directly (they
+      // drive the post's requirements), so they win over the shared copy.
+      const p = data.posts.find((x) => x.id === a);
+      const sub = normSub(p?.sub);
+      if (!p || !sub) return sub;
+      const m = POST_MOUNT_TO_SUB[p.mount || ""];
+      return { ...sub, ...(m ? { mount: m } : {}), ...(p.edgeDist.trim() ? { edgeDist: p.edgeDist } : {}) };
+    }
     case "term": {
       const sp = data.spans.find((x) => x.id === a);
-      return normSub(sp && (b === "start" || b === "end") ? sp[b].sub : undefined);
+      if (!sp || (b !== "start" && b !== "end")) return undefined;
+      const term = sp[b];
+      const sub = normSub(term.sub);
+      if (!sub) return sub;
+      const m = TERM_METHOD_TO_SUB[term.method || ""];
+      return { ...sub, ...(m ? { mount: m } : {}), ...(term.hardware.edgeDist.trim() ? { edgeDist: term.hardware.edgeDist } : {}) };
     }
     case "bracket": return normSub(data.rail.bracketSub);
     case "gate": return normSub(a === "hinge" ? data.gate?.hingeSub : data.gate?.latchSub);
@@ -509,7 +522,13 @@ export function getSub(data: MeasureData, key: string): Substrate | undefined {
     case "deck": return normSub(data.deck?.postSub);
     case "fire": return normSub(data.fire?.levels.find((l) => l.id === a)?.sub);
     case "well": return normSub(data.well?.sub);
-    case "site": return normSub(data.site?.objects.find((o) => o.id === a)?.substrate as Partial<Substrate> | undefined);
+    case "site": {
+      const o = data.site?.objects.find((x) => x.id === a);
+      const sub = normSub(o?.substrate as Partial<Substrate> | undefined);
+      // The free-text material is still editable; when it names something else, it wins.
+      const typed = guessMaterial(o?.material);
+      return sub && typed && typed !== sub.material && guessMaterial(LEGACY_MATERIAL[sub.material as SubMaterial] || "") !== typed ? { ...sub, material: typed } : sub;
+    }
     case "opening": {
       const o = data.opening;
       if (!o) return undefined;

@@ -1046,6 +1046,7 @@ export function TermEditor({
   onField,
   onHw,
   onPhoto,
+  substrate,
 }: {
   lang: string;
   title: string;
@@ -1057,6 +1058,9 @@ export function TermEditor({
   onField: (key: string, value: string) => void;
   onHw: (key: string, value: string) => void;
   onPhoto: () => void;
+  /** Shared substrate editor (measure-substrate.ts) for wall / column / floor ends;
+   *  replaces the free-text material picker when given. */
+  substrate?: React.ReactNode;
 }) {
   const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
   const needsHw = !!t.method && (HARDWARE_METHODS as string[]).includes(t.method);
@@ -1118,11 +1122,12 @@ export function TermEditor({
           />
         </div>
       )}
+      {(isWall || isColumn || t.attachTo === "floor") && substrate}
       {(isWall || isColumn || t.attachTo === "floor") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-          <MSelect help="connMaterial" label={mt(lang, "connMaterial")} value={t.material}
+          {!substrate && <MSelect help="connMaterial" label={mt(lang, "connMaterial")} value={t.material}
             options={anchorOptions} lang={lang}
-            onChange={(v) => onField("material", v)} />
+            onChange={(v) => onField("material", v)} />}
           {(isWall || isWoodFloor) && (
             <MInput
               label={mt(lang, isWall ? "backingLbl" : "backingWoodLbl")}

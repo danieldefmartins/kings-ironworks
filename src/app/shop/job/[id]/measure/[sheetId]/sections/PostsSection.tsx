@@ -25,13 +25,13 @@ import {
   commonThicknessChoices,
   obstructionChoices,
 } from "../fields";
+import SubstrateEditor from "../SubstrateEditor";
 
 export default function PostsSection({
   lang,
   data,
   set,
   posts,
-  anchorOptions,
   carriedNote,
   removePost,
   setPhotoSlot,
@@ -163,15 +163,7 @@ export default function PostsSection({
                         carried={carriedNote("post.mount", po.mount)}
                         onClearCarried={() => setPost(set, po.id, "mount", "")}
                         onChange={(v) => { setPost(set, po.id, "mount", v); }} />
-                      <MSelect help="anchorInto" label={mt(lang, "anchorInto")} value={po.anchor}
-                        options={anchorOptions} lang={lang}
-                        onChange={(v) => setPost(set, po.id, "anchor", v)} />
                     </>
-                  )}
-                  {po.pointType !== "railing_post" && (
-                    <MSelect help="existingMaterial" label={mt(lang, "existingMaterial")} value={po.anchor}
-                      options={anchorOptions} lang={lang}
-                      onChange={(v) => setPost(set, po.id, "anchor", v)} />
                   )}
                   {(po.pointType === "existing_post" || po.pointType === "concrete_wall") && (
                     <>
@@ -198,6 +190,8 @@ export default function PostsSection({
                       onChange={(v) => setPost(set, po.id, "clipDetail", v)} />
                   )}
                 </Grid>
+                <SubstrateEditor locKey={`post:${po.id}`}
+                  hide={po.pointType === "railing_post" ? ["mount", "photo"] : ["mount", "depth", "photo"]} />
                 <details className="mt-3">
                   <summary className="text-xs text-amber-400/80 cursor-pointer select-none">
                     + {mt(lang, "postMore")}
@@ -212,8 +206,6 @@ export default function PostsSection({
                       onChange={(v) => { setPost(set, po.id, "anchors", v); }} />
                     <MInput help="postSubstrate" label={mt(lang, "postSubstrate")} placeholder="—" value={po.substrate}
                       onChange={(v) => setPost(set, po.id, "substrate", v)} />
-                    <MInput help="postEdgeDist" label={mt(lang, "postEdgeDist")} value={po.edgeDist}
-                      onChange={(v) => setPost(set, po.id, "edgeDist", v)} />
                     <ChoiceMInput label={mt(lang, "postObstruction")} placeholder="—" value={po.obstruction}
                       choices={obstructionChoices(lang)} onChange={(v) => setPost(set, po.id, "obstruction", v)} />
                     <button

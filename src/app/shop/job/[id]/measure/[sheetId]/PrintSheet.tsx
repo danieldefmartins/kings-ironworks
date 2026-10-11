@@ -34,6 +34,7 @@ import SitePrint from './SitePrint';
 import SpecialtySteelPrint from './SpecialtySteelPrint';
 import SteelTakeoffPrint from './SteelTakeoffPrint';
 import OpeningPrint from "./OpeningPrint";
+import MountingPrint from "./MountingPrint";
 import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
 import StructuralPrint from './shapes/StructuralPrint';
 
@@ -1060,6 +1061,9 @@ export default function PrintSheet({
       </div>
 
       </>}
+
+      {/* Mounting: every fastening location and its anchor; finishes still to come. */}
+      <MountingPrint data={data} shape={sheet.shape} lang={lang} posts={posts} />
 
       {/* Notes */}
       <div className="mt-3">
