@@ -2,6 +2,8 @@
 // trade words. The form fields sit under a heading ("Width" → Top / Middle /
 // Bottom); alone on the card a number needs its whole name.
 
+import { OPEN_NEXT_ROWS } from "./measure-open-i18n";
+
 type Row = [key: string, en: string, pt: string, es: string];
 
 const ROWS: Row[] = [
@@ -65,6 +67,7 @@ const ROWS: Row[] = [
   ["nx_review", "Review", "Revisar", "Revisar"],
   ["nx_everything", "Everything measured", "Tudo medido", "Todo medido"],
   ["nx_notNumber", "Not a measurement", "Não é uma medida", "No es una medida"],
+  ...OPEN_NEXT_ROWS,
 ];
 
 const STR: Record<"en" | "pt" | "es", Record<string, string>> = { en: {}, pt: {}, es: {} };

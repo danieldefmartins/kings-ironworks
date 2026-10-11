@@ -23,6 +23,9 @@ const OpeningUnitSchema = z.object({
   quickRelease: yn,
   sillAff: meas.optional(), dropOutside: meas.optional(),
   squareFix: z.enum(["", "rect", "template"]),
+  fabW: meas.optional(), fabH: meas.optional(),
+  fabWSource: z.enum(["", "calculated-approved", "measured"]).optional(),
+  fabHSource: z.enum(["", "calculated-approved", "measured"]).optional(),
   note: short,
 });
 

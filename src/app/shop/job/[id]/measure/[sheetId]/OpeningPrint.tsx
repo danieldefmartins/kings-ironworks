@@ -10,7 +10,7 @@ import {
   OPENING_DOOR_PRODUCTS,
   isFaceMount,
   julietGuardAboveSill,
-  openingFabSize,
+  openingFabFinal,
   openingPieceCount,
   openingSquareness,
   unitTag,
@@ -91,7 +91,7 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
         </div>
       )}
       {o.units.map((u, i) => {
-        const fab = openingFabSize(o, u);
+        const fab = openingFabFinal(o, u);
         const sq = openingSquareness(u);
         return (
           <div key={u.id} style={{ marginTop: 6, breakInside: "avoid" }}>

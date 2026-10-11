@@ -39,7 +39,7 @@ describe('gate',()=>{
   for(const leaf of leaves){const zs=leaf.vertices.map(v=>v.z);expect(Math.min(...zs)).toBeCloseTo(2.5);}
   const arcs=s.lines.filter(l=>l.id.startsWith('gate:swing'));expect(arcs).toHaveLength(2);
   for(const a of arcs){expect(a.points[0].z).toBe(0);expect(a.points.at(-1)!.z).toBeCloseTo(1.5);expect(a.points.at(-1)!.y).toBeCloseTo(143.875/2);}
-  expect(s.bounds.min.x).toBeLessThanOrEqual(-4);expect(s.bounds.max.z).toBeCloseTo(60.25);
+  expect(s.bounds.min.x).toBeLessThanOrEqual(-4);expect(Math.max(...s.meshes.flatMap(m=>m.vertices.map(v=>v.z)))).toBeCloseTo(60.25);
   expect(s.pending).toEqual([]);
  });
  it('slides back along a track for the full leaf instead of swinging',()=>{

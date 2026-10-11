@@ -601,6 +601,15 @@ export interface GateData {
   powerAtGate: "" | "yes" | "no" | "unknown";
   safetyDevices: string;
   notes: string;
+  /** Clear gap at the hinge post (and, on a double gate, at each post); blank = 1/2". */
+  hingeGap?: string;
+  /** Clear gap at the latch post (double gate: between the leaves); blank = 1/2". */
+  latchGap?: string;
+  /** Leaf widths the shop builds to. Calculated from the opening and the gaps, approved or modified. */
+  leafA?: string;
+  leafB?: string;
+  leafASource?: "" | "calculated-approved" | "measured";
+  leafBSource?: "" | "calculated-approved" | "measured";
   /** What the hinge-side and latch-side posts fasten into. */
   hingeSub?: Substrate;
   latchSub?: Substrate;
@@ -829,6 +838,8 @@ export interface WellData {
   deliverables: WellDeliverable[];
   // Guard + gate
   guardHeight: string;
+  /** How guardHeight was set: the code height approved, or read on site. */
+  guardHeightSource?: "" | "calculated-approved" | "measured";
   gateWidth: string;
   gateSwing: "" | "in" | "out";
   gateHinge: "" | "left" | "right";

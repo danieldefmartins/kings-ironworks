@@ -40,7 +40,7 @@ export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailu
  function dimVisible(line:SceneLine){const d=line.dim!;if(askedDim(line))return true;if(options.dims===false)return false;if(d.scope==='overall')return true;
   const sel=options.selectedId?model?.meshes.find(m=>m.id===options.selectedId)??model?.lines.find(l=>l.id===options.selectedId):undefined,seg=sel?.entity.segmentIndex,post=options.selectedId?.replace(/^post:/,'');
   // Its piece is selected (a flight, a landing, a post at either end of a span).
-  return (seg!==undefined&&!!d.segs?.includes(seg))||(!!post&&!!d.postIds?.includes(post));}
+  return (seg!==undefined&&!!d.segs?.includes(seg))||(!!post&&!!d.postIds?.includes(post))||(!!sel?.entity.part&&!!d.parts?.includes(sel.entity.part));}
  function addDim(line:SceneLine){const d=line.dim!,asked=askedDim(line),dark=options.dark;
   const col=asked?(dark?0x818cf8:0x4f46e5):d.state==='measured'?(dark?0xe2e8f0:0x1e293b):d.state==='calculated'?(dark?0x94a3b8:0x64748b):(dark?0xf6bf62:0xb45309);
   const local=localPositions(line.points);let object:THREE.Object3D;

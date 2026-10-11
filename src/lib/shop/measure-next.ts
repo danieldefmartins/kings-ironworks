@@ -2,7 +2,8 @@ import type { MeasureData, MeasureShape } from './measure';
 import { parseMeas } from './measure-parse';
 import type { Gap } from './measure-checks';
 import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace';
-import { isFaceMount, OPENING_DOOR_PRODUCTS, unitTag, type OpeningProduct } from './measure-opening';
+import { isFaceMount, OPENING_DOOR_PRODUCTS, openingFabSize, unitTag, type OpeningProduct } from './measure-opening';
+import { gateLeafCalc } from './measure-dims-gate';
 import { isBearingRole, isSpanning, isVertical, ROLE_PREFIX } from './measure-structural';
 import { blankMountGaps } from './measure-substrate';
 import { postsOf, runTag } from './measure-wall-cap';
@@ -159,11 +160,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
 
   const table = (prefix: string, obj: (d: MeasureData) => Bag | null | undefined, rows: [string, string, string, SlotUnit?][], extra: Partial<NextSlot> = {}) =>
     rows.forEach(([gap, labelKey, key, unit]) => field(`${prefix}.${key}`, gap, labelKey, obj, key, { ...extra, unit: unit || 'len' }));
-  if (shape === 'gate' && data.gate) table('gate', d => d.gate as unknown as Bag, [
-    ['gate_width_top', 'gateWidthTop', 'widthTop'], ['gate_width_bottom', 'gateWidthBottom', 'widthBottom'],
-    ['gate_height_hinge', 'gateHeightHinge', 'heightHinge'], ['gate_ground_clearance', 'gateGroundClearance', 'groundClearance'],
-    ['gate_grade_rise', 'gateGradeRise', 'gradeRise'],
-  ]);
+  if (shape === 'gate' && data.gate) gateSlots(field);
   if (shape === 'fence' && data.fence) {
     // Walk the line run by run, then the totals and heights that check it.
     data.fence.segments.forEach((sg, n) => {
@@ -213,20 +210,65 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
       ['fire_ladder_rung', 'fireLadderRung', 'rungSpacing'],
     ]);
   }
-  if (shape === 'window_well' && data.well) table('well', d => d.well as unknown as Bag, [
-    ['well_length', 'wellLengthAtHouse', 'lengthAtHouse'], ['well_projection', 'wellProjection', 'projection'],
-    ['well_depth', 'wellDepth', 'depth'], ['well_thickness', 'wellWallThickness', 'wallThickness'],
-    ['well_guard_height', 'wellGuardHeight', 'guardHeight'], ['well_post_to_wall', 'wellPostToWall', 'postToWall'],
-    ['well_gate_width', 'wellGateWidth', 'gateWidth'], ['well_ladder_width', 'wellLadderWidth', 'ladderWidth'],
-    ['well_ladder_rungs', 'wellLadderRungs', 'ladderRungs', 'count'], ['well_ladder_spacing', 'wellLadderSpacing', 'ladderSpacing'],
-    ['well_ladder_standoff', 'wellLadderStandoff', 'ladderStandoff'],
-  ]);
+  if (shape === 'window_well' && data.well) wellSlots(data, field);
   if (shape === 'opening' && data.opening) openingSlots(data, field);
   if (shape === 'structural' && data.structural) structuralSlots(data, field);
   if (shape === 'canopy' && data.canopy?.kind) canopySlots(data, field);
   if (shape === 'wall_cap' && data.wallCap) wallCapSlots(data, field);
   if (shape === 'shop_piece' && data.shopPiece) shopPieceSlots(data, field);
   return out;
+}
+
+/**
+ * A gate is read as an opening: the clear width at the top and at the grade,
+ * the post on each side, the clearance under the leaf and the grade it swings
+ * over; then the leaf widths those numbers give (approve or modify).
+ */
+function gateSlots(field: FieldFn) {
+  const gate = (d: MeasureData) => d.gate as unknown as Bag | null | undefined;
+  const swings = (d: MeasureData) => !!d.gate && ['single_swing', 'double_swing', 'bifold'].includes(d.gate.operation);
+  field('gate.widthTop', 'gate_width_top', 'gateWidthTop', gate, 'widthTop', { part: 'widthTop' });
+  field('gate.widthBottom', 'gate_width_bottom', 'gateWidthBottom', gate, 'widthBottom', { part: 'widthBottom' });
+  field('gate.heightHinge', 'gate_height_hinge', 'gateHeightHinge', gate, 'heightHinge', { part: 'heightHinge' });
+  // The latch post too: the two heights are what show the grade across the opening.
+  field('gate.heightLatch', 'gate_height_latch', 'gateHeightLatch', gate, 'heightLatch', { part: 'heightLatch', ask: d => !!d.gate && has(d.gate.heightHinge) });
+  field('gate.groundClearance', 'gate_ground_clearance', 'gateGroundClearance', gate, 'groundClearance', { part: 'groundClearance' });
+  field('gate.gradeRise', 'gate_grade_rise', 'gateGradeRise', gate, 'gradeRise', { part: 'gradeRise' });
+  field('gate.leafA', 'gate_leaf', 'gateLeafA', gate, 'leafA', { part: 'leafA', ask: d => swings(d) && gateLeafCalc(d.gate!).a !== null });
+  field('gate.leafB', 'gate_leaf', 'gateLeafB', gate, 'leafB', { part: 'leafB', ask: d => d.gate?.operation === 'double_swing' && gateLeafCalc(d.gate!).b !== null });
+}
+
+/**
+ * A window well is read from the top of its wall: along the house, out from
+ * it, down to the floor, the wall's thickness, how far it stands above grade;
+ * for a guard, the wall's bands off the proud face, then the guard itself;
+ * then the gate and ladder.
+ */
+function wellSlots(data: MeasureData, field: FieldFn) {
+  const w = data.well!;
+  const well = (d: MeasureData) => d.well as unknown as Bag | null | undefined;
+  const guard = (d: MeasureData) => !!d.well?.deliverables.includes('guard');
+  const row = (gap: string, labelKey: string, key: string, extra: Partial<NextSlot> = {}) => field(`well.${key}`, gap, labelKey, well, key, { part: key, ...extra });
+  row('well_length', 'wellLengthAtHouse', 'lengthAtHouse');
+  row('well_projection', 'wellProjection', 'projection');
+  row('well_depth', 'wellDepth', 'depth');
+  row('well_thickness', 'wellWallThickness', 'wallThickness');
+  // The guard height is set from here: asked whenever there is a guard.
+  row('well_top_to_grade', 'wellTopToGrade', 'topToGrade', { ask: guard });
+  if (w.deliverables.includes('guard')) w.bands.forEach((b, n) => {
+    const id = b.id, tag = b.label.trim() || `#${n + 1}`;
+    const band = (d: MeasureData) => d.well?.bands.find(x => x.id === id) as unknown as Bag | undefined;
+    for (const [k, label] of [['setback', 'wellBandSetback'], ['fromTop', 'wellBandFrom'], ['toTop', 'wellBandTo']] as const) {
+      field(`well.band.${id}.${k}`, 'well_band', label, band, k, { detail: tag, tag, part: `band:${id}:${k}`, ask: guard });
+    }
+  });
+  row('well_guard_height', 'wellGuardHeight', 'guardHeight');
+  row('well_post_to_wall', 'wellPostToWall', 'postToWall');
+  row('well_gate_width', 'wellGateWidth', 'gateWidth');
+  row('well_ladder_width', 'wellLadderWidth', 'ladderWidth');
+  row('well_ladder_rungs', 'wellLadderRungs', 'ladderRungs', { unit: 'count' });
+  row('well_ladder_spacing', 'wellLadderSpacing', 'ladderSpacing');
+  row('well_ladder_standoff', 'wellLadderStandoff', 'ladderStandoff');
 }
 
 type FieldFn = (id: string, gap: string, labelKey: string, obj: (d: MeasureData) => Bag | null | undefined, key: string, extra?: Partial<NextSlot>) => void;
@@ -249,6 +291,10 @@ function openingSlots(data: MeasureData, field: FieldFn) {
     for (const k of ['diagA', 'diagB'] as const) field(`op.${id}.${k}`, 'op_diagonals', `nx_${k}`, unit, k, at(k));
     // Inside the reveal the piece has to fit the jamb depth; face-mounted it never sees it.
     if (!isFaceMount(o.mount)) field(`op.${id}.reveal`, 'op_reveal', 'nx_reveal', unit, 'reveal', at('reveal'));
+    // The size the shop cuts to: calculated from the readings, approved or modified.
+    for (const k of ['fabW', 'fabH'] as const) field(`op.${id}.${k}`, 'op_fab', `nx_${k}`, unit, k, {
+      ...at(k), ask: d => { const oo = d.opening, uu = oo?.units.find(x => x.id === id); return !!oo && !!uu && openingFabSize(oo, uu) !== null; },
+    });
   });
   const whole = (d: MeasureData) => d.opening as unknown as Bag | null;
   if (o.product === 'juliet') {

@@ -7,7 +7,7 @@
 // viewer stands at −y.
 import type {MeasureData} from '../measure';
 import type {Point3} from '../measure-geometry';
-import {openingFabSize,julietGuardAboveSill,unitTag,isFaceMount,OPENING_DOOR_PRODUCTS,type OpeningData,type OpeningUnit,type OpeningProduct} from '../measure-opening';
+import {openingFabSize,openingFabFinal,julietGuardAboveSill,unitTag,isFaceMount,OPENING_DOOR_PRODUCTS,type OpeningData,type OpeningUnit,type OpeningProduct} from '../measure-opening';
 import {P,box,cylinder,emptyScene,flat,merge,mesh,num,sweepRects,type Geo,type ShapeScene} from './kit';
 
 /** Wall shown around each opening — context only, never a measurement. */
@@ -72,24 +72,36 @@ function hinges(x:number,z0:number,z1:number,y:number):Geo{
  const parts:Geo[]=[];for(const t of [.12,.5,.88]){const z=z0+(z1-z0)*t;parts.push(cylinder(P(x,y,z-2),P(x,y,z+2),.5,12,P(1,0,0)));}return merge(...parts);
 }
 
+/**
+ * Where each opening stands on the shared wall: its hole, centre x, sill height
+ * and wall depth. The 3D and the dimension lines (measure-dims-opening) read
+ * the same layout, so a line always lands on the hole it measures.
+ */
+export function openingLayout(o:OpeningData){
+ const door=!!o.product&&OPENING_DOOR_PRODUCTS.includes(o.product as OpeningProduct);
+ // The ground is the outside grade: a door stands on its threshold, a sill at its measured
+ // drop to the surface outside (a placeholder height until that is read).
+ const sillOf=(u:OpeningUnit)=>door?0:num(u.dropOutside,true)??30;
+ const wallTop=Math.max(...o.units.map(u=>sillOf(u)+holeOutline(u).height+MARGIN));
+ let cursor=0;
+ const units=o.units.map(u=>{
+  const hole=holeOutline(u),reveal=num(u.reveal),depth=reveal??8,half=hole.width/2+MARGIN,cx=cursor+half;cursor+=2*half+GAP;
+  return {hole,reveal,depth,cx,sillZ:sillOf(u)};
+ });
+ return {door,wallTop,units};
+}
+
 export function openingScene(data:MeasureData):ShapeScene{
  const out=emptyScene(),o=data.opening as OpeningData|null|undefined;
  if(!o||!o.units.length)return out;
  const product=o.product,door=!!product&&OPENING_DOOR_PRODUCTS.includes(product as OpeningProduct);
  if(!product)out.pending.push('Product');
  if(!o.mount)out.pending.push('Mount');
- let cursor=0;
- // One wall: every stretch shares the tallest head line.
- const sillOf=(u:OpeningUnit)=>door?0:num(u.dropOutside,true)??30;
- const wallTop=Math.max(...o.units.map(u=>sillOf(u)+holeOutline(u).height+MARGIN));
+ const layout=openingLayout(o),wallTop=layout.wallTop;
  o.units.forEach((u,i)=>{
-  const tag=unitTag(u,i),hole=holeOutline(u),reveal=num(u.reveal),depth=reveal??8;
+  const tag=unitTag(u,i),{hole,reveal,depth,cx,sillZ}=layout.units[i];
   if(hole.provisional)out.pending.push(`${tag} · opening`);
   if(o.mount==='reveal'&&reveal===null)out.pending.push(`${tag} · reveal`);
-  const half=hole.width/2+MARGIN,cx=cursor+half;cursor+=2*half+GAP;
-  // The ground is the outside grade: a door stands on its threshold, a sill at its measured
-  // drop to the surface outside (a placeholder height until that is read).
-  const sillZ=sillOf(u);
   const entity={part:`opening:${u.id}`};
   out.meshes.push(mesh(`opening:wall:${u.id}`,`${tag} · wall`,'site',wallWithHole(hole,cx,sillZ,depth,wallTop),{referenceOnly:true,provisional:reveal===null,entity}));
   // Sill: projects proud of the face and falls outward by the measured slope.
@@ -100,8 +112,8 @@ export function openingScene(data:MeasureData):ShapeScene{
    out.meshes.push(mesh(`opening:sill:${u.id}`,`${tag} · sill`,'site',flat(c,[[3,2,1,0],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]]),{referenceOnly:true,entity}));
   }
   // The piece the shop builds, at its "fabricate to" size.
-  const fab=openingFabSize(o,u),face=isFaceMount(o.mount);
-  const w=fab?.width??hole.width,h=fab?.height??hole.height,provisional=!fab||!product||!o.mount;
+  const fab=openingFabSize(o,u),final=openingFabFinal(o,u),face=isFaceMount(o.mount);
+  const w=final?.width??hole.width,h=final?.height??hole.height,provisional=!fab||!product||!o.mount;
   if(!fab)out.pending.push(`${tag} · fabricate to`);
   const allowance=fab?.allowance??0,z0=sillZ+(face?-allowance:allowance),x0=cx-w/2,x1=cx+w/2;
   if(product==='juliet'){
