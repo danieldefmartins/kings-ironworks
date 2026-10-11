@@ -75,7 +75,7 @@ export default function CustomerSignoff({
           <div className="mt-2 text-base font-semibold text-neutral-100">{so.name}</div>
           <div className="text-sm text-neutral-500">
             {/* Server renders UTC, the tablet its own zone: the time is allowed to differ. */}
-            <span suppressHydrationWarning><MeasureTime iso={so.signedAt} lang={lang} /></span> · {LANG_NAME[so.lang]}
+            <span><MeasureTime iso={so.signedAt} lang={lang} /></span> · {LANG_NAME[so.lang]}
             {so.email ? ` · ${so.email}` : ""}
           </div>
           {state === "stale" && <div className="mt-2 text-sm font-medium text-amber-300">{ct(lang, "signStaleNote")}</div>}

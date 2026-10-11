@@ -1,7 +1,72 @@
 import type {MeasureScene} from './measure-scene';
-/** Translate generated scene labels only; site/rail names are user data. */
-export function sceneLabel(item: MeasureScene['meshes'][number] | MeasureScene['lines'][number], lang: string): string {
- const words = lang==='pt'?{Step:'Degrau',Segment:'Trecho',Connection:'Ligação',Railing:'Guarda-corpo',left:'esquerda',right:'direita'}:lang==='es'?{Step:'Peldaño',Segment:'Tramo',Connection:'Conexión',Railing:'Baranda',left:'izquierda',right:'derecha'}:null;
- if(!words || item.entity.siteId || item.entity.railId) return item.label;
- return item.label.replace(/^(Step|Segment|Connection|Railing)(?= \d)/,word=>words[word as 'Step']).replace(/\b(left|right)\b/g,word=>words[word as 'left']).replace(' wall boundary',lang==='pt'?' · limite da parede':' · límite de pared').replace('support connection',lang==='pt'?'ligação ao apoio':'conexión al soporte');
+type SceneItem = MeasureScene['meshes'][number] | MeasureScene['lines'][number];
+const labels: Record<string, [string, string]> = {
+ 'Curb':['Base elevada','Zócalo'], 'Skylight frame':['Moldura de claraboia','Marco de tragaluz'],
+ 'Roofing':['Cobertura','Cubierta'], 'House wall':['Parede da casa','Muro de la casa'],
+ 'Trim / soffit':['Acabamento / beiral','Moldura / alero'], 'Door':['Porta','Puerta'],
+ 'Ledger':['Viga junto à parede','Viga junto al muro'], 'Front beam':['Viga frontal','Viga frontal'],
+ 'Side rail L':['Lateral esquerda','Lateral izquierda'], 'Side rail R':['Lateral direita','Lateral derecha'],
+ 'Gutter':['Calha','Canalón'], 'Tie rod':['Tirante','Tirante'], 'Bracket':['Mão-francesa','Ménsula'],
+ 'Handrail':['Corrimão','Pasamanos'], 'Brackets':['Suportes','Soportes'], 'Wall':['Parede','Muro'],
+ 'Centre column':['Coluna central','Columna central'], 'Treads':['Pisos','Huellas'], 'Balusters':['Balaústres','Barrotes'],
+ 'Well walls':['Paredes do poço','Muros del foso'], 'Well':['Poço','Foso'], 'outside':['exterior','exterior'],
+ 'Well floor':['Fundo do poço','Fondo del foso'], 'Grade':['Nível do terreno','Nivel del terreno'],
+ 'House':['Casa','Casa'], 'unmeasured reference':['referência sem medidas','referencia sin medidas'],
+ 'Basement window':['Janela do porão','Ventana del sótano'], 'glass':['vidro','vidrio'],
+ 'Well grate':['Grelha do poço','Rejilla del foso'], 'Well guard':['Guarda-corpo do poço','Baranda del foso'],
+ 'Well gate':['Portão do poço','Puerta del foso'], 'Grade along the run':['Terreno ao longo do trecho','Terreno a lo largo del tramo'],
+ 'Deck surface':['Piso do deck','Piso de terraza'], 'Deck edge':['Borda do deck','Borde de terraza'],
+ 'decking + rim':['piso + viga de borda','piso + viga de borde'], 'height above grade':['altura sobre o terreno','altura sobre el terreno'],
+ 'Grade around the deck':['Terreno ao redor do deck','Terreno alrededor de la terraza'],
+ 'Left gate post':['Poste esquerdo do portão','Poste izquierdo de puerta'], 'Right gate post':['Poste direito do portão','Poste derecho de puerta'],
+ 'Opening':['Vão','Abertura'], 'top width':['largura superior','ancho superior'],
+ 'Slide track':['Trilho deslizante','Riel deslizante'], 'Run-back':['Recuo','Retroceso'], 'leaf open':['folha aberta','hoja abierta'],
+ 'Ground':['Solo','Suelo'], 'swing path':['trajeto de abertura','recorrido de apertura'], 'Grade at opening':['Terreno no vão','Terreno en la abertura'],
+ 'Door threshold':['Soleira da porta','Umbral de puerta'], 'Juliet':['Julieta','Julieta'],
+ 'posts + brackets':['postes + suportes','postes + soportes'], 'Balcony slab':['Laje da sacada','Losa de balcón'], 'Balcony':['Sacada','Balcón'],
+ 'Building wall':['Parede do prédio','Muro del edificio'], 'Drop ladder':['Escada retrátil','Escalera retráctil'],
+ 'wall':['parede','muro'], 'rail':['corrimão','baranda'], 'niche':['nicho','nicho'], 'sill':['peitoril','alféizar'],
+ 'footing':['fundação','zapata'], 'posts':['postes','postes'], 'swing':['abertura','giro'], 'open':['aberto','abierto'],
+ 'platform':['patamar','descanso'], 'frame':['estrutura','marco'], 'guard':['guarda-corpo','baranda'],
+ 'opening':['vão','abertura'], 'window':['janela','ventana'], 'door':['porta','puerta'],
+ 'brackets':['suportes','soportes'], 'stair':['escada','escalera'], 'stair rail':['corrimão da escada','baranda de escalera'],
+ 'gate':['portão','puerta'], 'stairs':['escadas','escaleras'], 'Stair opening':['Vão da escada','Abertura de escalera'], 'Gate opening':['Vão do portão','Abertura de puerta'],
+};
+/** Translate generated scene labels only. Custom names, marks and profiles stay verbatim. */
+export function sceneLabel(item: SceneItem, lang: string): string {
+ if ((lang !== 'pt' && lang !== 'es') || item.entity.siteId || item.entity.railId) return item.label;
+ const i = lang === 'pt' ? 0 : 1;
+ const tr = (s: string) => labels[s]?.[i] ?? s;
+ const id = item.id;
+ if (/^(canopy:|wall-rail:|spiral:|gate:|well:|fence:|deck:|balcony:|fire:|house:(well|deck|balcony|reference|roof))/.test(id)) {
+  // Only these prefixes are generated by their adapter. Preserve the trailing user mark.
+  if (id.startsWith('canopy:post-')) return item.label.replace(/^Post /, 'Poste ');
+  if (id.startsWith('canopy:slat-')) return item.label.replace(/^Slat /, i === 0 ? 'Ripa ' : 'Listón ');
+  if (/^fence:(segment|line):/.test(id)) return item.label.replace(/^Fence segment /, i === 0 ? 'Trecho da cerca ' : 'Tramo de valla ');
+  // A wall band's entire label is user-entered.
+  if (id.startsWith('well:band:')) return item.label;
+  const parts = item.label.split(' · ');
+  // Fire-escape level tags are user data; only translate the generated suffix.
+  if (!/^fire:(deck|frame|guard|opening|brackets|stair|stair-rail):/.test(id)) {
+   parts[0] = tr(parts[0]).replace(/^Gate leaf(?= |$)/, i === 0 ? 'Folha do portão' : 'Hoja de puerta')
+    .replace(/^Fence segment /, i === 0 ? 'Trecho da cerca ' : 'Tramo de valla ')
+    .replace(/^Deck side /, i === 0 ? 'Lado do deck ' : 'Lado de terraza ');
+  }
+  if (parts.length > 1) parts[parts.length - 1] = tr(parts[parts.length - 1]);
+  return parts.join(' · ');
+ }
+ if (/^(wallcap:|shoppiece:niche:|opening:|plan:rail:)/.test(id) || (id.startsWith('post:') && item.entity.part?.startsWith('plan:'))) {
+  // Translate just the appended description, never the user's opening/run/piece tag.
+  return item.label.replace(/ · ([^·]+)$/, (_, suffix: string) => ` · ${tr(suffix).replace(/^post /, 'poste ')}`);
+ }
+ if (/^struct:(wall|slab|bp|cp|frame):/.test(id)) {
+  if (item.label === 'Bearing wall') return i === 0 ? 'Parede de apoio' : 'Muro de apoyo';
+  if (item.label === 'Slab') return i === 0 ? 'Laje' : 'Losa';
+  if (id === 'struct:frame:opening') return i === 0 ? 'Pórtico · vão' : 'Pórtico · abertura';
+  const parts: Record<string, string[]> = {wall:['parede','muro'],slab:['laje','losa'],'base plate':['chapa de base','placa base'],'cap plate':['chapa de topo','placa superior']};
+  return item.label.replace(/ · ([^·]+)$/, (_, suffix: string) => ` · ${suffix.replace(/^(wall|slab|base plate|cap plate)(?= |$)/, part => parts[part][i])}`);
+ }
+ if (id.startsWith('struct:') || id.startsWith('shoppiece:')) return item.label;
+ const words = i === 0 ? {Step:'Degrau',Segment:'Trecho',Connection:'Ligação',Railing:'Guarda-corpo',left:'esquerda',right:'direita'} : {Step:'Peldaño',Segment:'Tramo',Connection:'Conexión',Railing:'Baranda',left:'izquierda',right:'derecha'};
+ return item.label.replace(/^Place wall/, i === 0 ? 'Posicionar parede' : 'Colocar muro').replace(/^(Step|Segment|Connection|Railing)(?= \d)/,word=>words[word as 'Step']).replace(/\b(left|right)\b/g,word=>words[word as 'left']).replace(' wall boundary',i===0?' · limite da parede':' · límite de pared').replace('support connection',i===0?'ligação ao apoio':'conexión al soporte');
 }

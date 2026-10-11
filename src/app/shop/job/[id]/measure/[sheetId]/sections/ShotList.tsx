@@ -6,6 +6,7 @@
 
 import { shotList, shotProgress, formatGps, type ShotDef } from "@/lib/shop/measure-shots";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
+import MeasureTime from "../MeasureTime";
 import { mt } from "@/lib/shop/measure-i18n";
 import ShotGhost from "../overlays/ShotGhost";
 import { useEffect, useState } from "react";
@@ -60,17 +61,6 @@ function ShotThumb({ path, sheetId }: { path: string; sheetId?: string }) {
       )}
     </>
   );
-}
-
-function when(iso: string, lang: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 export default function ShotList({
@@ -155,7 +145,7 @@ export default function ShotList({
                   <span className="block text-[13px] text-neutral-500">
                     {ph ? (
                       <>
-                        <span suppressHydrationWarning>{when(ph.takenAt, lang)}</span>
+                        <MeasureTime iso={ph.takenAt} lang={lang} compact />
                         {ph.lat !== undefined && ph.lng !== undefined && (
                           <span className="block truncate">📍 {formatGps(ph.lat, ph.lng)}</span>
                         )}

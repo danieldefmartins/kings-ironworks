@@ -13,7 +13,7 @@ const files = readdirSync(new URL('.', import.meta.url)).filter(n => /^measure\.
 let failed = 0;
 for (const file of files) {
  console.log(`\n=== ${file} ===`);
- const result = spawnSync(process.execPath, [new URL(file, import.meta.url).pathname], { env, stdio:'inherit', timeout:900000 });
+ const result = spawnSync(process.execPath, [new URL(file, import.meta.url).pathname], { env, stdio:'inherit', timeout:file === 'measure.audit.test.mjs' ? 1800000 : 900000 });
  if (result.status !== 0) { failed++; console.error(result.error?.message || `${file}: exit ${result.status}`); }
 }
 console.log(`\n${files.length - failed}/${files.length} suites passed`);

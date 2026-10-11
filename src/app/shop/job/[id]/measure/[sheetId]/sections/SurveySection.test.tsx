@@ -1,12 +1,12 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import {newMeasureData,type MeasureData} from '@/lib/shop/measure';
 import {blankSurvey,newCondition} from '@/lib/shop/measure-survey';
 import SurveySection,{SurveyPrint} from './SurveySection';
 afterEach(cleanup);
 let latest:MeasureData;
-function Harness({init}:{init?:(d:MeasureData)=>void}){const [data,setData]=useState(()=>{const d=newMeasureData('gate',4);init?.(d);return d;});latest=data;return <SurveySection data={data} lang="en" sheetId="test" slotBusy={null} slotErr={null} directSlotPhoto={vi.fn()} set={fn=>setData(old=>{const next=structuredClone(old);fn(next);return next;})}/>;}
+function Harness({init}:{init?:(d:MeasureData)=>void}){const [data,setData]=useState(()=>{const d=newMeasureData('gate',4);init?.(d);return d;});useEffect(()=>{latest=data;},[data]);return <SurveySection data={data} lang="en" sheetId="test" slotBusy={null} slotErr={null} directSlotPhoto={vi.fn()} set={fn=>setData(old=>{const next=structuredClone(old);fn(next);return next;})}/>;}
 describe('survey section',()=>{
  it('job type is a segmented control',()=>{
   render(<Harness/>);const group=screen.getByRole('radiogroup',{name:'Job type'});

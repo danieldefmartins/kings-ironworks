@@ -52,8 +52,11 @@ changes that worker's language and restores English in its `finally` cleanup.
 | `measure.points.ui` | Two drawn runs, line-point placement, post types and persistence |
 | `measure.press` | Phone touch input: fullscreen, step selection, post placement/removal; uses the current focus-mode controls |
 | `measure.shapes` | Picker, persistent canvas and NextMeasurement across stair presets and non-stair shapes |
-| `measure.audit` | Every shipped shape, EN/PT-BR/ES, light/dark, 390×844 touch phone and 1024×1366 tablet screenshots, all Tool options, Materials and review; named buttons and 44px button targets |
+| `measure.audit` | All 21 shipped shapes (including opening, structural, canopy, wall_cap and shop_piece), EN/PT-BR/ES, light/dark, 390×844 touch phone and 1024×1366 tablet screenshots, all Tool options, 3D layer names, Materials and review; named buttons and 44px button targets |
+| `measure.expanded` | Populated survey dialogs, timestamp hydration across time zones, delivery switches, shot camera/markup, laser panel and translated shop-piece presets in EN/PT/ES and both themes |
 | `measure.deck`, `fire`, `skirt`, `trio`, `well` | Shape-specific API contracts and dimensional checks |
+
+`MEASURE_AUDIT_SCREENSHOTS=0` reruns the assertions and JSON audit without repeating PNG capture. The audit records its created TEST sheet IDs in `audit-created.json` for recovery after an interrupted process.
 
 Audit PNGs are viewport screenshots (not full-page). `audit.json` records screen
 text and findings for review. Screenshots require visual inspection; the suite

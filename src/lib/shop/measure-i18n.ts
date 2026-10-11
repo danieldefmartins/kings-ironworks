@@ -4431,6 +4431,16 @@ export function materialLabel(lang: string, value: string): string {
  if(lang !== 'pt' && lang !== 'es') return value;
  const exact:Record<string,string>={'Molded cap rail':'stockCap','Shoe rail':'stockShoe','None (into treads)':'stockNone'};
  if(exact[value])return mt(lang,exact[value]);
+ const shopPresets: Record<string, [string, string]> = {
+  '1 1/2" sq tube 11ga': ['1 1/2" tubo quadrado 11ga', '1 1/2" tubo cuadrado 11ga'],
+  '1" sq tube 14ga': ['1" tubo quadrado 14ga', '1" tubo cuadrado 14ga'],
+  '2x1 tube 11ga': ['2x1 tubo 11ga', '2x1 tubo 11ga'],
+  '1 1/2" angle 3/16': ['1 1/2" cantoneira 3/16', '1 1/2" ángulo 3/16'],
+  '1/4" plate': ['1/4" chapa', '1/4" placa'],
+  '3/4" sq bar': ['3/4" barra quadrada', '3/4" barra cuadrada'],
+  '1/2" round bar': ['1/2" barra redonda', '1/2" barra redonda'],
+ };
+ if(shopPresets[value]) return shopPresets[value][lang === 'pt' ? 0 : 1];
  if(value.startsWith('Flat bar '))return `${mt(lang,'stockFlat')} ${value.slice(9)}`;
  const match=value.match(/^([0-9][0-9\/\- ."x]*) (sq tube|sq solid|Sch40 pipe|flat bar|channel)$/);
  if(!match)return value;

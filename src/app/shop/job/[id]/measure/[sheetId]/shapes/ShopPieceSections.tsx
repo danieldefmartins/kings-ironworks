@@ -10,7 +10,7 @@
 
 import { useMemo, useState } from "react";
 import type { MeasureData } from "@/lib/shop/measure";
-import { mt } from "@/lib/shop/measure-i18n";
+import { materialLabel, mt } from "@/lib/shop/measure-i18n";
 import {
   blankShopPiece,
   bottleLoad,
@@ -187,7 +187,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
         <div className="space-y-2">
           {d.materials.map((m, i) => (
             <div key={m.id} className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto] items-end gap-2">
-              <MInput label={i === 0 ? t("sp_profile") : undefined} placeholder='1 1/2" sq tube 11ga' value={m.profile} onChange={(v) => up((x) => void (x.materials[i].profile = v))} />
+              <MInput label={i === 0 ? t("sp_profile") : undefined} placeholder={materialLabel(lang, '1 1/2" sq tube 11ga')} value={m.profile} onChange={(v) => up((x) => void (x.materials[i].profile = v))} />
               <MInput label={i === 0 ? t("sp_use") : undefined} placeholder={t("sp_usePh")} value={m.use} onChange={(v) => up((x) => void (x.materials[i].use = v))} />
               <button type="button" aria-label={t("st_remove")} onClick={() => up((x) => void x.materials.splice(i, 1))} className="mb-0.5 size-11 rounded-lg text-lg text-slate-400">×</button>
             </div>
@@ -196,7 +196,7 @@ export default function ShopPieceSections({ lang, data, set }: { lang: string; d
         <div className="mt-2 flex flex-wrap gap-1.5">
           {MATERIAL_PRESETS.filter((p) => !d.materials.some((m) => m.profile === p)).slice(0, d.materials.length ? 4 : 7).map((p) => (
             <button key={p} type="button" onClick={() => up((x) => void x.materials.push(newSpMaterial({ profile: p })))}
-              className="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-600">+ {p}</button>
+              className="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-[13px] font-semibold text-slate-600">+ {materialLabel(lang, p)}</button>
           ))}
           <button type="button" onClick={() => up((x) => void x.materials.push(newSpMaterial()))} className="min-h-9 rounded-full px-3 text-[13px] font-semibold text-indigo-700">+ {t("sp_otherMaterial")}</button>
         </div>

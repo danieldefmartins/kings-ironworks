@@ -255,7 +255,7 @@ export default function PhotoMarkup({
                     aria-checked={tool === tl}
                     onClick={() => (tl === "text" ? startText() : setTool(tl))}
                     className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[12px] font-semibold ${
-                      tool === tl ? "bg-neutral-900 text-indigo-300 shadow-sm" : "text-neutral-400"
+                      tool === tl ? "bg-neutral-900 text-indigo-700 shadow-sm" : "text-neutral-400"
                     }`}
                   >
                     {icon}

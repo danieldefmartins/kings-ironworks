@@ -152,9 +152,9 @@ export function Stepper({ label, value, onChange, min = 1 }: { label: string; va
     <div role="group" aria-label={label}>
       <div className="mb-1 text-[13px] text-neutral-400">{label}</div>
       <div className="flex h-[46px] items-center rounded-lg border border-slate-200 bg-white">
-        <button type="button" aria-label="−" onClick={() => onChange(Math.max(min, value - 1))} className="h-full w-10 text-lg font-semibold text-slate-600">−</button>
+        <button type="button" aria-label={`${label} −`} onClick={() => onChange(Math.max(min, value - 1))} className="h-full w-10 text-lg font-semibold text-slate-600">−</button>
         <span className="w-7 text-center text-base font-semibold tabular-nums">{value}</span>
-        <button type="button" aria-label="+" onClick={() => onChange(Math.min(99, value + 1))} className="h-full w-10 text-lg font-semibold text-slate-600">+</button>
+        <button type="button" aria-label={`${label} +`} onClick={() => onChange(Math.min(99, value + 1))} className="h-full w-10 text-lg font-semibold text-slate-600">+</button>
       </div>
     </div>
   );
@@ -163,8 +163,8 @@ export function Stepper({ label, value, onChange, min = 1 }: { label: string; va
 export function Switch({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={(e) => { e.preventDefault(); onChange(!on); }}
-      className={`relative h-8 w-[52px] shrink-0 rounded-full transition ${on ? "bg-indigo-600" : "bg-slate-300"}`}>
-      <span className={`absolute top-1 size-6 rounded-full bg-white shadow transition-all ${on ? "left-[24px]" : "left-1"}`} />
+      className="inline-flex h-11 w-[52px] shrink-0 items-center rounded-full">
+      <span aria-hidden className={`relative block h-8 w-[52px] rounded-full transition ${on ? "bg-indigo-600" : "bg-slate-300"}`}><span style={{background:"#fff"}} className={`absolute top-1 size-6 rounded-full shadow transition-all ${on ? "left-[24px]" : "left-1"}`} /></span>
     </button>
   );
 }

@@ -30,6 +30,12 @@ const cases = [
   ["balcony", null, 1, 0, 0],
   ["deck", null, 4, 0, 0],
   ["custom", null, 1, 0, 0],
+  ["opening", null, 1, 0, 0],
+  ["structural", null, 1, 0, 0],
+  ["canopy", null, 1, 0, 0],
+  ["wall_cap", null, 1, 0, 0],
+  ["shop_piece", null, 1, 0, 0],
+
 ];
 
 const browser = await chromium.launch();
@@ -55,6 +61,8 @@ try {
     if (!res.ok() || !body.id) throw new Error(`Create failed for ${preset || shape}: ${res.status()} ${JSON.stringify(body)}`);
     created.push(body.id);
     await page.goto(`${BASE}/shop/job/${JOB}/measure/${body.id}`, { waitUntil: "networkidle" });
+    if (shape === 'canopy') await page.getByRole('button',{name:/^Entry canopy/}).click();
+    if (shape === 'structural') await page.getByRole('button',{name:/^Beam /}).click();
     // Focus mode keeps one persistent 3D canvas; icon SVG counts do not
     // prove that the drawing rendered. Form-only shapes have their own form.
     await page.locator('[data-scene-viewport] canvas').first().waitFor({state:'attached'});
