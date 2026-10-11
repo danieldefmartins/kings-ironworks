@@ -73,7 +73,7 @@ export default function SiteWorkspace({data,set,lang,onContinue,onMeasure,onDeta
     const flightIndex=Math.max(0,data.segments.slice(0,index).filter(s=>s.kind==='flight').length+(piece==='flight'?0:-1));
     set(d=>insertSegment(d,index,segment));setPiece(null);onMeasure(index,null,flightIndex);
   }
-  const input=(key:'x'|'y'|'z'|'length'|'depth'|'height'|'riseX'|'riseY',label:string)=><label className="block text-sm font-semibold text-slate-600">{label}<input className={fieldClass} ref={node=>{dimensionRefs.current[key]=node;}} value={object?.[key]||''} maxLength={40} placeholder='0' data-m="1" onChange={e=>update({[key]:e.target.value})}/></label>;
+  const input=(key:'x'|'y'|'z'|'length'|'depth'|'height'|'riseX'|'riseY',label:string)=><label className="block text-sm font-semibold text-slate-600">{label}<input className={fieldClass} ref={node=>{dimensionRefs.current[key]=node;}} value={object?.[key]||''} maxLength={40} placeholder='0' data-m="1" data-laser-unit="len" onChange={e=>update({[key]:e.target.value})}/></label>;
   return <section className={embedded?"relative text-slate-900":"relative rounded-3xl border border-slate-200 bg-slate-100 p-3 text-slate-900 shadow-xl sm:p-5"} aria-label={l.title}>
     {!embedded&&<div className="mb-3 flex items-center justify-between gap-3"><h2 className="text-xl font-bold tracking-tight">{l.title}</h2><button type="button" className={buttonClass} onClick={onDetails} aria-label={l.advanced}><Settings2 className="size-5"/></button></div>}
     <div className="mb-3 space-y-3 rounded-2xl border border-slate-200 bg-white p-3" aria-label={l.add}>

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Crosshair } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import type { Gap } from "@/lib/shop/measure-checks";
+import { LASER_INPUT_EVENT, type LaserInputDetail } from '@/lib/shop/laser/field-input';
 import { mt } from "@/lib/shop/measure-i18n";
 import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
 import { currentItem, measurementQueue, nextOpenItem, type NextItem, type NextSlot } from "@/lib/shop/measure-next";
@@ -75,6 +76,21 @@ export default function NextMeasurement({
     refocus.current = false;
     input.current?.focus();
   }, [item?.id]);
+
+  useEffect(() => {
+    const node = input.current;
+    if (!node || item?.type !== 'slot' || item.slot.unit !== 'len') return;
+    const receive = (event: Event) => {
+      const value = (event as CustomEvent<LaserInputDetail>).detail?.value;
+      if (!value) return;
+      event.preventDefault();
+      set(d => item.slot.put(d, value));
+      const next = nextOpenItem({ ...queue, open: queue.open.filter(entry => entry.id !== item.id) }, item.id);
+      setCurrentId(next?.id ?? null);
+    };
+    node.addEventListener(LASER_INPUT_EVENT, receive);
+    return () => node.removeEventListener(LASER_INPUT_EVENT, receive);
+  }, [item, queue, set]);
 
   function go(direction: 1 | -1) {
     const next = nextOpenItem(queue, item?.id ?? null, direction);
@@ -165,6 +181,7 @@ export default function NextMeasurement({
             id="next-measure-input"
             aria-label={`${tr(lang, "Next", "Próxima", "Siguiente")}: ${context ? `${context} · ` : ""}${label}`}
             data-m="1"
+            data-laser-unit={slot.unit}
             value={value}
             onChange={(e) => {
               // Pin the card to this field: once it holds a value it leaves the

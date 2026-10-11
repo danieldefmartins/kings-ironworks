@@ -7,6 +7,7 @@
 // nothing about sheets, jobs, saving or shapes — which is what lets the
 // section modules stay about measuring rather than about markup.
 
+import { laserFieldUnit } from '@/lib/shop/laser/field-input';
 import { createContext, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -428,6 +429,7 @@ export function MInput({
       )}
       <input
         data-m="1"
+        data-laser-unit={laserFieldUnit(help, placeholder)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder || unitPh}
