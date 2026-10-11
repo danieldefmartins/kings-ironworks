@@ -1,9 +1,11 @@
 import type { MeasureData } from './measure';
 import { fieldCalc, LEN_TOL, type CalcAdapter } from './measure-calc';
-import { gateLeafCalc, signedOf } from './measure-dims-gate';
+import { gateLeafCalc } from './measure-dims-gate';
 import { openingFabSize } from './measure-opening';
 import { canopyFallCalc } from './measure-canopy';
-import { codeLimits, effectiveCodeSettings, effectiveOccupancy } from './measure-code';
+import { wellGuardCalc } from './measure-dims-well';
+
+export { wellGuardCalc };
 
 /**
  * Calculated numbers on the gate, opening, window-well and canopy sheets,
@@ -17,17 +19,6 @@ import { codeLimits, effectiveCodeSettings, effectiveOccupancy } from './measure
  *                             stands above grade (more when it sits below)
  *   cn.fall                   the projection at the minimum pitch
  */
-
-/** Guard height above the top of the well wall that reaches the code height above grade. */
-export function wellGuardCalc(data: MeasureData): number | null {
-  const w = data.well;
-  if (!w || !w.deliverables.includes('guard')) return null;
-  const rise = signedOf(w.topToGrade);
-  if (rise === null) return null;
-  const s = effectiveCodeSettings(data), lim = codeLimits(s, effectiveOccupancy(data, s));
-  const h = lim.guardHeight - rise;
-  return h >= 1 ? h : null;
-}
 
 export const gateCalc: CalcAdapter = (id, data) => {
   const g = data.gate;

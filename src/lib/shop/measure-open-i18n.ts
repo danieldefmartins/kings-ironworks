@@ -8,6 +8,7 @@ type Row = [en: string, pt: string, es: string];
 
 export const OPEN_NEXT_ROWS: NxRow[] = [
   ["gateLeafA", "Leaf width", "Largura da folha", "Ancho de la hoja"],
+  ["gateLeafFirst", "First leaf width", "Largura da primeira folha", "Ancho de la primera hoja"],
   ["gateLeafB", "Second leaf width", "Largura da segunda folha", "Ancho de la segunda hoja"],
   ["gateHingeGap", "Gap at the hinge post", "Folga no poste da dobradiça", "Holgura en el poste de bisagra"],
   ["gateLatchGap", "Gap at the latch post", "Folga no poste do trinco", "Holgura en el poste del pestillo"],

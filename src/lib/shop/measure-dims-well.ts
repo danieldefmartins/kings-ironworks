@@ -2,6 +2,22 @@ import type { MeasureData } from './measure';
 import { linearDim, type SceneDim } from './measure-dims';
 import { finishDim, nonNeg, P3, pos, signedOf } from './measure-dims-gate';
 import { section } from './scene-shapes/build-kit';
+import { codeLimits, effectiveCodeSettings, effectiveOccupancy } from './measure-code';
+
+/**
+ * Guard height above the top of the well wall that reaches the code guard
+ * height above grade: less when the wall already stands above grade, more
+ * when it sits below. Null until the wall's height to grade is read.
+ */
+export function wellGuardCalc(data: MeasureData): number | null {
+  const w = data.well;
+  if (!w || !w.deliverables.includes('guard')) return null;
+  const rise = signedOf(w.topToGrade);
+  if (rise === null) return null;
+  const s = effectiveCodeSettings(data), lim = codeLimits(s, effectiveOccupancy(data, s));
+  const h = lim.guardHeight - rise;
+  return h >= 1 ? h : null;
+}
 
 /**
  * Window-well dimension lines, on scene-window-well.ts's layout: the proud face
@@ -51,7 +67,7 @@ export function wellDims(data: MeasureData): SceneDim[] {
   if (has('guard')) {
     const post = section(data.materials.post), pw = post?.width ?? 0, gh = pos(w.guardHeight), gap = nonNeg(w.postToWall);
     const c = tw / 2, yFront = -Pr + c;
-    push('guardHeight', 'well.guardHeight', 'wellGuardHeight', P3(c, yFront, top), P3(c, yFront, top + (gh ?? 36)), NX, 8 + pw, gh, null, 'overall', ['well-guard']);
+    push('guardHeight', 'well.guardHeight', 'wellGuardHeight', P3(c, yFront, top), P3(c, yFront, top + (gh ?? 36)), NX, 8 + pw, gh, wellGuardCalc(data), 'overall', ['well-guard']);
     const zg = top + (gh ?? 36) * 0.5;
     push('postToWall', 'well.postToWall', 'wellPostToWall', P3(c, 0, zg), P3(c, -(gap ?? 2), zg), NX, 6 + pw, gap, null, 'context', ['well-guard']);
     if (has('gate')) {

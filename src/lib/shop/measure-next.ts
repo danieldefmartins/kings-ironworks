@@ -160,7 +160,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
 
   const table = (prefix: string, obj: (d: MeasureData) => Bag | null | undefined, rows: [string, string, string, SlotUnit?][], extra: Partial<NextSlot> = {}) =>
     rows.forEach(([gap, labelKey, key, unit]) => field(`${prefix}.${key}`, gap, labelKey, obj, key, { ...extra, unit: unit || 'len' }));
-  if (shape === 'gate' && data.gate) gateSlots(field);
+  if (shape === 'gate' && data.gate) gateSlots(data, field);
   if (shape === 'fence' && data.fence) {
     // Walk the line run by run, then the totals and heights that check it.
     data.fence.segments.forEach((sg, n) => {
@@ -224,7 +224,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
  * the post on each side, the clearance under the leaf and the grade it swings
  * over; then the leaf widths those numbers give (approve or modify).
  */
-function gateSlots(field: FieldFn) {
+function gateSlots(data: MeasureData, field: FieldFn) {
   const gate = (d: MeasureData) => d.gate as unknown as Bag | null | undefined;
   const swings = (d: MeasureData) => !!d.gate && ['single_swing', 'double_swing', 'bifold'].includes(d.gate.operation);
   field('gate.widthTop', 'gate_width_top', 'gateWidthTop', gate, 'widthTop', { part: 'widthTop' });
@@ -234,7 +234,7 @@ function gateSlots(field: FieldFn) {
   field('gate.heightLatch', 'gate_height_latch', 'gateHeightLatch', gate, 'heightLatch', { part: 'heightLatch', ask: d => !!d.gate && has(d.gate.heightHinge) });
   field('gate.groundClearance', 'gate_ground_clearance', 'gateGroundClearance', gate, 'groundClearance', { part: 'groundClearance' });
   field('gate.gradeRise', 'gate_grade_rise', 'gateGradeRise', gate, 'gradeRise', { part: 'gradeRise' });
-  field('gate.leafA', 'gate_leaf', 'gateLeafA', gate, 'leafA', { part: 'leafA', ask: d => swings(d) && gateLeafCalc(d.gate!).a !== null });
+  field('gate.leafA', 'gate_leaf', data.gate?.operation === 'double_swing' ? 'gateLeafFirst' : 'gateLeafA', gate, 'leafA', { part: 'leafA', ask: d => swings(d) && gateLeafCalc(d.gate!).a !== null });
   field('gate.leafB', 'gate_leaf', 'gateLeafB', gate, 'leafB', { part: 'leafB', ask: d => d.gate?.operation === 'double_swing' && gateLeafCalc(d.gate!).b !== null });
 }
 
