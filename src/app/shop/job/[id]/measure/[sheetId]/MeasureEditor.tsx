@@ -1,5 +1,6 @@
 "use client";
 
+import { specValue } from "@/lib/shop/i18n";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Job, OrgSettings } from "@/lib/shop/shared";
@@ -626,7 +627,7 @@ export default function MeasureEditor({
       ? `${mt(lang, "gap_sub")} · ${mountLocations(data, sheet.shape, (k) => mt(lang, k), posts).find((l) => l.key === g.detail)?.label || ""}`
       : g.key === "photo"
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
-      : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
+      : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail.replace(/\b(start|end)\b/g, side => side === "start" ? tx("start", "início", "inicio") : tx("end", "fim", "final"))})` : ""}`;
   function jumpToGap(st:EditorStage,flight?:number){if(flight!==undefined)setActiveFlight(flight);openDetails(detailTopicForStage(st));}
   // ---- Carried-over answers ------------------------------------------------
   // A field is badged only while it still reads exactly as it was suggested.
@@ -816,6 +817,7 @@ export default function MeasureEditor({
   // which is the seeded default or the answer carried from the last job.
   const standardFinishLine = [data.materials.finish, data.materials.color]
     .filter((x) => x.trim() !== "")
+    .map(value => specValue(lang,value))
     .join(" — ");
   const usesStandardFinish = routing.standardFinish === "yes";
   const existingLabelKey: Record<string, string> = {
@@ -1220,6 +1222,7 @@ export default function MeasureEditor({
         {!online && (
           <div className="-mx-3 -mt-3 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black sm:-mx-4">
             {mt(lang, "offlineBanner")}
+            {saveState === "queued" && <span role="status" className="block">{mt(lang, "savedOnDevice")}</span>}
           </div>
         )}
 
@@ -1254,7 +1257,7 @@ export default function MeasureEditor({
         {info && (
           <div className="bg-amber-950/40 border border-amber-700 rounded-xl p-3 mb-4 text-sm text-amber-200 flex items-center gap-3">
             <span className="flex-1">⚠ {info}</span>
-            <button onClick={() => setInfo(null)} className="text-xs border border-amber-700 rounded-full px-2 py-1">✕</button>
+            <button aria-label={mt(lang, "closeLabel")} onClick={() => setInfo(null)} className="text-xs border border-amber-700 rounded-full px-2 py-1">✕</button>
           </div>
         )}
         {status === "in_progress" && reviewComment && (
@@ -1264,10 +1267,10 @@ export default function MeasureEditor({
         )}
         <ProWorkspace data={data} shape={sheet.shape} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
           lead={workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
-            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
+            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
-          nav={<nav aria-label="Professional workspace" className="flex gap-1 rounded-2xl bg-slate-100 p-1">
+          nav={<nav aria-label={lang === 'pt' ? "Área de trabalho" : lang === 'es' ? "Área de trabajo" : "Professional workspace"} className="flex gap-1 rounded-2xl bg-slate-100 p-1">
             {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=>{const on=key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials');return <button type="button" key={key} aria-current={on?'page':undefined} className={`flex min-h-11 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-2.5 text-[15px] font-semibold transition-colors ${on?'bg-white text-slate-900 shadow-sm':'text-slate-500'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="rounded-full bg-amber-100 px-1.5 text-[11px] tabular-nums text-amber-900">{ready.remaining}</span>}</button>;})}
           </nav>}
           toolbar={designTool==='materials'||ownForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
@@ -1291,7 +1294,6 @@ export default function MeasureEditor({
           </div>
           {workspace==='review'&&<div className="mx-auto max-w-5xl"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{tx('Shop package','Pacote da oficina','Paquete del taller')}</h2><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold" onClick={()=>{setWorkspace('design');setDesignTool('materials');}}>{tx('Materials & stock','Materiais e barras','Materiales y barras')}</button></div>{reviewContent}</div>}
         </ProWorkspace>
-      </div>
       </div>
 
       <PointMenus
@@ -1327,6 +1329,7 @@ export default function MeasureEditor({
       />
       {/* Fraction quick-keys */}
       <FractionBar show={fracBar} tokens={fracTokens} />
+      </div>
       {/* Print-only branded sheet */}
       <PrintSheet
         job={job}

@@ -8,6 +8,7 @@
 // live digital sheet.
 
 import {SurveyPrint} from "./sections/SurveySection";
+import MeasureTime from "./MeasureTime";
 import SupportAttachmentPrint from "./SupportAttachmentPrint";
 import {platformEntryRise} from '@/lib/shop/measure-platform-rise';
 import { useEffect, useState } from "react";
@@ -236,14 +237,14 @@ export default function PrintSheet({
             <Th>{mt(lang, "measuredBy")}</Th>
             <Td>
               {(sheet.submitted_by && nameById[sheet.submitted_by]) || workerName}
-              {sheet.submitted_at ? ` · ${new Date(sheet.submitted_at).toLocaleString()}` : ""}
+              {sheet.submitted_at ? <> · <MeasureTime iso={sheet.submitted_at} lang={lang} /></> : ""}
             </Td>
             <Th>{mt(lang, "reviewedByLbl")}</Th>
             <Td>
               {approved && sheet.approved_by ? (
                 <>
                   <b>{nameById[sheet.approved_by] || "—"}</b>
-                  {sheet.approved_at ? ` · ${new Date(sheet.approved_at).toLocaleString()}` : ""}
+                  {sheet.approved_at ? <> · <MeasureTime iso={sheet.approved_at} lang={lang} /></> : ""}
                 </>
               ) : (
                 <Val v="" />
@@ -263,7 +264,7 @@ export default function PrintSheet({
             <Td>{job.address || ""}</Td>
             <Th>{mt(lang, "dateLabel")}</Th>
             <Td>
-              <span suppressHydrationWarning>{new Date().toLocaleDateString()}</span>
+              <MeasureTime iso={sheet.updated_at} lang={lang} dateOnly today />
             </Td>
           </tr>
         </tbody>
@@ -1108,7 +1109,7 @@ export default function PrintSheet({
       </div>
       <SitePrint data={data} lang={lang} revision={sheet.current_rev||0}/>
       <SpecialtySteelPrint assemblies={data.specialtySteel||[]} lang={lang}/>
-      <SteelTakeoffPrint data={data}/>
+      <SteelTakeoffPrint data={data} lang={lang}/>
     </div>
     </MeasUnits.Provider>
   );

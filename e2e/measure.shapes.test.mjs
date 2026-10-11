@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium } from "./playwright.mjs";
 
 const BASE = process.env.SHOP_BASE_URL || "http://localhost:3458";
 const WORKER = process.env.SHOP_WORKER_ID;
@@ -28,6 +28,8 @@ const cases = [
   ["gate", null, 1, 0, 0],
   ["fence", null, 3, 0, 0],
   ["balcony", null, 1, 0, 0],
+  ["deck", null, 4, 0, 0],
+  ["custom", null, 1, 0, 0],
 ];
 
 const browser = await chromium.launch();
@@ -53,21 +55,13 @@ try {
     if (!res.ok() || !body.id) throw new Error(`Create failed for ${preset || shape}: ${res.status()} ${JSON.stringify(body)}`);
     created.push(body.id);
     await page.goto(`${BASE}/shop/job/${JOB}/measure/${body.id}`, { waitUntil: "networkidle" });
-    // The sketch lives on the locations stage, and the page is full of small
-    // icon SVGs — so open that stage and judge the biggest drawing on it,
-    // rather than whichever <svg> happens to come first in the document.
-    await page.getByRole("button", { name: /angles|locations|ubicaciones|localiza/i }).first().click().catch(() => {});
-    await page.waitForTimeout(500);
-    const boxes = await page.locator("svg").evaluateAll((els) =>
-      els.map((el) => {
-        const r = el.getBoundingClientRect();
-        return { w: r.width, h: r.height };
-      })
-    );
-    const biggest = boxes.reduce((a, b) => (b.w * b.h > a.w * a.h ? b : a), { w: 0, h: 0 });
-    if (biggest.w < 150 || biggest.h < 40) {
-      throw new Error(`No real sketch for ${preset || shape} — biggest svg was ${Math.round(biggest.w)}x${Math.round(biggest.h)}`);
-    }
+    // Focus mode keeps one persistent 3D canvas; icon SVG counts do not
+    // prove that the drawing rendered. Form-only shapes have their own form.
+    await page.locator('[data-scene-viewport] canvas').first().waitFor({state:'attached'});
+    const box=await page.locator('[data-scene-viewport]').first().boundingBox();
+    if (!box || box.width < 150 || box.height < 200) throw new Error(`Missing viewport: ${shape}`);
+    if (!(await page.locator('[data-next-measure]').count())) throw new Error(`Missing measurement card: ${shape}`);
+
   }
   if (pageErrors.length) throw new Error(`Browser errors: ${pageErrors.join(" | ")}`);
   console.log(`ok  rendered ${cases.length} shapes and the full icon picker`);

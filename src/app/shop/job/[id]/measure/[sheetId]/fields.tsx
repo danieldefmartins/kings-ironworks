@@ -8,6 +8,7 @@
 // section modules stay about measuring rather than about markup.
 
 import { laserFieldUnit } from '@/lib/shop/laser/field-input';
+import MeasureTime from "./MeasureTime";
 import { createContext, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -32,7 +33,7 @@ import {
   type Gap,
 } from "@/lib/shop/measure-checks";
 import { checkDetail } from "@/lib/shop/measure-checks";
-import { mt, optLabel } from "@/lib/shop/measure-i18n";
+import { materialLabel, mt, optLabel } from "@/lib/shop/measure-i18n";
 import { helpText } from "@/lib/shop/measure-help";
 import { specValue } from "@/lib/shop/i18n";
 
@@ -425,7 +426,7 @@ export function MInput({
   return (
     <div className="block min-w-0">
       {label && (
-        <div className={`text-[11px] flex items-center mb-1 gap-1 ${needed ? "text-red-300" : "text-neutral-400"} ${labelClass}`}>
+        <div className={`text-[11px] flex flex-wrap items-center mb-1 gap-1 ${needed ? "text-red-300" : "text-neutral-400"} ${labelClass}`}>
           <span className="min-w-0">{label}</span>
           {explain && <InfoHint text={explain} label={label} diagram={hintDiagram} />}
           {needed && <RequiredChip />}
@@ -476,7 +477,7 @@ export function AutoMInput({
   const auto = stored.trim() === "" && calc !== "";
   return (
     <div className="block min-w-0">
-      <div className="mb-1 flex items-center gap-1 text-[11px] text-neutral-400">
+      <div className="mb-1 flex flex-wrap items-center gap-1 text-[11px] text-neutral-400">
         <span className="min-w-0 truncate">{label}</span>
         {(hint || help) && (
           <InfoHint text={hint || helpText(lang, help!) || ""} label={label} />
@@ -589,7 +590,7 @@ export function InfoHint({ text, label, diagram }: { text: string; label?: strin
           e.stopPropagation();
           setOpen(true);
         }}
-        className="ml-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-amber-700 align-middle text-xs font-bold text-amber-300 active:bg-amber-500/20"
+        className="ml-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-amber-700 align-middle text-xs font-bold text-amber-300 active:bg-amber-500/20"
       >
         i
       </button>
@@ -789,7 +790,7 @@ export function MSelect({
   const needed = useRequiredNow(value, help, gap);
   return (
     <div className="block min-w-0">
-      <div className={`mb-1 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
+      <div className={`mb-1 flex flex-wrap items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
         <span className="min-w-0">{label}</span>
         {help && helpText(lang, help) && <InfoHint text={helpText(lang, help)!} label={label} />}
         {needed && <RequiredChip />}
@@ -831,6 +832,7 @@ export function PresetInput({
   onClearCarried?: () => void;
   gap?: string;
 }) {
+  const lang = useContext(LangCtx);
   return (
     <div>
       <MInput label={label} value={value} onChange={onChange} placeholder="—"
@@ -843,7 +845,7 @@ export function PresetInput({
                 ? "border-amber-500 bg-amber-500/10 text-amber-300"
                 : "border-neutral-700 bg-neutral-800/70 text-neutral-400"
             }`}>
-            {pr}
+            {materialLabel(lang, pr)}
           </button>
         ))}
       </div>
@@ -871,7 +873,7 @@ export function ChipRow({
   const needed = useRequiredNow(value, help, gap);
   return (
     <div className={needed ? "rounded-xl border border-red-500 bg-gradient-to-b from-red-950/50 to-transparent p-2" : undefined}>
-      <div className={`mb-1 flex items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
+      <div className={`mb-1 flex flex-wrap items-center gap-1 text-[11px] ${needed ? "text-red-300" : "text-neutral-400"}`}>
         <span className="min-w-0">{label}</span>
         {explain && <InfoHint text={explain} label={label} />}
         {needed && <RequiredChip />}
@@ -964,7 +966,7 @@ export function SlotRow({
         <span className="block text-sm font-semibold truncate">{label}</span>
         <span className={`block text-[11px] ${required && !ph ? "text-red-400" : "text-neutral-500"}`}>
           {ph
-            ? new Date(ph.takenAt).toLocaleString()
+            ? <MeasureTime iso={ph.takenAt} lang={lang} />
             : mt(lang, required ? "requiredLbl" : "optionalLbl")}
         </span>
       </span>

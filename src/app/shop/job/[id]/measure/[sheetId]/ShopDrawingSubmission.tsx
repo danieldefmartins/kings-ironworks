@@ -1,4 +1,5 @@
 "use client";
+import MeasureTime from "./MeasureTime";
 import { useCallback, useEffect, useState } from 'react';
 type Row = { id: string; status: string; requested_at: string; hasFile: boolean; format?: 'sketchup'|'blender'; error: string | null };
 export default function ShopDrawingSubmission({ sheetId, lang, disabled, submit }: { sheetId: string; lang: string; disabled: boolean; submit: () => Promise<unknown> }) {
@@ -35,6 +36,6 @@ export default function ShopDrawingSubmission({ sheetId, lang, disabled, submit 
       finally { setBusy(false); }
     }}>{busy ? '…' : label('Submit to Shop Drawings', 'Enviar para desenhos de fabricação', 'Enviar a planos de taller')}</button>
     {error && <p role="alert" className="text-sm text-amber-300">{error}</p>}
-    {rows.map(r => <div key={r.id} className="rounded-xl border border-neutral-700 p-3 text-sm"><p>{statuses[r.status] || r.status} · {new Date(r.requested_at).toLocaleString()}</p>{r.error && <p className="text-amber-300">{r.error}</p>}{r.hasFile && <a className="mt-2 inline-block underline text-sky-300" href={`/shop/api/shop-drawings?sheet=${sheetId}&download=${r.id}`}>{r.format==='sketchup'?label('Download earlier SketchUp draft (.skp)','Baixar rascunho anterior (.skp)','Descargar borrador anterior (.skp)'):label('Download shop drawings (.zip)', 'Baixar desenhos de fabricação (.zip)', 'Descargar planos de taller (.zip)')}</a>}</div>)}
+    {rows.map(r => <div key={r.id} className="rounded-xl border border-neutral-700 p-3 text-sm"><p>{statuses[r.status] || r.status} · <MeasureTime iso={r.requested_at} lang={lang} /></p>{r.error && <p className="text-amber-300">{r.error}</p>}{r.hasFile && <a className="mt-2 inline-block underline text-sky-300" href={`/shop/api/shop-drawings?sheet=${sheetId}&download=${r.id}`}>{r.format==='sketchup'?label('Download earlier SketchUp draft (.skp)','Baixar rascunho anterior (.skp)','Descargar borrador anterior (.skp)'):label('Download shop drawings (.zip)', 'Baixar desenhos de fabricação (.zip)', 'Descargar planos de taller (.zip)')}</a>}</div>)}
   </div>;
 }

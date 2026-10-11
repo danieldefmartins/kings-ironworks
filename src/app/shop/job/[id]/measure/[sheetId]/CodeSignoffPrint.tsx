@@ -3,6 +3,7 @@
 // Print blocks for the code check and the customer sign-off. Kept apart from
 // PrintSheet so the sheet only gains two lines.
 
+import MeasureTime from "./MeasureTime";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import { codeCheck } from "@/lib/shop/measure-code";
 import { codeActualText, codeLimitText, codeRuleLabel, ct } from "@/lib/shop/measure-code-i18n";
@@ -90,7 +91,7 @@ export function SignoffPrint({ data, lang }: { data: MeasureData; lang: string }
             <div style={{ borderTop: "1px solid #333", paddingTop: 2, fontSize: 10 }}>
               <b>{so.name}</b>
               <div style={{ color: "#555" }}>
-                {new Date(so.signedAt).toLocaleString()}
+                <MeasureTime iso={so.signedAt} lang={lang} />
                 {so.email ? ` · ${so.email}` : ""}
               </div>
             </div>

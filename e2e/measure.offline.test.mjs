@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium } from "./playwright.mjs";
 const BASE=process.env.SHOP_BASE_URL||"http://localhost:3457";
 const JOB=process.env.SHOP_JOB_ID;
 const WORKER=process.env.SHOP_WORKER_ID, PIN=process.env.SHOP_PIN;
@@ -11,15 +11,18 @@ const b=await chromium.launch();
 const ctx=await b.newContext({viewport:{width:900,height:1200},hasTouch:true,isMobile:true});
 await ctx.request.post(`${BASE}/shop/api/login`,{data:{workerId:WORKER,pin:PIN}});
 const page=await ctx.newPage();
-page.on("pageerror",e=>console.log("PAGE ERROR:",e.message));
+const errors=[];
+page.on("pageerror",e=>errors.push(e.message));
 
 const cr=await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:"create",jobId:JOB,shape:"straight",steps1:3,name:"OFFLINE TEST"}});
 const {id}=await cr.json();
 const url=`${BASE}/shop/job/${JOB}/measure/${id}`;
+try {
 await page.goto(url,{waitUntil:"networkidle"});
 await page.waitForTimeout(1500);
 
-const first=page.locator('input[data-m="1"]').first();
+await page.getByLabel('Tool',{exact:true}).selectOption('structure');
+const first=page.getByLabel('Stair width',{exact:true});
 
 // 1) online save still works
 await first.fill("7 1/4");
@@ -29,7 +32,7 @@ check(true,"online autosave still reaches saved");
 // 2) go offline and type — must not report failure, must say saved on device
 await ctx.setOffline(true);
 await page.evaluate(()=>window.dispatchEvent(new Event("offline")));
-await page.locator('input[data-m="1"]').nth(1).fill("11 3/8");
+await page.getByLabel('Stair width',{exact:true}).fill("11 3/8");
 await page.waitForTimeout(3000);
 const banner = await page.getByText(/No signal/i).isVisible().catch(()=>false);
 check(banner,"offline banner appears");
@@ -52,9 +55,14 @@ check(Array.isArray(queued) && queued.length===1, "the edit is durable in Indexe
 const holdsValue = JSON.stringify(queued?.[0]?.data ?? {}).includes("11 3/8");
 check(holdsValue, "the queued payload holds the offline value");
 
-// 4) the server has NOT got it yet
-const before = await (await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:"create",jobId:JOB,shape:"straight",steps1:1,name:"probe"}})).json();
-await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:"delete",id:before.id,jobId:JOB}});
+// 4) a separate online device still sees the old server value.
+const observer=await b.newContext({storageState:await ctx.storageState()});
+try {
+ const other=await observer.newPage();
+ await other.goto(url,{waitUntil:'networkidle'});
+ await other.getByLabel('Tool',{exact:true}).selectOption('structure');
+ check(await other.getByLabel('Stair width',{exact:true}).inputValue()==='7 1/4','offline edit has not reached the server');
+} finally { await observer.close(); }
 
 // 5) reload while STILL offline is impossible (server render) — instead prove
 //    recovery: come back online, reload, and the value must be on the server.
@@ -73,10 +81,15 @@ check(Array.isArray(flushed) && flushed.length===0,"queue drains itself once sig
 
 await page.reload({waitUntil:"networkidle"});
 await page.waitForTimeout(1200);
-const persisted = await page.locator('input[data-m="1"]').nth(1).inputValue();
+await page.getByLabel('Tool',{exact:true}).selectOption('structure');
+const persisted = await page.getByLabel('Stair width',{exact:true}).inputValue();
 check(persisted==="11 3/8","the offline value survived to the server",persisted);
+check(errors.length===0,'no client errors',errors.join(' | '));
 
-await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:"delete",id,jobId:JOB}});
-await b.close();
+} finally {
+ await ctx.setOffline(false);
+ await ctx.request.post(`${BASE}/shop/api/measure`,{data:{type:'delete',id,jobId:JOB}});
+ await b.close();
+}
 console.log(`\n${pass} passed, ${fail} failed`);
-process.exit(fail?1:0);
+process.exitCode = fail ? 1 : 0;

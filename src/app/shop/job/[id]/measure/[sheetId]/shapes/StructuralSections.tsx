@@ -207,7 +207,7 @@ export default function StructuralSections({ lang, data, set }: { lang: string; 
         </div>
         {s.members.length > 0 && (
           <dl className="mt-3 grid grid-cols-3 gap-2">
-            <Stat label={t("st_totalWeight")} value={summary.totalWeight === null ? "—" : `${summary.approx || !summary.weightComplete ? "≈ " : ""}${Math.round(summary.totalWeight).toLocaleString()} lb`} />
+            <Stat label={t("st_totalWeight")} value={summary.totalWeight === null ? "—" : `${summary.approx || !summary.weightComplete ? "≈ " : ""}${Math.round(summary.totalWeight).toLocaleString(lang === "pt" ? "pt-BR" : lang === "es" ? "es-419" : "en-US")} lb`} />
             <Stat label={t("st_longest")} value={summary.longest ? fmtLen(summary.longest.length) : "—"} sub={summary.longest?.mark} />
             <Stat label={t("st_heaviest")} value={summary.heaviest ? `${Math.round(summary.heaviest.weight)} lb` : "—"} sub={summary.heaviest?.mark} />
           </dl>

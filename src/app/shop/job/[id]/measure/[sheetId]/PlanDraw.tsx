@@ -416,6 +416,8 @@ export default function PlanDraw({
                 }`}
               >
                 <button
+                  aria-label={`${mt(lang, "runLbl")} ${i + 1}`}
+                  aria-pressed={i === activeIdx}
                   onClick={() => setActiveId(p.id)}
                   className="shrink-0 rounded px-1.5 py-0.5 text-xs font-bold"
                   style={{ color: RUN_COLORS[i % RUN_COLORS.length] }}

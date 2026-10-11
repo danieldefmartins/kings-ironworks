@@ -1,10 +1,11 @@
+import {fabricationText} from '@/lib/shop/measure-fabrication-i18n';
 import type {SpecialtySteel} from '@/lib/shop/measure-specialty-steel-schema';
 import {specialtyChecked,specialtyLayout} from '@/lib/shop/measure-specialty-steel';
 import {formatIn,showMeas} from '@/lib/shop/measure-parse';
 export default function SpecialtySteelPrint({assemblies,lang}:{assemblies:SpecialtySteel[];lang:string}){
  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
  if(!assemblies.length)return null;
- return <section style={{breakBefore:'page',color:'#0f172a'}} aria-label="Measured grate and ladder print schedules">
+ return <section style={{breakBefore:'page',color:'#0f172a'}} aria-label={lang === 'pt' ? "Listas de grelhas e escadas medidas" : lang === 'es' ? "Listas de rejillas y escaleras medidas" : "Measured grate and ladder print schedules"}>
   <h2 style={{fontWeight:800,fontSize:20}}>{tx('Measured grates & ladders','Grelhas e escadas medidas','Rejillas y escaleras medidas')}</h2>
   <p>{tx('Draft square-cut schedules · inches · review before fabrication','Cortes retos preliminares · polegadas · revisar antes de fabricar','Cortes rectos preliminares · pulgadas · revisar antes de fabricar')}</p>
   {assemblies.map(a=>{const result=specialtyLayout(a),groups=new Map<string,typeof result.pieces>();for(const p of result.pieces){const key=JSON.stringify([p.role,p.length,p.planWidth]);groups.set(key,[...(groups.get(key)||[]),p]);}return <article key={a.id} style={{marginTop:20,breakBefore:'auto',breakInside:'avoid',borderTop:'2px solid #64748b',paddingTop:10}}>
@@ -12,9 +13,9 @@ export default function SpecialtySteelPrint({assemblies,lang}:{assemblies:Specia
    <p style={{fontWeight:700}}>{specialtyChecked(a)?tx('Geometry checked · shop approval still required','Geometria conferida · aprovação da oficina ainda necessária','Geometría revisada · falta aprobación del taller'):tx('NOT CHECKED — DO NOT FABRICATE','NÃO CONFERIDO — NÃO FABRICAR','NO REVISADO — NO FABRICAR')}</p>
    <p>{tx('Overall width','Largura total','Ancho total')}: {showMeas(a.width)||'?'} · {a.kind==='grate'?tx('Overall length','Comprimento total','Longitud total'):tx('Straight stringer length','Comprimento reto da lateral','Longitud recta del larguero')}: {showMeas(a.length)||'?'}</p>
    <p>{tx('End clearance','Folga nas pontas','Holgura en extremos')}: {showMeas(a.endGap)||'?'} {tx('each end','cada ponta','cada extremo')} · {a.kind==='grate'?tx('Maximum clear opening','Abertura livre máxima','Abertura libre máxima'):tx('Maximum rung center spacing','Espaçamento máximo entre centros','Distancia máxima entre centros')}: {showMeas(a.maxSpace)||'?'}</p>
-   {result.issues.map(issue=><p key={issue} style={{fontWeight:700,color:'#92400e'}}>{issue}</p>)}
+   {result.issues.map(issue=><p key={issue} style={{fontWeight:700,color:'#92400e'}}>{fabricationText(lang,issue)}</p>)}
    {!!result.pieces.length&&<>
-    <svg viewBox={`${-result.width*.2} ${-result.length*.09} ${result.width*1.4} ${result.length*1.18}`} width="100%" height="300" role="img" aria-label={`${a.label} measured member layout`} style={{display:'block',margin:'12px auto',breakInside:'avoid'}}>
+    <svg viewBox={`${-result.width*.2} ${-result.length*.09} ${result.width*1.4} ${result.length*1.18}`} width="100%" height="300" role="img" aria-label={`${a.label} ${tx('measured member layout','desenho das peças medidas','plano de piezas medidas')}`} style={{display:'block',margin:'12px auto',breakInside:'avoid'}}>
      {result.pieces.map((p,i)=>{const mark=p.key.split(':').at(-1),label=i<5||i===result.pieces.length-1;return <g key={p.key}><rect x={p.x} y={p.y} width={p.width} height={p.height} fill="#e2e8f0" stroke="#334155" strokeWidth={Math.min(result.width,result.length)*.004}/>{label&&<text x={p.x+p.width/2} y={p.y+p.height/2} textAnchor="middle" dominantBaseline="middle" fontSize={Math.max(Math.min(result.width,result.length)*.055,result.length*.035)} fill="#0f172a" stroke="#fff" strokeWidth={Math.min(result.width,result.length)*.012} paintOrder="stroke">{mark}</text>}</g>;})}
      <text x={result.width/2} y={-result.length*.035} textAnchor="middle" fontSize={Math.max(Math.min(result.width,result.length)*.07,result.length*.04)}>{formatIn(result.width)}</text>
      <text x={-result.width*.1} y={result.length/2} textAnchor="middle" fontSize={Math.max(Math.min(result.width,result.length)*.07,result.length*.04)} transform={`rotate(-90 ${-result.width*.1} ${result.length/2})`}>{formatIn(result.length)}</text>
