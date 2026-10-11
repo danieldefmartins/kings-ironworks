@@ -3,11 +3,27 @@
 // anchors and before cutting anything to a height.
 
 import type { MeasureData, MeasureShape, PostMeasure } from "@/lib/shop/measure";
+import { checkDetail, type CheckResult } from "@/lib/shop/measure-checks";
 import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
 import { mt } from "@/lib/shop/measure-i18n";
 import { finishAdd, heightNotes, mountLocations, substrateChecks, subFilled, suggestAnchor, surfacesFor, type SurfaceKey } from "@/lib/shop/measure-substrate";
 import { anchorText } from "./SubstrateEditor";
 import { finishNote, heightLabel } from "./FinishedSurfaces";
+
+/**
+ * Mounting and finish warnings read as what was found, not as a passed test:
+ * "P3 · Substrate: cracked", "P1 · Too close to the edge 2" (min 3")".
+ * Returns null for any other check, which keeps its usual wording.
+ */
+export function warningText(lang: string, c: CheckResult): string | null {
+  const t = (k: string) => mt(lang, k);
+  const d = checkDetail(c, lang);
+  const at = d ? `${d} · ` : "";
+  if (c.key === "sub_condition") return `${at}${t("mount_col_sub")}: ${c.value ? t(`sub_cond_${c.value}`).toLowerCase() : "?"}`;
+  const nums = c.expected !== null && c.actual !== null ? ` ${formatIn(c.actual)} (${c.key === "finish_riser_mix" ? "max" : t("sub_min")} ${formatIn(c.expected)})` : "";
+  if (c.key.startsWith("sub_") || c.key === "finish_riser_mix") return `${at}${t(`sub_issue_${c.key}`)}${nums}`;
+  return null;
+}
 
 const th = "border border-neutral-400 px-1 py-0.5 text-left font-semibold";
 const td = "border border-neutral-400 px-1 py-0.5 align-top";

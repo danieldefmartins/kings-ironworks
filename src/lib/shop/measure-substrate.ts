@@ -20,6 +20,7 @@
 // reads the old fields breaks and no old sheet loses a value.
 
 import { formatIn, parseMeas } from "./measure-parse";
+import { mt } from "./measure-i18n";
 import type { CheckLevel, CheckResult } from "./measure-checks";
 import type {
   FinishSpec,
@@ -269,7 +270,7 @@ export function substrateChecks(sub: Substrate | null | undefined, detail: strin
     const lvl: CheckLevel =
       sub.condition === "rotted" || sub.condition === "spalled" ? "red"
         : sub.condition === "cracked" || sub.condition === "unknown" ? "yellow" : "green";
-    out.push(res("sub_condition", lvl, detail));
+    out.push({ ...res("sub_condition", lvl, detail), value: sub.condition });
   }
 
   if (sub.hidden && sub.hidden !== "none" && DRILLED.includes(mount)) {
@@ -683,8 +684,25 @@ export function applySubToAll(data: MeasureData, shape: MeasureShape, key: strin
   return n;
 }
 
+/** Gap key for a blank substrate at a location: sub_post, sub_gate … */
+export const subGapKey = (key: string) => `sub_${subGroupOf(key)}`;
+
+/**
+ * Fastening locations nobody has said anything about yet — "Open" items for
+ * the Next card (not numbers, never blocking). Site objects are optional
+ * context and stay out of the queue. `detail` is the location key.
+ */
+export function blankMountGaps(data: MeasureData, shape: MeasureShape): { key: string; detail: string; tier: "doc" }[] {
+  return mountLocations(data, shape)
+    .filter((l) => l.group !== "site" && !subFilled(l.sub))
+    .map((l) => ({ key: subGapKey(l.key), detail: l.key, tier: "doc" as const }));
+}
+
 export function mountingChecks(data: MeasureData, shape: MeasureShape, posts?: PostMeasure[]): CheckResult[] {
-  return mountLocations(data, shape, ID, posts).flatMap((l) => substrateChecks(l.sub, l.label));
+  const by = (lang: "en" | "pt" | "es") => new Map(mountLocations(data, shape, (k) => mt(lang, k), posts).map((l) => [l.key, l.label]));
+  const [en, pt, es] = [by("en"), by("pt"), by("es")];
+  return mountLocations(data, shape, ID, posts).flatMap((l) =>
+    substrateChecks(l.sub, en.get(l.key) || l.label).map((c) => ({ ...c, detailI18n: { en: en.get(l.key), pt: pt.get(l.key), es: es.get(l.key) } })));
 }
 
 // ---- Migration on load ---------------------------------------------------------

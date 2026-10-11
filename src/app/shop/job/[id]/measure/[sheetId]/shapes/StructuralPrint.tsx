@@ -6,6 +6,7 @@
 // finish, access and every check.
 
 import { mt } from "@/lib/shop/measure-i18n";
+import { checkDetail } from "@/lib/shop/measure-checks";
 import {
   isBearingRole,
   isSpanning,
@@ -208,7 +209,7 @@ export default function StructuralPrint({ s, lang }: { s: StructuralData; lang: 
           <Title>{t("st_checksTitle")}</Title>
           {checks.map((c, i) => (
             <div key={i} style={{ color: LEVEL_COLOR[c.level] }}>
-              ● {t(`check_${c.key}`)}{c.detail ? ` · ${c.detail}` : ""}
+              ● {t(`check_${c.key}`)}{checkDetail(c, lang) ? ` · ${checkDetail(c, lang)}` : ""}
               {checkLine(lang, c) ? ` — ${checkLine(lang, c)}` : ""}
             </div>
           ))}

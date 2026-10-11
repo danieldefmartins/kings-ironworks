@@ -10,6 +10,14 @@ export function detailTopicLabel(topic:ProDetailsTopic,lang:string):string{
  return labels[topic][lang==='pt'?1:lang==='es'?2:0];
 }
 export function legacyStageForGap(key:string):LegacyMeasureStage {
+    if (key.startsWith("sub_")) {
+      const g = key.slice(4);
+      if (g === "term" || g === "bracket") return "posts";
+      if (g === "gate") return "specs";
+      if (g === "fence" || g === "well") return "setup";
+      if (g === "fire") return "steps";
+      return "locations";
+    }
     if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
     if (key.startsWith("gate_")) return key === "gate_opener" || key === "gate_power" || key === "gate_safety" ? "specs" : "setup";
     if (key.startsWith("fence_")) return key.startsWith("fence_seg") ? "steps" : "setup";

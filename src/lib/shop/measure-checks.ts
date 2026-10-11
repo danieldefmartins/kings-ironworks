@@ -80,6 +80,16 @@ export interface CheckResult {
   delta: number | null;
   unit: "in" | "deg";
   detail?: string; // e.g. which flight
+  /** The observed non-numeric value, when wording needs it ("rotted"). */
+  value?: string;
+  /** `detail` in each language, when it is made of words ("Hinge post"). */
+  detailI18n?: Partial<Record<"en" | "pt" | "es", string>>;
+}
+
+/** A check's detail in the reader's language. */
+export function checkDetail(c: CheckResult, lang: string | null | undefined): string | undefined {
+  const l = lang === "pt" || lang === "es" ? lang : "en";
+  return c.detailI18n?.[l] ?? c.detail;
 }
 
 function grade(

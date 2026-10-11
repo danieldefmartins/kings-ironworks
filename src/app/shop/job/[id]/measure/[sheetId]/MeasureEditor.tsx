@@ -86,7 +86,7 @@ import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 import SiteWorkspace from './SiteWorkspace';
 import { SubstrateCtx } from './SubstrateEditor';
 import FinishedSurfaces from './FinishedSurfaces';
-import { surfacesFor } from '@/lib/shop/measure-substrate';
+import { mountLocations, surfacesFor } from '@/lib/shop/measure-substrate';
 import ShopAppearance from '../../../../ShopAppearance';
 import SteelWorkspace from './SteelWorkspace';
 import ProWorkspace from './ProWorkspace';
@@ -609,7 +609,9 @@ export default function MeasureEditor({
   const orderedGaps = [...gaps].sort(byStage);
   const orderedDocGaps = [...docGaps].sort(byStage);
   const gapLabel = (g: Gap) =>
-    g.key === "photo"
+    g.key.startsWith("sub_")
+      ? `${mt(lang, "gap_sub")} · ${mountLocations(data, sheet.shape, (k) => mt(lang, k), posts).find((l) => l.key === g.detail)?.label || ""}`
+      : g.key === "photo"
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
       : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
   function jumpToGap(st:EditorStage,flight?:number){if(flight!==undefined)setActiveFlight(flight);openDetails(detailTopicForStage(st));}
@@ -1098,7 +1100,7 @@ export default function MeasureEditor({
 
   return (
     <LangCtx.Provider value={lang}>
-    <SubstrateCtx.Provider value={{ data, set, shape: sheet.shape, lang, posts, onPhoto: (slot, label) => setPhotoSlot({ slot, label }) }}>
+    <SubstrateCtx.Provider value={{ data, set, shape: sheet.shape, lang, posts, anchorOptions: orgSettings?.options?.anchors || [], onPhoto: (slot, label) => setPhotoSlot({ slot, label }) }}>
     <PlaceholderCtx.Provider value={unitPh}>
     {/* What the sheet is waiting on, carried down to every field — the ones in
         the page and the ones in the step overlay alike — so a
@@ -1247,7 +1249,7 @@ export default function MeasureEditor({
         )}
         <ProWorkspace data={data} shape={sheet.shape} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'} stacked={ownForm}
           lead={ownForm&&(workspace==='review'||(structuralForm&&!data.structural?.members.length))?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
-            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
+            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
           nav={<nav aria-label="Professional workspace" className="flex gap-1 rounded-2xl bg-slate-100 p-1">

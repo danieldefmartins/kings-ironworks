@@ -280,6 +280,28 @@ describe("future finishes", () => {
   });
 });
 
+describe("Next queue and wording", () => {
+  it("blank fastening locations are Open items after the numbers, never counted", async () => {
+    const { measurementQueue } = await import("./measure-next");
+    const g = normalizeMeasureData(newMeasureData("gate", 1));
+    const q = measurementQueue(g, "gate", []);
+    const subs = q.open.filter((i) => i.type === "gap" && i.gap.key.startsWith("sub_"));
+    expect(subs.map((i) => i.type === "gap" && i.gap.detail)).toEqual(["gate:hinge", "gate:latch"]);
+    expect(q.open.indexOf(subs[0])).toBe(q.open.length - 2);
+    setSub(g, "gate:hinge", sub({ material: "brick" }));
+    expect(measurementQueue(g, "gate", []).open.filter((i) => i.type === "gap" && i.gap.key === "sub_gate")).toHaveLength(1);
+  });
+  it("check details come in the reader's language", async () => {
+    const { checkDetail } = await import("./measure-checks");
+    const g = normalizeMeasureData(newMeasureData("gate", 1));
+    setSub(g, "gate:hinge", sub({ material: "brick", condition: "rotted" }));
+    const c = runChecks(g, "gate").find((x) => x.key === "sub_condition")!;
+    expect(checkDetail(c, "en")).toBe("Hinge post");
+    expect(checkDetail(c, "pt")).toBe("Poste das dobradiças");
+    expect(c.value).toBe("rotted");
+  });
+});
+
 describe("strings", () => {
   it("every key has EN, PT and ES", () => {
     for (const l of ["en", "pt", "es"] as const) {

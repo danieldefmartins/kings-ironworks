@@ -6,7 +6,8 @@
 // twenty posts reads as twenty lines, and "Same as previous" / "Apply to all"
 // make the common case — every post into the same granite — one tap.
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useRef, useState } from "react";
+import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import type { MeasureData, MeasureShape, PostMeasure } from "@/lib/shop/measure";
 import type { CheckLevel } from "@/lib/shop/measure-checks";
 import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
@@ -41,6 +42,8 @@ export interface SubstrateCtxValue {
   shape: MeasureShape;
   lang: string;
   posts?: PostMeasure[];
+  /** The shop's own anchor list (org settings), offered under the anchor override. */
+  anchorOptions?: string[];
   onPhoto?: (slot: string, label: string) => void;
 }
 
@@ -107,6 +110,13 @@ export default function SubstrateEditor({
   const [more, setMore] = useState(false);
   const [applied, setApplied] = useState(0);
   const [allMats, setAllMats] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  // The Next card's "Open" on a blank mounting lands here.
+  useMeasureLocate((d) => {
+    if (d.gapDetail !== locKey || !d.gap?.startsWith("sub_")) return;
+    setOpen(true);
+    if (d.scroll) requestAnimationFrame(() => revealElement(box.current));
+  });
   if (!ctx) return null;
   const { data, set, shape, lang } = ctx;
   const t = (k: string) => mt(lang, k);
@@ -127,7 +137,7 @@ export default function SubstrateEditor({
   // ---- Answered: one line, tap to change --------------------------------------
   if (filled && !open) {
     return (
-      <div className="mt-3 rounded-xl border border-slate-200 bg-white">
+      <div ref={box} className="mt-3 rounded-xl border border-slate-200 bg-white">
         <button type="button" onClick={() => setOpen(true)} aria-expanded={false}
           className="flex w-full min-h-12 items-start gap-3 px-3 py-2.5 text-left">
           <span aria-hidden className={`mt-1.5 size-2.5 shrink-0 rounded-full ${DOT[level]}`} />
@@ -149,7 +159,7 @@ export default function SubstrateEditor({
     }`;
 
   return (
-    <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3" role="group" aria-label={`${heading}${locLabel ? ` · ${locLabel}` : ""}`}>
+    <div ref={box} className="mt-3 scroll-mt-24 rounded-xl border border-slate-200 bg-slate-50/60 p-3" role="group" aria-label={`${heading}${locLabel ? ` · ${locLabel}` : ""}`}>
       <div className="mb-2 flex items-center gap-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{heading}</span>
         {filled && <span aria-hidden className={`size-2 rounded-full ${DOT[level]}`} />}
@@ -293,6 +303,16 @@ export default function SubstrateEditor({
                 <span className="mb-1 block text-[11px] text-neutral-400">{t("sub_anchorUsed")}</span>
                 <input value={sub.anchor} maxLength={120} onChange={(e) => up({ anchor: e.target.value })} placeholder={anchorText(lang, { ...sub, anchor: "" })}
                   className="min-h-11 w-full rounded-lg border border-slate-200 bg-white px-2.5 text-base" />
+                {!!ctx.anchorOptions?.length && (
+                  <span className="mt-1.5 flex flex-wrap gap-1.5">
+                    {ctx.anchorOptions.map((a) => (
+                      <button key={a} type="button" aria-pressed={sub.anchor === a} onClick={() => up({ anchor: sub.anchor === a ? "" : a })}
+                        className={`min-h-9 rounded-full border px-2.5 text-xs font-semibold ${sub.anchor === a ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-slate-200 bg-white text-slate-600"}`}>
+                        {a}
+                      </button>
+                    ))}
+                  </span>
+                )}
               </label>
               <label className="block min-w-0">
                 <span className="mb-1 block text-[11px] text-neutral-400">{t("sub_note")}</span>

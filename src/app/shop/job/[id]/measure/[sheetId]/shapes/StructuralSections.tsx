@@ -50,7 +50,7 @@ import {
   type StructuralData,
 } from "@/lib/shop/measure-structural";
 import { parseMeas } from "@/lib/shop/measure-parse";
-import type { CheckLevel, CheckResult } from "@/lib/shop/measure-checks";
+import { checkDetail, type CheckLevel, type CheckResult } from "@/lib/shop/measure-checks";
 import { MInput } from "../fields";
 import StructuralSketch, { fmtLen, type SketchHot } from "./StructuralSketch";
 import SubstrateEditor, { MATERIALS_MASONRY_STEEL, SubstrateCtx } from "../SubstrateEditor";
@@ -909,7 +909,7 @@ function CheckList({ lang, checks, issuesOnly = false, collapsePassed = false }:
             <li key={i} className="flex items-start gap-2.5 px-3 py-2.5">
               <span aria-hidden="true" className={`mt-1.5 size-2.5 shrink-0 rounded-full ${DOT[c.level]}`} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm text-slate-800">{mt(lang, `check_${c.key}`)}{c.detail ? <span className="text-slate-500"> · {c.detail}</span> : null}</span>
+                <span className="block text-sm text-slate-800">{mt(lang, `check_${c.key}`)}{checkDetail(c, lang) ? <span className="text-slate-500"> · {checkDetail(c, lang)}</span> : null}</span>
                 {checkLine(lang, c) && <span className="block text-xs tabular-nums text-slate-500">{checkLine(lang, c)}</span>}
               </span>
               <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${PILL[c.level]}`}>

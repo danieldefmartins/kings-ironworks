@@ -31,6 +31,7 @@ import {
   type CheckResult,
   type Gap,
 } from "@/lib/shop/measure-checks";
+import { checkDetail } from "@/lib/shop/measure-checks";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { helpText } from "@/lib/shop/measure-help";
 import { specValue } from "@/lib/shop/i18n";
@@ -1019,7 +1020,7 @@ export function CheckRow({ c, lang }: { c: CheckResult; lang: string }) {
       </span>
       <span className="min-w-40 flex-1 text-neutral-300">
         {mt(lang, `check_${c.key}`)}
-        {c.detail ? ` ${c.detail}` : ""}
+        {checkDetail(c, lang) ? ` ${checkDetail(c, lang)}` : ""}
       </span>
       {/* On a phone the numbers drop under the label instead of crushing it. */}
       <span className="w-full pl-[6.5rem] text-xs text-neutral-500 sm:w-auto sm:shrink-0 sm:pl-0 sm:text-right">

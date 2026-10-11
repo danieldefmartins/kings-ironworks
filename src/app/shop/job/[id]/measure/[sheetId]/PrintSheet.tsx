@@ -34,7 +34,7 @@ import SitePrint from './SitePrint';
 import SpecialtySteelPrint from './SpecialtySteelPrint';
 import SteelTakeoffPrint from './SteelTakeoffPrint';
 import OpeningPrint from "./OpeningPrint";
-import MountingPrint from "./MountingPrint";
+import MountingPrint, { warningText } from "./MountingPrint";
 import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
 import StructuralPrint from './shapes/StructuralPrint';
 
@@ -302,7 +302,7 @@ export default function PrintSheet({
           }}
         >
           ⚠ {mt(lang, "warningsLbl")}:{" "}
-          {warnings.map((w) => `${mt(lang, `check_${w.key}`)} (${mt(lang, w.level === "red" ? "levelRed" : "levelYellow")})`).join(" · ")}
+          {warnings.map((w) => `${warningText(lang, w) ?? mt(lang, `check_${w.key}`)} (${mt(lang, w.level === "red" ? "levelRed" : "levelYellow")})`).join(" · ")}
           {gapCount > 0
             ? `${warnings.length > 0 ? " · " : ""}${mt(lang, "gapsTitle")}: ${gapCount}`
             : ""}

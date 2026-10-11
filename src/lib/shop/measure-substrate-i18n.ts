@@ -119,6 +119,8 @@ const ROWS: Row[] = [
   ["sub_issue_sub_cladding", "Needs standoff block + flashing", "Precisa de calço espaçador + rufo", "Necesita bloque separador + tapajuntas"],
   ["sub_issue_sub_decking", "Must reach the rim joist or blocking", "Precisa alcançar a viga de borda ou bloqueio", "Debe llegar a la viga de borde o bloqueo"],
   ["sub_issue_sub_weld", "Weld only to steel", "Solda só em aço", "Soldar solo a acero"],
+  ["sub_issue_finish_riser_mix", "Risers uneven once finishes are down", "Espelhos desiguais após o acabamento", "Contrahuellas desiguales tras los acabados"],
+  ["gap_sub", "Mounting — what it goes into", "Fixação — onde fixa", "Fijación — dónde se fija"],
 
   // Future finish
   ["fin_title", "Finished surfaces", "Superfícies acabadas", "Superficies terminadas"],
