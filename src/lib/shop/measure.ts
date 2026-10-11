@@ -6,6 +6,8 @@ import type {SteelPlan} from './measure-steel';
 import type {SpecialtySteel} from './measure-specialty-steel-schema';
 import {blankStructural,normalizeStructural,type StructuralData} from './measure-structural';
 import {blankCanopy,normalizeCanopy,CANOPY_PHOTO_SLOTS,type CanopyData} from './measure-canopy';
+import {blankWallCap,normalizeWallCap,wallCapProgressValues,WC_PHOTO_SLOTS,type WallCapData} from './measure-wall-cap';
+import {blankShopPiece,normalizeShopPiece,shopPieceProgressValues,SP_PHOTO_SLOTS,type ShopPieceData} from './measure-shop-piece';
 // KIW Field Measure — pre-fabrication measurement sheets.
 // A sheet belongs to a job, has a shape (stair layout), and stores every field
 // in a JSONB payload so shapes can evolve without migrations. All measurements
@@ -35,6 +37,8 @@ export type MeasureShape =
   | "opening"
   | "structural"
   | "canopy"
+  | "wall_cap"
+  | "shop_piece"
   | "builder"
   | "custom";
 
@@ -56,6 +60,8 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "opening",
   "structural",
   "canopy",
+  "wall_cap",
+  "shop_piece",
   "builder",
   "custom",
 ];
@@ -80,6 +86,8 @@ export const PICKER_SHAPES: MeasureShape[] = [
   "opening",
   "structural",
   "canopy",
+  "wall_cap",
+  "shop_piece",
   "custom",
 ];
 
@@ -1291,6 +1299,10 @@ export interface MeasureData {
   structural?: StructuralData | null;
   /** Canopy / awning / pergola / door hood / carport / skylight frame (shape "canopy"). */
   canopy?: CanopyData | null;
+  /** Railing on a wall cap (shape "wall_cap") — see measure-wall-cap.ts. */
+  wallCap?: WallCapData | null;
+  /** Shop-fabricated pieces (shape "shop_piece") — see measure-shop-piece.ts. */
+  shopPiece?: ShopPieceData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -1432,6 +1444,8 @@ export function newMeasureData(
   let opening: OpeningData | null = null;
   let structural: StructuralData | null = null;
   let canopy: CanopyData | null = null;
+  let wallCap: WallCapData | null = null;
+  let shopPiece: ShopPieceData | null = null;
 
   switch (shape) {
     case "straight":
@@ -1484,6 +1498,12 @@ export function newMeasureData(
     case "canopy":
       canopy = blankCanopy();
       break;
+    case "wall_cap":
+      wallCap = blankWallCap();
+      break;
+    case "shop_piece":
+      shopPiece = blankShopPiece();
+      break;
     case "deck":
       // steps1 carries the number of sides around the perimeter.
       deck = blankDeck(steps1);
@@ -1519,6 +1539,8 @@ export function newMeasureData(
     opening,
     ...(structural ? { structural } : {}),
     ...(canopy ? { canopy } : {}),
+    ...(wallCap ? { wallCap } : {}),
+    ...(shopPiece ? { shopPiece } : {}),
     // A deck that is not a simple rectangle gets the same tap-to-draw top view
     // the custom shape uses, so odd corners and bump-outs can be drawn and then
     // dimensioned segment by segment.
@@ -1812,6 +1834,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     opening: d.opening ? normalizeOpening(d.opening) : null,
     ...(d.structural ? { structural: normalizeStructural(d.structural) } : {}),
     ...(d.canopy ? { canopy: normalizeCanopy(d.canopy) } : {}),
+    ...(d.wallCap ? { wallCap: normalizeWallCap(d.wallCap) } : {}),
+    ...(d.shopPiece ? { shopPiece: normalizeShopPiece(d.shopPiece) } : {}),
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -1909,6 +1933,10 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
       return ["st_overall", "st_bearing", "st_base", "st_access"];
     case "canopy":
       return [...CANOPY_PHOTO_SLOTS];
+    case "wall_cap":
+      return [...WC_PHOTO_SLOTS];
+    case "shop_piece":
+      return [...SP_PHOTO_SLOTS];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -2121,6 +2149,8 @@ export function sheetProgress(data: MeasureData): { filled: number; total: numbe
     );
   }
   if (data.opening) vals.push(...openingProgressValues(data.opening));
+  if (data.wallCap) vals.push(...wallCapProgressValues(data.wallCap));
+  if (data.shopPiece) vals.push(...shopPieceProgressValues(data.shopPiece));
   if (data.plan) for (const seg of data.plan.segs) {
     vals.push(seg.len, seg.kind, seg.steps, seg.rise, seg.run, seg.width);
     for (const st of seg.stepMeasures || []) vals.push(st.rise, st.run, st.nosing);

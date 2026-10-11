@@ -399,6 +399,7 @@ export function MInput({
   carried,
   onClearCarried,
   gap,
+  laserUnit,
 }: {
   label?: string;
   labelClass?: string;
@@ -414,6 +415,8 @@ export function MInput({
   onClearCarried?: () => void;
   /** Requirement this field answers, when its help key does not say. */
   gap?: string;
+  /** What a laser reading may write here, when the placeholder does not say it plainly. */
+  laserUnit?: "len" | "deg" | "count" | "text";
 }) {
   const unitPh = useContext(PlaceholderCtx);
   const lang = useContext(LangCtx);
@@ -430,7 +433,7 @@ export function MInput({
       )}
       <input
         data-m="1"
-        data-laser-unit={laserFieldUnit(help, placeholder)}
+        data-laser-unit={laserUnit ?? laserFieldUnit(help, placeholder)}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder || unitPh}

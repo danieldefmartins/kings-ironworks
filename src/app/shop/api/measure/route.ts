@@ -8,6 +8,8 @@ import { OpeningSchema } from '@/lib/shop/measure-opening-schema';
 import {StructuralSchema} from '@/lib/shop/measure-structural-schema';
 import { SubstrateSchema, SurfacesSchema } from '@/lib/shop/measure-substrate-schema';
 import {CanopySchema} from '@/lib/shop/measure-canopy-schema';
+import {WallCapSchema} from '@/lib/shop/measure-wall-cap-schema';
+import {ShopPieceSchema} from '@/lib/shop/measure-shop-piece-schema';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -521,6 +523,8 @@ const MeasureDataSchema = z.object({
   opening: OpeningSchema.optional(),
   structural: StructuralSchema.optional(),
   canopy: CanopySchema.optional(),
+  wallCap: WallCapSchema.optional(),
+  shopPiece: ShopPieceSchema.optional(),
   rail: z.object({
     sideSetback: meas.optional(),
     kind: z.string().max(40),

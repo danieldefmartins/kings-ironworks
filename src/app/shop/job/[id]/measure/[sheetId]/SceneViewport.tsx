@@ -23,7 +23,7 @@ export default function SceneViewport({data,lang,shape,selectedId,onSelect,onPos
  // Browsers settle layout (and may reset scroll) after leaving native full screen; put it back once they have.
  useEffect(()=>{const onChange=()=>{if(document.fullscreenElement)return;const y=scrollAt.current;window.setTimeout(()=>window.scrollTo(0,y),60);window.setTimeout(()=>window.scrollTo(0,y),300);};document.addEventListener("fullscreenchange",onChange);return()=>document.removeEventListener("fullscreenchange",onChange);},[]);
  // Reframe the drawing to the new frame size when entering or leaving full screen.
- const viewRef=useRef(view);viewRef.current=view;
+ const viewRef=useRef(view);useEffect(()=>{viewRef.current=view;},[view]);
  useEffect(()=>{const id=window.setTimeout(()=>engine.current?.fit(viewRef.current),120);return()=>window.clearTimeout(id);},[full]);
  const draggablePostIds=useMemo(()=>data.posts.filter(post=>post.pointType==='railing_post').map(post=>post.id),[data.posts]);
  const latest=useRef<{model:ReturnType<typeof measureScene>;options:ViewportOptions}|null>(null);

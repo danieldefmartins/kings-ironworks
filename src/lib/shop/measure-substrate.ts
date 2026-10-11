@@ -32,6 +32,8 @@ import type {
 } from "./measure";
 import type { OpeningData } from "./measure-opening";
 import type { StructBearing, StructuralData } from "./measure-structural";
+import type { WallCapData, WallCapPost, WcMaterial } from "./measure-wall-cap";
+import type { ShopPieceData } from "./measure-shop-piece";
 
 // ---- Substrate model ----------------------------------------------------------
 
@@ -421,10 +423,38 @@ const SUB_TO_DECK_MOUNT: Partial<Record<SubMount, string>> = {
 const BAL_MOUNT_TO_SUB: Record<string, SubMount> = { top: "surface_flange", fascia: "side_mount", core_drill: "core_drill", embedded: "embed" };
 const SUB_TO_BAL_MOUNT: Partial<Record<SubMount, string>> = { surface_flange: "top", side_mount: "fascia", core_drill: "core_drill", embed: "embedded" };
 
+// ---- Wall caps and shop pieces --------------------------------------------------
+
+const WC_TO_SUB: Record<WcMaterial, SubMaterial> = { concrete: "poured_concrete", precast: "precast", stone: "stone", brick: "brick", block: "block_filled", wood: "wood_framing" };
+const SUB_TO_WC: Partial<Record<SubMaterial, WcMaterial>> = { poured_concrete: "concrete", precast: "precast", stone: "stone", brick: "brick", block_hollow: "block", block_filled: "block", wood_framing: "wood", wood_deck: "wood" };
+const WC_MOUNT_TO_SUB: Record<string, SubMount | undefined> = { core: "core_drill", plate: "surface_flange", side_high: "side_mount", side_low: "side_mount" };
+const SUB_TO_WC_MOUNT: Partial<Record<SubMount, WallCapData["mount"]>> = { core_drill: "core", surface_flange: "plate" };
+const SP_TO_SUB: Record<string, SubMaterial | undefined> = { studs: "wood_framing", masonry: "brick", concrete: "poured_concrete", wood: "wood_framing", steel: "steel", stone: "stone" };
+const SUB_TO_SP: Partial<Record<SubMaterial, ShopPieceData["substrate"]>> = {
+  wood_framing: "studs", brick: "masonry", block_hollow: "masonry", block_filled: "masonry", stucco: "masonry", poured_concrete: "concrete", precast: "concrete",
+  wood_deck: "wood", composite: "wood", siding: "studs", steel: "steel", existing_iron: "steel", stone: "stone", tile_slab: "concrete",
+};
+
+function wallCapPost(w: WallCapData | null | undefined, id: string): WallCapPost | undefined {
+  for (const r of w?.runs || []) for (const p of r.posts) if (p.id === id) return p;
+  return undefined;
+}
+
+/** What a wall-cap post sits in, read from the wall's own answers until edited. */
+function subFromWallCap(w: WallCapData, p: WallCapPost): Substrate | undefined {
+  const mat = p.material || w.material;
+  if (!mat) return undefined;
+  return {
+    ...blankSubstrate(),
+    material: WC_TO_SUB[mat],
+    condition: w.cracked === "yes" ? "cracked" : w.cracked === "no" && w.loose === "no" ? "sound" : "",
+  };
+}
+
 // ---- Locations: every place something is fastened ----------------------------
 
 export type SubGroup =
-  | "post" | "term" | "bracket" | "gate" | "fence" | "balcony" | "deck" | "fire" | "well" | "site" | "opening" | "struct";
+  | "post" | "term" | "bracket" | "gate" | "fence" | "balcony" | "deck" | "fire" | "well" | "site" | "opening" | "struct" | "wallcap" | "shoppiece";
 
 export interface MountLocation {
   key: string;
@@ -471,6 +501,12 @@ export function mountLocations(data: MeasureData, shape: MeasureShape, t: T = ID
     if (o.kind === "wall" || o.kind === "column" || o.kind === "post" || o.kind === "slab") add(`site:${o.id}`, "site", o.label);
   });
   if (shape === "opening" && data.opening) add("opening", "opening", t("sub_loc_jamb"));
+  // Wall-cap railings: the cap under every post. Shop pieces: what a wall- or counter-mounted piece fastens to.
+  if (shape === "wall_cap" && data.wallCap) {
+    let n = 0;
+    data.wallCap.runs.forEach((r) => r.posts.forEach((p) => add(`wallcap:${p.id}`, "wallcap", `P${++n}`)));
+  }
+  if (shape === "shop_piece" && data.shopPiece && (data.shopPiece.mount === "wall" || data.shopPiece.mount === "counter")) add("shoppiece", "shoppiece", t("sp_sub_loc"));
   if (shape === "structural" && data.structural) {
     data.structural.members.forEach((m) => {
       if (m.role === "beam" || m.role === "lintel") {
@@ -537,6 +573,25 @@ export function getSub(data: MeasureData, key: string): Substrate | undefined {
       if (sub && o.substrate && SUB_TO_OPENING[sub.material as SubMaterial] !== o.substrate) {
         return { ...sub, material: OPENING_TO_SUB[o.substrate] || sub.material };
       }
+      return sub;
+    }
+    case "wallcap": {
+      const w = data.wallCap, p = wallCapPost(w, a);
+      if (!w || !p) return undefined;
+      const sub = normSub(p.sub) ?? subFromWallCap(w, p);
+      if (!sub) return sub;
+      // The sheet's own fields win: the mount is set for the whole wall, and the
+      // nearest of the two edge distances measured at this post is its edge distance.
+      const m = WC_MOUNT_TO_SUB[w.mount];
+      const edges = [parseMeas(p.edgeHigh), parseMeas(p.edgeLow)].filter((n): n is number => n !== null);
+      return { ...sub, ...(m ? { mount: m } : {}), ...(w.mount === "core" && edges.length ? { edgeDist: formatIn(Math.min(...edges)) } : {}) };
+    }
+    case "shoppiece": {
+      const s = data.shopPiece;
+      if (!s) return undefined;
+      const legacy = SP_TO_SUB[s.substrate];
+      const sub = normSub(s.sub) ?? (legacy ? { ...blankSubstrate(), material: legacy } : undefined);
+      if (sub && legacy && SUB_TO_SP[sub.material as SubMaterial] !== s.substrate) return { ...sub, material: legacy };
       return sub;
     }
     case "struct": {
@@ -634,6 +689,25 @@ export function setSub(data: MeasureData, key: string, sub: Substrate): void {
       o.sub = v;
       if (v.material) o.substrate = SUB_TO_OPENING[v.material];
       if (v.condition) o.substrateCondition = v.condition === "sound" ? "" : v.condition;
+      return;
+    }
+    case "wallcap": {
+      const w = data.wallCap, p = wallCapPost(w, a);
+      if (!w || !p) return;
+      p.sub = v;
+      const mat = v.material ? SUB_TO_WC[v.material] : undefined;
+      // A cap that differs from the wall's is noted on this post; the first answer sets the wall's.
+      if (mat) { if (!w.material) w.material = mat; p.material = mat === w.material ? "" : mat; }
+      if (v.condition === "cracked" || v.condition === "spalled") w.cracked = "yes";
+      if (v.mount && !w.mount) { const wm = SUB_TO_WC_MOUNT[v.mount]; if (wm) w.mount = wm; }
+      return;
+    }
+    case "shoppiece": {
+      const s = data.shopPiece;
+      if (!s) return;
+      s.sub = v;
+      const sp = v.material ? SUB_TO_SP[v.material] : undefined;
+      if (sp) s.substrate = sp;
       return;
     }
     case "struct": {
@@ -843,6 +917,9 @@ export function surfacesFor(data: MeasureData, shape: MeasureShape): SurfaceKey[
     case "gate":
     case "fence": return ["ground"];
     case "structural": return ["slab"];
+    // Pavers or a deck still to come on the walk side raise the floor the guard is measured from.
+    case "wall_cap": return ["ground"];
+    case "shop_piece": return [];
     case "fire_escape":
     case "window_well": return [];
     case "opening": {

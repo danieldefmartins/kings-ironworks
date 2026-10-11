@@ -179,6 +179,26 @@ export default function ShapeIcon({
           <path d="M4 44h40" strokeDasharray="3 3" strokeWidth={1.5} />
         </svg>
       );
+    case "wall_cap":
+      // a railing standing on a wall cap, the ground falling away on one side
+      return (
+        <svg {...common}>
+          <path d="M8 13h32M12 13v12M24 13v12M36 13v12" />
+          <path d="M6 25h36" strokeWidth={3.2} />
+          <path d="M8 28v15M40 28v9" strokeWidth={1.8} />
+          <path d="M2 43h6M40 37h6" strokeWidth={1.5} strokeDasharray="2 2" />
+        </svg>
+      );
+    case "shop_piece":
+      // a welded frame on a bench: a box frame with a shelf, square and plumb
+      return (
+        <svg {...common}>
+          <path d="M10 12h24l6-5M10 12v28M34 12v28M40 7v28l-6 5" />
+          <path d="M10 26h24l6-5" strokeWidth={1.6} />
+          <path d="M16 7h24" strokeWidth={1.6} />
+          <path d="M10 12l6-5" strokeWidth={1.6} />
+        </svg>
+      );
     case "structural":
       // a wide-flange beam on two columns, base plates on the slab
       return (

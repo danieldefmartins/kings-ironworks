@@ -1,6 +1,8 @@
 "use client";
 import StructuralSketch from "./shapes/StructuralSketch";
 import CanopySketch from "./shapes/CanopySketch";
+import { WallCapElevation } from "./shapes/WallCapSketch";
+import ShopPieceSketch from "./shapes/ShopPieceSketch";
 import {useShopAppearance} from "../../../../ShopAppearance";
 import { OpeningSketch } from "./OpeningPrint";
 
@@ -117,6 +119,7 @@ export function sketchViews(shape: MeasureShape): [SketchView, string][] {
   if (shape === "opening") return [["front", "elevationView"]];
   if (shape === "structural") return [["front", "elevationView"]];
   if (shape === "canopy") return [["side", "sideView"], ["front", "elevationView"]];
+  if (shape === "wall_cap" || shape === "shop_piece") return [["front", "elevationView"]];
   if (shape === "fence") return [["front", "elevationView"]];
   if (shape === "balcony")
     return [
@@ -201,6 +204,8 @@ function SketchBody({
       />
     );
   if (shape === "opening") return <OpeningSketch opening={data.opening} lang={lang} light={light} />;
+  if (shape === "wall_cap") return <div style={{ maxWidth: 720, margin: "0 auto" }}><WallCapElevation w={data.wallCap ?? null} lang={lang} /></div>;
+  if (shape === "shop_piece") return <div style={{ maxWidth: 720, margin: "0 auto" }}><ShopPieceSketch d={data.shopPiece ?? null} piece={data.shopPiece?.pieces[0] ?? null} lang={lang} /></div>;
   if (shape === "structural") return <div style={{ maxWidth: 640, margin: "0 auto" }}><StructuralSketch s={data.structural ?? null} lang={lang} /></div>;
   if (shape === "canopy") return <div style={{ maxWidth: 640, margin: "0 auto" }}><CanopySketch c={data.canopy ?? null} lang={lang} view={view === "front" ? "front" : "side"} /></div>;
   if (shape === "gate") return staticZoom(<GateSketch gate={data.gate} p={p} lang={lang} />);

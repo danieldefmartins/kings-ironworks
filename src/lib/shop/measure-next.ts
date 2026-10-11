@@ -4,6 +4,8 @@ import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace'
 import { isFaceMount, OPENING_DOOR_PRODUCTS, unitTag, type OpeningProduct } from './measure-opening';
 import { isBearingRole, isSpanning, isVertical, ROLE_PREFIX } from './measure-structural';
 import { blankMountGaps } from './measure-substrate';
+import { postsOf, runTag } from './measure-wall-cap';
+import { D_KEYS, DESIGN_KEYS, H_KEYS, pieceTag, W_KEYS } from './measure-shop-piece';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -40,7 +42,7 @@ export interface NextSlot {
   /** Asked even before a requirement names it (wall thickness before the wall is chosen). */
   ask?: (d: MeasureData) => boolean;
   /** The thing this number belongs to on a sheet with its own form: one opening, one member. */
-  group?: { kind: 'opening' | 'member' | 'frame'; id: string; index: number; label: string };
+  group?: { kind: 'opening' | 'member' | 'frame' | 'run' | 'post' | 'piece'; id: string; index: number; label: string };
   /** Which dimension of the group, for pointing at it on the elevation. */
   part?: string;
   /** 1-based reading number when a dimension is read more than once. */
@@ -209,6 +211,8 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
   if (shape === 'opening' && data.opening) openingSlots(data, field);
   if (shape === 'structural' && data.structural) structuralSlots(data, field);
   if (shape === 'canopy' && data.canopy?.kind) canopySlots(data, field);
+  if (shape === 'wall_cap' && data.wallCap) wallCapSlots(data, field);
+  if (shape === 'shop_piece' && data.shopPiece) shopPieceSlots(data, field);
   return out;
 }
 
@@ -337,12 +341,74 @@ function structuralSlots(data: MeasureData, field: FieldFn) {
   if (s.members.length) field('st.access.maxLength', 'struct_max_length', 'nx_maxLength', d => d.structural?.access as unknown as Bag | undefined, 'maxLength', { part: 'maxLength' });
 }
 
+/**
+ * A wall-cap railing is walked the way the crew walks the wall: the drop and
+ * the rail height first (they decide the guard), then run by run — its length,
+ * then at every post the cap width, the top of cap and, when cored, the edge
+ * distance to the walk face and to the drop face.
+ */
+function wallCapSlots(data: MeasureData, field: FieldFn) {
+  const w = data.wallCap!;
+  const whole = (d: MeasureData) => d.wallCap as unknown as Bag | null;
+  field('wc.drop', 'wc_drop', 'wc_drop', whole, 'drop', { part: 'drop' });
+  field('wc.railHeight', 'wc_rail_height', 'wc_railHeight', whole, 'railHeight', { part: 'railHeight' });
+  if (w.mount === 'core') {
+    field('wc.coreDia', 'wc_core_dia', 'wc_coreDia', whole, 'coreDia', { part: 'coreDia' });
+    field('wc.coreDepth', 'wc_core_depth', 'wc_coreDepth', whole, 'coreDepth', { part: 'coreDepth' });
+  }
+  if (w.mount === 'side_high' || w.mount === 'side_low') field('wc.faceDepth', 'wc_face_depth', 'wc_faceDepth', whole, 'faceDepth', { part: 'faceDepth' });
+  const marks = postsOf(w);
+  w.runs.forEach((r, ri) => {
+    const rid = r.id, tag = runTag(ri);
+    const run = (d: MeasureData) => d.wallCap?.runs.find(x => x.id === rid) as unknown as Bag | undefined;
+    const rgroup = { kind: 'run' as const, id: rid, index: ri, label: tag };
+    field(`wc.${rid}.length`, 'wc_run_length', 'wc_runLength', run, 'length', { detail: tag, tag, group: rgroup, part: 'length' });
+    if (ri > 0) field(`wc.${rid}.turn`, 'wc_turn', 'wc_turnAngle', run, 'turn', { detail: tag, tag, group: rgroup, part: 'turn', unit: 'deg' });
+    r.posts.forEach((p) => {
+      const pid = p.id, mark = marks.find(m => m.p.id === pid)?.mark || '';
+      const post = (d: MeasureData) => d.wallCap?.runs.find(x => x.id === rid)?.posts.find(x => x.id === pid) as unknown as Bag | undefined;
+      const at = (part: string): Partial<NextSlot> => ({ detail: mark, tag: mark, group: { kind: 'post', id: pid, index: ri, label: mark }, part });
+      field(`wc.${pid}.capWidth`, 'wc_cap_width', 'wc_capWidth', post, 'capWidth', at('capWidth'));
+      field(`wc.${pid}.top`, 'wc_top', 'wc_top', post, 'top', at('top'));
+      if (w.mount === 'core') {
+        field(`wc.${pid}.edgeHigh`, 'wc_edges', 'wc_edgeHigh', post, 'edgeHigh', at('edgeHigh'));
+        field(`wc.${pid}.edgeLow`, 'wc_edges', 'wc_edgeLow', post, 'edgeLow', at('edgeLow'));
+      }
+    });
+  });
+}
+
+/**
+ * A shop piece in a niche is read the way a tape goes round a box: the widths
+ * back, front, top, bottom; the heights left, right, back; the depths top and
+ * bottom; then corner to corner across the front. A freestanding or wall piece
+ * is just its width, height and depth.
+ */
+function shopPieceSlots(data: MeasureData, field: FieldFn) {
+  const s = data.shopPiece!;
+  s.pieces.forEach((p, n) => {
+    const id = p.id, detail = pieceTag(p, n);
+    const piece = (d: MeasureData) => d.shopPiece?.pieces.find(x => x.id === id) as unknown as Bag | undefined;
+    const at = (part: string): Partial<NextSlot> => ({ detail, tag: detail, group: { kind: 'piece', id, index: n, label: detail }, part });
+    if (s.niche) {
+      for (const k of W_KEYS) field(`sp.${id}.${k}`, 'sp_widths', `sp_nx_${k}`, piece, k, at(k));
+      for (const k of H_KEYS) field(`sp.${id}.${k}`, 'sp_heights', `sp_nx_${k}`, piece, k, at(k));
+      for (const k of D_KEYS) field(`sp.${id}.${k}`, 'sp_depths', `sp_nx_${k}`, piece, k, at(k));
+      for (const k of ['diagA', 'diagB'] as const) field(`sp.${id}.${k}`, 'sp_diagonals', `sp_${k}`, piece, k, at(k));
+    } else {
+      field(`sp.${id}.w`, 'sp_width', 'sp_w', piece, DESIGN_KEYS.w, at(DESIGN_KEYS.w));
+      field(`sp.${id}.h`, 'sp_height', 'sp_h', piece, DESIGN_KEYS.h, at(DESIGN_KEYS.h));
+      field(`sp.${id}.d`, 'sp_depth', 'sp_d', piece, DESIGN_KEYS.d, at(DESIGN_KEYS.d));
+    }
+  });
+}
+
 const gapId = (g: Gap) => `gap:${g.key}:${g.detail ?? ''}:${g.flight ?? ''}`;
 const matches = (slot: NextSlot, g: Gap) =>
   (g.key === slot.gap || !!slot.alsoGaps?.includes(g.key)) && (slot.detail === undefined || g.detail === slot.detail) && (slot.flight === undefined || g.flight === undefined || g.flight === slot.flight);
 // A gate, fence, balcony, deck, fire escape, well, opening or steel member is
 // measured by its own dimensions first; the shared stair stages follow.
-const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy)_/;
+const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy|wc|sp)_/;
 const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */

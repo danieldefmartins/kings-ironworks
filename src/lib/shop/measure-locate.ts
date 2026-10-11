@@ -11,7 +11,7 @@ export const MEASURE_LOCATE_EVENT = "kiw:measure-locate";
 export interface MeasureLocate {
   /** Opening unit id, member id or "frame". */
   groupId?: string;
-  groupKind?: "opening" | "member" | "frame";
+  groupKind?: "opening" | "member" | "frame" | "run" | "post" | "piece";
   /** Dimension within it: wTop, diagA, span, bearingL, height:0, cc … */
   part?: string;
   /** A requirement that is not a single number (a choice, a photo). */

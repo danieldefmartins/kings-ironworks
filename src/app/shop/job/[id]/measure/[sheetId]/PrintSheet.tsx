@@ -44,6 +44,9 @@ import PhotoLogPrint from "./PhotoLogPrint";
 import PrintLetterhead, { appOrigin } from "@/app/shop/brand/PrintLetterhead";
 import { resolveBrand, type OrgBranding } from "@/lib/shop/org-brand";
 import { MeasUnits, useShowMeas } from "./MeasUnits";
+import WallCapPrint from './shapes/WallCapPrint';
+import ShopPiecePrint from './shapes/ShopPiecePrint';
+import { wallCapLimits } from '@/lib/shop/measure-wall-cap';
 
 // Org accent (white-label), set on the print root; KIW gold otherwise.
 const GOLD = "var(--brand-accent, #b8860b)";
@@ -284,8 +287,8 @@ export default function PrintSheet({
       >
         <span>
           {[
-            (sheet.shape === "structural" || sheet.shape === "canopy") && shapeLabel(lang, sheet.shape),
-            sheet.shape !== "opening" && sheet.shape !== "structural" && sheet.shape !== "canopy" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
+            (sheet.shape === "structural" || sheet.shape === "canopy" || sheet.shape === "wall_cap" || sheet.shape === "shop_piece") && shapeLabel(lang, sheet.shape),
+            sheet.shape !== "opening" && sheet.shape !== "structural" && sheet.shape !== "canopy" && sheet.shape !== "wall_cap" && sheet.shape !== "shop_piece" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
             data.routing?.setting && mt(lang, data.routing.setting === "interior" ? "routingInterior" : "routingExterior"),
           ].filter(Boolean).join(" · ")}
         </span>
@@ -381,7 +384,7 @@ export default function PrintSheet({
       ))}
 
       {/* Structural steel: its own member and cut tables replace the stair and rail blocks. */}
-      {data.structural && sheet.shape === "structural" ? <StructuralPrint s={data.structural} lang={lang} /> : data.canopy && sheet.shape === "canopy" ? <CanopyPrint c={data.canopy} lang={lang} /> : <>
+      {data.structural && sheet.shape === "structural" ? <StructuralPrint s={data.structural} lang={lang} /> : data.canopy && sheet.shape === "canopy" ? <CanopyPrint c={data.canopy} lang={lang} /> : data.wallCap && sheet.shape === "wall_cap" ? <WallCapPrint w={data.wallCap} lang={lang} limits={wallCapLimits(data, codeDefault)} /> : data.shopPiece && sheet.shape === "shop_piece" ? <ShopPiecePrint d={data.shopPiece} lang={lang} /> : <>
       <div className="grid grid-cols-2 gap-4">
         {/* Steps */}
         {flights.length > 0 && (
