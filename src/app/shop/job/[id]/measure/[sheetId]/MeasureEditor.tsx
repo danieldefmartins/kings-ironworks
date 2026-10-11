@@ -52,6 +52,7 @@ import FenceSections from "./shapes/FenceSections";
 import BalconySections from "./shapes/BalconySections";
 import DeckSections from "./shapes/DeckSections";
 import OpeningSections from "./shapes/OpeningSections";
+import { MeasUnits } from "./MeasUnits";
 import StructuralSections from "./shapes/StructuralSections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
@@ -1088,7 +1089,7 @@ export default function MeasureEditor({
         />  </SetupLockCtx.Provider></StageCtx.Provider>;
 
   return (
-    <LangCtx.Provider value={lang}>
+    <LangCtx.Provider value={lang}><MeasUnits.Provider value={units}>
     <PlaceholderCtx.Provider value={unitPh}>
     {/* What the sheet is waiting on, carried down to every field — the ones in
         the page and the ones in the step overlay alike — so a
@@ -1316,7 +1317,7 @@ export default function MeasureEditor({
       />
     </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
-    </LangCtx.Provider>
+    </MeasUnits.Provider></LangCtx.Provider>
   );
 }
 

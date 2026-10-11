@@ -18,6 +18,7 @@ import {
   type OpeningProduct,
 } from "@/lib/shop/measure-opening";
 import OpeningElevation from "./shapes/OpeningElevation";
+import { useShowMeas } from "./MeasUnits";
 
 const LEVEL_TEXT: Record<CheckLevel, string> = { green: "#15803d", yellow: "#b45309", red: "#b91c1c", na: "#555" };
 
@@ -39,6 +40,11 @@ export function OpeningSketch({ opening, lang, light }: { opening: OpeningData |
 function V({ v }: { v: string }) {
   return v && v.trim() ? <b>{v}</b> : <span style={{ display: "inline-block", minWidth: "2.5rem", borderBottom: "1px solid #999" }}>&nbsp;</span>;
 }
+/** A typed length, printed in shop notation. */
+function L({ v }: { v: string }) {
+  const show = useShowMeas();
+  return <V v={show(v)} />;
+}
 
 export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: string }) {
   const o = data.opening;
@@ -56,7 +62,7 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
       </div>
       <div style={{ fontSize: 11 }}>
         {o.product ? mt(lang, `opP_${o.product}`) : <V v="" />} · {mt(lang, "opMount")}: {o.mount ? mt(lang, `opM_${o.mount}`) : <V v="" />} ·{" "}
-        {mt(lang, isFaceMount(o.mount) ? "opOverlap" : "opClearance")}: <V v={isFaceMount(o.mount) ? o.overlap : o.clearance} />
+        {mt(lang, isFaceMount(o.mount) ? "opOverlap" : "opClearance")}: <L v={isFaceMount(o.mount) ? o.overlap : o.clearance} />
       </div>
       <div style={{ fontSize: 11 }}>
         {mt(lang, "opSubstrate")}: {o.substrate ? mt(lang, `opS_${o.substrate}`) : <V v="" />}
@@ -68,8 +74,8 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
       {o.product === "juliet" && (
         <div style={{ fontSize: 11 }}>
           <b>{mt(lang, "opJulietTitle")}: </b>
-          {mt(lang, "opJulietSill")}: <V v={o.julietSill} /> · {mt(lang, "opJulietGuard")}: <V v={o.julietGuard ? `${o.julietGuard}"` : ""} /> ·{" "}
-          {mt(lang, "opJulietProjection")}: <V v={o.julietProjection} /> · {mt(lang, "opJulietSwing")}:{" "}
+          {mt(lang, "opJulietSill")}: <L v={o.julietSill} /> · {mt(lang, "opJulietGuard")}: <L v={o.julietGuard} /> ·{" "}
+          {mt(lang, "opJulietProjection")}: <L v={o.julietProjection} /> · {mt(lang, "opJulietSwing")}:{" "}
           <V v={o.julietDoorSwing === "in" ? mt(lang, "opSwingIn") : o.julietDoorSwing === "out" ? mt(lang, "opSwingOut") : ""} />
           {o.julietDoorSwing === "out" && <> · {mt(lang, "opJulietClears")} <V v={yn(o.julietDoorClears)} /></>}
           {juliet !== null && <> · <b>{juliet > 0 ? mt(lang, "opJulietAboveSill").replace("{h}", formatIn(juliet)) : mt(lang, "opJulietSillOk")}</b></>}
@@ -80,7 +86,7 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
           <b>{mt(lang, "opDoorTitle")}: </b>
           {mt(lang, "opDoorHinge")}: <V v={side(o.doorHinge)} /> · {mt(lang, "opDoorSwing")}:{" "}
           <V v={o.doorSwing === "in" ? mt(lang, "opSwingIn") : o.doorSwing === "out" ? mt(lang, "opSwingOut") : ""} /> ·{" "}
-          {mt(lang, "opDoorLock")}: <V v={side(o.lockSide)} /> · {mt(lang, "opDoorThreshold")}: <V v={o.threshold} /> ·{" "}
+          {mt(lang, "opDoorLock")}: <V v={side(o.lockSide)} /> · {mt(lang, "opDoorThreshold")}: <L v={o.threshold} /> ·{" "}
           {mt(lang, "opDoorJamb")}: <V v={o.jambMaterial} />
         </div>
       )}
@@ -109,25 +115,25 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
               <tbody>
                 <tr>
                   <td style={th}>{mt(lang, "opWidths")}</td>
-                  <td style={td}><V v={u.wTop} /></td><td style={td}><V v={u.wMid} /></td><td style={td}><V v={u.wBot} /></td>
+                  <td style={td}><L v={u.wTop} /></td><td style={td}><L v={u.wMid} /></td><td style={td}><L v={u.wBot} /></td>
                   <td style={{ ...td, color: LEVEL_TEXT[sq.widthLevel] }}>{sq.widthSpread === null ? "—" : formatIn(sq.widthSpread)}</td>
                 </tr>
                 <tr>
                   <td style={th}>{mt(lang, "opHeights")}</td>
-                  <td style={td}><V v={u.hLeft} /></td><td style={td}><V v={u.hCenter} /></td><td style={td}><V v={u.hRight} /></td>
+                  <td style={td}><L v={u.hLeft} /></td><td style={td}><L v={u.hCenter} /></td><td style={td}><L v={u.hRight} /></td>
                   <td style={{ ...td, color: LEVEL_TEXT[sq.heightLevel] }}>{sq.heightSpread === null ? "—" : formatIn(sq.heightSpread)}</td>
                 </tr>
                 <tr>
                   <td style={th}>{mt(lang, "opDiagonals")}</td>
-                  <td style={td}>A <V v={u.diagA} /></td><td style={td}>B <V v={u.diagB} /></td><td style={td}></td>
+                  <td style={td}>A <L v={u.diagA} /></td><td style={td}>B <L v={u.diagB} /></td><td style={td}></td>
                   <td style={{ ...td, color: LEVEL_TEXT[sq.diagLevel] }}>{sq.diagDiff === null ? "—" : formatIn(sq.diagDiff)}</td>
                 </tr>
               </tbody>
             </table>
             <div style={{ fontSize: 10.5 }}>
-              {mt(lang, "opReveal")}: <V v={u.reveal} />
+              {mt(lang, "opReveal")}: <L v={u.reveal} />
               {u.sillSlope ? <> · {mt(lang, "opSillSlope")}: {u.sillSlope}</> : null}
-              {u.sillProjection ? <> · {mt(lang, "opSillProjection")}: {u.sillProjection}</> : null}
+              {u.sillProjection ? <> · {mt(lang, "opSillProjection")}: <L v={u.sillProjection} /></> : null}
               {u.egress ? <> · {mt(lang, "opEgress")}: <b>{yn(u.egress)}</b></> : null}
               {u.egress === "yes" ? <> · {mt(lang, "opQuickRelease")}: <V v={yn(u.quickRelease)} /></> : null}
               {u.squareFix ? <> · <b>{mt(lang, `opFix_${u.squareFix}`)}</b></> : null}
