@@ -8,6 +8,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { OrgSettings } from "@/lib/shop/shared";
+import { CODE_PROFILES, DEFAULT_CODE_PROFILE } from "@/lib/shop/measure-code";
+import { ct } from "@/lib/shop/measure-code-i18n";
 
 const TOL_LABELS: [keyof OrgSettings["tolerances"] & string, string, string][] = [
   ["riseSum", "Riser sum vs floor-to-floor", "in"],
@@ -33,6 +35,7 @@ export default function SettingsClient({ initial }: { initial: OrgSettings }) {
     colors: (initial.options.colors || []).join("\n"),
   });
   const [allowSelf, setAllowSelf] = useState(initial.rules.allowSelfApproval);
+  const [codeProfile, setCodeProfile] = useState(initial.defaults?.codeProfile || DEFAULT_CODE_PROFILE);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -62,6 +65,7 @@ export default function SettingsClient({ initial }: { initial: OrgSettings }) {
               colors: toList(options.colors),
             },
             rules: { allowSelfApproval: allowSelf },
+            defaults: { codeProfile },
           },
         }),
       });
@@ -103,6 +107,24 @@ export default function SettingsClient({ initial }: { initial: OrgSettings }) {
                 onChange={(e) => setBranding({ ...branding, [k]: e.target.value })}
               />
             </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+        <div className="font-bold mb-3">📘 Building code (default for new checks)</div>
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-neutral-800 p-1" role="radiogroup" aria-label="Building code">
+          {CODE_PROFILES.map((p) => (
+            <button
+              key={p}
+              type="button"
+              role="radio"
+              aria-checked={codeProfile === p}
+              onClick={() => setCodeProfile(p)}
+              className={`min-h-11 rounded-lg px-2 text-sm font-semibold ${codeProfile === p ? "bg-neutral-900 text-neutral-100 shadow-sm" : "text-neutral-500"}`}
+            >
+              {ct("en", `prof_${p}`)}
+            </button>
           ))}
         </div>
       </div>
