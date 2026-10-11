@@ -1,4 +1,5 @@
 import type { MeasureData, MeasureShape } from './measure';
+import { parseMeas } from './measure-parse';
 import type { Gap } from './measure-checks';
 import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace';
 import { isFaceMount, OPENING_DOOR_PRODUCTS, unitTag, type OpeningProduct } from './measure-opening';
@@ -92,8 +93,8 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
         return sg && sg.kind === 'flight' ? (sg.steps[k] as unknown as Bag) : undefined;
       };
       const at = { flight: fi, segIdx: i, stepIdx: k, stepNumber: stepNo };
-      field(`s${i}.${k}.rise`, 'steps', 'rise', step, 'rise', at);
-      field(`s${i}.${k}.run`, 'steps', 'run', step, 'run', at);
+      field(`s${i}.${k}.rise`, 'steps', 'nx_rise', step, 'rise', at);
+      field(`s${i}.${k}.run`, 'steps', 'nx_tread', step, 'run', at);
       if (st.winder) {
         field(`s${i}.${k}.runIn`, 'winder', 'winderRunIn', step, 'runIn', at);
         field(`s${i}.${k}.runOut`, 'winder', 'winderRunOut', step, 'runOut', at);
@@ -462,4 +463,46 @@ export function currentItem(queue: MeasureQueue, currentId: string | null): Next
     if (gap) return gap;
   }
   return queue.open[0] ?? null;
+}
+
+/** The part of a step a slot measures, when it is one: its riser or its tread. */
+export function stepPart(slot: Pick<NextSlot, 'id' | 'segIdx' | 'stepIdx'>): { segIdx: number; stepIdx: number; key: 'rise' | 'run' } | null {
+  if (slot.segIdx === undefined || slot.stepIdx === undefined) return null;
+  const key = slot.id.endsWith('.rise') ? 'rise' : slot.id.endsWith('.run') ? 'run' : null;
+  return key ? { segIdx: slot.segIdx, stepIdx: slot.stepIdx, key } : null;
+}
+
+/** A rise or tread worth copying: a real, positive measurement. */
+export function copyableStepValue(value: string | undefined | null): boolean {
+  const v = (value || '').trim(), n = v ? parseMeas(v) : null;
+  return n !== null && Number.isFinite(n) && n > 0;
+}
+
+/**
+ * The other steps of the same flight a rise or tread would be copied onto:
+ * the empty ones, or (overwrite) every one that does not already read the same.
+ * A winder's tread is its own shape, so a straight tread depth never lands on it.
+ */
+export function stepCopyTargets(data: MeasureData, segIdx: number, stepIdx: number, key: 'rise' | 'run', overwrite = false): number[] {
+  const seg = data.segments[segIdx];
+  if (!seg || seg.kind !== 'flight') return [];
+  const from = seg.steps[stepIdx];
+  if (!from || !copyableStepValue(from[key])) return [];
+  const value = from[key].trim();
+  return seg.steps.flatMap((st, k) => {
+    if (k === stepIdx || (key === 'run' && (st.winder || from.winder))) return [];
+    const now = (st[key] || '').trim();
+    if (overwrite ? now === value : now !== '') return [];
+    return [k];
+  });
+}
+
+/** Copy one step's rise or tread onto the rest of its flight. Returns how many steps changed. */
+export function copyStepValue(data: MeasureData, segIdx: number, stepIdx: number, key: 'rise' | 'run', overwrite = false): number {
+  const targets = stepCopyTargets(data, segIdx, stepIdx, key, overwrite);
+  const seg = data.segments[segIdx];
+  if (!targets.length || seg?.kind !== 'flight') return 0;
+  const value = seg.steps[stepIdx][key];
+  for (const k of targets) seg.steps[k][key] = value;
+  return targets.length;
 }

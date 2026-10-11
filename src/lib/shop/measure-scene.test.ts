@@ -1,6 +1,7 @@
 import {expect,it} from 'vitest';
 import {porchSiteFixture,attachedFabricationFixture} from './measure-site.fixture';
-import {measureScene} from './measure-scene';
+import {focusFace,measureScene} from './measure-scene';
+import {newMeasureData,normalizeMeasureData} from './measure';
 import {stairGeometry} from './measure-geometry';
 import {drawingPosts} from './measure-drawing';
 import {newSiteObject,siteMeshes} from './measure-site';
@@ -29,4 +30,13 @@ it('ends native rail references at linked support faces without inventing a seco
  const rail=scene.lines.find(line=>line.kind==='rail'&&line.id.includes(post.id))!;expect(rail.points).toContainEqual(terminal.top);expect(JSON.stringify(data)).toBe(before);
  data.site!.objects.find(o=>o.id==='column-1')!.x='50';expect(measureScene(data).lines.find(line=>line.id===rail.id)!.points).toContainEqual({...terminal.top!,x:50});
  data.site!.objects=[];const unresolved=measureScene(data);expect(unresolved.lines.some(line=>line.entity.postId===post.id)).toBe(false);expect(unresolved.pending.some(label=>label.includes('support connection'))).toBe(true);
+});
+
+it('lights just the riser for a rise and just the tread for a tread depth on the step asked about',()=>{
+ const data=normalizeMeasureData(newMeasureData('straight',3)),scene=measureScene(data,'straight');
+ const tread=focusFace(scene,{segmentIndex:0,stepIndex:1,part:'run'})!,riser=focusFace(scene,{segmentIndex:0,stepIndex:1,part:'rise'})!;
+ expect(tread.mesh.entity.stepIndex).toBe(1);expect(tread.quad).toEqual(tread.mesh.vertices.slice(0,4));
+ // The riser hangs from the tread's front edge: two corners on it, two below.
+ expect(riser.quad.filter(p=>p.z===tread.quad[0].z)).toHaveLength(2);expect(Math.min(...riser.quad.map(p=>p.z))).toBeLessThan(tread.quad[0].z);
+ expect(focusFace(scene,{segmentIndex:0,stepIndex:9,part:'run'})).toBeNull();expect(focusFace(scene,null)).toBeNull();
 });

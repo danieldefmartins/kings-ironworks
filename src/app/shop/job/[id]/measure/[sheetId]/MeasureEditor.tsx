@@ -46,6 +46,7 @@ import { sketchViews, type SketchView } from "./Sketch";
 import { railSideSetback } from "@/lib/shop/measure";
 import PrintSheet from "./PrintSheet";
 import {useMeasureHistory} from "./useMeasureHistory";
+import type {SceneFocus} from "@/lib/shop/measure-scene";
 import { useSheetSync } from "./useSheetSync";
 import GateSections from "./shapes/GateSections";
 import FenceSections from "./shapes/FenceSections";
@@ -180,6 +181,8 @@ export default function MeasureEditor({
     onReopened: () => setInfo(mt(lang, "editWarning")),
   });
   const {set,undo,redo,canUndo,canRedo}=useMeasureHistory(dataRef,syncSet,data);
+  // The step face the Next card is asking about, lit on the 3D while the card is on it.
+  const [sceneFocus,setSceneFocus]=useState<SceneFocus|null>(null);
   const [reviewComment, setReviewComment] = useState(sheet.review_comment);
   const [info, setInfo] = useState<string | null>(null);
   const [photoSlot, setPhotoSlot] = useState<{ slot: string; label: string } | null>(null);
@@ -1262,8 +1265,8 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={data} shape={sheet.shape} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
-          lead={workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
+        <ProWorkspace data={data} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
+          lead={workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
             onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
