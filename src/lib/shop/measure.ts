@@ -5,6 +5,7 @@ import type {NativeSteelSnapshot} from './measure-native-steel';
 import type {SteelPlan} from './measure-steel';
 import type {SpecialtySteel} from './measure-specialty-steel-schema';
 import {blankStructural,normalizeStructural,type StructuralData} from './measure-structural';
+import {blankCanopy,normalizeCanopy,CANOPY_PHOTO_SLOTS,type CanopyData} from './measure-canopy';
 // KIW Field Measure — pre-fabrication measurement sheets.
 // A sheet belongs to a job, has a shape (stair layout), and stores every field
 // in a JSONB payload so shapes can evolve without migrations. All measurements
@@ -33,6 +34,7 @@ export type MeasureShape =
   | "deck"
   | "opening"
   | "structural"
+  | "canopy"
   | "builder"
   | "custom";
 
@@ -53,6 +55,7 @@ export const MEASURE_SHAPES: MeasureShape[] = [
   "deck",
   "opening",
   "structural",
+  "canopy",
   "builder",
   "custom",
 ];
@@ -76,6 +79,7 @@ export const PICKER_SHAPES: MeasureShape[] = [
   "deck",
   "opening",
   "structural",
+  "canopy",
   "custom",
 ];
 
@@ -1279,6 +1283,8 @@ export interface MeasureData {
   opening?: OpeningData | null;
   /** Structural steel members (shape "structural"); absent on every other sheet. */
   structural?: StructuralData | null;
+  /** Canopy / awning / pergola / door hood / carport / skylight frame (shape "canopy"). */
+  canopy?: CanopyData | null;
   rail: RailSpec;
   materials: MaterialsSpec;
   overall: OverallSpec;
@@ -1419,6 +1425,7 @@ export function newMeasureData(
   let deck: DeckData | null = null;
   let opening: OpeningData | null = null;
   let structural: StructuralData | null = null;
+  let canopy: CanopyData | null = null;
 
   switch (shape) {
     case "straight":
@@ -1468,6 +1475,9 @@ export function newMeasureData(
     case "structural":
       structural = blankStructural();
       break;
+    case "canopy":
+      canopy = blankCanopy();
+      break;
     case "deck":
       // steps1 carries the number of sides around the perimeter.
       deck = blankDeck(steps1);
@@ -1502,6 +1512,7 @@ export function newMeasureData(
     deck,
     opening,
     ...(structural ? { structural } : {}),
+    ...(canopy ? { canopy } : {}),
     // A deck that is not a simple rectangle gets the same tap-to-draw top view
     // the custom shape uses, so odd corners and bump-outs can be drawn and then
     // dimensioned segment by segment.
@@ -1794,6 +1805,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       : null,
     opening: d.opening ? normalizeOpening(d.opening) : null,
     ...(d.structural ? { structural: normalizeStructural(d.structural) } : {}),
+    ...(d.canopy ? { canopy: normalizeCanopy(d.canopy) } : {}),
     rail: { kind: "Guardrail", height: "", side: "", extensions: "", returns: "", brackets: "", ...(d.rail || {}) },
     materials: {
       post: "",
@@ -1889,6 +1901,8 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
     case "structural":
       // The bearing photo is what the bearing length is argued from.
       return ["st_overall", "st_bearing", "st_base", "st_access"];
+    case "canopy":
+      return [...CANOPY_PHOTO_SLOTS];
     case "level_run":
     case "wall_rail":
     case "custom":
@@ -1918,6 +1932,7 @@ export const FAB_CRITICAL_PHOTO_SLOTS: readonly string[] = [
   "fe_anchors",
   "deck_framing",
   "st_bearing",
+  "cn_wall",
 ];
 
 export function isFabCriticalPhoto(slot: string): boolean {

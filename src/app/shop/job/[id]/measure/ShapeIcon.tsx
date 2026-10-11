@@ -168,6 +168,17 @@ export default function ShapeIcon({
           <path d="M7 42h34" strokeWidth={2.6} />
         </svg>
       );
+    case "canopy":
+      // an entry canopy: wall, roof pitched away, tie rod, door below
+      return (
+        <svg {...common}>
+          <path d="M8 4v40" strokeWidth={2.6} />
+          <path d="M8 18l32 4" strokeWidth={3} />
+          <path d="M8 6l31 15" strokeWidth={1.5} />
+          <path d="M14 44V27h12v17" strokeWidth={2} />
+          <path d="M4 44h40" strokeDasharray="3 3" strokeWidth={1.5} />
+        </svg>
+      );
     case "structural":
       // a wide-flange beam on two columns, base plates on the slab
       return (

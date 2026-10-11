@@ -4,6 +4,7 @@ import type { MeasureShape } from "./measure";
 import { OPENING_STR } from "./measure-opening-i18n";
 import { STRUCTURAL_STR } from "./measure-structural-i18n";
 import { SUBSTRATE_STR } from "./measure-substrate-i18n";
+import { CANOPY_STR } from "./measure-canopy-i18n";
 
 type Dict = Record<string, string>;
 
@@ -4322,6 +4323,8 @@ for (const l of ["en", "pt", "es"] as const) Object.assign(STR[l], OPENING_STR[l
 for (const l of Object.keys(STRUCTURAL_STR) as Lang[]) Object.assign(STR[l], STRUCTURAL_STR[l]);
 // Mounting substrate + future finish strings.
 for (const l of Object.keys(SUBSTRATE_STR) as Lang[]) Object.assign(STR[l], SUBSTRATE_STR[l]);
+// Canopy / awning strings, same pattern.
+for (const l of Object.keys(CANOPY_STR) as Lang[]) Object.assign(STR[l], CANOPY_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);

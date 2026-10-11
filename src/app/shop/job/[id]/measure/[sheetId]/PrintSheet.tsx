@@ -38,6 +38,7 @@ import OpeningPrint from "./OpeningPrint";
 import MountingPrint, { warningText } from "./MountingPrint";
 import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
 import StructuralPrint from './shapes/StructuralPrint';
+import CanopyPrint from './shapes/CanopyPrint';
 
 const GOLD = "#b8860b";
 
@@ -274,8 +275,8 @@ export default function PrintSheet({
       >
         <span>
           {[
-            sheet.shape === "structural" && shapeLabel(lang, sheet.shape),
-            sheet.shape !== "opening" && sheet.shape !== "structural" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
+            (sheet.shape === "structural" || sheet.shape === "canopy") && shapeLabel(lang, sheet.shape),
+            sheet.shape !== "opening" && sheet.shape !== "structural" && sheet.shape !== "canopy" && `${mt(lang, "orientBanner")} · ${orientation ? mt(lang, `orient_${orientation}`) : "______________"}`,
             data.routing?.setting && mt(lang, data.routing.setting === "interior" ? "routingInterior" : "routingExterior"),
           ].filter(Boolean).join(" · ")}
         </span>
@@ -371,7 +372,7 @@ export default function PrintSheet({
       ))}
 
       {/* Structural steel: its own member and cut tables replace the stair and rail blocks. */}
-      {data.structural && sheet.shape === "structural" ? <StructuralPrint s={data.structural} lang={lang} /> : <>
+      {data.structural && sheet.shape === "structural" ? <StructuralPrint s={data.structural} lang={lang} /> : data.canopy && sheet.shape === "canopy" ? <CanopyPrint c={data.canopy} lang={lang} /> : <>
       <div className="grid grid-cols-2 gap-4">
         {/* Steps */}
         {flights.length > 0 && (

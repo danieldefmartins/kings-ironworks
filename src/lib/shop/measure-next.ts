@@ -208,6 +208,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
   ]);
   if (shape === 'opening' && data.opening) openingSlots(data, field);
   if (shape === 'structural' && data.structural) structuralSlots(data, field);
+  if (shape === 'canopy' && data.canopy?.kind) canopySlots(data, field);
   return out;
 }
 
@@ -239,6 +240,40 @@ function openingSlots(data: MeasureData, field: FieldFn) {
   }
   if (o.product && OPENING_DOOR_PRODUCTS.includes(o.product as OpeningProduct)) {
     field('op.threshold', 'op_door_threshold', 'nx_threshold', whole, 'threshold', { part: 'threshold' });
+  }
+}
+
+/**
+ * A canopy is read standing at the door: across the wall (width), out from it
+ * (projection), up to the trim at each end, the underside at the wall, the
+ * fall to the front, then the support (rod anchor or each post from its own
+ * grade) and the door it has to clear.
+ */
+function canopySlots(data: MeasureData, field: FieldFn) {
+  const c = data.canopy!;
+  const whole = (d: MeasureData) => d.canopy as unknown as Bag | null | undefined;
+  const at = (part: string): Partial<NextSlot> => ({ part });
+  const sky = c.kind === 'skylight';
+  field('cn.width', 'canopy_width', 'cn_width', whole, 'width', at('width'));
+  field('cn.projection', 'canopy_projection', sky ? 'cn_length' : 'cn_projection', whole, 'projection', at('projection'));
+  if (sky) {
+    field('cn.curb', 'canopy_curb', 'cn_curb', whole, 'curb', at('curb'));
+  } else {
+    field('cn.soffitL', 'canopy_soffit_l', 'cn_soffitL', whole, 'soffitL', at('soffitL'));
+    field('cn.soffitR', 'canopy_soffit_r', 'cn_soffitR', whole, 'soffitR', at('soffitR'));
+    field('cn.mount', 'canopy_mount', 'cn_mount', whole, 'mount', at('mount'));
+  }
+  if (c.roof !== 'open') field('cn.fall', 'canopy_fall', 'cn_fall', whole, 'fall', at('fall'));
+  if (sky) return;
+  if (c.support === 'tie_rods') field('cn.rodRise', 'canopy_rod_rise', 'cn_rodRise', whole, 'rodRise', at('rodRise'));
+  if (c.support === 'posts') c.posts.forEach((p, i) => {
+    const id = p.id, detail = p.label || `P${i + 1}`;
+    field(`cn.post.${id}`, 'canopy_post_height', 'cn_postHeight', d => d.canopy?.posts.find(x => x.id === id) as unknown as Bag | undefined, 'height', { detail, tag: detail, part: `post:${id}` });
+  });
+  if (c.kind === 'entry' || c.kind === 'door_hood') {
+    const door = (d: MeasureData) => d.canopy?.door as unknown as Bag | undefined;
+    field('cn.doorHead', 'canopy_door_head', 'cn_doorHead', door, 'head', at('doorHead'));
+    if (c.door.swing === 'out') field('cn.doorWidth', 'canopy_door_width', 'cn_doorWidth', door, 'width', at('doorWidth'));
   }
 }
 
@@ -307,7 +342,7 @@ const matches = (slot: NextSlot, g: Gap) =>
   (g.key === slot.gap || !!slot.alsoGaps?.includes(g.key)) && (slot.detail === undefined || g.detail === slot.detail) && (slot.flight === undefined || g.flight === undefined || g.flight === slot.flight);
 // A gate, fence, balcony, deck, fire escape, well, opening or steel member is
 // measured by its own dimensions first; the shared stair stages follow.
-const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct)_/;
+const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy)_/;
 const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */
