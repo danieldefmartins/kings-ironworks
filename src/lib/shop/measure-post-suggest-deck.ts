@@ -48,7 +48,7 @@ export function deckRuns(plan: DeckPlan): PostRun[] {
       blocked.push(1);
     }
     anchors.push({ at: L, role: nextRailed ? "corner" : "end" });
-    runs.push({ id: deckRunId(sd.id), path: [{ ...e.a, z: plan.top }, { ...e.b, z: plan.top }], anchors, blocked });
+    runs.push({ id: deckRunId(sd.id), path: [{ ...e.a, z: plan.top }, { ...e.b, z: plan.top }], anchors, blocked, gaps: blocked });
   });
   return runs;
 }

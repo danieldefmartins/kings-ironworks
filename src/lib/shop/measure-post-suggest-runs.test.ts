@@ -23,6 +23,9 @@ describe("deck posts", () => {
     const side2 = s.layouts[1];
     expect(side2.posts.map((p) => p.role)).toEqual(["corner", "opening", "opening", "corner"]);
     expect(side2.posts[2].at - side2.posts[1].at).toBeCloseTo(42);
+    // The opening is not a rail span.
+    expect(side2.spans).toHaveLength(2);
+    expect(side2.spanEach).toBeCloseTo(51);
     expect(s.total).toBe(10); // two shared corners
     expect(s.walls.length).toBe(1); // the house closing edge
     expect(s.approved).toBe(false);

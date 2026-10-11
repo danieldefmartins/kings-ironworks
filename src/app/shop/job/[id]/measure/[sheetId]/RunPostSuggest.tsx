@@ -7,6 +7,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import type { Point3 } from "@/lib/shop/measure-geometry";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import { formatMeas } from "@/lib/shop/measure-parse";
 import { stepRun } from "@/lib/shop/measure-post-suggest-runs";
@@ -32,9 +33,21 @@ export function RunPostSuggest({ lang, data, shape, set, orgMaxSpacing }: {
   const sugg = useMemo(() => adapter?.suggest(data, orgMaxSpacing) ?? null, [adapter, data, orgMaxSpacing]);
   const [editing, setEditing] = useState(false);
   const [open, setOpen] = useState(false);
-  if (!adapter || !sugg || !sugg.layouts.length) return null;
+  // The preview reads plans the stair's way (walker's right = +Y); these shapes use
+  // ordinary plan axes (+Y = left of travel), so they are mirrored into it once here.
+  const view = useMemo(() => {
+    if (!sugg) return null;
+    // A ramp is laid out on the stair geometry already.
+    const m = (p: Point3): Point3 => (shape === "ramp" ? p : { ...p, y: -p.y });
+    return {
+      outlines: sugg.outlines.map((o) => o.map(m)),
+      walls: sugg.walls.map(([a, b]) => [m(a), m(b)] as [Point3, Point3]),
+      layouts: sugg.layouts.map((l) => ({ ...l, run: { ...l.run, path: l.run.path.map(m) } })),
+    };
+  }, [sugg, shape]);
+  if (!adapter || !sugg || !view || !sugg.layouts.length) return null;
   const placed = sugg.approved;
-  const rows: PlanRow[] = sugg.layouts.map((l) => ({
+  const rows: PlanRow[] = view.layouts.map((l) => ({
     layout: l,
     label: runLabelText(lang, sugg.labels[l.run.id], l.run.id),
     note: runNoteText(lang, sugg.notes?.[l.run.id], ft) || undefined,
@@ -60,7 +73,7 @@ export function RunPostSuggest({ lang, data, shape, set, orgMaxSpacing }: {
 
   return (
     <PostPlanCard lang={lang} title={ps(lang, placed ? "layout" : "title")} summary={summary} rows={rows} maxSpacing={sugg.maxSpacing}
-      outlines={sugg.outlines} walls={sugg.walls} ghost={!placed} onStep={step}
+      outlines={view.outlines} walls={view.walls} ghost={!placed} onStep={step}
       actions={<>
         <button type="button" data-post-edit aria-expanded={editing} onClick={() => setEditing(!editing)}
           className={`rounded-2xl border border-slate-200 bg-white px-5 text-[15px] font-semibold text-slate-800 active:scale-[.98] ${placed ? "min-h-12 flex-1" : "min-h-14"}`}>
