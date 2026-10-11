@@ -246,3 +246,36 @@ actual member cut geometry are implemented. Spans are explicitly not saw-cut
 lengths. Automatic collision analysis, structural checks, curved/spiral attached
 paths and CAD/CNC exports remain future work. Existing native stair fabrication
 solvers are unchanged.
+
+## Straight attached-panel cut geometry — October 10, 2026
+
+Optional `site.rails[].fabrication` records rectangular solid/tube profiles,
+tube wall thickness, independent horizontal start/end gaps, vertical picket end
+gaps, maximum horizontal clear spacing, material, weld details and a separate
+shop-check signature. Old clients omitting this addition preserve stored fields.
+
+The shared TypeScript solver handles level/uphill/downhill straight panels
+between parallel, facing plumb rectangular supports. It rejects round/oblique
+support faces, oversized or impossible profiles, missing dimensions and gaps,
+non-picket infill and more than 200 pickets in a panel. It calculates retained
+edge lengths, minimum longitudinal stock extents, angles from square, explicit
+parallel-cut polygons, equal clear gaps and picket center stations. Rail depth
+is normal to the rake; picket width is along the horizontal run. Neither kerf nor
+process allowance is added. Geometry tests independently project generated
+vertices onto the member axis to verify the stock extents for both slope signs.
+
+The field view now shows actual member envelopes when supported details are
+complete. Web printouts and downloadable CSVs include the calculated cuts.
+The Blender worker imports those exact envelopes and generates individual part
+sheets, enlarged end-cut details, grouped identical pickets and cut columns in
+the packaged member CSV. Tube envelopes depict outer dimensions; specified wall
+thickness remains in the material profile.
+
+A field check and a separate shop-detail check must both match the current
+geometry/specifications. Changing hosts, profiles, gaps, material or welds
+invalidates checks. Final approval still uses the existing server-side drawing
+review, site verification and other assembly gates. This does not automate
+structural/anchor design, collision analysis, round/saddle or compound cuts,
+curved/spiral attached members, or machine-specific CNC toolpaths.
+
+The attached-panel editor now shows three focused steps: Connections & shape, Members & gaps, and Review & cuts. Layout dimensions remain visible in every step. Additional freeform profiles/shop notes remain accessible in a disclosure, and switching steps preserves all edits. Field and shop checks are grouped with the calculated schedule; changes still invalidate previous verification. Existing stair, specialty, photo, zoom and revision tools remain available.

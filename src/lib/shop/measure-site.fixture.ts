@@ -34,3 +34,10 @@ export function attachedPorchFixture() {
   }];
   return data;
 }
+
+export function attachedFabricationFixture(){
+  const data=attachedPorchFixture(),rail=data.site!.rails![0];
+  rail.end.elevation='24';
+  rail.fabrication={top:{width:'1 1/2',depth:'3/8',section:'solid',wall:''},bottom:{width:'1',depth:'1',section:'tube',wall:'1/8'},picket:{width:'1/2',depth:'1/2',section:'solid',wall:''},startGap:'1/16',endGap:'1/8',picketGap:'1/32',maxClear:'3 1/2',material:'Steel - sample specification',welds:'Sample W1 detail; field connection approval still required',reviewedSignature:''};
+  return data;
+}

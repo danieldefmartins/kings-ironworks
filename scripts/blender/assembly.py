@@ -114,9 +114,16 @@ def build_assembly(payload):
     for t in payload.get('transitions',[]):
         for i,(a,b) in enumerate(zip(t['points'],t['points'][1:])):add(f'{t["label"]}-{i+1}','Transition',a,b,materials.get('topRail',''),None,t['provisional'])
     if data.get('rail',{}).get('kind')=='Both':issue('Separate graspable handrail, brackets and returns require detailing in addition to the guard assembly.')
-    if not posts:issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
+    if not posts and not any(r.get('fabrication',{}).get('parts') for r in payload.get('site',{}).get('rails',[])):issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
     issue('Member lengths are reference-axis lengths, not saw cut lengths. Confirm rail face offsets, end cuts, weld gaps, embedment and joint allowances before fabrication.')
     from flight_sections import apply_flight_sections
     from connector_details import add_connector_details
     from flight_fabrication import add_flight_fabrication
-    return add_connector_details(payload,add_flight_fabrication(payload,apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues))))
+    result=add_connector_details(payload,add_flight_fabrication(payload,apply_flight_sections(payload,dict(members=members,bays=bays,issues=issues))))
+    for record in payload.get('site',{}).get('rails',[]):
+        for part in record.get('fabrication',{}).get('parts',[]):
+            center=lambda ring:{k:sum(p[k] for p in ring)/len(ring) for k in ('x','y','z')}
+            kind={'top':'Top rail','bottom':'Bottom rail','picket':'Picket'}[part['kind']]
+            result['members'].append(dict(mark=part['mark'],kind='Attached '+kind,a=center(part['vertices'][:4]),b=center(part['vertices'][4:]),profile=part['profile'],section=None,segment=None,length=part['edgeLength'],vertices=part['vertices'],faces=part['faces'],provisional=bool(record.get('issues'))))
+            result.setdefault('cut_parts',[]).append(dict(mark=part['mark'],kind=kind,section=record['layout']['mark'],profile=part['profile'],stock_length=part['stockLength'],edge_length=part['edgeLength'],depth=max(p[1] for p in part['polygon'])-min(p[1] for p in part['polygon']),saw_angle_from_square_deg=part['angle'],polygon=part['polygon'],quantity=1,station=part.get('station'),attached=True,notes='Attached rectangular panel. Rail end gaps are horizontal; picket end gaps are vertical. No kerf or process allowance. See attached connection schedule. Outer envelopes shown; tube wall recorded in profile.'))
+    return result

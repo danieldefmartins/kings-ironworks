@@ -652,7 +652,7 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (!parsed.data.site || parsed.data.site.rails === undefined) {
+        if (!parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
         }

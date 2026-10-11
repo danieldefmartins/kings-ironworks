@@ -8,6 +8,12 @@ from assembly import build_assembly, fmt, inches, mix
 
 def attached_issue(issue):
     return {
+        'siteRailFabDimensions':'Complete member dimensions, tube walls and joint gaps',
+        'siteRailFabInfill':'Automatic cuts require vertical rectangular pickets',
+        'siteRailFabFaces':'Parallel facing plumb rectangular supports required; round or oblique connections need detailing',
+        'siteRailFabFit':'Member profiles, clearances or support face widths do not fit',
+        'siteRailFabCount':'Split panels exceeding 200 pickets',
+        'siteRailFabReview':'Verify field layout, material, welds and connections; check shop details',
         'siteRailGeometryOpen':'Complete structure references, floor elevations, height and bottom clearance',
         'siteRailVerifyOpen':'Verify layout against current site measurements',
         'siteRailConnectionsOpen':'Record mounting details at both ends',
@@ -214,7 +220,7 @@ def generate(payload,output):
         p=Page();pages.append((p,part.get('kind','Top rail')+' part '+part['mark'],'CUT-'+part['mark']))
         p.text(42,54,'INDIVIDUAL PART / '+part['mark'],16)
         p.text(45,86,'PROFILE: '+part['profile']+' | QTY '+str(part['quantity'])+' | SECTION '+part['section'],11)
-        if len(part['marks'])>1:p.text(45,102,'APPLIES TO: '+', '.join(part['marks']),8)
+        if len(part['marks'])>1:p.text(45,102,'APPLIES TO: '+', '.join(part['marks'][:10])+(' ... see schedule for all '+str(len(part['marks']))+' marks' if len(part['marks'])>10 else ''),8)
         p.text(45,120,'Retained shape shown in elevation. Dimensions below are calculated inches; shop rounding tolerance must be specified.',9)
         polygon=part['polygon'];stock=part['stock_length'];depth=part['depth']
         scale=min(850/max(stock,1),110/max(depth,1));ox,oy=80,205
@@ -358,7 +364,7 @@ def generate(payload,output):
         rows=[]
         for index,record in enumerate(site['rails'],1):
             rail=record['source'];g=record.get('layout');name='SR'+str(index)+' / '+rail['label']
-            rows.append((name,'STATUS','LAYOUT REFERENCE ONLY - NOT A CUT LENGTH / '+('FIELD LAYOUT VERIFIED' if record.get('verified') else 'VERIFY LAYOUT')))
+            rows.append((name,'STATUS',('CUT DETAILS INCLUDED / SHOP REVIEW REQUIRED / ' if record.get('fabrication',{}).get('parts') else 'LAYOUT REFERENCE ONLY - NOT A CUT LENGTH / ')+('FIELD LAYOUT VERIFIED' if record.get('verified') else 'VERIFY LAYOUT')))
             for side in ('start','end'):
                 e=rail[side];host=hosts.get(e['objectId']);position=str(e['angle'])+' deg' if e['face']=='radial' else str(round(e['along']*100,2))+'%'
                 rows.append((name,side.upper()+' REFERENCE',(host['label'] if host else 'MISSING STRUCTURE')+' / '+e['face']+' / '+position+' / floor above host bottom: '+(e['elevation'] or 'VERIFY')))
@@ -367,6 +373,11 @@ def generate(payload,output):
             if g:rows.append((name,'CALCULATED SPANS','Horizontal: '+fmt(g['horizontal'])+' / slope span: '+fmt(g['length'])+' / rise: '+fmt(g['rise'])+' / pitch: '+str(round(g['pitch'],2))+' deg. NOT CUT LENGTHS.'))
             rows.append((name,'PROFILES / INFILL',(rail.get('profiles') or 'VERIFY')+' / '+(rail.get('infill') or 'VERIFY')))
             if rail.get('notes'):rows.append((name,'SHOP NOTES',rail['notes']))
+            if rail.get('fabrication'):
+                f=rail['fabrication'];rows.append((name,'MATERIAL / WELDS',f.get('material','')+' / '+f.get('welds','')))
+                rows.append((name,'GAPS','Start / end horizontal: '+f['startGap']+' / '+f['endGap']+'; picket vertical each end: '+f['picketGap']))
+                fab=record.get('fabrication',{})
+                if fab.get('clearGap') is not None:rows.append((name,'PICKET SPACING','Equal horizontal clear gap: '+str(round(fab['clearGap'],4))+' in; centers from start support face: '+', '.join(str(round(v,4)) for v in fab['stations'])))
             rows.append((name,'OPEN ITEMS','; '.join(attached_issue(issue) for issue in record.get('issues',[]))))
         table_pages(rows,['RAILING','DETAIL','RECORDED / CALCULATED REFERENCE'],[160,200,608],'Attached railing layouts / shop detailing required','SAR',pages)
     for i,(page,title,mark) in enumerate(pages,1):frame(page,payload,title,mark,i,len(pages));page.save_svg(output/f'sheet-{i:02d}.svg')
@@ -374,6 +385,8 @@ def generate(payload,output):
     import json,csv
     (output/'assembly.json').write_text(json.dumps(assembly,indent=2))
     with (output/'member-schedule.csv').open('w',newline='') as f:
-        writer=csv.writer(f);writer.writerow(['Mark','Member','Profile','Reference axis length (in)','Not saw cut length'])
-        for m in assembly['members']:writer.writerow([m['mark'],m['kind'],m['profile'],round(m['length'],4),'SHOP DETAILING REQUIRED'])
+        writer=csv.writer(f);writer.writerow(['Mark','Member','Profile','Reference axis length (in)','Status','Cut edge length (in)','Minimum stock length (in)','Angle from square (deg)','Horizontal picket station (in)'])
+        attached={c['mark']:c for c in assembly.get('cut_parts',[]) if c.get('attached')}
+        for m in assembly['members']:
+            c=attached.get(m['mark']);writer.writerow([m['mark'],m['kind'],m['profile'],round(m['length'],4),'DRAFT / SHOP REVIEW REQUIRED',round(c['edge_length'],4) if c else '',round(c['stock_length'],4) if c else '',round(c['saw_angle_from_square_deg'],4) if c else '',c.get('station','') if c else ''])
     return len(pages)

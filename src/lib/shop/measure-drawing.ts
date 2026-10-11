@@ -23,7 +23,7 @@ export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<ty
 export function drawingIssues(data: MeasureData): string[] {
   const model=stairGeometry(data);
   const attachedIssues=[...new Set((data.site?.rails||[]).flatMap(r=>siteRailProblems(data.site,r)))];
-  if(!model)return ['drawingNoGeometry', ...siteIssues(data.site), ...attachedIssues];
+  if(!model)return [...(data.site?.rails?.length?[]:['drawingNoGeometry']), ...siteIssues(data.site), ...attachedIssues];
   const issues:string[]=[...siteIssues(data.site),...attachedIssues];
   if(landingConnections(data).some(t=>!landingConnectionComplete(data,t)))issues.push("landingDrawingOpen");
   if(model.provisional)issues.push('drawingGeometryOpen');

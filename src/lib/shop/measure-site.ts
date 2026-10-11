@@ -104,5 +104,9 @@ export function pointDistance(a: Point3, b: Point3) {
 export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:SiteModel|undefined):SiteModel|undefined {
   if(!incoming)return existing;
   if(incoming.rails===undefined&&existing?.rails!==undefined)return {...incoming,rails:existing.rails};
+  if(incoming.rails&&existing?.rails)return {...incoming,rails:incoming.rails.map(r=>{
+    const stored=existing.rails!.find(old=>old.id===r.id);
+    return r.fabrication===undefined&&stored?.fabrication?{...r,fabrication:stored.fabrication}:r;
+  })};
   return incoming;
 }

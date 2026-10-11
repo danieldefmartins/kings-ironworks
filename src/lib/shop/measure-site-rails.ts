@@ -1,3 +1,4 @@
+import {attachedCuts} from './measure-attached-fab';
 import type {SiteRail,SiteRailEnd} from './measure-site-rails-schema';
 export type {SiteRail,SiteRailEnd} from './measure-site-rails-schema';
 import type { Point3 } from './measure-geometry';
@@ -49,7 +50,10 @@ function hostSignature(o:SiteObject|undefined) {
 export function siteRailSignature(site:SiteModel|undefined,rail:SiteRail):string {
   // Rebuild explicitly so database JSON key order cannot invalidate a valid check.
   const endpoint=(e:SiteRailEnd)=>({objectId:e.objectId,face:e.face,along:e.along,angle:e.angle,elevation:e.elevation,connection:e.connection});
-  return JSON.stringify({datum:site?.datum||'',start:endpoint(rail.start),end:endpoint(rail.end),height:rail.height,bottomClearance:rail.bottomClearance,infill:rail.infill,profiles:rail.profiles,notes:rail.notes,hosts:[rail.start,rail.end].map(e=>hostSignature(site?.objects.find(o=>o.id===e.objectId)))});
+  const f=rail.fabrication;
+  const profile=(p:NonNullable<SiteRail['fabrication']>['top'])=>({width:p.width,depth:p.depth,section:p.section,wall:p.wall});
+  const fabrication=f?{top:profile(f.top),bottom:profile(f.bottom),picket:profile(f.picket),startGap:f.startGap,endGap:f.endGap,picketGap:f.picketGap,maxClear:f.maxClear,material:f.material,welds:f.welds}:undefined;
+  return JSON.stringify({fabrication,datum:site?.datum||'',start:endpoint(rail.start),end:endpoint(rail.end),height:rail.height,bottomClearance:rail.bottomClearance,infill:rail.infill,profiles:rail.profiles,notes:rail.notes,hosts:[rail.start,rail.end].map(e=>hostSignature(site?.objects.find(o=>o.id===e.objectId)))});
 }
 export function siteRailVerified(site:SiteModel|undefined,rail:SiteRail):boolean {
   return !!siteRailLayout(site,rail)&&!!site?.datum.trim()&&[rail.start,rail.end].every(e=>{
@@ -63,12 +67,18 @@ export function siteRailProblems(site:SiteModel|undefined,rail:SiteRail):string[
   if(layout&&[rail.start,rail.end].some(e=>{const h=site?.objects.find(o=>o.id===e.objectId);const floor=siteNumber(e.elevation);return h&&floor!==null&&(floor+siteNumber(rail.bottomClearance)!<0||floor+siteNumber(rail.height)!>siteNumber(h.height)!);}))issues.push('siteRailSupportOpen');
   if(!siteRailVerified(site,rail))issues.push('siteRailVerifyOpen');
   if(!rail.start.connection.trim()||!rail.end.connection.trim())issues.push('siteRailConnectionsOpen');
-  if(!rail.profiles.trim()||!rail.infill)issues.push('siteRailProfilesOpen');
-  // The current model describes a panel envelope, not stock, welds or cut geometry.
-  // Never let a measured layout be released as a fabrication-ready cut package.
-  issues.push('siteRailFabricationOpen');
+  if((!rail.profiles.trim()&&!rail.fabrication)||!rail.infill)issues.push('siteRailProfilesOpen');
+  const cuts=attachedCuts(site,rail,layout);
+  if(!rail.fabrication)issues.push('siteRailFabricationOpen');
+  else if(cuts.issues.length)issues.push(...cuts.issues);
+  else if(!siteRailFabReviewed(site,rail))issues.push('siteRailFabReview');
   return issues;
 }
+export function siteRailFabReviewed(site:SiteModel|undefined,rail:SiteRail):boolean {
+  const f=rail.fabrication;
+  return !!f&&!!f.material.trim()&&!!f.welds.trim()&&!!rail.start.connection.trim()&&!!rail.end.connection.trim()
+    &&siteRailVerified(site,rail)&&!attachedCuts(site,rail,siteRailLayout(site,rail)).issues.length&&f.reviewedSignature===siteRailSignature(site,rail);
+}
 export function siteRailPayload(site?:SiteModel) {
-  return (site?.rails||[]).map(rail=>({source:rail,layout:siteRailLayout(site,rail),verified:siteRailVerified(site,rail),issues:siteRailProblems(site,rail)}));
+  return (site?.rails||[]).map(rail=>({source:rail,layout:siteRailLayout(site,rail),verified:siteRailVerified(site,rail),issues:siteRailProblems(site,rail),fabrication:attachedCuts(site,rail,siteRailLayout(site,rail))}));
 }

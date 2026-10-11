@@ -40,6 +40,23 @@ class SiteTests(unittest.TestCase):
                 self.assertIn(phrase,sheets)
             self.assertNotIn('Wall to column',(Path(folder)/'member-schedule.csv').read_text())
 
+    def test_attached_cuts_enter_member_geometry_pdf_and_csv(self):
+        payload=fixture()
+        end=dict(objectId='wall',face='left',along=.5,angle=0,elevation='0',connection='Bracket detail')
+        source=dict(id='panel',label='Panel',start=end,end=end,height='36',bottomClearance='2',profiles='Steel',infill='pickets',notes='')
+        vertices=[dict(x=x,y=y,z=z) for x in (0,64) for y,z in [(-.75,35.625),(.75,35.625),(.75,36),(-.75,36)]]
+        part=dict(mark='SR1-T',kind='top',profile='1.5 x .375 solid',edgeLength=64,stockLength=64,angle=0,polygon=[[0,-.1875],[64,-.1875],[64,.1875],[0,.1875]],vertices=vertices,faces=[[0,1,2,3],[4,5,6,7]],station=None)
+        payload['site']=dict(objects=[],rails=[dict(source=source,verified=True,issues=[],layout=dict(mark='SR1',label='Panel',vertices=vertices[:4],horizontal=64,length=64,rise=0,pitch=0),fabrication=dict(parts=[part]))])
+        assembly=build_assembly(payload)
+        self.assertEqual(next(m for m in assembly['members'] if m['mark']=='SR1-T')['vertices'],vertices)
+        self.assertEqual(next(c for c in assembly['cut_parts'] if c['mark']=='SR1-T')['stock_length'],64)
+        with tempfile.TemporaryDirectory() as folder:
+            generate(payload,folder)
+            sheets='\n'.join(p.read_text() for p in Path(folder).glob('sheet-*.svg'))
+            self.assertIn('INDIVIDUAL PART / SR1-T',sheets)
+            self.assertIn('64.0000',sheets)
+            self.assertIn('SR1-T',(Path(folder)/'member-schedule.csv').read_text())
+
     def test_site_only_package_preserves_incomplete_objects_and_open_items(self):
         payload=fixture();payload['surfaces']=[];payload['posts']=[]
         payload['site']=dict(datum='',objects=[dict(id='col',label='Column to verify',kind='column',section='round',x='',y='',z='',length='',height='',source='unknown',verified=False)],meshes=[])
