@@ -25,7 +25,7 @@ import {
   commonThicknessChoices,
   obstructionChoices,
 } from "../fields";
-import SubstrateEditor from "../SubstrateEditor";
+import SubstrateEditor, { MATERIALS_FLOOR } from "../SubstrateEditor";
 
 export default function PostsSection({
   lang,
@@ -190,7 +190,7 @@ export default function PostsSection({
                       onChange={(v) => setPost(set, po.id, "clipDetail", v)} />
                   )}
                 </Grid>
-                <SubstrateEditor locKey={`post:${po.id}`}
+                <SubstrateEditor locKey={`post:${po.id}`} materials={MATERIALS_FLOOR}
                   hide={po.pointType === "railing_post" ? ["mount", "photo"] : ["mount", "depth", "photo"]} />
                 <details className="mt-3">
                   <summary className="text-xs text-amber-400/80 cursor-pointer select-none">

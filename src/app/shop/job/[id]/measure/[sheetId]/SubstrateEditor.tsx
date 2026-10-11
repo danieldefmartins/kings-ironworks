@@ -9,7 +9,7 @@
 import { createContext, useContext, useState } from "react";
 import type { MeasureData, MeasureShape, PostMeasure } from "@/lib/shop/measure";
 import type { CheckLevel } from "@/lib/shop/measure-checks";
-import { formatIn } from "@/lib/shop/measure-parse";
+import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
 import { mt } from "@/lib/shop/measure-i18n";
 import {
   DEFAULT_MOUNT,
@@ -57,6 +57,10 @@ const SLABBY: SubMaterial[] = ["poured_concrete", "precast", "tile_slab", "block
 export const MATERIALS_MASONRY_STEEL: SubMaterial[] = ["poured_concrete", "brick", "stone", "block_hollow", "block_filled", "wood_framing", "steel"];
 export const MATERIALS_WALL: SubMaterial[] = ["brick", "stone", "poured_concrete", "block_hollow", "block_filled", "wood_framing", "stucco", "siding", "steel"];
 export const MATERIALS_GROUND: SubMaterial[] = ["poured_concrete", "precast", "brick", "stone", "block_filled", "wood_framing", "steel", "existing_iron"];
+/** Stair / landing posts: what KIW meets most, first. */
+export const MATERIALS_FLOOR: SubMaterial[] = ["poured_concrete", "precast", "stone", "brick", "wood_framing", "tile_slab",
+  "wood_deck", "composite", "block_hollow", "block_filled", "steel", "existing_iron", "stucco", "siding"];
+const FIRST = 6;
 
 export function slotFor(key: string): string {
   return `sub:${key}`.slice(0, 60);
@@ -72,7 +76,7 @@ export function subSummary(lang: string, sub: Substrate): string {
     sub.material && t(`sub_mat_${sub.material}`),
     sub.condition && t(`sub_cond_${sub.condition}`),
     sub.mount && t(`sub_mount_${sub.mount}`),
-    sub.edgeDist.trim() && `${sub.edgeDist.trim()} ${t("sub_edge").toLowerCase()}`,
+    sub.edgeDist.trim() && `${parseMeas(sub.edgeDist) !== null ? formatIn(parseMeas(sub.edgeDist)!) : sub.edgeDist.trim()} ${t("sub_edge").toLowerCase()}`,
   ].filter(Boolean).join(" · ");
 }
 
@@ -102,6 +106,7 @@ export default function SubstrateEditor({
   const [open, setOpen] = useState(false);
   const [more, setMore] = useState(false);
   const [applied, setApplied] = useState(0);
+  const [allMats, setAllMats] = useState(false);
   if (!ctx) return null;
   const { data, set, shape, lang } = ctx;
   const t = (k: string) => mt(lang, k);
@@ -130,7 +135,7 @@ export default function SubstrateEditor({
             <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">{heading}</span>
             <span className="block text-sm font-semibold text-slate-900">{subSummary(lang, sub)}</span>
             <span className="block text-xs text-slate-600">{anchorText(lang, sub)}{hasPhoto ? " · 📷" : ""}</span>
-            {issues.length > 0 && <span className={`mt-0.5 block text-xs font-semibold ${issues[0].level === "red" ? "text-red-600" : "text-amber-700"}`}>{t(`check_${issues[0].key}`)}</span>}
+            {issues.length > 0 && <span className={`mt-0.5 block text-xs font-semibold ${issues[0].level === "red" ? "text-red-600" : "text-amber-700"}`}>{t(`sub_issue_${issues[0].key}`)}</span>}
           </span>
           <span className="shrink-0 self-center text-sm font-semibold text-indigo-700">{t("sub_change")} ›</span>
         </button>
@@ -164,13 +169,19 @@ export default function SubstrateEditor({
       )}
 
       <div className="mb-1 text-[11px] text-neutral-400">{t("sub_material")}</div>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-        {materials.map((m) => (
+      <div className="grid grid-cols-2 gap-1.5">
+        {(allMats || materials.length <= FIRST + 2 ? materials : materials.filter((m, i) => i < FIRST || m === sub.material)).map((m) => (
           <button key={m} type="button" aria-pressed={sub.material === m}
             onClick={() => up({ material: sub.material === m ? "" : m })} className={chip(sub.material === m)}>
             {t(`sub_mat_${m}`)}
           </button>
         ))}
+        {!allMats && materials.length > FIRST + 2 && (
+          <button type="button" onClick={() => setAllMats(true)}
+            className="min-h-11 rounded-xl border border-dashed border-slate-300 px-3 text-left text-sm font-semibold text-indigo-700">
+            {t("sub_more")} · {materials.length - FIRST}
+          </button>
+        )}
       </div>
 
       {filled && (
@@ -208,10 +219,10 @@ export default function SubstrateEditor({
 
           <div>
             <div className="mb-1 text-[11px] text-neutral-400">{t("sub_condition")}</div>
-            <div className="flex gap-1 rounded-xl bg-slate-100 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 sm:flex">
               {SUB_CONDITIONS.map((c) => (
                 <button key={c} type="button" aria-pressed={sub.condition === c} onClick={() => up({ condition: sub.condition === c ? "" : c })}
-                  className={`min-h-10 min-w-0 flex-1 rounded-lg px-1 text-xs font-semibold sm:text-sm ${
+                  className={`min-h-10 min-w-0 flex-1 rounded-lg px-1 text-sm font-semibold ${
                     sub.condition === c
                       ? c === "rotted" || c === "spalled" ? "bg-white text-red-700 shadow-sm ring-1 ring-red-200"
                         : c === "sound" ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200" : "bg-white text-amber-800 shadow-sm ring-1 ring-slate-200"
@@ -226,7 +237,7 @@ export default function SubstrateEditor({
           {SLABBY.includes(sub.material as SubMaterial) && (
             <div>
               <div className="mb-1 text-[11px] text-neutral-400">{t("sub_hidden")}</div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap">
                 {SUB_HIDDEN.map((h) => (
                   <button key={h} type="button" aria-pressed={sub.hidden === h} onClick={() => up({ hidden: sub.hidden === h ? "" : h })}
                     className={chip(sub.hidden === h)}>
@@ -263,7 +274,7 @@ export default function SubstrateEditor({
               {issues.map((c, i) => (
                 <li key={i} className="flex items-center gap-2.5 px-3 py-2">
                   <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${DOT[c.level]}`} />
-                  <span className="min-w-0 flex-1 text-sm text-slate-800">{t(`check_${c.key}`)}</span>
+                  <span className="min-w-0 flex-1 text-sm text-slate-800">{t(`sub_issue_${c.key}`)}</span>
                   {c.expected !== null && c.actual !== null && (
                     <span className="shrink-0 text-xs tabular-nums text-slate-500">{formatIn(c.actual)} / {t("sub_min")} {formatIn(c.expected)}</span>
                   )}

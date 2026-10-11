@@ -14,6 +14,7 @@ import {
   blankFinishFor,
   finishAdd,
   finishChecks,
+  finishedRisers,
   finishTypesFor,
   heightNotes,
   setSurface,
@@ -57,6 +58,13 @@ export default function FinishedSurfaces({
   const sf = data.surfaces || {};
   const heights = heightNotes(data, shape);
   const checks = finishChecks(data, shape).filter((c) => c.level !== "na");
+  const risers = finishedRisers(data);
+  const riserLine = (detail?: string): string => {
+    const r = risers[detail ? Number(detail.slice(1)) - 1 : 0];
+    const f = r?.finished.filter((x): x is number => x !== null) || [];
+    if (f.length < 2) return "";
+    return `${t("fin_first")} ${formatIn(f[0])} · ${t("fin_typical")} ${formatIn(f[Math.floor(f.length / 2)])} · ${t("fin_last")} ${formatIn(f[f.length - 1])}`;
+  };
   const put = (k: SurfaceKey, patch: Partial<FutureFinish>) =>
     set((d) => setSurface(d, k, { ...blankFinishFor(), ...(d.surfaces?.[k] || {}), ...patch }));
 
@@ -123,7 +131,10 @@ export default function FinishedSurfaces({
             {checks.map((c, i) => (
               <li key={`c${i}`} className="flex items-center gap-2.5 px-3 py-2.5">
                 <span aria-hidden className={`size-2.5 shrink-0 rounded-full ${DOT[c.level]}`} />
-                <span className="min-w-0 flex-1 text-sm text-slate-800">{t(`check_${c.key}`)}{c.detail ? <span className="text-slate-500"> · {c.detail}</span> : null}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm text-slate-800">{t(`check_${c.key}`)}{c.detail ? <span className="text-slate-500"> · {c.detail}</span> : null}</span>
+                  {riserLine(c.detail) && <span className="block text-xs tabular-nums text-slate-500">{riserLine(c.detail)}</span>}
+                </span>
                 {c.actual !== null && <span className="shrink-0 text-xs tabular-nums text-slate-500">Δ {formatIn(c.actual)} / {formatIn(c.expected ?? 0.375)}</span>}
               </li>
             ))}

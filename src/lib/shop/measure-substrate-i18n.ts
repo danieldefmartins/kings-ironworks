@@ -110,6 +110,16 @@ const ROWS: Row[] = [
   ["check_sub_weld", "Weld only to steel", "Solda só em aço", "Soldar solo a acero"],
   ["check_finish_riser_mix", "Risers stay even after finishes", "Espelhos continuam iguais após o acabamento", "Contrahuellas parejas tras los acabados"],
 
+  // Problems, phrased as what to do (shown on the editor)
+  ["sub_issue_sub_edge", "Too close to the edge", "Perto demais da borda", "Demasiado cerca del borde"],
+  ["sub_issue_sub_depth", "Not enough depth for the core", "Profundidade insuficiente para o furo", "Profundidad insuficiente para el núcleo"],
+  ["sub_issue_sub_condition", "Substrate condition — repair or move the anchor", "Estado da base — reparar ou mudar o chumbador", "Estado del soporte — reparar o mover el anclaje"],
+  ["sub_issue_sub_hidden", "Scan before drilling", "Escanear antes de furar", "Escanear antes de perforar"],
+  ["sub_issue_sub_pt_slab", "Post-tensioned — no drilling without a GPR scan", "Protendida — não furar sem escaneamento GPR", "Postensada — no perforar sin escaneo GPR"],
+  ["sub_issue_sub_cladding", "Needs standoff block + flashing", "Precisa de calço espaçador + rufo", "Necesita bloque separador + tapajuntas"],
+  ["sub_issue_sub_decking", "Must reach the rim joist or blocking", "Precisa alcançar a viga de borda ou bloqueio", "Debe llegar a la viga de borde o bloqueo"],
+  ["sub_issue_sub_weld", "Weld only to steel", "Solda só em aço", "Soldar solo a acero"],
+
   // Future finish
   ["fin_title", "Finished surfaces", "Superfícies acabadas", "Superficies terminadas"],
   ["fin_installed", "Finish installed?", "Acabamento instalado?", "¿Acabado instalado?"],
@@ -119,6 +129,9 @@ const ROWS: Row[] = [
   ["fin_toCome", "to come", "a instalar", "por instalar"],
   ["fin_measuredOn", "measured on", "medido sobre", "medido sobre"],
   ["fin_after", "After finish", "Após acabamento", "Tras el acabado"],
+  ["fin_first", "1st riser", "1º espelho", "1ª contrahuella"],
+  ["fin_typical", "typical", "típico", "típica"],
+  ["fin_last", "last", "último", "última"],
   ["fin_heights", "Heights from the finished surface", "Alturas a partir da superfície acabada", "Alturas desde la superficie terminada"],
   ["fin_type_hardwood", "Hardwood", "Madeira", "Madera"],
   ["fin_type_tile", "Tile", "Porcelanato", "Baldosa"],
