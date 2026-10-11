@@ -70,6 +70,7 @@ import StairSections from "./sections/StairSections";
 import SegmentsCard from "./sections/SegmentsCard";
 import JointSections from "./sections/JointSections";
 import PostsSection from "./sections/PostsSection";
+import { applyDefaultSetbacks } from "@/lib/shop/measure-post-layout";
 import RailSections from "./sections/RailSections";
 import ShopSections from "./sections/ShopSections";
 import PlanSection from "./sections/PlanSection";
@@ -244,6 +245,8 @@ export default function MeasureEditor({
   function inheritLayout(d: MeasureData, po: PostMeasure) {
     po.fromNosing = d.posts.find((p) => p.id !== po.id && p.fromNosing.trim() !== "")?.fromNosing || po.fromNosing;
     po.fromEdge = railSideSetback(d) || po.fromEdge;
+    // Nothing set yet: centred on its tread, 1-1/2" in from the edge — placing a post is one tap.
+    applyDefaultSetbacks(d, po, railSideSetback(d));
   }
 
   function addStepPost(segIdx: number, stepIdx: number) {

@@ -15,7 +15,8 @@ it('opens only the selected dimensions, preserves measurements, and closes the i
 });
 it('adds a post on the selected support and moves actual offsets without guessed side or datum',()=>{
  render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'Segment 1 · flight'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));
- expect(saved().posts[0]).toMatchObject({segIdx:0,stepIdx:0,side:'',fromNosing:'',fromEdge:''});
+ // Side is never guessed; the side setback starts at the usual 1-1/2" (owner 10/11) and the tread is unmeasured, so no centred setback yet.
+ expect(saved().posts[0]).toMatchObject({segIdx:0,stepIdx:0,side:'',fromNosing:'',fromEdge:'1 1/2'});
  fireEvent.click(screen.getByRole('button',{name:'Right'}));fireEvent.change(screen.getByLabelText('From side edge'),{target:{value:'3 1/2'}});fireEvent.change(screen.getByLabelText('From tread nosing / support edge'),{target:{value:'4'}});
  expect(saved().posts[0]).toMatchObject({side:'right',fromNosing:'4',fromEdge:'3 1/2'});
 });

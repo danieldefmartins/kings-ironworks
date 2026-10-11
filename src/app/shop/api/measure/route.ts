@@ -527,6 +527,7 @@ const MeasureDataSchema = z.object({
   shopPiece: ShopPieceSchema.optional(),
   rail: z.object({
     sideSetback: meas.optional(),
+    postCentered: z.boolean().optional(),
     kind: z.string().max(40),
     height: meas,
     side: z.string().max(20),

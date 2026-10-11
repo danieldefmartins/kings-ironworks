@@ -26,6 +26,9 @@ import {
   obstructionChoices,
 } from "../fields";
 import SubstrateEditor, { MATERIALS_FLOOR } from "../SubstrateEditor";
+import { postLayout, centeredSetback, type LayoutPost } from "@/lib/shop/measure-post-layout";
+import CalcStrip from "../PostCalc";
+import { formatMeas } from "@/lib/shop/measure-parse";
 
 export default function PostsSection({
   lang,
@@ -71,6 +74,9 @@ export default function PostsSection({
         // fields is identical, so the card is shared.
         const isDrawn = isCustom || isDeck;
         const runs = isDrawn ? planPaths(data.plan) : [];
+        // Where each post is, how tall, and what runs to the next one — all
+        // worked out from the treads and the two setbacks.
+        const layout = isDrawn ? null : postLayout(data, posts);
         const addPlanPoint = (pathId: string, segIdx: number) =>
           set((d) => void d.posts.push(newPlanPost(pathId, segIdx)));
         return !isSpiral && !isWallRail && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
@@ -108,6 +114,11 @@ export default function PostsSection({
                     ✕ {mt(lang, "removePost")}
                   </button>
                 </div>
+                {/* What the tread and the two setbacks work out to — read first, typed nothing. */}
+                {layout && (() => {
+                  const lp = layout.posts.find((x) => x.post.id === po.id);
+                  return lp ? <div className="mb-3 -mt-1"><CalcStrip lang={lang} lp={lp} layout={layout} span={layout.spans.find((sp) => sp.from === lp) ?? null} units={data.units || "in"} /></div> : null;
+                })()}
                 <ChipRow help="pointType"
                   label={mt(lang, "pointType")}
                   value={po.pointType}
@@ -143,7 +154,8 @@ export default function PostsSection({
                     </>
                   ) : po.stepIdx !== null ? (
                     <>
-                      <MInput help="firstStepToPostEdge" label={`${mt(lang, "firstStepToPostEdge")} · P${n + 1}`} value={po.firstStepToPostEdge}
+                      <FirstStepField lang={lang} label={`${mt(lang, "firstStepToPostEdge")} · P${n + 1}`} value={po.firstStepToPostEdge}
+                        calc={layout?.posts.find((lp) => lp.post.id === po.id) ?? null} units={data.units || "in"}
                         onChange={(v) => setPost(set, po.id, "firstStepToPostEdge", v)} />
                       {po.distanceFromFirst && <MInput help="distanceFromFirst" label={mt(lang, "distanceFromFirst")} value={po.distanceFromFirst}
                         onChange={(v) => setPost(set, po.id, "distanceFromFirst", v)} />}
@@ -285,18 +297,37 @@ function PostStandards({
   const applyAll = (field: "fromNosing" | "fromEdge", v: string) =>
     set((d) => {
       if(field === "fromEdge") d.rail.sideSetback=v;
+      else d.rail.postCentered=false;
       d.posts.filter(p=>p.pointType==='railing_post'&&!p.pathId).forEach((p) => void (p[field] = v));
     });
+  // Centred: each post takes half of its own tread, so the setback differs post to post.
+  const centered = !!data.rail.postCentered;
+  const center = () =>
+    set((d) => {
+      d.rail.postCentered = !centered;
+      if (centered) return;
+      d.posts.filter(p=>p.pointType==='railing_post'&&!p.pathId&&p.stepIdx!==null).forEach((p) => {
+        const c = centeredSetback(d, p);
+        if (c) p.fromNosing = c;
+      });
+    });
   const uneven =
-    posts.some((p) => p.fromNosing.trim() !== "" && p.fromNosing !== setback) ||
+    (!centered && posts.some((p) => p.fromNosing.trim() !== "" && p.fromNosing !== setback)) ||
     posts.some((p) => p.fromEdge.trim() !== "" && p.fromEdge !== edge);
   return (
     <div className="mb-3 rounded-xl border border-neutral-700 bg-neutral-950/40 p-3">
       <div className="text-xs font-bold text-neutral-300">{mt(lang, "sameEveryPost")}</div>
       <div className="mb-2 text-[11px] text-neutral-500">{mt(lang, "sameEveryPostHint")}</div>
       <Grid>
-        <MInput help="postSetback" label={mt(lang, "postSetback")} value={setback}
-          onChange={(v) => applyAll("fromNosing", v)} />
+        <div className="min-w-0">
+          <MInput help="postSetback" label={mt(lang, "postSetback")} value={centered ? "" : setback}
+            placeholder={centered ? "—" : undefined}
+            onChange={(v) => applyAll("fromNosing", v)} />
+          <button type="button" data-post-centered aria-pressed={centered} onClick={center}
+            className={`mt-2 min-h-[44px] rounded-lg border px-3 text-sm font-semibold ${centered ? "border-amber-500 bg-amber-500/10 text-amber-300" : "border-neutral-700 bg-neutral-800 text-neutral-300"}`}>
+            {mt(lang, "pl_centeredOnTread")}
+          </button>
+        </div>
         <MInput help="fromEdge" label={mt(lang, "railSideSetback")} hint={mt(lang,"railSideSetbackHint")} value={edge}
           onChange={(v) => applyAll("fromEdge", v)} />
       </Grid>
@@ -314,6 +345,30 @@ function PostStandards({
         >
           ⇊ {mt(lang, "applyToAllPosts")}
         </button>
+      )}
+    </div>
+  );
+}
+
+
+/**
+ * The typed first-step → post distance is now a cross-check: the calculated
+ * value sits in the field as its placeholder, and a typed value that strays
+ * more than 1/4" from it is flagged.
+ */
+function FirstStepField({ lang, label, value, calc, units, onChange }: {
+  lang: string; label: string; value: string; calc: LayoutPost | null; units: "in" | "ftin"; onChange: (v: string) => void;
+}) {
+  const calculated = calc?.fromFirstStep ?? null;
+  const shown = calculated !== null ? formatMeas(calculated, units) : undefined;
+  return (
+    <div data-first-step-check={calc?.mismatch ? "mismatch" : undefined}
+      className={calc?.mismatch ? "rounded-xl border border-amber-500 bg-amber-500/10 p-2" : undefined}>
+      <MInput help="firstStepToPostEdge" label={label} value={value} placeholder={shown} gap={calculated !== null ? "none" : undefined} onChange={onChange} />
+      {calc?.mismatch && shown && (
+        <div className="mt-1 text-xs font-semibold text-amber-300">
+          {mt(lang, "pl_calc")} {shown} · {mt(lang, "pl_check")}
+        </div>
       )}
     </div>
   );

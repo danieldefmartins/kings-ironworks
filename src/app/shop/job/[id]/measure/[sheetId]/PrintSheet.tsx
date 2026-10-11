@@ -9,6 +9,9 @@
 
 import {SurveyPrint} from "./sections/SurveySection";
 import SupportAttachmentPrint from "./SupportAttachmentPrint";
+import PostLayoutPrint, { Calc } from "./PostLayoutPrint";
+import { postLayout } from "@/lib/shop/measure-post-layout";
+import { formatMeas } from "@/lib/shop/measure-parse";
 import {platformEntryRise} from '@/lib/shop/measure-platform-rise';
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
@@ -108,6 +111,8 @@ export default function PrintSheet({
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
   const curveSegs = data.segments.filter((s) => s.kind === "curve") as CurveSegment[];
+  // Heights, spans and pickets worked out from the treads and post setbacks.
+  const layout = posts.some((p) => !p.pathId) ? postLayout(data, posts) : null;
   const anyWinder = flights.some((fl) => fl.steps.some((st) => st.winder));
   // step numbering continues across flights (bottom flight first)
   const flightOffsets: number[] = [];
@@ -481,25 +486,33 @@ export default function PrintSheet({
                   <Th>{mt(lang, "firstStepToPostEdge")}</Th>
                   <Th>{mt(lang, "fromNosing")}</Th>
                   <Th>{mt(lang, "fromEdge")}</Th>
+                  {layout && <Th>{mt(lang, "pl_height")}</Th>}
                   <Th>{mt(lang, "mountType")}</Th>
                   <Th>{mt(lang, "anchorInto")}</Th>
                 </tr>
               </thead>
               <tbody>
-                {posts.map((po, i) => (
+                {posts.map((po, i) => {
+                  const lp = layout?.posts.find((x) => x.post.id === po.id);
+                  return (
                   <tr key={po.id}>
                     <Td>P{i + 1}{po.supportAttachment ? " · existing support" : ""}</Td>
                     <Td>{po.stepIdx !== null ? stepOf(data, po) : mt(lang, "platform")}</Td>
-                    <Td><Val len v={po.firstStepToPostEdge || ""} /></Td>
+                    <Td>{!po.firstStepToPostEdge?.trim() && lp?.fromFirstStep != null
+                      ? <Calc approx={lp.provisional}>{formatMeas(lp.fromFirstStep, data.units || "in")}</Calc>
+                      : <><Val len v={po.firstStepToPostEdge || ""} />{lp?.mismatch && lp.fromFirstStep != null && <span style={{ color: "#a16207", fontWeight: 700 }}> ⚠ <Calc>{formatMeas(lp.fromFirstStep, data.units || "in")}</Calc></span>}</>}</Td>
                     <Td><Val len v={po.stepIdx !== null ? po.fromNosing : po.pos} /></Td>
                     <Td><Val len v={po.fromEdge} /></Td>
+                    {layout && <Td>{lp ? <Calc approx={lp.provisional}>{formatMeas(lp.height, data.units || "in")}</Calc> : "—"}</Td>}
                     <Td>{po.mount ? optLabel(lang, po.mount) : <Val v="" />}</Td>
                     <Td>{po.anchor ? optLabel(lang, po.anchor) : <Val v="" />}</Td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           )}
+          <PostLayoutPrint data={data} layout={layout} lang={lang} />
           <SupportAttachmentPrint data={data} posts={posts} lang={lang}/>
           {posts.some((po) => po.plate || po.anchors || po.substrate || po.edgeDist || po.obstruction) && (
             <div className="mt-1" style={{ fontSize: 11 }}>
