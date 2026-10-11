@@ -2,17 +2,17 @@
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {Maximize2,X} from 'lucide-react';
 import {useShopAppearance} from '../../../../ShopAppearance';
-import type {MeasureData} from '@/lib/shop/measure';
+import type {MeasureData,MeasureShape} from '@/lib/shop/measure';
 import {measureScene,type SceneSelection} from '@/lib/shop/measure-scene';
 import type {createSceneViewport,ViewportOptions} from '@/lib/shop/scene-viewport-engine';
 import type {ScenePostDrop,SceneView} from '@/lib/shop/scene-viewport-utils';
 export type PostDropTarget=ScenePostDrop;
 export type {SceneSelection} from '@/lib/shop/measure-scene';
-export type SceneViewportProps={data:MeasureData;lang:string;selectedId?:string;onSelect?:(selection:SceneSelection)=>void;onPostDrop?:(target:ScenePostDrop)=>void;surfacePick?:boolean;groundPick?:boolean;wallPlacement?:boolean;wallPlacementSegment?:string;onWallEdge?:(segmentId:string,side:'left'|'right'|'start'|'end')=>void;onUnavailable?:()=>void;className?:string;compact?:boolean;initialView?:SceneView;/** Extra controls tucked into the Layers panel. */menuExtra?:ReactNode};
-export default function SceneViewport({data,lang,selectedId,onSelect,onPostDrop,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onWallEdge,onUnavailable,className='',compact=false,initialView='iso',menuExtra}:SceneViewportProps){
+export type SceneViewportProps={data:MeasureData;lang:string;/** The sheet's shape; picks its 3D adapter (inferred from the data when absent). */shape?:MeasureShape;selectedId?:string;onSelect?:(selection:SceneSelection)=>void;onPostDrop?:(target:ScenePostDrop)=>void;surfacePick?:boolean;groundPick?:boolean;wallPlacement?:boolean;wallPlacementSegment?:string;onWallEdge?:(segmentId:string,side:'left'|'right'|'start'|'end')=>void;onUnavailable?:()=>void;className?:string;compact?:boolean;initialView?:SceneView;/** Extra controls tucked into the Layers panel. */menuExtra?:ReactNode};
+export default function SceneViewport({data,lang,shape,selectedId,onSelect,onPostDrop,surfacePick,groundPick,wallPlacement,wallPlacementSegment,onWallEdge,onUnavailable,className='',compact=false,initialView='iso',menuExtra}:SceneViewportProps){
  const dark=useShopAppearance()==='dark',host=useRef<HTMLDivElement>(null),overlay=useRef<HTMLDivElement>(null),engine=useRef<ReturnType<typeof createSceneViewport>|null>(null);
  const [status,setStatus]=useState<'loading'|'ready'|'unavailable'>('loading'),[site,setSite]=useState(true),[rails,setRails]=useState(true),[view,setView]=useState<SceneView>(initialView);
- const model=useMemo(()=>measureScene(data),[data]);
+ const model=useMemo(()=>measureScene(data,shape),[data,shape]);
  // Full screen: the real Fullscreen API where the element supports it, a
  // fixed edge-to-edge layer otherwise (iPhone Safari has no element
  // fullscreen). Leaving returns to the same scroll position.
