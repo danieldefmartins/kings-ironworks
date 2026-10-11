@@ -1162,9 +1162,6 @@ export default function MeasureEditor({
                       </button>
                     ))}
                   </div>
-                  <div className="pt-2 text-[11px] uppercase tracking-widest text-neutral-500">
-                    {lang==='pt'?'Aparência':lang==='es'?'Apariencia':'Appearance'}
-                  </div>
                   <ShopAppearance lang={lang}/>
                   {adminLink && <MoreItem href="/shop/admin">🛡 {lang==='pt'?'Administração':lang==='es'?'Administración':'Admin'}</MoreItem>}
                   <MoreItem

@@ -30,7 +30,7 @@ export default function ProWorkspace({data,lang,children,toolbar,lead,nav,wide=f
  const placement=props?.wallPlacement?'wall':props?.groundPick?'ground':props?.surfacePick?'surface':'';
  useEffect(()=>{if(placement)scene.current?.scrollIntoView?.({block:'start',behavior:'smooth'});},[placement]);
  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
- return <SceneContext.Provider value={register}><section aria-label={tx('Measuring workspace','Área de medição','Área de medición')} className={wide?'space-y-3':'grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(340px,410px)] lg:gap-4'}>
+ return <SceneContext.Provider value={register}><section aria-label={tx('Measuring workspace','Área de medição','Área de medición')} className={wide?'space-y-3':'grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(340px,410px)] lg:grid-rows-[auto_1fr] lg:gap-4'}>
   {(nav||toolbar)&&<div className="min-w-0 space-y-3 lg:col-start-2 lg:row-start-1">{nav}{!wide&&toolbar}</div>}
   <div className="min-w-0 space-y-3 lg:sticky lg:top-[72px] lg:col-start-1 lg:row-span-2 lg:row-start-1">
   <div ref={scene} hidden={wide} className="relative min-w-0 scroll-mt-16" role="region" aria-label="Job scene">
