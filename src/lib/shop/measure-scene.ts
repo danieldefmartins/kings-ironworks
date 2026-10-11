@@ -89,10 +89,20 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
    else if(section)meshes.push({...item,...postEnvelope(p.base!,p.top!,section)});else lines.push({...item,points:[{...p.base!},{...p.top!}]});
    if(p.post.pointType==='railing_post'||terminal){const key=`${p.post.segIdx}:${p.post.side}`;groups.set(key,[...(groups.get(key)||[]),p]);}
   }
+  // Rail lines from the post layout: post to post along each side, following the rail height up the
+  // flight, the knee onto a landing, any turn corner and level across a platform (not just within a segment).
+  const layout=postLayout(data,orderedPosts(data)),inLayout=new Set(layout?.posts.map(p=>p.post.id)||[]);
+  const drawnConnections=new Set(landingConnections(data).filter(t=>(t.kind==='drop'||t.kind==='level')&&landingConnectionGeometry(data,t)).map(t=>`${t.lowerPostId}:${t.upperPostId}`));
+  const ghost=(p:{suggested?:unknown})=>p.suggested==='ghost';
+  for(const sp of layout?.spans||[]){
+   const a=sp.from.post,b=sp.to.post;if(drawnConnections.has(`${a.id}:${b.id}`)||drawnConnections.has(`${b.id}:${a.id}`))continue;
+   lines.push({id:`rail:${a.id}:${b.id}`,label:`Railing ${b.segIdx}:${sp.side}`,kind:'rail',provisional:sp.provisional||ghost(a)||ghost(b),referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[b.segIdx],b.segIdx),segmentIndex:b.segIdx},points:sp.path.map(p=>({...p}))});
+  }
   for(const [group,list] of groups){
    const tread=model.treads.find(t=>t.segIdx===list[0].post.segIdx);if(!tread)continue;const [a,b]=tread.corners,dx=b.x-a.x,dy=b.y-a.y;
    list.sort((p,q)=>(p.base!.x-q.base!.x)*dx+(p.base!.y-q.base!.y)*dy);
-   for(let i=1;i<list.length;i++)lines.push({id:`rail:${list[i-1].post.id}:${list[i].post.id}`,label:`Railing ${group}`,kind:'rail',provisional:list[i-1].provisional||list[i].provisional,referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[list[i].post.segIdx],list[i].post.segIdx),segmentIndex:list[i].post.segIdx},points:[{...list[i-1].top!},{...list[i].top!}]});
+   // Only pairs the layout cannot draw (e.g. a support-connection terminal).
+   for(let i=1;i<list.length;i++)if(!inLayout.has(list[i-1].post.id)||!inLayout.has(list[i].post.id))lines.push({id:`rail:${list[i-1].post.id}:${list[i].post.id}`,label:`Railing ${group}`,kind:'rail',provisional:list[i-1].provisional||list[i].provisional||ghost(list[i-1].post)||ghost(list[i].post),referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[list[i].post.segIdx],list[i].post.segIdx),segmentIndex:list[i].post.segIdx},points:[{...list[i-1].top!},{...list[i].top!}]});
   }
  }
  // Calculated post-to-post dimensions: run · rail length · rake, drawn just above the rail line.
