@@ -159,13 +159,18 @@ describe("checks", () => {
     s.members[0].spanB = "73";
     expect(level(s, "struct_span_pair")).toEqual(["red"]);
   });
-  it("bearing too short on brick is red; lintel min is 4\", beam min is 8\"", () => {
+  it("bearing follows code: lintel min 4\" (R703.8.3.1), beam min 3\" (R606.14)", () => {
     const s = lintel();
     expect(level(s, "struct_bearing")).toEqual(["green", "green"]);
+    s.members[0].bearingL.length = "3 1/2";
+    expect(level(s, "struct_bearing")[0]).toBe("red"); // lintel under 4"
     s.members[0].role = "beam";
+    expect(level(s, "struct_bearing")[0]).toBe("green"); // beam needs 3"
+    s.members[0].bearingL.length = "2 1/2";
+    expect(level(s, "struct_bearing")[0]).toBe("red");
+    s.members[0].minBearing = "8"; // the stamped drawing asks for 8"
+    s.members[0].bearingL.length = "6";
     expect(level(s, "struct_bearing")).toEqual(["red", "red"]);
-    s.members[0].minBearing = "6"; // the drawing says 6"
-    expect(level(s, "struct_bearing")).toEqual(["green", "green"]);
   });
   it("bearing longer than the wall warns", () => {
     const s = lintel();

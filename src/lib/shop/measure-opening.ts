@@ -89,6 +89,8 @@ export interface OpeningUnit {
   sillProjection: string; // how far the sill stands proud of the face
   egress: "" | "yes" | "no"; // sleeping-room / required egress opening
   quickRelease: "" | "yes" | "no"; // inside quick-release / keyless egress
+  sillAff: string; // sill above the finished floor inside (egress ≤ 44", fall protection < 24")
+  dropOutside: string; // sill down to grade / the surface below outside
   squareFix: "" | "rect" | "template"; // decision once the hole is badly out
   note: string;
 }
@@ -139,6 +141,7 @@ export function newOpeningUnit(label = "", from?: Partial<OpeningUnit>): Opening
     // A new opening on the same sheet is usually the same kind of room.
     egress: from?.egress ?? "",
     quickRelease: from?.quickRelease ?? "",
+    sillAff: "", dropOutside: "",
     squareFix: "",
     note: "",
   };
@@ -413,6 +416,31 @@ export function openingChecks(o: OpeningData | null | undefined, tol = OPENING_T
 
     if (o.product && OPENING_EGRESS_PRODUCTS.includes(o.product as OpeningProduct) && u.egress === "yes" && u.quickRelease === "no") {
       out.push({ key: "op_egress_release", level: "red", expected: null, actual: null, delta: null, unit: "in", detail: tag });
+    }
+
+    // Emergency escape openings, IRC R310.2 (780 CMR 51.00): net clear opening
+    // ≥ 5.7 sq ft (5.0 at a grade-floor opening), ≥ 24" high, ≥ 20" wide, and
+    // the sill ≤ 44" above the floor. The measured hole is the upper bound of
+    // the sash's net clear opening, so a hole that already fails is red; a
+    // passing hole still needs the window's own net clear checked.
+    if (o.product === "guard" && u.egress === "yes") {
+      const w = ws ? ws.min : null, h = hs ? hs.min : null;
+      if (w !== null && h !== null) {
+        const sf = (w * h) / 144;
+        const level: CheckLevel = w < 20 || h < 24 || sf < 5 ? "red" : sf < 5.7 ? "yellow" : "green";
+        out.push({ key: "op_egress_size", level, expected: null, actual: null, delta: null, unit: "in", detail: `${tag} · ${sf.toFixed(1)} sq ft` });
+      }
+      const sill = parseMeas(u.sillAff);
+      if (sill !== null) out.push(cr("op_egress_sill", sill > 44 ? "red" : "green", 44, sill, tag));
+    }
+
+    // Window fall protection, IRC R312.2.1: an operable window whose sill is
+    // under 24" above the floor and more than 72" above grade outside needs a
+    // guard, a fall-prevention device or an opening limiter.
+    const fallSill = parseMeas(o.product === "juliet" ? o.julietSill : u.sillAff), drop = parseMeas(u.dropOutside);
+    if (fallSill !== null && drop !== null && fallSill < 24 && drop > 72) {
+      const protects = o.product === "guard" || o.product === "juliet";
+      out.push({ key: "op_fall_protection", level: protects ? "green" : "yellow", expected: null, actual: null, delta: null, unit: "in", detail: tag });
     }
   });
 

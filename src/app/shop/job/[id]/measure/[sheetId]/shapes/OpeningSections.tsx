@@ -243,9 +243,9 @@ export default function OpeningSections({
   const yesNo: [string, string][] = [["yes", mt(lang, "opYes")], ["no", mt(lang, "opNo")]];
   const sides: [string, string][] = [["left", mt(lang, "opLeft")], ["right", mt(lang, "opRight")]];
 
-  const field = (k: OpeningField | "reveal" | "sillSlope" | "sillProjection", label: string, gap?: string, hint?: string) =>
+  const field = (k: OpeningField | "reveal" | "sillSlope" | "sillProjection" | "sillAff" | "dropOutside", label: string, gap?: string, hint?: string) =>
     unit && (
-      <div data-op-field={k} onFocus={() => setFocusField(k === "reveal" || k === "sillSlope" || k === "sillProjection" ? null : k)}>
+      <div data-op-field={k} onFocus={() => setFocusField(k === "reveal" || k === "sillSlope" || k === "sillProjection" || k === "sillAff" || k === "dropOutside" ? null : k)}>
         <MInput label={label} hint={hint} gap={gap} value={unit[k]} onChange={(v) => setU(unit.id, (u) => void (u[k] = v))} />
       </div>
     );
@@ -432,6 +432,13 @@ export default function OpeningSections({
                     <Segmented label={mt(lang, "opQuickRelease")} gap="op_quick_release" value={unit.quickRelease} options={yesNo}
                       onChange={(v) => setU(unit.id, (u) => void (u.quickRelease = v as OpeningUnit["quickRelease"]))} />
                   )}
+                </div>
+              )}
+
+              {asksSill && (
+                <div className={`grid gap-2 ${product === "juliet" ? "grid-cols-1" : "grid-cols-2"}`}>
+                  {product !== "juliet" && field("sillAff", mt(lang, "opSillAff"))}
+                  {field("dropOutside", mt(lang, "opDropOutside"))}
                 </div>
               )}
 

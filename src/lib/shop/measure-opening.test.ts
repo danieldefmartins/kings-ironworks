@@ -173,3 +173,29 @@ describe("opening sheet wiring", () => {
     expect(sheetReadiness(d, "opening").ready).toBe(true);
   });
 });
+
+describe("opening code checks (IRC R310 / R312.2)", () => {
+  const guard = (w: string, h: string, extra: Record<string, string> = {}) => {
+    const o = sheet({ product: "guard", mount: "reveal" });
+    Object.assign(o.units[0], { wTop: w, wMid: w, wBot: w, hLeft: h, hCenter: h, hRight: h, egress: "yes", quickRelease: "yes", ...extra });
+    return o;
+  };
+  const lv = (o: OpeningData, key: string) => openingChecks(o).filter((c) => c.key === key).map((c) => c.level);
+
+  it("egress hole too small is red, under 5.7 sq ft yellow, else green", () => {
+    expect(lv(guard("19", "48"), "op_egress_size")).toEqual(["red"]); // under 20" wide
+    expect(lv(guard("30", "24"), "op_egress_size")).toEqual(["yellow"]); // 5.0 sq ft
+    expect(lv(guard("36", "36"), "op_egress_size")).toEqual(["green"]); // 9 sq ft
+  });
+  it("egress sill above 44\" is red", () => {
+    expect(lv(guard("36", "36", { sillAff: "46" }), "op_egress_sill")).toEqual(["red"]);
+    expect(lv(guard("36", "36", { sillAff: "40" }), "op_egress_sill")).toEqual(["green"]);
+  });
+  it("low sill over a high drop needs fall protection", () => {
+    expect(lv(guard("36", "36", { sillAff: "18", dropOutside: "120" }), "op_fall_protection")).toEqual(["green"]);
+    const panel = sheet({ product: "panel", mount: "reveal" });
+    Object.assign(panel.units[0], { sillAff: "18", dropOutside: "120" });
+    expect(lv(panel, "op_fall_protection")).toEqual(["yellow"]);
+    expect(lv(guard("36", "36", { sillAff: "30", dropOutside: "120" }), "op_fall_protection")).toEqual([]);
+  });
+});

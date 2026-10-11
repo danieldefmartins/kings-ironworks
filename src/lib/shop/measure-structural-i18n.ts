@@ -176,7 +176,7 @@ const ROWS: Row[] = [
   ["st_sub_wood", "Wood framing", "Estrutura de madeira", "Estructura de madera"],
   ["st_sub_steel", "Steel", "Aço", "Acero"],
   ["st_minBearing", "Min. bearing per drawing", "Apoio mín. do projeto", "Apoyo mín. del plano"],
-  ["st_shopRule", "Shop rule", "Regra da oficina", "Regla del taller"],
+  ["st_shopRule", "Code minimum", "Mínimo do código", "Mínimo del código"],
   ["st_existing", "Existing size", "Tamanho existente", "Tamaño existente"],
   ["st_existingPh", "2x10 wood, L3x3…", "Madeira 2x10, L3x3…", "Madera 2x10, L3x3…"],
   ["st_elevation", "Top of steel", "Topo do aço", "Parte superior del acero"],

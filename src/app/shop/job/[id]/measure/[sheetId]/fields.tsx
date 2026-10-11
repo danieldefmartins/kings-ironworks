@@ -376,8 +376,11 @@ export const REQ_FIELD =
 export function RequiredChip() {
   const lang = useContext(LangCtx);
   return (
-    <span className="ml-auto shrink-0 rounded-full border border-red-600 bg-red-950/60 px-1.5 text-[9px] font-bold uppercase tracking-wide text-red-300">
-      {mt(lang, "requiredLbl")}
+    // A dot, not a word: the red field border already says "needed", and a
+    // word-badge collides with the label in narrow three-across rows.
+    <span title={mt(lang, "requiredLbl")} className="ml-auto inline-flex h-4 w-4 shrink-0 items-center justify-center">
+      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-red-500" />
+      <span className="sr-only">{mt(lang, "requiredLbl")}</span>
     </span>
   );
 }

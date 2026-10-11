@@ -433,17 +433,19 @@ export function plateThickness(spec: string | null | undefined): number | null {
   return t !== null && t >= 0 && t < 4 ? t : null;
 }
 
-// ---- Shop rules -----------------------------------------------------------------
-// Minimum bearing for a beam or lintel with no engineer's number. These are the
-// shop's floors, not a design: masonry gets 4" under a lintel and 8" under a
-// beam (a beam brings joist or point loads onto a few bricks), concrete 4", wood
-// framing 3". Steel-to-steel is a connection detail, not a bearing, so it is not
-// checked here. A drawing value always wins.
+// ---- Code minimums -------------------------------------------------------------
+// Minimum bearing for a beam or lintel with no engineer's number, per the
+// residential code (IRC 2021 as adopted by 780 CMR 51.00):
+//   beam/girder on masonry or concrete: 3"  (IRC R606.14 beam supports; R502.6)
+//   lintel carrying masonry:            4"  (IRC R703.8.3.1 lintel bearing)
+//   wood framing:                       3"
+// Steel-to-steel is a connection detail, not a bearing, so it is not checked
+// here. A stamped drawing value always wins.
 export const STRUCT_MIN_BEARING: Record<Exclude<StructSubstrate, "" | "steel">, { lintel: number; beam: number }> = {
-  brick: { lintel: 4, beam: 8 },
-  block: { lintel: 4, beam: 8 },
-  stone: { lintel: 4, beam: 8 },
-  concrete: { lintel: 4, beam: 4 },
+  brick: { lintel: 4, beam: 3 },
+  block: { lintel: 4, beam: 3 },
+  stone: { lintel: 4, beam: 3 },
+  concrete: { lintel: 4, beam: 3 },
   wood: { lintel: 3, beam: 3 },
 };
 

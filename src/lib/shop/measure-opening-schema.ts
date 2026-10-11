@@ -20,6 +20,7 @@ const OpeningUnitSchema = z.object({
   reveal: meas, sillSlope: meas, sillProjection: meas,
   egress: yn,
   quickRelease: yn,
+  sillAff: meas.optional(), dropOutside: meas.optional(),
   squareFix: z.enum(["", "rect", "template"]),
   note: short,
 });
