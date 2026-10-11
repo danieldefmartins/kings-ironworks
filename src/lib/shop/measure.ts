@@ -1,3 +1,4 @@
+import type {MeasureSurvey} from './measure-survey';
 import type {SupportAttachment} from './measure-support-attachment';
 import type {SceneSetup} from './measure-scene-setup';
 import type {NativeSteelSnapshot} from './measure-native-steel';
@@ -1233,6 +1234,7 @@ export type Units = "in" | "ftin";
 export type SheetStatus = "in_progress" | "submitted" | "approved";
 
 export interface MeasureData {
+  survey?: MeasureSurvey;
   /** Independent existing-site objects, in the same inch coordinates as the stair. */
   site?: SiteModel;
   steelPlan?: SteelPlan;
@@ -1683,6 +1685,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
   const d = (raw || {}) as Partial<MeasureData>;
   return {
     drawingReleaseVersion: d.drawingReleaseVersion,
+    ...(d.survey ? {survey: d.survey} : {}),
     ...(d.code ? { code: d.code } : {}),
     ...(d.signoff ? { signoff: d.signoff } : {}),
     site: d.site,

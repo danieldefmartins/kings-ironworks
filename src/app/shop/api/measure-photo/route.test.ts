@@ -19,3 +19,6 @@ describe('drawing photo references',()=>{
 
 it('never signs a PDF disguised as a measurement photo',async()=>{m.photos.mockResolvedValue([{url:'job/photo.jpg',kind:'document',category:'Original Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 it('blocks operational admins from signing financial images',async()=>{m.worker.mockResolvedValue({is_admin:true,can_see_prices:false});m.photos.mockResolvedValue([{url:'job/photo.jpg',category:'Approved Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
+
+it('waits for the expected photo instead of serving an older photo at the same index',async()=>{expect((await request('&expectedPath=job%2Fnew-photo.jpg')).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
+it('signs the expected saved photo after autosave',async()=>{expect((await request('&expectedPath=job%2Fphoto.jpg')).status).toBe(307);expect(m.sign).toHaveBeenCalledWith('job/photo.jpg',300);});

@@ -7,6 +7,7 @@
 // revision number, who measured and who approved, and a QR code back to the
 // live digital sheet.
 
+import {SurveyPrint} from "./sections/SurveySection";
 import SupportAttachmentPrint from "./SupportAttachmentPrint";
 import {platformEntryRise} from '@/lib/shop/measure-platform-rise';
 import { useEffect, useState } from "react";
@@ -1075,6 +1076,7 @@ export default function PrintSheet({
       </div>
 
       <CodeCheckPrint data={data} shape={sheet.shape} lang={lang} orgDefault={codeDefault} />
+      <SurveyPrint data={data} lang={lang} sheetId={sheet.id} rev={visible ? sheet.current_rev ?? undefined : undefined}/>
       <SignoffPrint data={data} lang={lang} />
 
       <div

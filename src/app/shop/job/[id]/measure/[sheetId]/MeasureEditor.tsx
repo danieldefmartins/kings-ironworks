@@ -70,6 +70,8 @@ import ShopSections from "./sections/ShopSections";
 import PlanSection from "./sections/PlanSection";
 import PhotosSection from "./sections/PhotosSection";
 import ReviewSection from "./sections/ReviewSection";
+import SurveySection from "./sections/SurveySection";
+import {reconcileFireSurvey} from "@/lib/shop/measure-survey";
 import {
   EDITOR_STAGES,
   FRACTIONS,
@@ -372,7 +374,7 @@ export default function MeasureEditor({
 
   function setFire(fn: (f: FireEscapeData) => void) {
     set((d) => {
-      if (d.fire) fn(d.fire);
+      if (d.fire) { const purpose=d.fire.purpose; fn(d.fire); if(purpose!==d.fire.purpose)reconcileFireSurvey(d); }
     });
   }
 
@@ -1052,6 +1054,7 @@ export default function MeasureEditor({
   </SetupLockCtx.Provider></StageCtx.Provider></DetailStagesCtx.Provider>;
   const reviewContent=<StageCtx.Provider value="review"><SetupLockCtx.Provider value={false}>
         {isFire && fire && <FireEscapeSections lang={lang} fire={fire} firePurpose={firePurpose} fireSurvey={fireSurvey} setFire={setFire} setLevel={setLevel} />}
+        <SurveySection data={data} lang={lang} set={set} sheetId={sheet.id} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>
         <ReviewSection embedded
           data={data}
           lang={lang}
@@ -1229,7 +1232,7 @@ export default function MeasureEditor({
           </div>
         )}
         <ProWorkspace data={data} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||ownForm}
-          lead={ownForm?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
+          lead={ownForm||workspace==='review'?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
             onOpenGap={g=>{jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>setWorkspace('review')}/>}
