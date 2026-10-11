@@ -103,7 +103,7 @@ export default async function RevisionPage({
           checks={checks}
           superseded={revision.superseded}
           branding={orgSettings.branding}
-          qrUrl={`https://kingsironworks.com/shop/job/${id}/measure/${sheetId}/rev/${revision.rev_no}`}
+          qrUrl={`/shop/job/${id}/measure/${sheetId}/rev/${revision.rev_no}`}
         />
       </div>
     </div>

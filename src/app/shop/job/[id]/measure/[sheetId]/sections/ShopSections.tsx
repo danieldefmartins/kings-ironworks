@@ -141,7 +141,7 @@ export default function ShopSections({
       </Card>
 
       {hasFlights && !isWallRail && <Card stage="specs" title={tx("Flight fabrication", "Fabricação por lance", "Fabricación por tramo")}>
-        <p className="text-sm text-neutral-300">{tx("KIW standard: continuous top rail over the posts, one fabricated section per flight.", "Padrão KIW: corrimão superior contínuo sobre os postes, uma seção fabricada por lance.", "Estándar KIW: riel superior continuo sobre los postes, una sección por tramo.")}</p>
+        <p className="text-sm text-neutral-300">{tx("Shop standard: continuous top rail over the posts, one fabricated section per flight.", "Padrão da oficina: corrimão superior contínuo sobre os postes, uma seção fabricada por lance.", "Estándar del taller: riel superior continuo sobre los postes, una sección por tramo.")}</p>
         <details className="mt-3">
           <summary className="cursor-pointer py-3 text-sm font-semibold">{tx("Cutting and fitting details", "Detalhes de corte e encaixe", "Detalles de corte y ajuste")}</summary>
           <div className="space-y-4">

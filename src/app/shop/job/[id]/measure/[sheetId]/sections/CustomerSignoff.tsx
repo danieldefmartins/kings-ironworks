@@ -20,6 +20,8 @@ import { ct } from "@/lib/shop/measure-code-i18n";
 import { shapeLabel } from "@/lib/shop/measure-i18n";
 import { specValue } from "@/lib/shop/i18n";
 import SignaturePad, { type SignaturePadHandle } from "../SignaturePad";
+import { useBrand } from "@/app/shop/brand/BrandContext";
+import { brandInitials } from "@/lib/shop/org-brand";
 
 const LANG_NAME: Record<SignoffLang, string> = { en: "English", pt: "Português", es: "Español" };
 
@@ -172,6 +174,7 @@ function SignSheet({
   const summary = signoffSummary(data, shape, cl, { shapeName, finishLabel: (v) => specValue(cl, v) });
   const ready = ink && name.trim().length > 1;
   const T = (k: string) => ct(cl, k);
+  const brand = useBrand();
 
   const sheet = (
     <div data-shop-theme={theme} className="shop-ui fixed inset-0 z-[60] flex items-stretch justify-center bg-black/50 sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={T("signHeading")}>
@@ -198,6 +201,24 @@ function SignSheet({
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 pb-4 pt-5 sm:px-8">
+          {/* Whose work the customer is signing for — the organization's brand. */}
+          <div className="mb-5 flex items-center gap-3" data-testid="signoff-brand">
+            {brand.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={brand.logo} alt="" className="h-11 w-auto max-w-[9rem] rounded-lg object-contain" style={{ background: "#fff" }} />
+            ) : (
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[15px] font-bold"
+                style={{ background: brand.accent, color: brand.onAccent }}
+              >
+                {brandInitials(brand.name)}
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="truncate text-[17px] font-semibold text-neutral-100">{brand.name}</div>
+              <div className="truncate text-sm text-neutral-500">{[brand.phone, brand.website].filter(Boolean).join(" · ")}</div>
+            </div>
+          </div>
           <h2 className="text-2xl font-bold tracking-tight text-neutral-100">{T("signHeading")}</h2>
 
           <dl className="mt-4 divide-y divide-neutral-800 rounded-2xl bg-neutral-800 px-4">

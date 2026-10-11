@@ -51,7 +51,7 @@ export default function OpeningPrint({ data, lang }: { data: MeasureData; lang: 
   const juliet = julietGuardAboveSill(o);
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ fontWeight: 700, borderBottom: "2px solid #b8860b", marginBottom: 4 }}>
+      <div style={{ fontWeight: 700, borderBottom: "2px solid var(--brand-accent, #b8860b)", marginBottom: 4 }}>
         {mt(lang, "opPrintTitle")} · {openingPieceCount(o)} {mt(lang, openingPieceCount(o) === 1 ? "opPiece" : "opPieces")}
       </div>
       <div style={{ fontSize: 11 }}>

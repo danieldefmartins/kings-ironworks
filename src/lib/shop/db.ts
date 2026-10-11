@@ -758,6 +758,7 @@ const FALLBACK_SETTINGS: OrgSettings = {
     address: "69 Norman St, Unit 20, Everett, MA 02149",
     phone: "(617) 404-2589",
     website: "kingsironworks.com",
+    accent: "#b8860b",
   },
   tolerances: {
     riseSum: { green: 0.25, yellow: 0.75 },

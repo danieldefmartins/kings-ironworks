@@ -57,6 +57,7 @@ import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
+import { BrandProvider } from "@/app/shop/brand/BrandContext";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
@@ -1085,6 +1086,7 @@ export default function MeasureEditor({
         />  </SetupLockCtx.Provider></StageCtx.Provider>;
 
   return (
+    <BrandProvider branding={orgSettings?.branding}>
     <LangCtx.Provider value={lang}>
     <PlaceholderCtx.Provider value={unitPh}>
     {/* What the sheet is waiting on, carried down to every field — the ones in
@@ -1314,6 +1316,7 @@ export default function MeasureEditor({
     </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
     </LangCtx.Provider>
+    </BrandProvider>
   );
 }
 

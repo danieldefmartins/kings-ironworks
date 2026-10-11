@@ -22,7 +22,8 @@ import {
 import { fmtLen } from "./StructuralSketch";
 import { checkLine } from "./StructuralSections";
 
-const GOLD = "#b8860b";
+// Org accent (white-label), set on the print root; KIW gold otherwise.
+const GOLD = "var(--brand-accent, #b8860b)";
 const cell: React.CSSProperties = { border: "1px solid #cbd5e1", padding: "4px 6px", textAlign: "left", verticalAlign: "top" };
 const head: React.CSSProperties = { ...cell, background: "#f1f5f9", fontWeight: 700, fontSize: 10, textTransform: "uppercase", letterSpacing: 0.3 };
 const LEVEL_COLOR = { green: "#166534", yellow: "#92400e", red: "#b91c1c", na: "#64748b" } as const;

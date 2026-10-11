@@ -1,7 +1,7 @@
 "use client";
 
-// Print-only branded field-measure sheet (KIW letterhead style: white with
-// gold rules). Filled values print solid; missing ones print as blank lines
+// Print-only branded field-measure sheet (the organization's letterhead:
+// white with accent rules). Filled values print solid; missing ones print as blank lines
 // so the sheet can also be completed by hand. Sheets that are not APPROVED
 // print with a DO NOT FABRICATE watermark; approved sheets carry their
 // revision number, who measured and who approved, and a QR code back to the
@@ -36,8 +36,12 @@ import SteelTakeoffPrint from './SteelTakeoffPrint';
 import OpeningPrint from "./OpeningPrint";
 import { CodeCheckPrint, SignoffPrint } from "./CodeSignoffPrint";
 import StructuralPrint from './shapes/StructuralPrint';
+import PhotoLogPrint from "./PhotoLogPrint";
+import PrintLetterhead, { appOrigin } from "@/app/shop/brand/PrintLetterhead";
+import { resolveBrand, type OrgBranding } from "@/lib/shop/org-brand";
 
-const GOLD = "#b8860b";
+// Org accent (white-label), set on the print root; KIW gold otherwise.
+const GOLD = "var(--brand-accent, #b8860b)";
 
 function Val({ v }: { v: string }) {
   const has = v && v.trim() !== "";
@@ -85,14 +89,10 @@ export default function PrintSheet({
   visible?: boolean; // revision viewer renders it on screen, not print-only
   qrUrl?: string; // approved sheets QR to the LOCKED revision, not the live record
   superseded?: boolean; // an old revision replaced by a newer approval
-  branding?: { name: string; address: string; phone: string; website: string };
+  branding?: Partial<OrgBranding>;
 }) {
-  const brand = branding || {
-    name: "KING IRON WORKS",
-    address: "69 Norman St, Unit 20, Everett, MA 02149",
-    phone: "(617) 404-2589",
-    website: "kingsironworks.com",
-  };
+  // White-label: the organization's letterhead; KIW's when none is set.
+  const brand = resolveBrand(branding);
   const flights = data.segments.filter((s) => s.kind === "flight") as FlightSegment[];
   const platforms = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const ramp = data.segments.find((s) => s.kind === "ramp") as RampSegment | undefined;
@@ -110,10 +110,10 @@ export default function PrintSheet({
 
   // QR: approved work points at the immutable revision; otherwise the live sheet
   const target =
-    qrUrl ||
+    (qrUrl?.startsWith("/") ? `${appOrigin()}${qrUrl}` : qrUrl) ||
     (approved && sheet.current_rev
-      ? `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}/rev/${sheet.current_rev}`
-      : `https://kingsironworks.com/shop/job/${job.id}/measure/${sheet.id}`);
+      ? `${appOrigin()}/shop/job/${job.id}/measure/${sheet.id}/rev/${sheet.current_rev}`
+      : `${appOrigin()}/shop/job/${job.id}/measure/${sheet.id}`);
   const [qr, setQr] = useState<string | null>(null);
   useEffect(() => {
     QRCode.toString(target, { type: "svg", margin: 0, width: 84 })
@@ -126,7 +126,7 @@ export default function PrintSheet({
   return (
     <div
       className={`${visible ? "block" : "hidden print:block"} bg-white text-black p-6`}
-      style={{ fontSize: 12, position: "relative" }}
+      style={{ fontSize: 12, position: "relative", ["--brand-accent" as string]: brand.accent } as React.CSSProperties}
     >
       {/* Superseded watermark: an older revision replaced by a newer approval */}
       {superseded && (
@@ -182,12 +182,7 @@ export default function PrintSheet({
         className="flex items-start justify-between pb-2 mb-3"
         style={{ borderBottom: `3px solid ${GOLD}` }}
       >
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 1 }}>{brand.name}</div>
-          <div style={{ color: "#555" }}>
-            {brand.address} · {brand.phone} · {brand.website}
-          </div>
-        </div>
+        <PrintLetterhead brand={brand} lang={lang} />
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
           <div style={{ textAlign: "right", color: "#555" }}>
             <div style={{ fontWeight: 700, color: "#000" }}>{mt(lang, "fieldMeasure")}</div>
@@ -1076,6 +1071,7 @@ export default function PrintSheet({
 
       <CodeCheckPrint data={data} shape={sheet.shape} lang={lang} orgDefault={codeDefault} />
       <SignoffPrint data={data} lang={lang} />
+      <PhotoLogPrint data={data} shape={sheet.shape} lang={lang} />
 
       <div
         className="mt-4 pt-2"
