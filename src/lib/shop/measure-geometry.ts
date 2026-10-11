@@ -1,5 +1,6 @@
 import type { MeasureData } from './measure';
 import { parseMeas } from './measure-parse';
+import {siteNumber} from './measure-site';
 
 export type Point3 = { x: number; y: number; z: number };
 export interface MeasuredTread {
@@ -33,9 +34,13 @@ export function landingGrade(s: string): number | null {
 /** Inch-based assembly coordinates. All defaults are display-only. */
 export function stairGeometry(data: MeasureData, focusSeg?: number) {
   const treads: MeasuredTread[] = [];
-  let pose: Pose = { x: 0, y: 0, z: 0, heading: 0 };
+  const placement=focusSeg===undefined?data.sceneSetup?.placement:undefined;
+  const position=placement?[siteNumber(placement.x),siteNumber(placement.y),siteNumber(placement.z)]:[0,0,0];
+  const placementInvalid=!!placement&&(position.some(n=>n===null)||!Number.isFinite(placement.rotation)||Math.abs(placement.rotation)>360);
+  const baseZ=position[2]??0;
+  let pose: Pose = { x: position[0]??0, y: position[1]??0, z: baseZ, heading: placement&&!placementInvalid?rad(placement.rotation):0 };
   let landing: { pose: Pose; run: number; width: number; gradeX: number; gradeY: number; provisional: boolean } | null = null;
-  let number = 0, runTotal = 0, originProvisional = false;
+  let number = 0, runTotal = 0, originProvisional = placementInvalid;
   const widthOf = (index: number) => {
     const s = data.segments[index];
     return s && 'width' in s ? value(s.width) ?? 36 : 36;
@@ -140,7 +145,8 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
     }
   });
   if(!treads.length)return null;
-  return {treads,run:runTotal,rise:Math.max(...treads.flatMap(t=>t.corners.map(p=>p.z))),provisional:treads.some(t=>t.provisional)};
+  if(placementInvalid)treads.forEach(t=>{t.provisional=true;});
+  return {treads,run:runTotal,rise:Math.max(...treads.flatMap(t=>t.corners.map(p=>p.z)))-baseZ,provisional:treads.some(t=>t.provisional)};
 }
 
 /** Bilinear position on the measured surface, including crossfall and winders. */

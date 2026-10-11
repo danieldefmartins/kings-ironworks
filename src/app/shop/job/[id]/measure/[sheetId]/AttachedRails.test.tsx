@@ -14,6 +14,9 @@ it('updates the visible panel with the host and revokes its previous field verif
  const panel=document.querySelector('[data-attached-rail] polygon')!;const before=panel.getAttribute('points');
  fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
  const check=screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement;expect(check.checked).toBe(true);
+ fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
+ fireEvent.click(screen.getByRole('button',{name:/House wall.*Verified/}));
+ fireEvent.click(screen.getByText('Position & more details',{selector:'summary'}));
  fireEvent.change(screen.getByLabelText('X · along'),{target:{value:'126'}});
  expect(panel.getAttribute('points')).not.toBe(before);expect(check.checked).toBe(false);
  expect((screen.getByRole('checkbox',{name:/Field measurements verified/}) as HTMLInputElement).checked).toBe(false);

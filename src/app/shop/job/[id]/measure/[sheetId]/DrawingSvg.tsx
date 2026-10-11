@@ -8,10 +8,13 @@ import { landingConnections,landingConnectionGeometry } from "@/lib/shop/measure
 import type { MeasureData } from '@/lib/shop/measure';
 import { stairGeometry, surfacePoint, type Point3 } from '@/lib/shop/measure-geometry';
 import { drawingPosts } from '@/lib/shop/measure-drawing';
+import {houseContext} from '@/lib/shop/measure-house-context';
+import {siteMeshes} from '@/lib/shop/measure-site';
 import { mt } from '@/lib/shop/measure-i18n';
 export type DrawingView='side'|'plan'|'iso';
-export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,onMeasureStep,onTapPost,onTapPlatform,style}: {
-  data:MeasureData;lang:string;focusSeg?:number;view:DrawingView;azimuth?:number;light?:boolean;details?:boolean;
+export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=false,details=true,showSiteContext=false,onDimension,onMeasureStep,onTapPost,onTapPlatform,style}: {
+  data:MeasureData;lang:string;focusSeg?:number;view:DrawingView;azimuth?:number;light?:boolean;details?:boolean;showSiteContext?:boolean;
+  onDimension?:(segment:number,step:number|null,key:'run'|'rise'|'width')=>void;
   onTapPlatform?:(segIdx:number)=>void;
   onMeasureStep?:(segIdx:number,stepIdx:number)=>void;onTapPost?:(id:string)=>void;style?:CSSProperties;
 }) {
@@ -26,7 +29,8 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   const postDistances=posts.filter(p=>p.post.firstStepToPostEdge?.trim());
   const transitions=details&&focusSeg===undefined?landingConnections(data).map((t,i)=>({t,i,geometry:landingConnectionGeometry(data,t)})).filter(x=>x.geometry&&(x.t.kind==='drop'||x.t.kind==='level')):[];
   const distanceOrder=[...postDistances].sort((a,b)=>project(a.base!)[1]-project(b.base!)[1]);
-  const all=[...model.treads.flatMap(t=>[...t.corners,{...t.corners[0],z:t.corners[0].z-t.rise}]),...posts.flatMap(p=>[p.base!,p.top!]),...transitions.flatMap(x=>x.geometry!.path)].map(project);
+  const context=showSiteContext?siteMeshes(data.site):[],house=showSiteContext?houseContext(data):null;
+  const all=[...(house?[...house.vertices,...house.roof.flat(),house.label]:[]),...context.flatMap(m=>m.vertices),...model.treads.flatMap(t=>[...t.corners,{...t.corners[0],z:t.corners[0].z-t.rise}]),...posts.flatMap(p=>[p.base!,p.top!]),...transitions.flatMap(x=>x.geometry!.path)].map(project);
   const minX=Math.min(...all.map(p=>p[0]))-70,minY=Math.min(...all.map(p=>p[1]))-80;
   const geometryRight=Math.max(...all.map(p=>p[0]))+70;
   const width=geometryRight-minX+(postDistances.length?270:0),height=Math.max(Math.max(...all.map(p=>p[1]))-minY+80,postDistances.length*54+100);
@@ -36,6 +40,9 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   return <svg xmlns="http://www.w3.org/2000/svg" role="group" aria-label={title} viewBox={`${minX} ${minY} ${width} ${height}`} style={{width:'100%',display:'block',...style}}>
     <title>{title}</title>
     <rect x={minX} y={minY} width={width} height={height} fill={light?'#fff':'#171717'}/>
+    {house&&<g data-house-reference pointerEvents="none" aria-label={lang==='pt'?'Casa ilustrativa — sem medidas':lang==='es'?'Casa ilustrativa — sin medidas':'Illustrative house — not measured'}>{house.faces.map((face,i)=><polygon key={i} points={pts(face.map(j=>house.vertices[j]))} fill={light?'#e2e8f0':'#334155'} fillOpacity={.25} stroke={light?'#94a3b8':'#64748b'} strokeWidth={.8} strokeDasharray="5 4"/>)}{house.roof.map((line,i)=><polyline key={i} points={pts(line)} fill="none" stroke={light?'#94a3b8':'#64748b'} strokeWidth={1.2} strokeDasharray="5 4"/>)}<text x={project(house.label)[0]} y={project(house.label)[1]} textAnchor="middle" fontSize={10} fill={light?'#64748b':'#94a3b8'}>{lang==='pt'?'CASA · REFERÊNCIA SEM MEDIDAS':lang==='es'?'CASA · REFERENCIA SIN MEDIDAS':'HOUSE · UNMEASURED REFERENCE'}</text></g>}
+    {context.flatMap(mesh=>mesh.faces.map((face,index)=>({mesh,index,points:face.map(i=>mesh.vertices[i])}))).sort((a,b)=>depth(a.points)-depth(b.points)).map(({mesh,index,points})=><polygon key={`site-${mesh.id}-${index}`} data-site-context={mesh.id} points={pts(points)} fill={light?'#cbd5e1':'#475569'} fillOpacity={mesh.kind==='opening'?.12:.4} stroke={mesh.provisional?accent:light?'#64748b':'#94a3b8'} strokeWidth={.8} strokeDasharray={mesh.provisional?'5 4':undefined} pointerEvents="none"><title>{mesh.label}</title></polygon>)}
+    {context.map(mesh=>{const at=project(mesh.vertices[mesh.vertices.length/2]);return <text key={`site-label-${mesh.id}`} x={at[0]+4} y={at[1]-10} fill={light?'#475569':'#cbd5e1'} fontSize={11} pointerEvents="none">{mesh.label}</text>;})}
     {view!=='side'&&model.treads.flatMap(t=>{
       const [a,b,c,d]=t.corners;
       const faces=[{key:`${t.segIdx}-${t.stepIdx}-${a.x}-${a.y}-top`,points:[a,b,c,d],action:t.stepIdx===null?(onTapPlatform?()=>onTapPlatform(t.segIdx):undefined):(onMeasureStep?()=>onMeasureStep(t.segIdx,t.stepIdx!):undefined),fill:light?'#f5f5f4':t.provisional?'#292524':'#25362f',provisional:t.provisional}];
@@ -55,7 +62,8 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
         {view==='side'&&t.rise>0&&<text x={pa[0]+12} y={(pa[1]+pl[1])/2} textAnchor="start" fontSize={11} fill={accent}>{t.riseLabel}</text>}
         {view!=='side'&&!hidden(d)&&t.widthLabel&&(focusSeg!==undefined||t.stepIdx===0||t.stepIdx===null)&&<text x={project(d)[0]-8} y={project(d)[1]} textAnchor="end" fontSize={11} fill={ink}>{t.widthLabel}</text>}
         {!covered&&(t.number!==null||data.segments[t.segIdx].kind!=='curve')&&<><circle cx={mid[0]} cy={mid[1]} r={13} fill={light?'white':'#171717'} stroke={ink}/><text x={mid[0]} y={mid[1]+4} textAnchor="middle" fontSize={11} fill={ink}>{t.number??`S${t.segIdx+1}`}</text></>}
-        {action&&!covered&&<rect x={mid[0]-22} y={mid[1]-22} width={44} height={44} fill="transparent" pointerEvents="all" role="button" tabIndex={0} aria-label={`${mt(lang,'step')} ${t.number}`} style={{cursor:'pointer'}} onClick={action} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}}}/>}
+        {onDimension&&!covered&&(['run','rise','width'] as const).filter(k=>k==='run'&&!!t.runLabel&&!hidden({x:(a.x+b.x)/2,y:(a.y+b.y)/2,z:(a.z+b.z)/2})||k==='rise'&&view==='side'&&t.rise>0||k==='width'&&view!=='side'&&!hidden(d)&&!!t.widthLabel&&(focusSeg!==undefined||t.stepIdx===0||t.stepIdx===null)).map(k=>{const at=k==='run'?[(pa[0]+pb[0])/2,(pa[1]+pb[1])/2-12]:k==='rise'?[pa[0]+24,(pa[1]+pl[1])/2]:[project(d)[0]-18,project(d)[1]];return <rect key={k} x={at[0]-22} y={at[1]-18} width={44} height={36} fill="transparent" pointerEvents="all" role="button" tabIndex={0} aria-label={`Edit ${k} · ${t.number===null?'segment '+(t.segIdx+1):'step '+t.number}`} style={{cursor:'pointer'}} onClick={()=>onDimension(t.segIdx,t.stepIdx,k)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onDimension(t.segIdx,t.stepIdx,k);}}}/>;})}
+        {action&&!covered&&<rect x={mid[0]-22} y={mid[1]-22} width={44} height={44} fill="transparent" pointerEvents="all" role="button" tabIndex={0} aria-label={t.number===null?`${lang==='pt'?'Trecho':lang==='es'?'Tramo':'Segment'} ${t.segIdx+1}`:`${mt(lang,'step')} ${t.number}`} style={{cursor:'pointer'}} onClick={action} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();action();}}}/>}
       </g>;
     })}
     {details&&data.segments.map((seg,segIdx)=>{

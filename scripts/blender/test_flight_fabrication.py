@@ -10,6 +10,23 @@ def detailed():
     return p
 
 class FabricationTests(unittest.TestCase):
+    def test_native_cut_lengths_are_invariant_under_scene_placement(self):
+        payload=detailed();before=build_assembly(payload)
+        def move(p):
+            angle=math.radians(37)
+            return dict(x=120+p['x']*math.cos(angle)-p['y']*math.sin(angle),y=-36+p['x']*math.sin(angle)+p['y']*math.cos(angle),z=12+p['z'])
+        for surface in payload['surfaces']:surface['corners']=[move(p) for p in surface['corners']]
+        for post in payload['posts']:
+            post['base']=move(post['base']);post['top']=move(post['top'])
+        after=build_assembly(payload)
+        self.assertEqual([p['mark'] for p in before['cut_parts']],[p['mark'] for p in after['cut_parts']])
+        for a,b in zip(before['cut_parts'],after['cut_parts']):
+            self.assertAlmostEqual(a['stock_length'],b['stock_length'])
+            self.assertAlmostEqual(a['edge_length'],b['edge_length'])
+            self.assertAlmostEqual(a['saw_angle_from_square_deg'],b['saw_angle_from_square_deg'])
+        for a,b in zip(before['post_cuts'],after['post_cuts']):
+            self.assertEqual(a['mark'],b['mark']);self.assertAlmostEqual(a['stockLength'],b['stockLength'])
+
     def test_post_cut_includes_embedment_and_sloped_top(self):
         a=build_assembly(detailed());posts=[m for m in a['members'] if m['kind']=='Post']
         self.assertEqual(len(a.get('post_cuts',[])),3)

@@ -1,0 +1,11 @@
+import {expect,it} from 'vitest';
+import {attachedFabricationFixture} from './measure-site.fixture';
+import {newSceneSetup,SceneSetupSchema,updateSceneSetup} from './measure-scene-setup';
+import {houseContext} from './measure-house-context';
+import {siteMeshes} from './measure-site';
+import {attachedCuts} from './measure-attached-fab';
+import {siteRailLayout} from './measure-site-rails';
+it('keeps the reference house fixed while native placement changes',()=>{const data=attachedFabricationFixture();data.sceneSetup={...newSceneSetup(),house:{side:'back'}};const fixed=houseContext(data);expect(fixed?.referenceOnly).toBe(true);data.sceneSetup.placement={x:'120',y:'-48',z:'12',rotation:90};expect(houseContext(data)).toEqual(fixed);});
+it('never adds reference house members or attachment surfaces',()=>{const data=attachedFabricationFixture(),rail=data.site!.rails![0],before=attachedCuts(data.site,rail,siteRailLayout(data.site,rail)),meshes=siteMeshes(data.site);data.sceneSetup={...newSceneSetup(),house:{side:'left'}};expect(houseContext(data)?.faces).toHaveLength(4);expect(siteMeshes(data.site)).toEqual(meshes);expect(attachedCuts(data.site,rail,siteRailLayout(data.site,rail))).toEqual(before);});
+it('preserves nested context while changing environment and permits explicit house removal',()=>{const data=attachedFabricationFixture();data.sceneSetup={...newSceneSetup(),house:{side:'front',offset:'18'},placement:{x:'1',y:'2',z:'3',rotation:45}};updateSceneSetup(data,{environment:'exterior'});expect(data.sceneSetup.house?.offset).toBe('18');expect(data.sceneSetup.placement?.rotation).toBe(45);updateSceneSetup(data,{house:{side:'right'}});expect(data.sceneSetup.house?.offset).toBe('18');updateSceneSetup(data,{house:null});expect(houseContext(data)).toBeNull();});
+it('validates scene context and keeps invalid illustrative offsets bounded',()=>{const data=attachedFabricationFixture();data.sceneSetup={...newSceneSetup(),house:{side:'back',offset:'not measured'}};expect(houseContext(data)?.vertices.every(p=>Object.values(p).every(Number.isFinite))).toBe(true);expect(SceneSetupSchema.safeParse({...data.sceneSetup,placement:{x:'0',y:'0',z:'0',rotation:361}}).success).toBe(false);});

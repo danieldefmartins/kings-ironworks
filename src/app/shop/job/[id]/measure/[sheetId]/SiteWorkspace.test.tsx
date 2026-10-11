@@ -31,8 +31,30 @@ describe('site builder field workflow',()=>{
     fireEvent.touchEnd(viewport,{touches:[]});
     expect(save).not.toHaveBeenCalled();expect(JSON.stringify(data)).toBe(before);
   });
+  it('starts with the sketch and opens only the selected object inspector',()=>{
+    render(<Harness/>);
+    expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
+    fireEvent.click(screen.getByRole('button',{name:'Wall'}));
+    expect(screen.getByRole('region',{name:'Selected site object'})).toBeTruthy();
+    expect(screen.getByLabelText('Length')).toBeTruthy();
+    expect((screen.getByRole('textbox',{name:'Name'}).closest('details') as HTMLDetailsElement).open).toBe(false);
+    fireEvent.click(screen.getByRole('button',{name:'Close object inspector'}));
+    expect(screen.queryByRole('region',{name:'Selected site object'})).toBeNull();
+    fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
+    expect(screen.getByRole('button',{name:/Wall 2.*Needs verification/})).toBeTruthy();
+  });
+  it('opens the exact dimension input when its sketch label is tapped',()=>{
+    render(<Harness/>);
+    fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
+    fireEvent.click(screen.getByRole('button',{name:/House wall.*Verified/}));
+    fireEvent.click(screen.getByRole('button',{name:'Edit House wall height'}));
+    expect(document.activeElement).toBe(screen.getByLabelText('Height'));
+  });
   it('requires re-verification after changing a measured dimension',()=>{
     render(<Harness/>);
+    fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
+    fireEvent.click(screen.getByRole('button',{name:/House wall.*Verified/}));
+    fireEvent.click(screen.getByText('Position & more details',{selector:'summary'}));
     const check=screen.getByRole('checkbox',{name:/Field measurements verified/}) as HTMLInputElement;
     expect(check.checked).toBe(true);
     fireEvent.change(screen.getByLabelText('Length'),{target:{value:'8 1/2'}});
@@ -42,8 +64,9 @@ describe('site builder field workflow',()=>{
   });
   it('adds a blank column without replacing measured objects or inventing dimensions',()=>{
     render(<Harness/>);
-    fireEvent.click(screen.getByText(/Add to site/,{selector:'summary'}));
-    fireEvent.click(screen.getByRole('button',{name:'＋ Column'}));
+    fireEvent.click(screen.getByRole('button',{name:'Column'}));
+    fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
+    fireEvent.click(screen.getByText('Position & more details',{selector:'summary'}));
     expect(screen.getByRole('button',{name:/House wall.*Verified/})).toBeTruthy();
     expect(screen.getByRole('button',{name:/Column 3.*Needs verification/})).toBeTruthy();
     expect((screen.getByLabelText('Length') as HTMLInputElement).value).toBe('');
@@ -51,8 +74,7 @@ describe('site builder field workflow',()=>{
   });
   it('inserts a new flight and directs measuring to that flight',()=>{
     const measure=vi.fn();render(<Harness measure={measure}/>);
-    fireEvent.click(screen.getByText(/Add to site/,{selector:'summary'}));
-    fireEvent.click(screen.getByRole('button',{name:'＋ Stairs'}));
+    fireEvent.click(screen.getByRole('button',{name:'Stairs'}));
     fireEvent.click(screen.getByRole('button',{name:'Add and measure'}));
     expect(measure).toHaveBeenCalledWith(2,null,1);
   });
@@ -60,6 +82,7 @@ describe('site builder field workflow',()=>{
     render(<Harness/>);
     fireEvent.click(screen.getByText('Site reference point',{selector:'summary'}));
     fireEvent.change(screen.getByLabelText(/Site reference point/),{target:{value:'New field reference'}});
+    fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));
     expect(screen.getByRole('button',{name:/House wall.*Needs verification/})).toBeTruthy();
     expect(screen.getByRole('button',{name:/Left column.*Needs verification/})).toBeTruthy();
   });

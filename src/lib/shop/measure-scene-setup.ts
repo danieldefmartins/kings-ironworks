@@ -1,0 +1,8 @@
+import {z} from 'zod';
+export const SceneSetupSchema=z.object({environment:z.enum(['','interior','exterior']),projectType:z.enum(['','stairs','landing','ramp','railing','window_well','grate','ladder','custom']),house:z.object({side:z.enum(['left','right','front','back']),offset:z.string().max(40).optional()}).nullable().optional(),placement:z.object({x:z.string().max(40),y:z.string().max(40),z:z.string().max(40),rotation:z.number().finite().min(-360).max(360)}).optional()});
+export type SceneSetup=z.infer<typeof SceneSetupSchema>;
+export type SceneProject=Exclude<SceneSetup['projectType'],''>;
+export const newSceneSetup=():SceneSetup=>({environment:'',projectType:''});
+/** Patch optional context without resetting existing geometry or saved nested metadata. */
+export function updateSceneSetup<T extends {sceneSetup?:SceneSetup;routing?:{setting:SceneSetup['environment']}}>(data:T,patch:Partial<SceneSetup>):void {data.sceneSetup={...(data.sceneSetup||newSceneSetup()),environment:data.routing?.setting||data.sceneSetup?.environment||'',...patch,...(patch.house&&data.sceneSetup?.house?{house:{...data.sceneSetup.house,...patch.house}}:{}),...(patch.placement&&data.sceneSetup?.placement?{placement:{...data.sceneSetup.placement,...patch.placement}}:{})};if(patch.environment!==undefined&&data.routing)data.routing.setting=patch.environment;}
+export function sceneProjectOrder(environment:SceneSetup['environment']):SceneProject[]{return environment==='interior'?['stairs','landing','railing','ladder','grate','ramp','window_well','custom']:['stairs','railing','landing','ramp','window_well','grate','ladder','custom'];}

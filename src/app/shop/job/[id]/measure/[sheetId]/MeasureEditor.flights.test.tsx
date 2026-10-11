@@ -47,7 +47,7 @@ function sheetWith(measured: number): MeasureSheet {
 function show(measured: number) {
   installFetch();
   const rendered=render(<MeasureEditor job={job} sheet={sheetWith(measured)} lang="en" workerName="Tester" />);
-  fireEvent.click(screen.getByRole("button",{name:"2. Railing"}));
+  fireEvent.click(screen.getByRole("button",{name:"All tools"}));
   return rendered;
 }
 
@@ -114,22 +114,33 @@ describe("three-flight stair", () => {
 it('opens saved attached panels from the main navigation and keeps edits across workspaces',()=>{
  installFetch();const sheet=sheetWith(0);sheet.data=attachedFabricationFixture();
  render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
- fireEvent.click(screen.getByRole('button',{name:'2. Railing'}));
+ fireEvent.click(screen.getByRole('button',{name:'Refine'}));
  expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
  expect(screen.getByRole('button',{name:'Zoom in'})).toBeTruthy();
  fireEvent.change(screen.getByLabelText('Finished railing height above floor'),{target:{value:'43'}});
- fireEvent.click(screen.getByRole('button',{name:'3. Fabrication'}));
+ fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
  expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
  expect(screen.queryByRole('group',{name:'Start connection'})).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'Stairs & specialty'}));
- expect(screen.getByRole('button',{name:'Stairs & specialty'}).getAttribute('aria-pressed')).toBe('true');
- fireEvent.click(screen.getByRole('button',{name:'Attached panels'}));
- expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:'1. Site'}));
+ fireEvent.click(screen.getByRole('button',{name:'Site'}));
  fireEvent.click(screen.getByRole('button',{name:/Design attached panels/}));
  expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
  fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
  expect(screen.getByRole('button',{name:'Review drawing package →'})).toBeTruthy();
  fireEvent.click(screen.getByRole('button',{name:'Review drawing package →'}));
- expect(screen.getByRole('button',{name:'Stairs & specialty'}).getAttribute('aria-pressed')).toBe('true');
+ expect(screen.getByRole('button',{name:'Back to sketch'})).toBeTruthy();
+});
+
+it('guides environment to sketch measuring and handoff without changing saved geometry',()=>{
+ installFetch();const sheet=sheetWith(1);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
+ expect(screen.getByRole('heading',{name:'Where are we working?'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:/Exterior/}));
+ fireEvent.click(screen.getByRole('button',{name:'Stairs'}));
+ fireEvent.click(screen.getByRole('button',{name:/Build the site/}));
+ expect(screen.getByRole('region',{name:'Build the job site'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Measure'}));
+ expect(screen.getByRole('heading',{name:'Measure the drawing'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Fabricate'}));
+ expect(screen.getByRole('region',{name:'Fabrication handoff'})).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'All tools'}));
+ expect(screen.getByText(/Flight 2 of 3/)).toBeTruthy();
 });

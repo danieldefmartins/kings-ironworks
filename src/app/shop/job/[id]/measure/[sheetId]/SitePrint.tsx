@@ -13,7 +13,7 @@ export default function SitePrint({data,lang,revision=0}:{data:MeasureData;lang:
     <h2 style={{fontSize:20,fontWeight:800,marginBottom:8}}>{l.title} · REV {revision}</h2>
     <p style={{fontWeight:700}}>SITE REFERENCE · NOT A CUT DRAWING</p>
     <p><strong>{l.datum}: </strong>{data.site.datum||'VERIFY'}</p>
-    <p style={{fontSize:11,margin:'8px 0'}}>X → uphill / along · Y → right / across · Z → up · INCHES · Existing site / railing references</p>
+    <p style={{fontSize:11,margin:'8px 0'}}>X / Y → site axes · Z → up · INCHES · Existing site / railing references</p>
     <SiteDrawing data={data} view="plan"/>
     <SiteDrawing data={data} view="iso"/>
     {siteIssues(data.site).map(issue=><p key={issue} style={{color:'#b45309'}}>{mt(lang,issue)}</p>)}

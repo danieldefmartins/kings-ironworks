@@ -34,6 +34,26 @@ describe('fabrication release endpoint',()=>{
 });
 
 describe('measurement persistence',()=>{
+  it('preserves optional house and placement from older scene clients, while allowing house removal',async()=>{
+    data.sceneSetup={environment:'exterior',projectType:'stairs',house:{side:'left',offset:'12'},placement:{x:'24',y:'0',z:'0',rotation:90}};
+    const legacy=structuredClone(data);delete legacy.sceneSetup!.house;delete legacy.sceneSetup!.placement;
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.sceneSetup).toEqual(data.sceneSetup);
+    mocks.update.mockClear();legacy.sceneSetup!.house=null;
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.sceneSetup.house).toBeNull();
+    expect(mocks.update.mock.calls[0][2].data.sceneSetup.placement.rotation).toBe(90);
+  });
+  it('preserves project setup on old-tab saves without altering geometry',async()=>{
+    const legacy=structuredClone(data);data.sceneSetup={environment:'exterior',projectType:'stairs'};
+    mocks.update.mockResolvedValue([{updated_at:stamp}]);
+    expect((await request({type:'update',data:legacy,baseUpdatedAt:stamp})).status).toBe(200);
+    expect(mocks.update.mock.calls[0][2].data.sceneSetup).toEqual(data.sceneSetup);
+    expect(mocks.update.mock.calls[0][2].data.segments).toEqual(legacy.segments);
+    const invalid={...data,sceneSetup:{environment:'unknown',projectType:'stairs'}};
+    expect((await request({type:'update',data:invalid,baseUpdatedAt:stamp})).status).toBe(400);
+  });
   it('preserves imported native cuts for old tabs and normalizes their snapshot',async()=>{
     const legacy=structuredClone(data);data.nativeSteel={signature:nativeGeometrySignature(data),sourceUpdatedAt:stamp,drawingId:id,sources:[{key:'native:P1',label:'P1',role:'post',length:42,profile:'2 sq',signature:id}],pending:[]};
     expect(normalizeMeasureData(data).nativeSteel).toEqual(data.nativeSteel);

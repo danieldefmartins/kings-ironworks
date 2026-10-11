@@ -275,6 +275,11 @@ export default function PrintSheet({
         </span>
       </div>
 
+      {data.sceneSetup?.projectType&&<p style={{fontSize:12,fontWeight:700,marginBottom:10}}>
+        {lang==='pt'?'Projeto':lang==='es'?'Proyecto':'Project'}: {({stairs:['Stairs','Escadas','Escaleras'],landing:['Landing','Patamar','Descanso'],ramp:['Ramp','Rampa','Rampa'],railing:['Railing','Guarda-corpo','Barandilla'],window_well:['Window well','Poço de janela','Pozo de ventana'],grate:['Grate','Grelha','Rejilla'],ladder:['Ladder','Escada vertical','Escalera vertical'],custom:['Custom metalwork','Metal sob medida','Metal a medida']}[data.sceneSetup.projectType])[lang==='pt'?1:lang==='es'?2:0]}
+      </p>}
+      {data.sceneSetup?.placement&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Posição da escada e guarda-corpo':lang==='es'?'Posición de escalera y barandilla':'Stair and railing placement'}: X {data.sceneSetup.placement.x||'?'}″ · Y {data.sceneSetup.placement.y||'?'}″ · Z {data.sceneSetup.placement.z||'?'}″ · {data.sceneSetup.placement.rotation}°</p>}
+      {data.sceneSetup?.house&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Casa ilustrativa, sem medidas. Usar as paredes medidas e detalhes de ligação para fabricar.':lang==='es'?'Casa ilustrativa, sin medir. Utilice paredes medidas y detalles de unión para fabricar.':'Illustrative house, unmeasured. Use measured walls and connection details for fabrication.'}</p>}
       {/* Warnings */}
       {(warnings.length > 0 || gapCount > 0) && (
         <div
@@ -300,7 +305,7 @@ export default function PrintSheet({
         <p style={{fontWeight:700,color:"#991b1b"}}>{visible && approved && !superseded && data.drawingReleaseVersion === 1 ? mt(lang,"approvedBadge") : mt(lang,"drawingDraft")}</p>
         {(["side","plan","iso"] as const).map(view=><figure key={view} style={{breakInside:"avoid",marginBottom:16}}>
           <figcaption>{mt(lang,view==="side"?"sideView":view==="plan"?"planView":"drawing3d")}</figcaption>
-          <DrawingSvg data={data} lang={lang} view={view} light style={{height:360}}/>
+          <DrawingSvg data={data} lang={lang} view={view} showSiteContext={view==='iso'&&!!data.sceneSetup?.house} light style={{height:360}}/>
         </figure>)}
         <DrawingDetails data={data} lang={lang} light sheetId={sheet.id} rev={visible?sheet.current_rev:undefined}/>
       </div>}

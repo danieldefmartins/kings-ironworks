@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Job } from "@/lib/shop/shared";
 import {
+  newMeasureData,
   PICKER_SHAPES,
   PICKER_PRESETS,
   TWO_FLIGHT_SHAPES,
@@ -16,6 +17,8 @@ import {
 import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
 import { sheetReadiness, flightGaps, type Tolerances } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
+import SceneStart from "./[sheetId]/SceneStart";
+import type {SceneSetup} from "@/lib/shop/measure-scene-setup";
 
 export default function MeasureListClient({
   job,
@@ -32,6 +35,9 @@ export default function MeasureListClient({
 }) {
   const router = useRouter();
   const [creating, setCreating] = useState(false);
+  const [sceneDraft,setSceneDraft]=useState<ReturnType<typeof newMeasureData>&{sceneSetup?:SceneSetup}>(()=>newMeasureData('custom',1));
+  const [sceneReady,setSceneReady]=useState(false);
+  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
   const [shape, setShape] = useState<MeasureShape | null>(null);
   const [preset, setPreset] = useState<MeasurePreset | null>(null);
   const [steps1, setSteps1] = useState(5);
@@ -59,6 +65,7 @@ export default function MeasureListClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "create",
+          sceneSetup: sceneDraft.sceneSetup,
           jobId: job.id,
           shape,
           preset,
@@ -83,7 +90,7 @@ export default function MeasureListClient({
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto pb-24">
+    <div data-measure-ui className="p-4 max-w-4xl mx-auto pb-24">
       <h1 className="text-2xl font-display font-bold mb-1">📐 {mt(lang, "fieldMeasure")}</h1>
       <div className="text-sm text-neutral-400 mb-4">{job.address || job.job_number}</div>
 
@@ -102,7 +109,10 @@ export default function MeasureListClient({
           + {mt(lang, "newSheet")}
         </button>
       ) : (
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-6">
+        <div className="mb-6">
+          {!sceneReady?<><SceneStart data={sceneDraft} set={fn=>setSceneDraft(old=>{const next=structuredClone(old);fn(next);return next;})} lang={lang} onContinue={()=>{const project=sceneDraft.sceneSetup?.projectType;const selected:MeasureShape=project==='stairs'?'straight':project==='ramp'?'ramp':project==='window_well'?'window_well':project==='railing'||project==='landing'?'level_run':'custom';setShape(selected);setPreset(null);setName('');setSceneReady(true);}}/><button type="button" className="mt-3 min-h-11 px-4 text-sm text-neutral-400" onClick={()=>setCreating(false)}>{mt(lang,'cancel')}</button></>:<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+          <button type="button" className="mb-4 min-h-11 rounded-xl border border-neutral-700 px-4 text-sm font-semibold" onClick={()=>setSceneReady(false)}>← {tx('Change project','Alterar projeto','Cambiar proyecto')}</button>
+          <details open={sceneDraft.sceneSetup?.projectType==='stairs'}><summary className="mb-4 min-h-11 cursor-pointer text-base font-bold">{tx('Layout options · all tools','Opções de layout · todas as ferramentas','Opciones de diseño · todas las herramientas')}</summary>
           {/* Stairs first, because almost every sheet is one and the answer is
               always the same two questions. L, U, three-flight and any longer
               run are the SAME structure — flight, landing, flight — differing
@@ -192,6 +202,7 @@ export default function MeasureListClient({
             })}
           </div>
 
+          </details>
           {/* The two counts decide the whole sheet — how many step rows it
               opens with, how many flights it walks you through — and they were
               a pair of small steppers at the bottom of a long picker, below
@@ -297,6 +308,7 @@ export default function MeasureListClient({
             <button
               onClick={() => {
                 setCreating(false);
+                setSceneReady(false);
                 setShape(null);
                 setPreset(null);
               }}
@@ -305,6 +317,7 @@ export default function MeasureListClient({
               {mt(lang, "cancel")}
             </button>
           </div>
+        </div>}
         </div>
       )}
 

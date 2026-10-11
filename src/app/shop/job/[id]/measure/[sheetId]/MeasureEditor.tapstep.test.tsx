@@ -31,8 +31,8 @@ function show(steps = 6) {
     updated_at: "2026-08-01T00:00:00.000Z",
   };
   const rendered=render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="T" />);
-  expect(screen.getByRole("heading",{name:"Build the job site"})).toBeTruthy();
-  fireEvent.click(screen.getByRole("button",{name:"2. Railing"}));
+  expect(screen.getByRole("heading",{name:"Where are we working?"})).toBeTruthy();
+  fireEvent.click(screen.getByRole("button",{name:"All tools"}));
   return {data,...rendered};
 }
 /** The transparent hit targets the sketch lays over each tread, in order. */

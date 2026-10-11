@@ -1,3 +1,4 @@
+import type {SceneSetup} from './measure-scene-setup';
 import type {NativeSteelSnapshot} from './measure-native-steel';
 import type {SteelPlan} from './measure-steel';
 import type {SpecialtySteel} from './measure-specialty-steel-schema';
@@ -1213,6 +1214,7 @@ export interface MeasureData {
   site?: SiteModel;
   steelPlan?: SteelPlan;
   specialtySteel?: SpecialtySteel[];
+  sceneSetup?: SceneSetup;
   nativeSteel?: NativeSteelSnapshot;
   landingTransitions?: LandingTransition[];
   /** Set only in an immutable revision by the release transaction. */
@@ -1643,6 +1645,7 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
     site: d.site,
     steelPlan: d.steelPlan,
     specialtySteel: d.specialtySteel,
+    sceneSetup: d.sceneSetup,
     nativeSteel: d.nativeSteel,
     landingTransitions: (d.landingTransitions || []).map(t=>({...blankLandingTransition(t.landingSegIdx,t.lowerFlightIdx,t.upperFlightIdx,t.side),...t})),
     units: d.units === "ftin" ? "ftin" : "in",
