@@ -16,6 +16,7 @@ export const STRUCT_DIM_NAMES: Record<string, Row> = {
   fireTotal: ['Grade to top', 'Chão ao topo', 'Suelo a la cima'],
   fireHeight: ['Above grade', 'Acima do chão', 'Sobre el suelo'],
   fireFtf: ['Floor to floor', 'Piso a piso', 'Piso a piso'],
+  guardHeight: ['Guard height', 'Altura do guarda-corpo', 'Altura de la baranda'],
   fireRise: ['Rise', 'Espelho', 'Contrahuella'],
   fireRun: ['Tread', 'Piso', 'Huella'],
   ladderLength: ['Ladder', 'Escada', 'Escalera'],

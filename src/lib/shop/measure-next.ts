@@ -223,7 +223,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
       ];
       rows.forEach(([gap, labelKey, key, unit]) => field(`fire.l${n}.${key}`, gap, labelKey, lv, key, {
         detail: tag, tag, unit: unit || 'len',
-        ...(key === 'heightAboveGrade' ? {} : { copyKey: `fire:${key}`, copyNoun: 'levels' as const }),
+        ...(key === 'heightAboveGrade' || key === 'stairAngle' ? {} : { copyKey: `fire:${key}`, copyNoun: 'levels' as const }),
         // The angle is the stair's rise over its run: offered to approve once both are in.
         ...(key === 'stairAngle' ? { ask: (d: MeasureData) => n < levels - 1 && (SLOT_CALC_FIRE(`fire.l${n}.stairAngle`, d)?.calc ?? null) !== null } : {}),
       }));
@@ -370,11 +370,12 @@ const MASONRY = new Set(['', 'brick', 'block', 'concrete', 'stone']);
  * the clear span twice (top and bottom, because once is how beams get cut
  * short), then each end — how far the steel sits in and how thick that wall
  * is — left before right; a column at every place its height was read. The
- * frame that ties them together, and the longest piece the way in allows,
- * close the walk.
+ * frame that ties them together, each member's cut length to approve, and the
+ * longest piece the way in allows, close the walk.
  */
 function structuralSlots(data: MeasureData, field: FieldFn) {
   const s = data.structural!;
+  const cuts: (() => void)[] = [];
   s.members.forEach((m, n) => {
     const id = m.id, detail = m.mark || ROLE_PREFIX[m.role];
     const member = (d: MeasureData) => d.structural?.members.find(x => x.id === id) as unknown as Bag | undefined;
@@ -411,8 +412,8 @@ function structuralSlots(data: MeasureData, field: FieldFn) {
         });
       });
     }
-    // The cut the member's numbers give, with its weight: approved, or modified and checked.
-    field(`st.${id}.cut`, 'struct_cut', 'nx_cutLen', member, 'cutLen', { detail, group, part: 'cut', ask: d => structuralCutReady(d, id) });
+    // The cut the member's numbers give, with its weight: approved, or modified and checked — once every number is in.
+    cuts.push(() => field(`st.${id}.cut`, 'struct_cut', 'nx_cutLen', member, 'cutLen', { detail, group, part: 'cut', ask: d => structuralCutReady(d, id) }));
   });
   if (s.frame.on) {
     const fr = (d: MeasureData) => d.structural?.frame as unknown as Bag | undefined;
@@ -423,6 +424,7 @@ function structuralSlots(data: MeasureData, field: FieldFn) {
     field('st.frame.diagA', 'struct_frame_diag', 'nx_diagA', fr, 'diagA', { group, part: 'diagA' });
     field('st.frame.diagB', 'struct_frame_diag', 'nx_diagB', fr, 'diagB', { group, part: 'diagB' });
   }
+  cuts.forEach(c => c());
   if (s.members.length) field('st.access.maxLength', 'struct_max_length', 'nx_maxLength', d => d.structural?.access as unknown as Bag | undefined, 'maxLength', { part: 'maxLength' });
 }
 

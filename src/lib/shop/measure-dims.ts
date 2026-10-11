@@ -14,6 +14,7 @@ import { fireDims } from './measure-dims-fire';
 import { spiralDims } from './measure-dims-spiral';
 import { wallRailDims } from './measure-dims-wall-rail';
 import { shopPieceDims } from './measure-dims-shop-piece';
+import { preMirrorDims } from './scene-shapes/pre-mirror';
 
 /**
  * Architectural dimension lines for the sketch — every length, height or angle
@@ -358,7 +359,8 @@ export const DIM_ADAPTERS: Partial<Record<MeasureShape, (data: MeasureData) => S
   opening: d => openingDims(d),
   window_well: d => wellDims(d),
   canopy: d => canopyDims(d),
-  structural: d => structuralDims(d), fire_escape: d => fireDims(d), spiral: d => spiralDims(d), wall_rail: d => wallRailDims(d), shop_piece: d => shopPieceDims(d),
+  // Shapes modelled in true plan are flipped to survive the viewport's stair mirror (scene-shapes/pre-mirror.ts).
+  structural: d => preMirrorDims(structuralDims(d)), fire_escape: d => preMirrorDims(fireDims(d)), spiral: d => preMirrorDims(spiralDims(d)), wall_rail: d => wallRailDims(d), shop_piece: d => preMirrorDims(shopPieceDims(d)),
 };
 
 /** The dimension lines for a sheet of this shape (none for a shape with no adapter yet). */

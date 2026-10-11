@@ -90,8 +90,9 @@ export function structuralDims(data: MeasureData): SceneDim[] {
       out.push({ key: `st:frame:${key}`, kind: key === 'diagA' ? 'diagA' : 'diagB', slots: [`st.frame.${key}`], scope: 'context', unit: 'len', value, calc,
         state: state(value, calc), lines: [], dashed: [[lift(p), lift(q)]], anchor: P((p.x + q.x) / 2, -1, (p.z + q.z) / 2 + (key === 'diagA' ? 6 : -6)) });
     };
-    diag('diagA', P(c - half, 0, floor + 4), P(c + half, 0, underside), A, B);
-    diag('diagB', P(c + half, 0, floor + 4), P(c - half, 0, underside), B, A);
+    // A ↘ from the top left, B ↙ from the top right, as the Next card names them.
+    diag('diagA', P(c - half, 0, underside), P(c + half, 0, floor + 4), A, null);
+    diag('diagB', P(c + half, 0, underside), P(c - half, 0, floor + 4), B, A);
     row = 1;
   }
   const verticals = s.members.filter(m => isVertical(m.role) && !used.has(m.id));
@@ -161,7 +162,7 @@ export function structuralSlotCalc(slotId: string, data: MeasureData): CalcResul
     const terms = c.parts.map((p, i) => `${i === 0 ? '' : p.sign > 0 ? '+ ' : '− '}${formatIn(p.value)}`).join(' ');
     return { calc: c.length, note: c.length === null ? undefined : [terms, w.each !== null ? `${w.approx ? '≈ ' : ''}${fmtLb(w.each)}${memberQty(m) > 1 ? ` ×${memberQty(m)}` : ''}` : ''].filter(Boolean).join(' · ') };
   }
-  if (slotId === 'st.frame.diagB') return { calc: num(s.frame.diagA), note: 'A' };
+  if (slotId === 'st.frame.diagB') return { calc: num(s.frame.diagA), note: '= A' };
   return null;
 }
 

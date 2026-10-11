@@ -6,8 +6,10 @@
 import type {MeasureData} from '../measure';
 import type {Point3} from '../measure-geometry';
 import {P,cylinder,emptyScene,flat,leadingNumber,merge,mesh,num,pipe,polyTube,type Geo,type ShapeScene} from './kit';
+import {preMirrorScene} from './pre-mirror';
 
-export function spiralScene(data:MeasureData):ShapeScene{
+export function spiralScene(data:MeasureData):ShapeScene{return preMirrorScene(build(data));}
+function build(data:MeasureData):ShapeScene{
  const out=emptyScene(),s=data.spiral;
  if(!s)return out;
  const ftf=num(s.floorToFloor),count=num(s.treads)!==null?Math.round(num(s.treads)!):null,rot=num(s.rotationDeg),dia=num(s.diameter);

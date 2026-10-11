@@ -74,7 +74,7 @@ export function fireDims(data: MeasureData): SceneDim[] {
     push({ key: `fire:platW:${i}`, kind: 'platDepth', slots: [`${at}.platWidth`], scope: 'context', unit: 'len', value: num(l.platWidth), calc: null,
       a: P(L, 0, z), b: P(L, -W, z), nv: RIGHT, off: 10 });
     const gh = num(l.guardHeight);
-    push({ key: `fire:guard:${i}`, kind: 'railHeight', slots: [`${at}.guardHeight`], scope: 'context', unit: 'len', value: gh, calc: null,
+    push({ key: `fire:guard:${i}`, kind: 'guardHeight', slots: [`${at}.guardHeight`], scope: 'context', unit: 'len', value: gh, calc: null,
       a: P(L, -W, z), b: P(L, -W, z + (gh ?? 42)), nv: FRONT, off: 6 });
     if (i >= n - 1) return;
     // The stair down to the next level — the scene's own placement.

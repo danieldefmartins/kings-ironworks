@@ -18,6 +18,7 @@ import type {Point3} from '../measure-geometry';
 import {memberCut,memberQty,heightReadings,spanReadings,isSpanning,isVertical,type StructMember,type StructuralData,type StructBearing} from '../measure-structural';
 import {steelSection,sweepSection} from './steel-sections';
 import {P,box,emptyScene,line,merge,mesh,num,slab,type ShapeScene} from './kit';
+import {preMirrorScene} from './pre-mirror';
 
 const ROW=72;
 
@@ -95,7 +96,8 @@ function spanning(ctx:Ctx,m:StructMember,y:number,restOn:number|null){
  member(ctx,m,m.id,P(-L,y,zb+depth/2),P(S+R,y,zb+depth/2),P(0,0,1),provisional);
 }
 
-export function structuralScene(data:MeasureData):ShapeScene{
+export function structuralScene(data:MeasureData):ShapeScene{return preMirrorScene(build(data));}
+function build(data:MeasureData):ShapeScene{
  const out=emptyScene(),s=data.structural;
  if(!s)return out;
  if(!s.members.length){out.pending.push('Members');return out;}
