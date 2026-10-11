@@ -16,14 +16,55 @@ import { locateMeasure } from "@/lib/shop/measure-locate";
 import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
 import { copyStepValue, currentItem, measurementQueue, nextOpenItem, stepCopyTargets, stepPart, type NextItem, type NextSlot } from "@/lib/shop/measure-next";
 import type { SceneFocus } from "@/lib/shop/measure-scene";
+import { dimForSlot, sceneDims, type SceneDim } from "@/lib/shop/measure-dims";
+import { approveFlightAngle, approveJointAngle, flightAngleCalc, jointAngleCalc, type AngleSource } from "@/lib/shop/measure-angle";
+import { angleCheck, angleState } from "@/lib/shop/measure-angle";
+import { dimText } from "@/lib/shop/measure-dims";
+import { dimWord } from "@/lib/shop/measure-dims-i18n";
+
+const CHECK_TONE = {
+  green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  yellow: "bg-amber-50 text-amber-800 ring-amber-200",
+  red: "bg-red-50 text-red-700 ring-red-200",
+} as const;
+
+/**
+ * An angle the other numbers already give (a flight's pitch, the change across
+ * a joint): offered to approve instead of typed from scratch.
+ */
+export function slotAngle(slot: Pick<NextSlot, "id">, data: MeasureData): { calc: number | null; source?: AngleSource; approve: (d: MeasureData) => void; read: (d: MeasureData, v: string) => void } | null {
+  let m = slot.id.match(/^s(\d+)\.angle$/);
+  if (m) {
+    const i = Number(m[1]), seg = data.segments[i];
+    if (seg?.kind !== "flight") return null;
+    return {
+      calc: flightAngleCalc(seg), source: seg.angleSource,
+      approve: (d) => void approveFlightAngle(d, i),
+      read: (d, v) => { const g = d.segments[i]; if (g?.kind === "flight") { g.angleDeg = v; g.angleSource = v.trim() ? "measured" : ""; } },
+    };
+  }
+  m = slot.id.match(/^j(\d+)\.angle$/);
+  if (m) {
+    const n = Number(m[1]), j = (data.joints || [])[n];
+    if (!j) return null;
+    return {
+      calc: jointAngleCalc(data, j), source: j.angleChangeSource,
+      approve: (d) => void approveJointAngle(d, n),
+      read: (d, v) => { const jt = (d.joints || [])[n]; if (jt) { jt.angleChange = v; jt.angleChangeSource = v.trim() ? "measured" : ""; } },
+    };
+  }
+  return null;
+}
 
 const nx = (lang: string, key: string, vars?: Record<string, string | number>) => nxText(lang, key, vars) ?? key;
 
 /** The face of the stair a slot is about, for lighting it on the 3D. */
-export function slotFocus(item: NextItem | null, data: MeasureData): SceneFocus | null {
+export function slotFocus(item: NextItem | null, data: MeasureData, dims: readonly SceneDim[] = []): SceneFocus | null {
   if (item?.type !== "slot") return null;
   const step = stepPart(item.slot);
   if (step) return { segmentIndex: step.segIdx, stepIndex: step.stepIdx, part: step.key };
+  // A number with its own dimension line on the sketch: light that line.
+  if (dimForSlot(dims, item.slot.id)) return { segmentIndex: item.slot.segIdx ?? -1, stepIndex: null, part: "dim", dim: item.slot.id };
   const at = item.slot.segIdx;
   if (at !== undefined && item.slot.stepIdx === undefined && data.segments[at]?.kind === "platform") return { segmentIndex: at, stepIndex: null, part: "surface" };
   return null;
@@ -128,6 +169,8 @@ export default function NextMeasurement({
   const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details));
   // Copy a step's rise or tread to the rest of its flight: the choice sheet, then a short "Copied · Undo".
   const [copyMenu, setCopyMenu] = useState(false);
+  // The angle slot whose calculated value is being overridden with a reading.
+  const [modifying, setModifying] = useState<string | null>(null);
   const [toast, setToast] = useState<{ n: number; restore: () => void } | null>(null);
   useEffect(() => {
     if (!toast) return;
@@ -137,9 +180,10 @@ export default function NextMeasurement({
   useEffect(() => { setCopyMenu(false); }, [item?.id]);
 
   // Light the step being asked about on the 3D, following Next and Previous.
-  const focusAt = finished ? null : slotFocus(item, data);
+  const dims = useMemo(() => sceneDims(data, shape), [data, shape]);
+  const focusAt = finished ? null : slotFocus(item, data, dims);
   const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : null;
-  const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.label}` : "";
+  const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}` : "";
   const focusRef = useRef(onFocus);
   focusRef.current = onFocus;
   useEffect(() => {
@@ -148,6 +192,8 @@ export default function NextMeasurement({
   }, [focusKey]);
   useEffect(() => () => focusRef.current?.(null), []);
 
+  // Modify: the reading box takes the place of Approve and gets the keyboard.
+  useEffect(() => { if (modifying) input.current?.focus(); }, [modifying]);
   useEffect(() => {
     if (!refocus.current) return;
     refocus.current = false;
@@ -310,6 +356,18 @@ export default function NextMeasurement({
   const canCopy = valid && !!copyRow && copyRow.all > 0;
   // Tapping a copy button must not drop the keyboard (or the fraction bar riding on it).
   const keep = (e: React.PointerEvent) => { if (document.activeElement === input.current) e.preventDefault(); };
+  const angle = slotAngle(slot, data);
+  const approve = angle && angle.calc !== null ? angle : null;
+  const angleSt = approve ? angleState(value, approve.source, approve.calc) : "empty";
+  const angleChk = approve && angleSt === "measured" ? angleCheck(approve.calc, parseMeas(value)) : null;
+  const modifyingThis = modifying === slot.id;
+  const approveAndGo = () => {
+    if (!approve) return;
+    set((d) => approve.approve(d));
+    setDir("fwd");
+    const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
+    setCurrentId(next?.id ?? null);
+  };
   return (
     <section aria-label={label} data-next-measure data-next-slot={slot.id} className={`@container ${shell}`}>
       <style>{MOTION}</style>
@@ -373,9 +431,36 @@ export default function NextMeasurement({
             ) : null}
           </div>
         )}
-        <div className={`mt-2.5 flex items-stretch gap-2 ${copyRow || toast ? "" : "@2xl:mt-5"}`}>
+        {/* An angle the steps already give: the calculation, approved in one tap or read and checked. */}
+        {approve && (
+          <div key={item.id} data-approve-calc data-approve-state={angleSt} className="mt-3 flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1.5">
+            <p className="mr-auto shrink-0 whitespace-nowrap text-[15px] font-semibold text-slate-500">
+              {dimWord(lang, "calculated")} <span data-approve-calc-value className="text-[20px] tabular-nums tracking-tight text-slate-900">{dimText(approve.calc!, "deg")}</span>
+            </p>
+            {angleSt === "approved" ? (
+              <span role="status" aria-label={dimWord(lang, "approvedA11y")} className="flex h-9 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-[15px] font-semibold text-emerald-700">
+                <Check aria-hidden className="h-4 w-4" strokeWidth={3} />{dimWord(lang, "approved")}
+              </span>
+            ) : angleChk ? (
+              <>
+                <span data-approve-check={angleChk.level} className={`inline-flex h-9 items-center rounded-full px-3 text-[14px] font-semibold tabular-nums ring-1 ${CHECK_TONE[angleChk.level]}`}>
+                  {angleChk.delta >= 0 ? "+" : "−"}{dimText(Math.abs(angleChk.delta), "deg")} {dimWord(lang, "vsCalc")}
+                </span>
+                <button type="button" onPointerDown={keep} onClick={() => set((d) => approve.approve(d))} className="h-9 rounded-full px-2.5 text-[15px] font-semibold text-indigo-600 active:bg-indigo-50">{dimWord(lang, "useCalc")}</button>
+              </>
+            ) : angleSt === "empty" && !modifyingThis ? (
+              <button type="button" data-approve-modify onClick={() => setModifying(slot.id)} className="h-9 rounded-full px-3 text-[15px] font-semibold text-indigo-600 active:bg-indigo-50">{dimWord(lang, "modify")}</button>
+            ) : null}
+          </div>
+        )}
+        <div className={`mt-2.5 flex items-stretch gap-2 ${copyRow || toast || approve ? "" : "@2xl:mt-5"}`}>
           <button type="button" data-nx-nav="prev" aria-label={nx(lang, "nx_prev")} disabled={remaining < 1 || (remaining === 1 && !filled && queue.open[0]?.id === item.id)} onClick={() => go(-1)} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
-          <div className={`relative min-w-0 flex-1 rounded-2xl border bg-slate-50 transition-colors focus-within:bg-white ${rb.ok ? "border-slate-200 focus-within:border-indigo-500" : "border-amber-500"}`}>
+          {approve && angleSt === "empty" && !modifyingThis ? (
+            <button type="button" data-approve-ok onClick={approveAndGo}
+              className="flex h-14 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[17px] font-semibold text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)] transition-transform active:scale-[.98]">
+              <Check aria-hidden className="h-5 w-5" strokeWidth={3} />{dimWord(lang, "approve")}
+            </button>
+          ) : <div className={`relative min-w-0 flex-1 rounded-2xl border bg-slate-50 transition-colors focus-within:bg-white ${rb.ok ? "border-slate-200 focus-within:border-indigo-500" : "border-amber-500"}`}>
             <input
               ref={input}
               id="next-measure-input"
@@ -389,7 +474,8 @@ export default function NextMeasurement({
                 // open list, and the card must not jump mid-number.
                 if (currentId !== slot.id) setCurrentId(slot.id);
                 setToast(null);
-                set((d) => slot.put(d, e.target.value));
+                const v = e.target.value;
+                set((d) => (approve ? approve.read(d, v) : slot.put(d, v)));
               }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); go(1); } }}
               placeholder={placeholder}
@@ -399,18 +485,18 @@ export default function NextMeasurement({
               style={{ outline: "none" }}
               className="h-14 w-full bg-transparent px-3 text-[28px] font-semibold tabular-nums tracking-tight outline-none placeholder:font-normal placeholder:text-slate-400"
             />
-          </div>
+          </div>}
           <button type="button" data-nx-nav="next" onClick={() => go(1)} aria-label={valid ? nx(lang, "nx_next") : nx(lang, "nx_skip")}
             className={`flex h-14 shrink-0 items-center gap-1 rounded-2xl px-4 font-semibold transition-[transform,background-color,color] duration-200 active:scale-95 ${valid ? "bg-indigo-600 text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)]" : "border border-slate-200 bg-white text-slate-600"}`}>
             {valid ? nx(lang, "nx_next") : nx(lang, "nx_skip")}<ChevronRight aria-hidden className="h-4 w-4" />
           </button>
         </div>
         {/* Read back what will be saved, in the shop's own notation. */}
-        <p aria-live="polite" className={`mt-1.5 flex min-h-5 items-center gap-1.5 pl-[52px] text-[13px] font-semibold tabular-nums ${rb.ok ? "text-slate-500" : "text-amber-700"}`}>
+        {!approve && <p aria-live="polite" className={`mt-1.5 flex min-h-5 items-center gap-1.5 pl-[52px] text-[13px] font-semibold tabular-nums ${rb.ok ? "text-slate-500" : "text-amber-700"}`}>
           {rb.text
             ? rb.ok ? <><Check aria-hidden className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />{rb.text}</> : nx(lang, "nx_notNumber")
             : slot.unit === "len" && <span aria-hidden className="whitespace-pre font-medium text-slate-400">{`3' 4-1/2"  ·  40.5  ·  40 1/2`}</span>}
-        </p>
+        </p>}
         </div>
       </div>
     </section>

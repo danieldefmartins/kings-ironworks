@@ -7,6 +7,7 @@ import { isBearingRole, isSpanning, isVertical, ROLE_PREFIX } from './measure-st
 import { blankMountGaps } from './measure-substrate';
 import { postsOf, runTag } from './measure-wall-cap';
 import { D_KEYS, DESIGN_KEYS, H_KEYS, pieceTag, W_KEYS } from './measure-shop-piece';
+import { isSingleFlight, perFlightControls } from './measure-dims';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -83,31 +84,41 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
   });
   const seg = (i: number) => (d: MeasureData) => d.segments[i] as unknown as Bag | undefined;
   const flightList = data.segments.map((s, i) => ({ s, i })).filter(x => x.s.kind === 'flight');
+  // One flight, no landing, no turn: the multi-flight numbers (a flight's own
+  // rake and totals, joints, landings) do not exist on this stair.
+  const single = isSingleFlight(data), controls = !single && perFlightControls(data);
   let stepNo = 0;
-  flightList.forEach(({ s, i }, fi) => {
-    if (s.kind !== 'flight') return;
-    s.steps.forEach((st, k) => {
-      stepNo += 1;
-      const step = (d: MeasureData) => {
-        const sg = d.segments[i];
-        return sg && sg.kind === 'flight' ? (sg.steps[k] as unknown as Bag) : undefined;
-      };
-      const at = { flight: fi, segIdx: i, stepIdx: k, stepNumber: stepNo };
-      field(`s${i}.${k}.rise`, 'steps', 'nx_rise', step, 'rise', at);
-      field(`s${i}.${k}.run`, 'steps', 'nx_tread', step, 'run', at);
-      if (st.winder) {
-        field(`s${i}.${k}.runIn`, 'winder', 'winderRunIn', step, 'runIn', at);
-        field(`s${i}.${k}.runOut`, 'winder', 'winderRunOut', step, 'runOut', at);
-        field(`s${i}.${k}.turn`, 'winder', 'winderTurn', step, 'turnDeg', { ...at, unit: 'deg' });
-      }
-    });
-    const at = { flight: fi, segIdx: i };
-    field(`s${i}.width`, 'flight_width', 'width', seg(i), 'width', at);
-    field(`s${i}.rake`, 'flight_rake', 'flightRake', seg(i), 'rake', at);
-    field(`s${i}.angle`, 'flight_angle', 'stairAngle', seg(i), 'angleDeg', { ...at, unit: 'deg' });
-  });
+  // Walk the stair the way it is climbed: a flight's steps and its own numbers,
+  // then the landing it arrives on, then the next flight.
   data.segments.forEach((sg, si) => {
-    if (sg.kind === 'platform') {
+    if (sg.kind === 'flight') {
+      const fi = flightList.findIndex(x => x.i === si), i = si, s = sg;
+      s.steps.forEach((st, k) => {
+        stepNo += 1;
+        const step = (d: MeasureData) => {
+          const g = d.segments[i];
+          return g && g.kind === 'flight' ? (g.steps[k] as unknown as Bag) : undefined;
+        };
+        const at = { flight: fi, segIdx: i, stepIdx: k, stepNumber: stepNo };
+        field(`s${i}.${k}.rise`, 'steps', 'nx_rise', step, 'rise', at);
+        field(`s${i}.${k}.run`, 'steps', 'nx_tread', step, 'run', at);
+        if (st.winder) {
+          field(`s${i}.${k}.runIn`, 'winder', 'winderRunIn', step, 'runIn', at);
+          field(`s${i}.${k}.runOut`, 'winder', 'winderRunOut', step, 'runOut', at);
+          field(`s${i}.${k}.turn`, 'winder', 'winderTurn', step, 'turnDeg', { ...at, unit: 'deg' });
+        }
+      });
+      const at = { flight: fi, segIdx: i };
+      field(`s${i}.width`, 'flight_width', 'width', seg(i), 'width', at);
+      if (controls) {
+        field(`s${i}.rake`, 'flight_rake', 'flightRake', seg(i), 'rake', at);
+        // Optional diagnosis (which of rise or run is off): listed once taken, never demanded.
+        field(`s${i}.ctrlRise`, 'flight_ctrl_rise', 'flightCtrlRise', seg(i), 'ctrlRise', at);
+        field(`s${i}.ctrlRun`, 'flight_ctrl_run', 'flightCtrlRun', seg(i), 'ctrlRun', at);
+      }
+      field(`s${i}.angle`, 'flight_angle', 'stairAngle', seg(i), 'angleDeg', { ...at, unit: 'deg' });
+    } else if (sg.kind === 'platform') {
+      if (single) return;
       const tag = data.segments.length > 2 ? `#${si}` : undefined;
       const at = { segIdx: si, tag: tag && `#${si + 1}` };
       field(`s${si}.entryRise`, 'landing_entry_rise', 'segmentRise', seg(si), 'entryRise', { ...at, detail: `#${si + 1}` });
@@ -129,12 +140,13 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     field('spiral.f2f', 'floor_to_floor', 'floorToFloor', sp, 'floorToFloor');
     field('spiral.dia', 'diameter', 'diameter', sp, 'diameter');
   } else if (flightList.length) {
+    // The overall numbers close the stair: after every step and landing.
     const ov = (d: MeasureData) => d.overall as unknown as Bag;
     field('overall.f2f', 'floor_to_floor', 'floorToFloor', ov, 'floorToFloor');
     field('overall.totalRun', 'total_run', 'totalRun', ov, 'totalRun');
     field('overall.rake', 'rake', 'rakeLength', ov, 'rakeLength');
   }
-  (data.joints || []).forEach((j, n) => {
+  if (!single) (data.joints || []).forEach((j, n) => {
     const tag = `J${j.afterSegment + 1}`;
     const jo = (d: MeasureData) => (d.joints || [])[n] as unknown as Bag | undefined;
     field(`j${n}.gap`, 'joint_gap', 'jointGap', jo, 'gap', { detail: tag, tag });
@@ -410,7 +422,10 @@ const matches = (slot: NextSlot, g: Gap) =>
 // A gate, fence, balcony, deck, fire escape, well, opening or steel member is
 // measured by its own dimensions first; the shared stair stages follow.
 const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy|wc|sp)_/;
-const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : STAGE_ORDER.indexOf(legacyStageForGap(key)));
+// The stair's geometry is one walk: landings where they are reached, the
+// overall numbers right after the last step (not later with the posts).
+const WALK_WITH_STEPS = new Set(['landing_entry_rise', 'landing_length', 'landing_depth', 'landing_diag', 'flight_ctrl_rise', 'flight_ctrl_run', 'floor_to_floor', 'total_run', 'rake']);
+const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : WALK_WITH_STEPS.has(key) ? STAGE_ORDER.indexOf('steps') : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** Build the queue from the sheet and its open requirements (fab gaps). */
 export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: readonly Gap[]): MeasureQueue {

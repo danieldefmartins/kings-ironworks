@@ -15,6 +15,8 @@ import { drawingJointSource } from "@/lib/shop/measure-drawing";
 import { JOINT_METHODS, type JointMeasure, type MeasureData, type Segment } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, Grid, MInput, ChipRow } from "../fields";
+import { approveJointAngle, jointAngleCalc } from "@/lib/shop/measure-angle";
+import ApproveCalculated from "../ApproveCalculated";
 
 function segLabel(lang: string, seg: Segment | undefined, i: number): string {
   if (!seg) return `#${i + 1}`;
@@ -84,9 +86,11 @@ export default function JointSections({
                     hint={mt(lang, "jointAngleChangeHint")}
                     value={j.angleChange}
                     placeholder="°"
-                    onChange={(v) => edit(idx, (jt) => void (jt.angleChange = v))}
+                    onChange={(v) => edit(idx, (jt) => { jt.angleChange = v; jt.angleChangeSource = v.trim() ? "measured" : ""; })}
                   />
                 </Grid>
+                <ApproveCalculated external variant="form" lang={lang} calc={jointAngleCalc(data, j)} value={j.angleChange} source={j.angleChangeSource}
+                  onApprove={() => set((d) => void approveJointAngle(d, idx))} onChange={() => {}} />
                 <Grid>
                   <MInput
                     label={mt(lang, "jointOffsetV")}

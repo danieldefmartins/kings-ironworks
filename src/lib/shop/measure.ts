@@ -196,6 +196,8 @@ export interface FlightSegment {
   steps: StepMeasure[];
   width: string; // stair width
   angleDeg: string; // measured stair pitch
+  /** How angleDeg was set: the calculated pitch approved, or read with a finder. Absent on older sheets (= read). */
+  angleSource?: "" | "calculated-approved" | "measured";
   angleBreak: string; // "" = consistent pitch; otherwise where/how much it changes
   // Per-flight control measurements — required on multi-flight (L/U) stairs,
   // where a single overall rake cannot verify flights that turn:
@@ -288,6 +290,8 @@ export interface JointMeasure {
    *  two segments' own pitches. Two flights fabricated to different
    *  assumptions is exactly how pieces arrive not fitting. */
   angleChange: string;
+  /** How angleChange was set: the calculated change approved, or read on site. */
+  angleChangeSource?: "" | "calculated-approved" | "measured";
   method: JointMethod;
   /** Which piece ships carrying the joint hardware / the post. */
   carriedBy: "lower" | "upper" | "both" | "";

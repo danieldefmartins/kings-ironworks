@@ -12,16 +12,17 @@ import {attachedCuts} from './measure-attached-fab';
 import {landingConnections,landingConnectionGeometry} from './measure-landings';
 import {houseContext} from './measure-house-context';
 import {SCENE_SHAPES,sceneShapeOf} from './scene-shapes';
+import {sceneDims,type SceneDim} from './measure-dims';
 export type SceneKind='surface'|'site'|'wall-preview'|'post'|'rail'|'attached'|'wall-edge'|'house'|'dim';
 export type SceneEntity={segmentId?:string;segmentIndex?:number;stepIndex?:number|null;siteId?:string;postId?:string;railId?:string;part?:string;role?:string;side?:'left'|'right'|'start'|'end'};
 export type SceneSelection=SceneEntity&{point?:Point3};
 type SceneItem={id:string;label:string;kind:SceneKind;provisional:boolean;referenceOnly:boolean;entity:SceneEntity};
 export type SceneMesh=SceneItem&{vertices:Point3[];faces:number[][]};
 /** `dim` lines carry a calculated label and show only while one of their two posts is selected. */
-export type SceneLine=SceneItem&{points:Point3[];text?:string;between?:[string,string]};
+export type SceneLine=SceneItem&{points:Point3[];text?:string;between?:[string,string];/** Points are disjoint pairs (drawn as segments, not a strip). */pairs?:boolean;/** An architectural dimension line (measure-dims); `dashed` marks its dashed companion (a diagonal, the floor line). */dim?:Omit<SceneDim,'lines'|'dashed'>;dashed?:boolean};
 export type MeasureScene={meshes:SceneMesh[];lines:SceneLine[];bounds:{min:Point3;max:Point3};pending:string[]};
 /** What the Next card is asking for, lit on the 3D: a step's riser (rise), its tread (run), or a landing's top (surface). */
-export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface';/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string};
+export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface'|'dim';/** With part 'dim': the Next slot id being asked; the dimension line whose `slots` hold it lights up. */dim?:string;/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string};
 /**
  * The face to light for a focus: the surface mesh it belongs to and the quad
  * (4 corners) of just that face. A step mesh is its tread top (corners 0–3,
@@ -29,7 +30,7 @@ export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'r
  * edge (vertices 4, 5). Null when the sheet has no such step.
  */
 export function focusFace(scene:Pick<MeasureScene,'meshes'>,focus:SceneFocus|null|undefined):{mesh:SceneMesh;quad:Point3[]}|null{
- if(!focus)return null;
+ if(!focus||focus.part==='dim')return null;
  const mesh=scene.meshes.find(m=>m.kind==='surface'&&m.entity.segmentIndex===focus.segmentIndex&&(m.entity.stepIndex??null)===focus.stepIndex);
  if(!mesh||mesh.vertices.length<4)return null;
  const [a,b,c,d]=mesh.vertices;
@@ -101,6 +102,12 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
   lines.push({id:`dim:${sp.from.post.id}:${sp.to.post.id}`,label:`${sp.from.label} → ${sp.to.label}`,kind:'dim',provisional:sp.provisional,referenceOnly:true,entity:{},between:[sp.from.post.id,sp.to.post.id],
    text:`${sp.from.label}→${sp.to.label}   ↔ ${formatIn(sp.run)}   ⟋ ${formatIn(sp.length)}   ∠ ${angle}`,points:sp.path.map(p=>({...p,z:p.z+DIM_LIFT}))});
  }}
+ // Architectural dimension lines: floor to floor, run, rake, each flight and landing, joints, rail height, spans.
+ for(const d of sceneDims(data,shape||sceneShapeOf(data))){
+  const {lines:pairs,dashed,...dim}=d,item={label:d.key,kind:'dim' as const,provisional:d.state!=='measured',referenceOnly:true,entity:{},dim};
+  lines.push({...item,id:`dimline:${d.key}`,pairs:true,points:pairs.flatMap(([a,b])=>[{...a},{...b}])});
+  if(dashed?.length)lines.push({...item,id:`dimline:${d.key}:dashed`,pairs:true,dashed:true,points:dashed.flatMap(([a,b])=>[{...a},{...b}])});
+ }
  for(const [i,t] of landingConnections(data).entries()){
   if(t.kind!=='drop'&&t.kind!=='level')continue;const g=landingConnectionGeometry(data,t);if(!g)continue;
   lines.push({id:`transition:${t.lowerPostId}:${t.upperPostId}:${i}`,label:`Connection ${i+1}`,kind:'rail',provisional:g.provisional,referenceOnly:true,entity:{segmentIndex:t.landingSegIdx,segmentId:segmentIdAt(data.segments[t.landingSegIdx],t.landingSegIdx)},points:g.path.map(p=>({...p}))});
