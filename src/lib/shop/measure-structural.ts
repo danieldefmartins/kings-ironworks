@@ -46,6 +46,8 @@ export interface StructBearing {
   length: string;
   /** Wall thickness at this end — bearing can never be longer than the wall. */
   wall: string;
+  /** Shared substrate model (measure-substrate.ts); substrate/condition/wall stay in step. */
+  sub?: import("./measure-substrate").Substrate;
 }
 
 /** One reading of a dimension taken at a named place ("C1 front", "at drain"). */

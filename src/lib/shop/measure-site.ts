@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { SiteRailSchema } from './measure-site-rails-schema';
 import type { Point3 } from './measure-geometry';
 import { parseMeas } from './measure-parse';
+import { SubstrateSchema } from './measure-substrate-schema';
 
 const dimension = z.string().max(40);
 export const SiteObjectSchema = z.object({
@@ -18,6 +19,8 @@ export const SiteObjectSchema = z.object({
   source: z.enum(['tape', 'laser', 'drawing', 'scan', 'unknown']),
   verified: z.boolean(),
   material: z.string().max(120).optional(),
+  /** Shared mounting substrate (measure-substrate.ts); `material` stays in step. */
+  substrate: SubstrateSchema.optional(),
   notes: z.string().max(1000),
   photoPaths: z.array(z.string().max(300)).max(20),
 });
@@ -105,7 +108,7 @@ export function pointDistance(a: Point3, b: Point3) {
 /** Old clients omit new optional fields. An explicit [] still means intentional removal. */
 export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:SiteModel|undefined):SiteModel|undefined {
   if(!incoming)return existing;
-  const objects=incoming.objects.map(o=>{const stored=existing?.objects.find(p=>p.id===o.id);return {...o,...(o.wallAnchor===undefined&&stored?.wallAnchor!==undefined?{wallAnchor:stored.wallAnchor}:{}),...(o.material===undefined&&stored?.material!==undefined?{material:stored.material}:{})};});
+  const objects=incoming.objects.map(o=>{const stored=existing?.objects.find(p=>p.id===o.id);return {...o,...(o.wallAnchor===undefined&&stored?.wallAnchor!==undefined?{wallAnchor:stored.wallAnchor}:{}),...(o.material===undefined&&stored?.material!==undefined?{material:stored.material}:{}),...(o.substrate===undefined&&stored?.substrate!==undefined?{substrate:stored.substrate}:{})};});
   const rails=incoming.rails===undefined?existing?.rails:incoming.rails.map(r=>{
     const stored=existing?.rails?.find(old=>old.id===r.id);
     if(r.fabrication===undefined&&stored?.fabrication)return {...r,fabrication:stored.fabrication};

@@ -61,6 +61,7 @@
 //             override.
 
 import { parseMeas } from "./measure-parse";
+import { finishedView } from "./measure-substrate";
 import type { FlightSegment, MeasureData, MeasureShape, StepMeasure } from "./measure";
 
 // ---- Profiles ---------------------------------------------------------------
@@ -452,7 +453,10 @@ const HARD_SURFACE = /concrete|asphalt|paver|stone|granite|brick|tile|cimento|co
 
 // ---- Engine ----------------------------------------------------------------------
 
-export function codeCheck(data: MeasureData, shape: MeasureShape, orgDefault?: string | null): CodeReport {
+export function codeCheck(dataIn: MeasureData, shape: MeasureShape, orgDefault?: string | null): CodeReport {
+  // Heights are judged from the FINISHED surface: a rail measured on a subfloor
+  // with hardwood still to come is checked at what it will be, not what it is.
+  const data = finishedView(dataIn, shape);
   const s = effectiveCodeSettings(data, orgDefault);
   const occ = effectiveOccupancy(data, s);
   const L = codeLimits(s, occ);

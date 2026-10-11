@@ -5,6 +5,7 @@ import {SteelPlanSchema} from '@/lib/shop/measure-steel';
 import {SpecialtySteelListSchema} from '@/lib/shop/measure-specialty-steel-schema';
 import { OpeningSchema } from '@/lib/shop/measure-opening-schema';
 import {StructuralSchema} from '@/lib/shop/measure-structural-schema';
+import { SubstrateSchema, SurfacesSchema } from '@/lib/shop/measure-substrate-schema';
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -137,6 +138,7 @@ const PostSchema = z.object({
   columnToPlatformEdge: meas.optional(),
   infillGap: meas.optional(),
   clipDetail: z.string().max(300).optional(),
+  sub: SubstrateSchema.optional(),
 });
 const SpiralSchema = z
   .object({
@@ -164,6 +166,7 @@ const GateSchema = z
     automated: z.boolean(), opener: short,
     powerAtGate: z.enum(["", "yes", "no", "unknown"]),
     safetyDevices: short, notes: short,
+    hingeSub: SubstrateSchema.optional(), latchSub: SubstrateSchema.optional(),
   })
   .nullable();
 const FenceSegmentSchema = z.object({
@@ -178,6 +181,7 @@ const FenceSchema = z
     totalRun: meas, panelWidth: meas, postSpacing: meas, postSize: short, footingDepth: meas,
     height: meas, picketSpacing: meas, gates: short, startTerm: short, endTerm: short,
     utilities: short, notes: short,
+    postSub: SubstrateSchema.optional(),
   })
   .nullable();
 const DeckSideSchema = z.object({
@@ -197,6 +201,7 @@ const DeckSchema = z
     blocking: short, ledgerCondition: short, framingCondition: short,
     guardHeight: meas, picketSpacing: meas, postSpacing: meas, maxPostSpacing: meas,
     postCount: meas, corners: short, gates: short, stairSheets: short, notes: short,
+    postSub: SubstrateSchema.optional(),
   })
   .nullable();
 const BalconySchema = z
@@ -207,6 +212,7 @@ const BalconySchema = z
     edgeCondition: short, guardHeight: meas, picketSpacing: meas, returns: short, corners: short,
     anchorType: short, anchorEmbedment: meas, edgeDistance: meas, minCover: meas, platePlan: short,
     doorOpening: meas, finishedFloor: short, drainage: short, notes: short,
+    sub: SubstrateSchema.optional(),
   })
   .nullable();
 const ConditionSchema = z.object({
@@ -241,6 +247,7 @@ const FireLevelSchema = z.object({
   anchorType: short,
   anchorCount: meas,
   anchorSpacing: meas,
+  sub: SubstrateSchema.optional(),
   condition: ConditionSchema,
 });
 const FireEscapeSchema = z
@@ -313,6 +320,7 @@ const WellSchema = z
     postToWall: meas,
     maxSphere: meas,
     notes: short,
+    sub: SubstrateSchema.optional(),
   })
   .nullable();
 const DatumsSchema = z.object({
@@ -438,6 +446,7 @@ const TerminationSchema = z.object({
   plumb: z.string().max(120),
   hardware: HardwareSchema,
   note: z.string().max(300),
+  sub: SubstrateSchema.optional(),
 });
 const SpanSchema = z.object({
   id: z.string().max(40),
@@ -473,6 +482,7 @@ const SignoffSchema = z.object({
 const MeasureDataSchema = z.object({
   code: CodeSettingsSchema.optional(),
   signoff: SignoffSchema.nullable().optional(),
+  surfaces: SurfacesSchema.optional(),
   site: SiteModelSchema.optional(),
   steelPlan: SteelPlanSchema.optional(),
   specialtySteel: SpecialtySteelListSchema.optional(),
@@ -511,6 +521,7 @@ const MeasureDataSchema = z.object({
     extensions: z.string().max(200),
     returns: z.string().max(200),
     brackets: z.string().max(200),
+    bracketSub: SubstrateSchema.optional(),
   }),
   materials: z.object({
     post: z.string().max(120),

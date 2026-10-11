@@ -2,6 +2,7 @@
 // every OpeningData / OpeningUnit field must be listed here or it is silently
 // dropped on save.
 import { z } from "zod";
+import { SubstrateSchema } from "./measure-substrate-schema";
 import { OPENING_ANCHORS, OPENING_MOUNTS, OPENING_PRODUCTS, OPENING_SUBSTRATES } from "./measure-opening";
 
 const meas = z.string().max(60);
@@ -34,6 +35,7 @@ export const OpeningSchema = z
     units: z.array(OpeningUnitSchema).max(40),
     substrate: z.enum(["", ...OPENING_SUBSTRATES]),
     substrateCondition: short,
+    sub: SubstrateSchema.optional(),
     anchor: z.enum(["", ...OPENING_ANCHORS]),
     anchorNote: short,
     design: short,

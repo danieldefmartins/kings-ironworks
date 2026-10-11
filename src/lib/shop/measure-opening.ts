@@ -104,6 +104,8 @@ export interface OpeningData {
   // Substrate of the jamb / face and how it is anchored
   substrate: "" | OpeningSubstrate;
   substrateCondition: string;
+  /** Shared substrate model (measure-substrate.ts); `substrate` above stays in step. */
+  sub?: import("./measure-substrate").Substrate;
   anchor: "" | OpeningAnchor;
   anchorNote: string;
   design: string; // bar pattern / infill / mesh

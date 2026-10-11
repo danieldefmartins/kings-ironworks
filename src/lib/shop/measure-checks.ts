@@ -11,6 +11,7 @@ import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import { structuralChecks, structuralGaps } from "./measure-structural";
+import { finishChecks, mountingChecks } from "./measure-substrate";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -744,6 +745,21 @@ function jointChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
 }
 
 export function runChecks(
+  data: MeasureData,
+  shape: MeasureShape,
+  tolIn?: Tolerances
+): CheckResult[] {
+  // Mounting substrate and pending finishes ride along with every work type:
+  // the wrong anchor and the height measured before the floor went on are the
+  // two reasons a crew goes back, whatever was being measured.
+  return [
+    ...shapeChecks(data, shape, tolIn),
+    ...mountingChecks(data, shape, orderedPosts(data)),
+    ...finishChecks(data, shape),
+  ];
+}
+
+function shapeChecks(
   data: MeasureData,
   shape: MeasureShape,
   tolIn?: Tolerances
