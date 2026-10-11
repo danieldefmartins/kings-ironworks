@@ -94,6 +94,10 @@ export interface ResolvedBrand {
   accent: string;
   /** Readable text colour on top of the accent. */
   onAccent: string;
+  /** Name for running text and the browser tab ("King Iron Works"). */
+  displayName: string;
+  /** KIW's own brand (no custom logo, KIW name): keep KIW's artwork. */
+  isKiw: boolean;
 }
 
 export function resolveBrand(b?: Partial<OrgBranding> | null): ResolvedBrand {
@@ -108,7 +112,15 @@ export function resolveBrand(b?: Partial<OrgBranding> | null): ResolvedBrand {
     logo: isValidLogo(b?.logo) ? (b!.logo as string) : "",
     accent,
     onAccent: contrastText(accent),
+    displayName: displayName(b?.name?.trim() || KIW_BRANDING.name),
+    isKiw: !isValidLogo(b?.logo) && (b?.name?.trim() || KIW_BRANDING.name).toUpperCase() === KIW_BRANDING.name,
   };
+}
+
+/** "KING IRON WORKS" → "King Iron Works"; mixed-case names are left alone. */
+export function displayName(name: string): string {
+  if (name !== name.toUpperCase()) return name;
+  return name.toLowerCase().replace(/(^|[\s\-/&(])(\p{L})/gu, (_, a, c) => a + c.toUpperCase());
 }
 
 /** WCAG relative luminance of #rrggbb. */

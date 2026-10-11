@@ -82,3 +82,14 @@ it("branding settings speak Portuguese", () => {
   expect(screen.getByText("Cor de destaque")).toBeTruthy();
   expect(screen.getByText("Lic. # IL-HIC-778812".replace("Lic. #", "Licença nº"))).toBeTruthy();
 });
+
+it("app chrome mark: logo, KIW artwork, or initials in the accent", async () => {
+  const { BrandMark } = await import("@/app/shop/brand/BrandContext");
+  const { container, rerender } = render(<BrandProvider branding={ACME}><BrandMark /></BrandProvider>);
+  expect(container.querySelector("img")!.getAttribute("src")).toBe(PNG);
+  rerender(<BrandProvider branding={null}><BrandMark dark /></BrandProvider>);
+  expect(container.querySelector("img")!.getAttribute("src")).toContain("logo-white-transparent");
+  rerender(<BrandProvider branding={{ ...ACME, logo: undefined }}><BrandMark /></BrandProvider>);
+  expect(container.textContent).toBe("ARS");
+  expect(container.querySelector("img")).toBeNull();
+});

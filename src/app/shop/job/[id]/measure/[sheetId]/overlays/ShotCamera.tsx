@@ -24,6 +24,9 @@ export interface ShotRequest {
   filled: string[];
 }
 
+/** Just-captured photos by stored path, so the shot list can show them before the sheet syncs. */
+export const capturedPreview = new Map<string, string>();
+
 export function isShotRequest(v: unknown): v is ShotRequest {
   return !!v && typeof v === "object" && Array.isArray((v as ShotRequest).shots);
 }
@@ -135,6 +138,7 @@ export default function ShotCamera({
     const taken = new Set(done);
     taken.add(shot.slot);
     const stamped = stampPhoto(shot.slot, path, fix, new Date(), strokes.length > 0);
+    if (file) capturedPreview.set(path, URL.createObjectURL(file));
     set((d) => {
       d.photos = [...d.photos.filter((p) => p.slot !== shot.slot), stamped];
       if (strokes.length > 0) d.annotations[path] = strokes;

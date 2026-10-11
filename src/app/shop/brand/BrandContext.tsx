@@ -4,7 +4,8 @@
 // screen, print blocks) without threading props through every section.
 
 import { createContext, useContext, useMemo } from "react";
-import { resolveBrand, type OrgBranding, type ResolvedBrand } from "@/lib/shop/org-brand";
+import Image from "next/image";
+import { brandInitials, resolveBrand, type OrgBranding, type ResolvedBrand } from "@/lib/shop/org-brand";
 
 const BrandCtx = createContext<ResolvedBrand>(resolveBrand(null));
 
@@ -15,6 +16,46 @@ export function BrandProvider({ branding, children }: { branding?: Partial<OrgBr
 
 export function useBrand(): ResolvedBrand {
   return useContext(BrandCtx);
+}
+
+/**
+ * App-chrome mark (top bar, login): the org's logo, KIW's own artwork for
+ * KIW, or an initials badge in the org's accent.
+ */
+export function BrandMark({ dark = false, size = "md" }: { dark?: boolean; size?: "md" | "lg" }) {
+  const brand = useBrand();
+  const h = size === "lg" ? 72 : 36;
+  if (brand.logo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={brand.logo}
+        alt={brand.displayName}
+        style={{ height: h, width: "auto", maxWidth: "100%", objectFit: "contain", background: dark ? "#fff" : "transparent", borderRadius: 8, padding: dark ? 3 : 0 }}
+      />
+    );
+  }
+  if (brand.isKiw) {
+    return (
+      <Image
+        src={dark ? "/images/logo-white-transparent.png" : "/images/logo-black.png"}
+        alt={brand.displayName}
+        width={1536}
+        height={1024}
+        className="h-auto w-full"
+        priority
+      />
+    );
+  }
+  return (
+    <span
+      aria-label={brand.displayName}
+      className="flex items-center justify-center rounded-xl font-bold"
+      style={{ height: h, width: h, background: brand.accent, color: brand.onAccent, fontSize: h * 0.36 }}
+    >
+      {brandInitials(brand.name)}
+    </span>
+  );
 }
 
 /** Letterhead mark: the logo when there is one, else nothing. */

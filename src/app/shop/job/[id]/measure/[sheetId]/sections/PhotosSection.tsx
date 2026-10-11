@@ -4,9 +4,9 @@
 // submission; the few that the shop genuinely cannot build without are marked
 // as blockers by requiredGaps, not here.
 
+import { useContext } from "react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
-import { mt } from "@/lib/shop/measure-i18n";
-import { Card } from "../fields";
+import { DetailStagesCtx, StageCtx } from "../fields";
 import ShotList from "./ShotList";
 
 export default function PhotosSection({
@@ -25,16 +25,16 @@ export default function PhotosSection({
   slotBusy?: string | null;
   slotErr: string | null;
 }) {
+  // Same stage gating as Card, but no card of its own: the Photos panel the
+  // list sits in already carries the heading and the frame.
+  const activeStage = useContext(StageCtx);
+  const detailStages = useContext(DetailStagesCtx);
+  if (detailStages ? !detailStages.includes("photos") : activeStage !== "photos") return null;
   return (
-    <>
-      <Card stage="photos" title={mt(lang, "shotsTitle")}>
-        {/* Camera-first pro shot list; the OS photo sheet stays one tap away
-            inside the camera (Library). */}
-        <ShotList lang={lang} data={data} shape={shape} onShoot={setPhotoSlot} err={slotErr} />
-      </Card>
-
-      {/* Change history — from the immutable audit trail. Anyone may edit
-          any sheet; this makes every hand that touched it visible. */}
-    </>
+    <div className="mb-4">
+      {/* Camera-first pro shot list; the OS photo sheet stays one tap away
+          inside the camera (Library). */}
+      <ShotList lang={lang} data={data} shape={shape} onShoot={setPhotoSlot} err={slotErr} />
+    </div>
   );
 }

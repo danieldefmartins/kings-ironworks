@@ -60,7 +60,7 @@ const ROWS: Row[] = [
   ["shotClose", "Close", "Fechar", "Cerrar"],
   ["shotNext", "Next shot", "Próxima foto", "Siguiente foto"],
   ["shotMarkUp", "Mark up", "Marcar", "Marcar"],
-  ["dimTool", "Dimension", "Cota", "Cota"],
+  ["dimTool", "Measure", "Medida", "Medida"],
   ["dimPrompt", "Type the measurement", "Digite a medida", "Escriba la medida"],
   ["dimAdd", "Add", "Adicionar", "Agregar"],
   ["shotLogTitle", "Photo log", "Registro de fotos", "Registro de fotos"],

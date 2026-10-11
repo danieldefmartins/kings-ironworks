@@ -8,7 +8,8 @@ import { shotList, shotProgress, formatGps, type ShotDef } from "@/lib/shop/meas
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import ShotGhost from "../overlays/ShotGhost";
-import type { ShotRequest } from "../overlays/ShotCamera";
+import { useEffect, useState } from "react";
+import { capturedPreview, type ShotRequest } from "../overlays/ShotCamera";
 
 function fill(s: string, vars: Record<string, string | number>) {
   return s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ""));
@@ -40,6 +41,27 @@ export function ProgressRing({ done, total, complete, size = 64 }: { done: numbe
   );
 }
 
+/** The taken photo itself, with a small check; falls back to a plain check. */
+function ShotThumb({ path, sheetId }: { path: string; sheetId?: string }) {
+  const [failed, setFailed] = useState(false);
+  const src = capturedPreview.get(path) || (sheetId ? `/shop/api/measure-photo?sheetId=${encodeURIComponent(sheetId)}&path=${encodeURIComponent(path)}` : "");
+  return (
+    <>
+      {src && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" loading="lazy" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <span className="text-xl text-white">✓</span>
+      )}
+      {src && !failed && (
+        <span className="absolute bottom-1 right-1 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: "#22a06b", boxShadow: "0 0 0 2px #fff" }}>
+          ✓
+        </span>
+      )}
+    </>
+  );
+}
+
 function when(iso: string, lang: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
@@ -64,6 +86,13 @@ export default function ShotList({
   onShoot: (req: ShotRequest) => void;
   err?: string | null;
 }) {
+  // The sheet id comes from the URL after mount (keeps SSR and hydration identical).
+  const [sheetId, setSheetId] = useState<string | undefined>();
+  useEffect(() => {
+    const m = window.location.pathname.match(/\/measure\/([0-9a-f-]{36})/i);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (m) setSheetId(m[1]);
+  }, []);
   const shots = shotList(shape, data);
   const prog = shotProgress(data, shape);
   const filled = data.photos.map((p) => p.slot);
@@ -114,7 +143,7 @@ export default function ShotList({
                   style={{ background: ph ? "#22a06b" : "#1f2430" }}
                 >
                   {ph ? (
-                    <span className="text-xl text-white">✓</span>
+                    <ShotThumb key={ph.path} path={ph.path} sheetId={sheetId} />
                   ) : (
                     <ShotGhost ghost={s.ghost} className="h-full w-full p-0.5" />
                   )}

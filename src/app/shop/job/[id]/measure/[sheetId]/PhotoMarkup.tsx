@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { mt } from "@/lib/shop/measure-i18n";
 import type { AnnotationStroke } from "@/lib/shop/measure";
 import { dimGeometry } from "@/lib/shop/measure-shots";
+import { Camera, MoveHorizontal, MoveUpRight, Pencil, Slash, Trash2, Type, Undo2, X } from "lucide-react";
 
 type Tool = "draw" | "line" | "arrow" | "text" | "dim";
 
@@ -196,152 +197,171 @@ export default function PhotoMarkup({
     }
   }
 
+  const tools: [Tool, string, React.ReactNode][] = [
+    ["dim", mt(lang, "dimTool"), <MoveHorizontal key="i" className="h-5 w-5" />],
+    ["draw", mt(lang, "draw"), <Pencil key="i" className="h-5 w-5" />],
+    ["line", mt(lang, "lineTool"), <Slash key="i" className="h-5 w-5" />],
+    ["arrow", mt(lang, "arrowTool"), <MoveUpRight key="i" className="h-5 w-5" />],
+    ["text", mt(lang, "textTool"), <Type key="i" className="h-5 w-5" />],
+  ];
+
+  // Apple-style sheet: Cancel · title · Save across the top, a segmented tool
+  // picker, the photo, and one primary button. Light/dark follow the shop theme.
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 overflow-y-auto p-4 print:hidden">
-      <div className="max-w-3xl mx-auto bg-neutral-900 border border-neutral-700 rounded-2xl p-4">
-        <div className="flex items-center mb-3">
-          <div className="font-bold">
-            📷 {slotLabel}
-            {!initialFile && <span className="block text-xs font-normal text-neutral-500">{slot}</span>}
+    <div className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/50 print:hidden sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-label={slotLabel}>
+      <div className="flex h-full w-full flex-col bg-neutral-900 text-neutral-100 sm:h-auto sm:max-h-[94dvh] sm:max-w-3xl sm:rounded-3xl sm:shadow-2xl">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 border-b border-neutral-800 px-3 pb-2 pt-[max(10px,env(safe-area-inset-top))]">
+          <button type="button" onClick={onClose} className="min-h-11 rounded-lg px-2 text-[17px] text-indigo-700">
+            {mt(lang, "cancel")}
+          </button>
+          <div className="min-w-0 text-center">
+            <div className="truncate text-[17px] font-semibold">{slotLabel}</div>
+            {!initialFile && <div className="truncate text-[13px] text-neutral-500">{slot}</div>}
           </div>
           <button
-            onClick={onClose}
-            className="ml-auto px-3 py-2 rounded-lg border border-neutral-700 text-neutral-300 text-sm"
+            type="button"
+            onClick={save}
+            disabled={!hasImage || uploading || !!pendingDim}
+            className="min-h-11 rounded-lg px-2 text-[17px] font-semibold text-indigo-700 disabled:opacity-35"
           >
-            ✕ {mt(lang, "cancel")}
+            {mt(lang, "shotSave")}
           </button>
         </div>
 
-        <label className={`${initialFile ? "hidden" : "block"} w-full text-center bg-neutral-800 border border-dashed border-neutral-600 rounded-xl py-4 text-sm font-semibold text-neutral-200 cursor-pointer mb-3`}>
-          📷 {mt(lang, "choosePhoto")}
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) loadFile(f);
-              e.target.value = "";
-            }}
-          />
-        </label>
+        <div className="flex-1 overflow-y-auto px-4 pb-4 pt-3 sm:px-6">
+          <label className={`${initialFile ? "hidden" : "flex"} min-h-14 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-neutral-800 text-[17px] font-semibold text-indigo-700 mb-3`}>
+            <Camera className="h-5 w-5" /> {mt(lang, "choosePhoto")}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) loadFile(f);
+                e.target.value = "";
+              }}
+            />
+          </label>
 
-        {hasImage && (
-          <>
-            <div className="flex flex-wrap items-center gap-1.5 mb-2">
-              {(
-                [
-                  ["dim", mt(lang, "dimTool"), "↔"],
-                  ["draw", mt(lang, "draw"), "✏️"],
-                  ["line", mt(lang, "lineTool"), "／"],
-                  ["arrow", mt(lang, "arrowTool"), "↗"],
-                ] as [Tool, string, string][]
-              ).map(([tl, label, icon]) => (
-                <button
-                  key={tl}
-                  onClick={() => setTool(tl)}
-                  className={`px-3 py-2 rounded-lg border text-xs font-bold ${
-                    tool === tl
-                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                      : "border-neutral-700 bg-neutral-800 text-neutral-300"
-                  }`}
-                >
-                  {icon} {label}
-                </button>
-              ))}
-              <button
-                onClick={startText}
-                className={`px-3 py-2 rounded-lg border text-xs font-bold ${
-                  tool === "text"
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800 text-neutral-300"
-                }`}
-              >
-                T {mt(lang, "textTool")}
-              </button>
-              <span className="mx-1 flex gap-1.5">
+          {hasImage && (
+            <>
+              {/* Segmented tool picker */}
+              <div className="grid grid-cols-5 gap-1 rounded-2xl bg-neutral-800 p-1" role="radiogroup" aria-label={mt(lang, "shotMarkUp")}>
+                {tools.map(([tl, label, icon]) => (
+                  <button
+                    key={tl}
+                    type="button"
+                    role="radio"
+                    aria-checked={tool === tl}
+                    onClick={() => (tl === "text" ? startText() : setTool(tl))}
+                    className={`flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl text-[12px] font-semibold ${
+                      tool === tl ? "bg-neutral-900 text-indigo-700 shadow-sm" : "text-neutral-400"
+                    }`}
+                  >
+                    {icon}
+                    <span className="max-w-full truncate px-1">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-3 flex items-center gap-2">
                 {COLORS.map((c) => (
                   <button
                     key={c}
+                    type="button"
+                    aria-label={c}
+                    aria-pressed={color === c}
                     onClick={() => setColor(c)}
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      color === c ? "border-white" : "border-neutral-700"
-                    }`}
-                    style={{ background: c }}
+                    className="h-9 w-9 rounded-full"
+                    style={{
+                      background: c,
+                      boxShadow: color === c ? `0 0 0 2px var(--shop-card, #fff), 0 0 0 4px ${c === "#ffffff" ? "#9ca3af" : c}` : "inset 0 0 0 1px rgba(0,0,0,.15)",
+                    }}
                   />
                 ))}
-              </span>
-              <button
-                onClick={() => setStrokes((s) => s.slice(0, -1))}
-                className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
-              >
-                ↩ {mt(lang, "undo")}
-              </button>
-              <button
-                onClick={() => setStrokes([])}
-                className="px-3 py-2 rounded-lg border border-neutral-700 bg-neutral-800 text-xs text-neutral-300"
-              >
-                🗑 {mt(lang, "clearAll")}
-              </button>
-            </div>
-
-            {pendingDim && (
-              <form
-                className="flex items-center gap-2 mb-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  commitDim();
-                }}
-              >
-                <input
-                  autoFocus
-                  value={dimValue}
-                  onChange={(e) => setDimValue(e.target.value)}
-                  placeholder={mt(lang, "dimPrompt")}
-                  aria-label={mt(lang, "dimPrompt")}
-                  className="min-w-0 flex-1 min-h-12 rounded-xl border border-amber-500 bg-neutral-950 px-3 text-lg font-semibold"
-                />
-                <button type="submit" className="shrink-0 min-h-12 px-4 rounded-xl bg-amber-500 text-black font-bold">
-                  {mt(lang, "dimAdd")}
+                <button
+                  type="button"
+                  onClick={() => setStrokes((s) => s.slice(0, -1))}
+                  aria-label={mt(lang, "undo")}
+                  disabled={!strokes.length}
+                  className="ml-auto flex h-11 w-11 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 disabled:opacity-35"
+                >
+                  <Undo2 className="h-5 w-5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPendingDim(null)}
-                  aria-label={mt(lang, "cancel")}
-                  className="shrink-0 min-h-12 px-3 rounded-xl border border-neutral-700 text-neutral-300"
+                  onClick={() => setStrokes([])}
+                  aria-label={mt(lang, "clearAll")}
+                  disabled={!strokes.length}
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-800 text-neutral-300 disabled:opacity-35"
                 >
-                  ✕
+                  <Trash2 className="h-5 w-5" />
                 </button>
-              </form>
-            )}
-
-            {pendingText && (
-              <div className="text-xs text-amber-300 mb-2">
-                “{pendingText}” — {mt(lang, "tapToPlace")}
               </div>
-            )}
 
-            <canvas
-              ref={canvasRef}
-              onPointerDown={onDown}
-              onPointerMove={onMove}
-              onPointerUp={onUp}
-              onPointerCancel={onUp}
-              className="w-full rounded-lg border border-neutral-700"
-              style={{ touchAction: "none" }}
-            />
+              {pendingDim && (
+                <form
+                  className="mt-3 flex items-center gap-2"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    commitDim();
+                  }}
+                >
+                  <input
+                    autoFocus
+                    value={dimValue}
+                    onChange={(e) => setDimValue(e.target.value)}
+                    placeholder={mt(lang, "dimPrompt")}
+                    aria-label={mt(lang, "dimPrompt")}
+                    className="min-w-0 flex-1 min-h-12 rounded-xl border border-neutral-700 bg-neutral-950 px-3 text-lg font-semibold"
+                  />
+                  <button type="submit" className="shrink-0 min-h-12 px-4 rounded-xl bg-indigo-600 text-white font-semibold">
+                    {mt(lang, "dimAdd")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPendingDim(null)}
+                    aria-label={mt(lang, "cancel")}
+                    className="shrink-0 flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-800 text-neutral-400"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </form>
+              )}
 
+              {pendingText && (
+                <div className="mt-3 text-[15px] text-neutral-400">
+                  “{pendingText}” — {mt(lang, "tapToPlace")}
+                </div>
+              )}
+
+              <canvas
+                ref={canvasRef}
+                onPointerDown={onDown}
+                onPointerMove={onMove}
+                onPointerUp={onUp}
+                onPointerCancel={onUp}
+                className="mt-3 w-full rounded-2xl"
+                style={{ touchAction: "none", background: "#000" }}
+              />
+            </>
+          )}
+
+          {err && <div className="text-sm text-red-400 mt-3">{err}</div>}
+        </div>
+
+        {hasImage && (
+          <div className="border-t border-neutral-800 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-3 sm:px-6">
             <button
+              type="button"
               onClick={save}
               disabled={uploading || !!pendingDim}
-              className="w-full mt-3 bg-amber-500 text-black font-bold rounded-xl py-3 disabled:opacity-50"
+              className="min-h-14 w-full rounded-2xl bg-indigo-600 text-[17px] font-semibold text-white disabled:opacity-40"
             >
-              {uploading ? mt(lang, "uploading") : saveLabel || `💾 ${mt(lang, "savePhoto")}`}
+              {uploading ? mt(lang, "uploading") : saveLabel || mt(lang, "savePhoto")}
             </button>
-          </>
+          </div>
         )}
-
-        {err && <div className="text-sm text-red-400 mt-2">{err}</div>}
       </div>
     </div>
   );

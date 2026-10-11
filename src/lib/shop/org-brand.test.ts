@@ -86,3 +86,17 @@ describe("org branding", () => {
     }
   });
 });
+
+describe("display name and KIW artwork", () => {
+  it("title-cases an all-caps name for the browser tab", () => {
+    expect(resolveBrand(null).displayName).toBe("King Iron Works");
+    expect(resolveBrand({ name: "ACME RAIL & STAIR" }).displayName).toBe("Acme Rail & Stair");
+    expect(resolveBrand({ name: "Ferro & Cia" }).displayName).toBe("Ferro & Cia");
+  });
+  it("KIW keeps its artwork; another shop or a custom logo does not", () => {
+    expect(resolveBrand(null).isKiw).toBe(true);
+    expect(resolveBrand({ name: "King Iron Works" }).isKiw).toBe(true);
+    expect(resolveBrand({ name: "Acme" }).isKiw).toBe(false);
+    expect(resolveBrand({ name: "KING IRON WORKS", logo: PNG }).isKiw).toBe(false);
+  });
+});

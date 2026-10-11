@@ -71,3 +71,12 @@ it("prints a photo log with time and GPS, listing missing required shots", () =>
   // recommended shots that were not taken are left off the printed log
   expect(log.textContent).not.toContain("Latch post");
 });
+
+it("a finished shot shows the photo itself", async () => {
+  const { capturedPreview } = await import("./overlays/ShotCamera");
+  capturedPreview.set("job/op_straight.jpg", "blob:preview-1");
+  const d = newMeasureData("opening", 0);
+  d.photos.push(photo("op_straight"));
+  const { container } = render(<ShotList lang="en" data={d} shape="opening" onShoot={() => undefined} />);
+  expect(container.querySelector('[data-shot="op_straight"] img')!.getAttribute("src")).toBe("blob:preview-1");
+});
