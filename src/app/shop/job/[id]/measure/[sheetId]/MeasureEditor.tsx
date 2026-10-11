@@ -96,6 +96,7 @@ import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
 import NextMeasurement from './NextMeasurement';
+import LaserControl, { LaserBrowserHint } from './LaserControl';
 import {Check,ChevronDown,ChevronLeft,Redo2,Undo2} from 'lucide-react';
 import type {PanelStage} from './AttachedRails';
 
@@ -1123,6 +1124,7 @@ export default function MeasureEditor({
             )}
             <button type="button" aria-label={lang==='pt'?'Desfazer':lang==='es'?'Deshacer':'Undo'} disabled={!canUndo} onClick={undo} className="grid h-11 w-10 shrink-0 place-items-center rounded-full text-slate-700 active:bg-slate-100 disabled:opacity-25"><Undo2 aria-hidden className="h-5 w-5"/></button>
             <button type="button" aria-label={lang==='pt'?'Refazer':lang==='es'?'Rehacer':'Redo'} disabled={!canRedo} onClick={redo} className="grid h-11 w-10 shrink-0 place-items-center rounded-full text-slate-700 active:bg-slate-100 disabled:opacity-25"><Redo2 aria-hidden className="h-5 w-5"/></button>
+            <LaserControl lang={lang} units={units}/>
             <MoreMenu ghost label={mt(lang, "moreLabel")} closeLabel={mt(lang, "closeLabel")}>
               {(close) => (
                 <>
@@ -1166,6 +1168,7 @@ export default function MeasureEditor({
                       </button>
                     ))}
                   </div>
+                  <LaserBrowserHint lang={lang}/>
                   <ShopAppearance lang={lang}/>
                   {adminLink && <MoreItem href="/shop/admin">🛡 {lang==='pt'?'Administração':lang==='es'?'Administración':'Admin'}</MoreItem>}
                   <MoreItem
