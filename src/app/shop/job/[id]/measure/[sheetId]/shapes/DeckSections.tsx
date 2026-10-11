@@ -19,6 +19,7 @@ import {
 import { mt } from "@/lib/shop/measure-i18n";
 import { deckPerimeter, inchesToField } from "@/lib/shop/measure-derive";
 import { AutoMInput, Card, ChipRow, Grid, MInput, MSelect, SmallBtn } from "../fields";
+import SubstrateEditor from "../SubstrateEditor";
 
 const SURFACES = ["wood", "composite", "pvc", "concrete", "paver", "roof_deck"] as const;
 const MOUNTS = ["surface", "fascia", "through_bolt", "core_drill", "embedded"] as const;
@@ -106,6 +107,7 @@ export default function DeckSections({
           <MInput help="deckStairSheets" label={mt(lang, "deckStairSheets")} placeholder="—" value={deck.stairSheets}
             onChange={(v) => setDeck((d) => void (d.stairSheets = v))} />
         </Grid>
+        <SubstrateEditor locKey="deck:posts" title={mt(lang, "sub_loc_deck_posts")} materials={["wood_framing", "wood_deck", "composite", "poured_concrete", "stone", "steel"]} />
       </Card>
 
       <Card stage="steps" title={`📐 ${mt(lang, "deckSidesTitle")}`}>

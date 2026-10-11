@@ -12,6 +12,7 @@ import {
 } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, ChipRow, ConditionFields, Grid, MInput, MSelect } from "../fields";
+import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
 
 export default function FireEscapeSections({
   lang,
@@ -132,6 +133,7 @@ export default function FireEscapeSections({
             <MInput help="fireAnchorSpacing" label={mt(lang, "fireAnchorSpacing")} placeholder="—" value={l.anchorSpacing}
               onChange={(v) => setLevel(l.id, (x) => void (x.anchorSpacing = v))} />
           </Grid>
+          <SubstrateEditor locKey={`fire:${l.id}`} title={mt(lang, "fireAnchorage")} materials={MATERIALS_WALL} />
 
           {fireSurvey && (
             <div className="mt-4 rounded-xl border border-neutral-800 bg-neutral-950/60 p-3">

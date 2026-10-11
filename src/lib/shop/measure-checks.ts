@@ -11,6 +11,7 @@ import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import { structuralChecks, structuralGaps } from "./measure-structural";
+import { finishChecks, mountingChecks } from "./measure-substrate";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -79,6 +80,16 @@ export interface CheckResult {
   delta: number | null;
   unit: "in" | "deg";
   detail?: string; // e.g. which flight
+  /** The observed non-numeric value, when wording needs it ("rotted"). */
+  value?: string;
+  /** `detail` in each language, when it is made of words ("Hinge post"). */
+  detailI18n?: Partial<Record<"en" | "pt" | "es", string>>;
+}
+
+/** A check's detail in the reader's language. */
+export function checkDetail(c: CheckResult, lang: string | null | undefined): string | undefined {
+  const l = lang === "pt" || lang === "es" ? lang : "en";
+  return c.detailI18n?.[l] ?? c.detail;
 }
 
 function grade(
@@ -744,6 +755,21 @@ function jointChecks(data: MeasureData, tol: Tolerances): CheckResult[] {
 }
 
 export function runChecks(
+  data: MeasureData,
+  shape: MeasureShape,
+  tolIn?: Tolerances
+): CheckResult[] {
+  // Mounting substrate and pending finishes ride along with every work type:
+  // the wrong anchor and the height measured before the floor went on are the
+  // two reasons a crew goes back, whatever was being measured.
+  return [
+    ...shapeChecks(data, shape, tolIn),
+    ...mountingChecks(data, shape, orderedPosts(data)),
+    ...finishChecks(data, shape),
+  ];
+}
+
+function shapeChecks(
   data: MeasureData,
   shape: MeasureShape,
   tolIn?: Tolerances

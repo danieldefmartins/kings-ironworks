@@ -12,6 +12,7 @@ import {
   RAIL_SIDE_OPTIONS,
 } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
+import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
 import {
   Card,
   Grid,
@@ -85,6 +86,7 @@ export default function RailSections({
               onChange={(v) => set((d) => void (d.rail.brackets = v))} />
           )}
         </Grid>
+        {isWallRail && <SubstrateEditor locKey="bracket" title={mt(lang, "sub_loc_brackets")} materials={MATERIALS_WALL} />}
       </Card>
       )}
 
@@ -133,6 +135,8 @@ export default function RailSections({
                   hasPhoto={data.photos.some((ph) => ph.slot === `term_${sp.id}_${endKey}`)}
                   onField={(k, v) => setTerm(si, endKey, k, v)}
                   onHw={(k, v) => setHw(si, endKey, k, v)}
+                  substrate={<SubstrateEditor locKey={`term:${sp.id}:${endKey}`} hide={["mount", "photo"]}
+                    materials={sp[endKey].attachTo === "wall" ? MATERIALS_WALL : undefined} />}
                   onPhoto={() =>
                     setPhotoSlot({
                       slot: `term_${sp.id}_${endKey}`,

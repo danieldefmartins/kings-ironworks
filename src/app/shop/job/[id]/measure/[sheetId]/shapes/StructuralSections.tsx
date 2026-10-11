@@ -8,7 +8,7 @@
 // Every member card ends in its cut length with the terms that made it, so the
 // fabricator never has to guess what "span" meant on the porch.
 
-import { useMemo, useRef, useState } from "react";
+import { useContext, useMemo, useRef, useState } from "react";
 import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 import type { MeasureData } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
@@ -50,9 +50,10 @@ import {
   type StructuralData,
 } from "@/lib/shop/measure-structural";
 import { parseMeas } from "@/lib/shop/measure-parse";
-import type { CheckLevel, CheckResult } from "@/lib/shop/measure-checks";
+import { checkDetail, type CheckLevel, type CheckResult } from "@/lib/shop/measure-checks";
 import { MInput } from "../fields";
 import StructuralSketch, { fmtLen, type SketchHot } from "./StructuralSketch";
+import SubstrateEditor, { MATERIALS_MASONRY_STEEL, SubstrateCtx } from "../SubstrateEditor";
 
 type SetFn = (fn: (d: MeasureData) => void) => void;
 
@@ -460,7 +461,7 @@ function SpanBlock({ lang, s, m, stamped, update }: { lang: string; s: Structura
         <Group title={t("st_bearingTitle")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(["bearingL", "bearingR"] as const).map((k) => (
-              <BearingEnd key={k} lang={lang} m={m} end={m[k]} title={t(k === "bearingL" ? "st_endL" : "st_endR")}
+              <BearingEnd key={k} lang={lang} m={m} end={m[k]} title={t(k === "bearingL" ? "st_endL" : "st_endR")} locKey={`struct:${m.id}:${k === "bearingL" ? "L" : "R"}`}
                 update={(fn) => update((x) => fn(x[k]))} />
             ))}
           </div>
@@ -502,7 +503,8 @@ function SpanMore({ lang, m, stamped, update }: { lang: string; m: StructMember;
   );
 }
 
-function BearingEnd({ lang, m, end, title, update }: { lang: string; m: StructMember; end: StructBearing; title: string; update: (fn: (b: StructBearing) => void) => void }) {
+function BearingEnd({ lang, m, end, title, update, locKey }: { lang: string; m: StructMember; end: StructBearing; title: string; update: (fn: (b: StructBearing) => void) => void; locKey: string }) {
+  const shared = useContext(SubstrateCtx);
   const t = (k: string) => mt(lang, k);
   const need = requiredBearing(m, end);
   const have = parseMeas(end.length);
@@ -517,9 +519,13 @@ function BearingEnd({ lang, m, end, title, update }: { lang: string; m: StructMe
           </span>
         )}
       </div>
-      <Select label={t("st_substrate")} value={end.substrate} required={!end.substrate}
-        options={STRUCT_SUBSTRATES.map((x) => [x, t(`st_sub_${x}`)] as [string, string])}
-        onChange={(v) => update((b) => void (b.substrate = v as StructBearing["substrate"]))} />
+      {shared ? (
+        <SubstrateEditor locKey={locKey} title={t("st_substrate")} materials={MATERIALS_MASONRY_STEEL} hide={["mount", "depth", "edge"]} />
+      ) : (
+        <Select label={t("st_substrate")} value={end.substrate} required={!end.substrate}
+          options={STRUCT_SUBSTRATES.map((x) => [x, t(`st_sub_${x}`)] as [string, string])}
+          onChange={(v) => update((b) => void (b.substrate = v as StructBearing["substrate"]))} />
+      )}
       <div className="mt-3 grid grid-cols-2 gap-3">
         <MInput label={t("st_bearingLen")} value={end.length} gap="struct_bearing_len" onChange={(v) => update((b) => void (b.length = v))} />
         <MInput label={t("st_wallThk")} value={end.wall} gap={end.substrate === "wood" || end.substrate === "steel" ? undefined : "struct_wall"} onChange={(v) => update((b) => void (b.wall = v))} />
@@ -529,6 +535,7 @@ function BearingEnd({ lang, m, end, title, update }: { lang: string; m: StructMe
 }
 
 function ColumnBlock({ lang, m, stamped, update }: { lang: string; m: StructMember; stamped: boolean; update: (fn: (m: StructMember) => void) => void }) {
+  const shared = useContext(SubstrateCtx);
   const t = (k: string) => mt(lang, k);
   const vals = m.heights.map((r) => parseMeas(r.value)).filter((n): n is number => n !== null && n > 0);
   const spread = vals.length >= 2 ? Math.max(...vals) - Math.min(...vals) : null;
@@ -566,13 +573,14 @@ function ColumnBlock({ lang, m, stamped, update }: { lang: string; m: StructMemb
       {!cover && (
         <Group title={t("st_baseTitle")}>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Select label={t("st_baseOn")} value={m.base.substrate} required={!m.base.substrate}
+            {!shared && <Select label={t("st_baseOn")} value={m.base.substrate} required={!m.base.substrate}
               options={STRUCT_SUBSTRATES.map((x) => [x, t(`st_sub_${x}`)] as [string, string])}
-              onChange={(v) => update((x) => void (x.base.substrate = v as StructBearing["substrate"]))} />
+              onChange={(v) => update((x) => void (x.base.substrate = v as StructBearing["substrate"]))} />}
             <Seg label={t("st_footing")} value={m.footing} required={!m.footing}
               options={STRUCT_FOOTINGS.map((c) => [c, t(`st_foot_${c}`)] as [string, string])}
               onChange={(v) => update((x) => void (x.footing = v as StructMember["footing"]))} />
           </div>
+          {shared && <SubstrateEditor locKey={`struct:${m.id}:base`} title={t("st_baseOn")} materials={[...MATERIALS_MASONRY_STEEL, "tile_slab"]} hide={["depth"]} />}
           <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <PlateInput lang={lang} label={t("st_basePlate")} value={m.basePlate} gap="struct_base_plate" onChange={(v) => update((x) => void (x.basePlate = v))} />
             <PlateInput lang={lang} label={t("st_capPlate")} value={m.capPlate} gap="struct_cap_plate" onChange={(v) => update((x) => void (x.capPlate = v))} />
@@ -901,7 +909,7 @@ function CheckList({ lang, checks, issuesOnly = false, collapsePassed = false }:
             <li key={i} className="flex items-start gap-2.5 px-3 py-2.5">
               <span aria-hidden="true" className={`mt-1.5 size-2.5 shrink-0 rounded-full ${DOT[c.level]}`} />
               <span className="min-w-0 flex-1">
-                <span className="block text-sm text-slate-800">{mt(lang, `check_${c.key}`)}{c.detail ? <span className="text-slate-500"> · {c.detail}</span> : null}</span>
+                <span className="block text-sm text-slate-800">{mt(lang, `check_${c.key}`)}{checkDetail(c, lang) ? <span className="text-slate-500"> · {checkDetail(c, lang)}</span> : null}</span>
                 {checkLine(lang, c) && <span className="block text-xs tabular-nums text-slate-500">{checkLine(lang, c)}</span>}
               </span>
               <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${PILL[c.level]}`}>

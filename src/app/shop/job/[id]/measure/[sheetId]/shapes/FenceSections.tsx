@@ -11,6 +11,7 @@ import {
 import { mt } from "@/lib/shop/measure-i18n";
 import { fenceRun, inchesToField } from "@/lib/shop/measure-derive";
 import { AutoMInput, Card, ChipRow, Grid, MInput } from "../fields";
+import SubstrateEditor, { MATERIALS_GROUND } from "../SubstrateEditor";
 
 export default function FenceSections({
   lang,
@@ -54,6 +55,7 @@ export default function FenceSections({
         <MInput help="fenceUtilities" label={mt(lang, "fenceUtilities")} value={fence.utilities}
           onChange={(v) => setFence((f) => void (f.utilities = v))} />
       </Grid>
+      <SubstrateEditor locKey="fence:posts" title={mt(lang, "sub_loc_fence_posts")} materials={MATERIALS_GROUND} />
     </Card>
 
     {fence.segments.map((sg, i) => (

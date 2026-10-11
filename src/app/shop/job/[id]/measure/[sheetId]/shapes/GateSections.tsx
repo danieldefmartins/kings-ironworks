@@ -6,6 +6,7 @@
 import { type GateData } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, ChipRow, Grid, MInput, MSelect } from "../fields";
+import SubstrateEditor, { MATERIALS_GROUND } from "../SubstrateEditor";
 
 export default function GateSections({
   lang,
@@ -86,6 +87,8 @@ export default function GateSections({
         <MInput help="gateDropRod" label={mt(lang, "gateDropRod")} placeholder="—" value={gate.dropRod}
           onChange={(v) => setGate((g) => void (g.dropRod = v))} />
       </Grid>
+      <SubstrateEditor locKey="gate:hinge" title={mt(lang, "sub_loc_hinge")} materials={MATERIALS_GROUND} />
+      <SubstrateEditor locKey="gate:latch" title={mt(lang, "sub_loc_latch")} materials={MATERIALS_GROUND} />
       <label className="mt-4 mb-3 flex items-center gap-2 text-sm text-neutral-300">
         <input type="checkbox" checked={gate.automated}
           onChange={(e) => setGate((g) => void (g.automated = e.target.checked))}

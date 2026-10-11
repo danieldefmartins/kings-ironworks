@@ -1,6 +1,7 @@
 // Server-side validation for the structural steel payload. zod strips unknown
 // keys, so every StructuralData field must be listed here or it is lost on save.
 import { z } from "zod";
+import { SubstrateSchema } from "./measure-substrate-schema";
 import {
   STRUCT_CARRIES,
   STRUCT_CONDITIONS,
@@ -21,6 +22,7 @@ const Bearing = z.object({
   condition: opt(STRUCT_CONDITIONS),
   length: meas,
   wall: meas,
+  sub: SubstrateSchema.optional(),
 });
 
 const Member = z.object({

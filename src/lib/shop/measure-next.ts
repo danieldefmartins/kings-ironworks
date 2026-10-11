@@ -3,6 +3,7 @@ import type { Gap } from './measure-checks';
 import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace';
 import { isFaceMount, OPENING_DOOR_PRODUCTS, unitTag, type OpeningProduct } from './measure-opening';
 import { isBearingRole, isSpanning, isVertical, ROLE_PREFIX } from './measure-structural';
+import { blankMountGaps } from './measure-substrate';
 
 /**
  * The measuring queue: every tape-measure number the sheet asks for, in the
@@ -320,9 +321,13 @@ export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: r
   // empty; otherwise (a reading row deleted, say) it stays on the list itself.
   const covered = (g: Gap) => openSlots.some(s => matches(s, g));
   const rest = gaps.filter(g => !covered(g)).map((g, i) => ({ g, i })).sort((a, b) => stageRank(a.g.key) - stageRank(b.g.key) || a.i - b.i).map(x => x.g);
+  // What each post, bracket, hinge or bearing fastens into: not a number, so
+  // an "Open" item after the measurements, never counted as one.
+  const mounting = blankMountGaps(data, shape).filter(g => !gaps.some(x => x.key === g.key && x.detail === g.detail));
   const open: NextItem[] = [
     ...openSlots.map(slot => ({ type: 'slot' as const, id: slot.id, slot })),
     ...rest.map(gap => ({ type: 'gap' as const, id: gapId(gap), gap })),
+    ...mounting.map(gap => ({ type: 'gap' as const, id: gapId(gap), gap })),
   ];
   return { slots, open, done: slots.length - openSlots.length, total: slots.length };
 }

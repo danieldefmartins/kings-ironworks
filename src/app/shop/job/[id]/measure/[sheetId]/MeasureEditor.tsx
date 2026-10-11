@@ -81,10 +81,14 @@ import {
   SetupLockCtx,
   StageCtx,
   DetailStagesCtx,
+  Card,
   type EditorStage,
 } from "./fields";
 import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 import SiteWorkspace from './SiteWorkspace';
+import { SubstrateCtx } from './SubstrateEditor';
+import FinishedSurfaces from './FinishedSurfaces';
+import { mountLocations, surfacesFor } from '@/lib/shop/measure-substrate';
 import ShopAppearance from '../../../../ShopAppearance';
 import SteelWorkspace from './SteelWorkspace';
 import ProWorkspace from './ProWorkspace';
@@ -607,7 +611,9 @@ export default function MeasureEditor({
   const orderedGaps = [...gaps].sort(byStage);
   const orderedDocGaps = [...docGaps].sort(byStage);
   const gapLabel = (g: Gap) =>
-    g.key === "photo"
+    g.key.startsWith("sub_")
+      ? `${mt(lang, "gap_sub")} · ${mountLocations(data, sheet.shape, (k) => mt(lang, k), posts).find((l) => l.key === g.detail)?.label || ""}`
+      : g.key === "photo"
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
       : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
   function jumpToGap(st:EditorStage,flight?:number){if(flight!==undefined)setActiveFlight(flight);openDetails(detailTopicForStage(st));}
@@ -868,6 +874,14 @@ export default function MeasureEditor({
           hasFlights={hasFlights}
           needsPostReference={needsPostReference}
         />
+        {/* Is the finished floor / tread / decking / siding down yet? Every
+            height measured off a surface still waiting for its finish is
+            re-expressed from where that finish will be. */}
+        {surfacesFor(data, sheet.shape).length > 0 && (
+          <Card stage="setup" title={`📏 ${mt(lang, "fin_title")}`}>
+            <FinishedSurfaces lang={lang} data={data} shape={sheet.shape} set={set} />
+          </Card>
+        )}
         {isGate && gate && (
           <GateSections
             lang={lang}
@@ -1089,6 +1103,7 @@ export default function MeasureEditor({
 
   return (
     <LangCtx.Provider value={lang}>
+    <SubstrateCtx.Provider value={{ data, set, shape: sheet.shape, lang, posts, anchorOptions: orgSettings?.options?.anchors || [], onPhoto: (slot, label) => setPhotoSlot({ slot, label }) }}>
     <PlaceholderCtx.Provider value={unitPh}>
     {/* What the sheet is waiting on, carried down to every field — the ones in
         the page and the ones in the step overlay alike — so a
@@ -1237,7 +1252,7 @@ export default function MeasureEditor({
         )}
         <ProWorkspace data={data} shape={sheet.shape} lang={lang} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'} stacked={ownForm}
           lead={workspace==='review'||(structuralForm&&!data.structural?.members.length)?undefined:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel}
-            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
+            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[aria-label="Selection tools"]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
           nav={<nav aria-label="Professional workspace" className="flex gap-1 rounded-2xl bg-slate-100 p-1">
@@ -1252,7 +1267,7 @@ export default function MeasureEditor({
           </label>}>
           <div hidden={workspace!=='design'}>
           {postDropError&&<div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{postDropError}{data.datums.postRef!=='centerline'&&<button type="button" className="mt-2 block min-h-11 rounded-xl bg-white px-3 font-semibold" onClick={()=>{set(d=>{d.datums.postRef='centerline';});setPostDropError('');}}>{tx('Use measurements to post centerlines','Usar medidas ao centro dos postes','Usar medidas al centro de postes')}</button>}</div>}
-          {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:structuralForm?<><StructuralSections lang={lang} data={data} set={set}/>{!!data.structural?.members.length&&<div data-st-photos="" className="mt-4 scroll-mt-24"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div>}</>:<>
+          {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:structuralForm?<><StructuralSections lang={lang} data={data} set={set}/>{!!data.structural?.members.some(m=>m.role==='column'||m.role==='post')&&<section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="mb-3 text-[15px] font-semibold text-slate-900">{mt(lang,'fin_title')}</h3><FinishedSurfaces lang={lang} data={data} shape={sheet.shape} set={set}/></section>}{!!data.structural?.members.length&&<div data-st-photos="" className="mt-4 scroll-mt-24"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div>}</>:<>
             {designTool==='site'&&!hasExistingStructures&&<h2 className="mb-3 px-1 text-lg font-semibold tracking-tight text-slate-900">{tx('Start with the existing structures','Comece pelas estruturas existentes','Comience con las estructuras existentes')}</h2>}
             {designTool==='site'&&<SiteWorkspace embedded key={`site:${visualSite||''}`} initialObjectId={visualSite} data={data} set={set} lang={lang} onPanels={()=>setDesignTool('panels')} onContinue={()=>setDesignTool('measure')} onDetails={()=>openDetails('photos')} onPost={id=>selectScene({postId:id})} onMeasure={(segment,step)=>{if(segment!==undefined)selectScene({segmentIndex:segment,stepIndex:step??null});else setDesignTool('measure');}}/>}
             {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3"><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang)}</button>)}</div></>}
@@ -1316,6 +1331,7 @@ export default function MeasureEditor({
       />
     </MissingCtx.Provider>
     </PlaceholderCtx.Provider>
+    </SubstrateCtx.Provider>
     </LangCtx.Provider>
   );
 }

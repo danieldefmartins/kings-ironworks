@@ -6,6 +6,7 @@
 import { type BalconyData } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, Grid, MInput, MSelect } from "../fields";
+import SubstrateEditor from "../SubstrateEditor";
 
 export default function BalconySections({
   lang,
@@ -72,6 +73,7 @@ export default function BalconySections({
         <MInput help="balEdgeCondition" label={mt(lang, "balEdgeCondition")} placeholder="—" value={balcony.edgeCondition}
           onChange={(v) => setBalcony((b) => void (b.edgeCondition = v))} />
       </Grid>
+      <SubstrateEditor locKey="balcony" title={mt(lang, "sub_loc_anchorage")} />
     </Card>
     </>
   );

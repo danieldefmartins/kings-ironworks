@@ -14,6 +14,7 @@ import type { SiteModel } from './measure-site';
 import { blankOpening, normalizeOpening, openingProgressValues, OPENING_PHOTO_SLOTS, type OpeningData } from './measure-opening';
 import type { CodeSettings } from './measure-code';
 import type { CustomerSignoff } from './measure-signoff';
+import { migrateSubstrates, migrateSurfaces, type Substrate, type Surfaces } from './measure-substrate';
 
 export type MeasureShape =
   | "straight"
@@ -125,6 +126,8 @@ export interface StepMeasure {
 
 export interface PostMeasure {
   supportAttachment?: SupportAttachment | null;
+  /** What this post / point fastens into — see measure-substrate.ts. */
+  sub?: Substrate;
   id: string;
   pointType: "railing_post" | "existing_post" | "concrete_wall" | "clip";
   side: "" | "left" | "right"; // always viewed from bottom step looking up
@@ -432,6 +435,8 @@ export interface FireLevel {
   anchorType: string;
   anchorCount: string;
   anchorSpacing: string;
+  /** The wall this level anchors into. */
+  sub?: Substrate;
   condition: FireCondition;
 }
 
@@ -568,6 +573,9 @@ export interface GateData {
   powerAtGate: "" | "yes" | "no" | "unknown";
   safetyDevices: string;
   notes: string;
+  /** What the hinge-side and latch-side posts fasten into. */
+  hingeSub?: Substrate;
+  latchSub?: Substrate;
 }
 
 export function blankGate(): GateData {
@@ -615,6 +623,8 @@ export interface FenceData {
   endTerm: string;
   utilities: string; // what is buried on the line
   notes: string;
+  /** What the fence posts go into (one substrate for the run). */
+  postSub?: Substrate;
 }
 
 export function blankFence(segs: number): FenceData {
@@ -656,6 +666,8 @@ export interface BalconyData {
   finishedFloor: string; // what the floor will be when the rail goes on
   drainage: string; // scuppers, drains, slope the rail must clear
   notes: string;
+  /** The anchorage substrate (slab edge, rim, wall). */
+  sub?: Substrate;
 }
 
 export function blankBalcony(): BalconyData {
@@ -730,6 +742,8 @@ export interface DeckData {
   gates: string;
   stairSheets: string; // which stair sheets the stair openings are measured on
   notes: string;
+  /** What the guard posts fasten into. */
+  postSub?: Substrate;
 }
 
 export function blankDeck(sides: number): DeckData {
@@ -808,6 +822,8 @@ export interface WellData {
   postToWall: string; // measured clear gap, post face to the PROUD face
   maxSphere: string; // code sphere for this jurisdiction (default 4)
   notes: string;
+  /** Top of the well wall, where guard posts / grate frame anchor. */
+  sub?: Substrate;
 }
 
 export function newWallBand(label = ""): WallBand {
@@ -894,6 +910,8 @@ export interface RailSpec {
   extensions: string; // code extensions at top/bottom
   returns: string; // wall returns / loop ends
   brackets: string; // wall-rail bracket count + spacing
+  /** The wall the brackets fasten into. */
+  bracketSub?: Substrate;
 }
 
 export interface MaterialsSpec {
@@ -1120,6 +1138,8 @@ export interface Termination {
   plumb: string; // square/plumb condition
   hardware: TermHardware;
   note: string;
+  /** wall / existing post / floor end: what the connection fastens into. */
+  sub?: Substrate;
 }
 
 export interface RailSpan {
@@ -1275,6 +1295,8 @@ export interface MeasureData {
   code?: CodeSettings;
   /** Customer sign-off on the field dimensions (measure-signoff.ts). */
   signoff?: CustomerSignoff | null;
+  /** Finishes still to come on the surfaces heights are measured from (measure-substrate.ts). */
+  surfaces?: Surfaces;
 }
 
 export interface MeasureSheet {
@@ -1683,9 +1705,10 @@ export function newPost(segIdx: number, stepIdx: number | null): PostMeasure {
 // editor and checks never see undefined. Never drops or rewrites entered data.
 export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefined): MeasureData {
   const d = (raw || {}) as Partial<MeasureData>;
-  return {
+  const out: MeasureData = {
     drawingReleaseVersion: d.drawingReleaseVersion,
     ...(d.survey ? {survey: d.survey} : {}),
+    ...(d.surfaces ? { surfaces: d.surfaces } : {}),
     ...(d.code ? { code: d.code } : {}),
     ...(d.signoff ? { signoff: d.signoff } : {}),
     site: d.site,
@@ -1831,6 +1854,11 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       end: { ...newTermination(), ...(sp.end || {}), hardware: { ...newTermination().hardware, ...(sp.end?.hardware || {}) } },
     })),
   };
+  // Substrate and future finish: fill the shared models from the older
+  // free-text fields, so every sheet reads through one model.
+  migrateSubstrates(out);
+  migrateSurfaces(out);
+  return out;
 }
 
 // ---- Structured photo checklist -------------------------------------------

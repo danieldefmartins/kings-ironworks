@@ -16,7 +16,6 @@ import {
   OPENING_PHOTO_SLOTS,
   OPENING_PRODUCTS,
   OPENING_SILL_PRODUCTS,
-  OPENING_SUBSTRATES,
   isFaceMount,
   julietGuardAboveSill,
   newOpeningUnit,
@@ -37,6 +36,9 @@ import OpeningElevation, { type OpeningField } from "./OpeningElevation";
 import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
 
 const ELEVATION_FIELDS = ["wTop", "wMid", "wBot", "hLeft", "hCenter", "hRight", "diagA", "diagB"] as const;
+import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
+import FinishedSurfaces from "../FinishedSurfaces";
+import { surfacesFor } from "@/lib/shop/measure-substrate";
 
 const CARD = "mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm";
 const H2 = "mb-3 text-base font-semibold tracking-tight";
@@ -547,10 +549,8 @@ export default function OpeningSections({
       {/* ---- What it anchors into ------------------------------------------ */}
       <section className={CARD}>
         <h2 className={H2}>{mt(lang, "opSubstrateTitle")}</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <OSelect label={mt(lang, "opSubstrate")} gap="op_substrate" value={o.substrate} options={[...OPENING_SUBSTRATES]}
-            labels={Object.fromEntries(OPENING_SUBSTRATES.map((a) => [a, mt(lang, `opS_${a}`)]))}
-            onChange={(v) => setO((x) => void (x.substrate = v as OpeningData["substrate"]))} />
+        <SubstrateEditor locKey="opening" title={mt(lang, "opSubstrate")} materials={MATERIALS_WALL} hide={["mount"]} />
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <OSelect label={mt(lang, "opAnchor")} gap="op_anchor" value={o.anchor} options={[...OPENING_ANCHORS]}
             labels={Object.fromEntries(OPENING_ANCHORS.map((a) => [a, mt(lang, `opA_${a}`)]))}
             onChange={(v) => setO((x) => void (x.anchor = v as OpeningData["anchor"]))} />
@@ -568,6 +568,13 @@ export default function OpeningSections({
         </More>
         </div>
       </section>
+
+      {surfacesFor(data, "opening").length > 0 && (
+        <section className={CARD}>
+          <h2 className={H2}>{mt(lang, "fin_title")}</h2>
+          <FinishedSurfaces lang={lang} data={data} shape="opening" set={set} />
+        </section>
+      )}
 
       {/* ---- Finish ---------------------------------------------------------- */}
       <section className={CARD}>

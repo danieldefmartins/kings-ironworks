@@ -14,6 +14,7 @@ import {
 import { formatIn, type WellClearance } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, ChipRow, Grid, MInput, MSelect } from "../fields";
+import SubstrateEditor from "../SubstrateEditor";
 
 export default function WellSections({
   lang,
@@ -87,6 +88,7 @@ export default function WellSections({
           labels={{ in: mt(lang, "wellSwingIn"), out: mt(lang, "wellSwingOut"), slider: mt(lang, "wellSlider"), fixed: mt(lang, "wellFixed") }}
           onChange={(v) => setWell((w) => void (w.windowSwing = v as WellData["windowSwing"]))} />
       </Grid>
+      <SubstrateEditor locKey="well" title={mt(lang, "sub_loc_well")} materials={["poured_concrete", "block_hollow", "block_filled", "stone", "brick", "wood_framing", "steel"]} />
     </Card>
 
     {wellWants("guard") && (
