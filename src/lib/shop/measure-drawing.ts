@@ -1,3 +1,4 @@
+import {supportTerminal} from './measure-support-attachment';
 import {resolveSite} from './measure-wall-placement';
 import { landingConnections, landingConnectionComplete } from "./measure-landings";
 import type { MeasureData } from './measure';
@@ -8,7 +9,9 @@ import { siteRailProblems } from './measure-site-rails';
 import { siteIssues } from './measure-site';
 
 export function drawingPosts(data: MeasureData, model: NonNullable<ReturnType<typeof stairGeometry>>) {
+  const site=resolveSite(data);
   return orderedPosts(data).map((post,index)=> {
+    if(post.supportAttachment&&post.pointType!=='railing_post')return {post,label:`P${index+1}`,...supportTerminal(data,site,post)};
     const t=model.treads.find(t=>t.segIdx===post.segIdx && t.stepIdx===post.stepIdx);
     const along=parseMeas(post.stepIdx===null?post.pos:post.fromNosing),edge=parseMeas(post.fromEdge);
     const height=parseMeas(data.rail.height);
@@ -28,6 +31,7 @@ export function drawingIssues(data: MeasureData): string[] {
   const issues:string[]=[...siteIssues(site),...attachedIssues];
   if(landingConnections(data).some(t=>!landingConnectionComplete(data,t)))issues.push("landingDrawingOpen");
   if(model.provisional)issues.push('drawingGeometryOpen');
+  if(data.posts.some(p=>p.supportAttachment&&supportTerminal(data,site,p).provisional))issues.push('drawingConnectionsOpen');
   const posts=drawingPosts(data,model).filter(p=>p.post.pointType==='railing_post');
   if(!posts.length||posts.some(p=>p.provisional))issues.push('drawingPostsOpen');
   if(!data.materials.post.trim()||!data.materials.topRail.trim()||!data.rail.height.trim())issues.push('drawingProfilesOpen');

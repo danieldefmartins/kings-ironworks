@@ -27,6 +27,10 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
   const surfaces=model.treads.map(t=>t.corners);
   const hidden=(p:Point3)=>view!=="side"&&drawingPointOccluded(p,surfaces,camera);
   const posts=details?drawingPosts(data,model).filter(p=>p.base&&p.top):[];
+  const boundary=(p:typeof posts[number])=>p.post.pointType==='railing_post'||('terminal'in p&&!!p.terminal);
+  const railSegments:{start:typeof posts[number];end:typeof posts[number]}[]=[];
+  const railGroups=new Map<string,typeof posts>();for(const p of posts.filter(boundary)){const key=`${p.post.segIdx}:${p.post.side}`;railGroups.set(key,[...(railGroups.get(key)||[]),p]);}
+  for(const group of railGroups.values()){const tread=model.treads.find(t=>t.segIdx===group[0].post.segIdx);if(!tread)continue;const [a,b]=tread.corners;group.sort((p,q)=>(p.base!.x-q.base!.x)*(b.x-a.x)+(p.base!.y-q.base!.y)*(b.y-a.y));for(let i=1;i<group.length;i++)railSegments.push({start:group[i-1],end:group[i]});}
   const postDistances=posts.filter(p=>p.post.firstStepToPostEdge?.trim());
   const transitions=details&&focusSeg===undefined?landingConnections(data).map((t,i)=>({t,i,geometry:landingConnectionGeometry(data,t)})).filter(x=>x.geometry&&(x.t.kind==='drop'||x.t.kind==='level')):[];
   const distanceOrder=[...postDistances].sort((a,b)=>project(a.base!)[1]-project(b.base!)[1]);
@@ -104,14 +108,14 @@ export default function DrawingSvg({data,lang,focusSeg,view,azimuth=0,light=fals
         <text x={geometryRight+8} y={labelY+13} fill={accent} fontSize={15} fontWeight="bold">{p.post.firstStepToPostEdge}{data.units==='in'?'″':''}</text>
       </g>;
     })}
-    {posts.map((p,index)=>{
+    {railSegments.map(({start,end})=>{const a=project(start.top!),b=project(end.top!);return <line key={`${start.post.id}:${end.post.id}`} data-native-rail={`${start.post.id}:${end.post.id}`} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={accent} strokeWidth={3} strokeDasharray={start.provisional||end.provisional?'5 4':undefined}/>;})}
+    {posts.map(p=>{
       const a=project(p.base!),b=project(p.top!);
-      const next=posts.slice(index+1).find(q=>q.post.segIdx===p.post.segIdx&&q.post.side===p.post.side&&q.post.pointType==='railing_post');
+      const terminal='terminal'in p&&!!p.terminal;
       const photos=data.photos.map((ph,i)=>ph.slot===`post_${p.post.id}`?`F${i+1}`:null).filter(Boolean);
-      return <g key={p.post.id} stroke={accent}>
-        {p.post.pointType==='railing_post'&&next&&<line x1={b[0]} y1={b[1]} x2={project(next.top!)[0]} y2={project(next.top!)[1]} strokeWidth={3} strokeDasharray={p.provisional||next.provisional?'5 4':undefined}/>}
-        <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} strokeWidth={4} strokeDasharray={p.provisional?'5 4':undefined}/>
-        <circle cx={a[0]} cy={a[1]} r={5} fill={accent}/>
+      return <g key={p.post.id} data-support-terminal={terminal?p.post.id:undefined} stroke={accent}>
+
+        {terminal?<circle cx={b[0]} cy={b[1]} r={5} fill={light?'#fff':'#171717'} strokeWidth={2} strokeDasharray={p.provisional?'3 2':undefined}/>:<><line data-post-axis={p.post.id} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} strokeWidth={4} strokeDasharray={p.provisional?'5 4':undefined}/><circle cx={a[0]} cy={a[1]} r={5} fill={accent}/></>}
         <text x={b[0]+8} y={b[1]-8} fontSize={12} fill={accent} stroke="none">{p.label}{photos.length?` · ${photos.join(', ')}`:''}</text>
         {onTapPost&&<rect x={b[0]-22} y={b[1]-22} width={44} height={44} fill="transparent" stroke="none" role="button" tabIndex={0} aria-label={p.label} onClick={()=>onTapPost(p.post.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onTapPost(p.post.id);}}}/>}
       </g>;

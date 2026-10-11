@@ -6,6 +6,7 @@ import {drawingDownloadUrl} from '@/lib/shop/drawing-storage';
 import {drawingAssemblyZip} from '@/lib/shop/drawing-assembly-zip';
 import {nativeGeometrySignature,parseNativeCutSources,NativeSteelSnapshotSchema} from '@/lib/shop/measure-native-steel';
 import {normalizeMeasureData,type MeasureData} from '@/lib/shop/measure';
+import {platformEntryRise} from '@/lib/shop/measure-platform-rise';
 import type {DrawingRequest} from '@/lib/shop/shop-drawings';
 export const runtime='nodejs';
 const headers={'Cache-Control':'private, no-store'};
@@ -15,8 +16,10 @@ export async function GET(req:NextRequest){
  try{
   const sheets=await sbSelect<{id:string;job_id:string;updated_at:string;shape:string;data:MeasureData}[]>('kiw_shop_measure_sheets',`select=id,job_id,updated_at,shape,data&org_id=eq.${ORG_ID}&id=eq.${id}&limit=1`),sheet=sheets[0];
   if(!sheet)return NextResponse.json({error:'Measurement sheet not found'},{status:404,headers});
+  const data=normalizeMeasureData(sheet.data);
+  if(data.segments.some((segment,index)=>segment.kind==='platform'&&platformEntryRise(segment,data.segments[index-1]).provisional))return NextResponse.json({error:'Measure the rise to the platform and generate a new drawing before importing its cuts.'},{status:409,headers});
   const rows=await sbSelect<DrawingRequest[]>('kiw_shop_drawing_requests',`select=id,job_id,sheet_id,status,artifact_path,source_updated_at,snapshot&org_id=eq.${ORG_ID}&sheet_id=eq.${id}&job_id=eq.${sheet.job_id}&status=in.(ready,approved)&order=requested_at.desc&limit=50`);
-  const signature=nativeGeometrySignature(normalizeMeasureData(sheet.data));
+  const signature=nativeGeometrySignature(data);
   // Submitting a drawing changes the sheet revision without changing its geometry.
   const row=rows.find(r=>r.artifact_path?.endsWith('.zip')&&r.snapshot.shape===sheet.shape&&signature===nativeGeometrySignature(normalizeMeasureData(r.snapshot.data)));
   if(!row)return NextResponse.json({error:'Save your measurements and generate a new drawing before importing its cuts.'},{status:409,headers});

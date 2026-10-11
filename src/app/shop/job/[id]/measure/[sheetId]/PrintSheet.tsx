@@ -7,6 +7,8 @@
 // revision number, who measured and who approved, and a QR code back to the
 // live digital sheet.
 
+import SupportAttachmentPrint from "./SupportAttachmentPrint";
+import {platformEntryRise} from '@/lib/shop/measure-platform-rise';
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { sceneProjectLabel } from "@/lib/shop/measure-scene-setup";
@@ -440,7 +442,7 @@ export default function PrintSheet({
         {/* Posts */}
         <div>
           <SectionTitle>
-            {mt(lang, "posts")} ({posts.length})
+            {lang === "pt" ? "Postes e pontos de ligação" : lang === "es" ? "Postes y puntos de conexión" : "Posts & connection points"} ({posts.length})
             {data.datums?.postRef
               ? ` — ${mt(lang, `postRef_${data.datums.postRef}`)}`
               : ""}
@@ -463,7 +465,7 @@ export default function PrintSheet({
               <tbody>
                 {posts.map((po, i) => (
                   <tr key={po.id}>
-                    <Td>P{i + 1}</Td>
+                    <Td>P{i + 1}{po.supportAttachment ? " · existing support" : ""}</Td>
                     <Td>{po.stepIdx !== null ? stepOf(data, po) : mt(lang, "platform")}</Td>
                     <Td><Val v={po.firstStepToPostEdge || ""} /></Td>
                     <Td><Val v={po.stepIdx !== null ? po.fromNosing : po.pos} /></Td>
@@ -475,6 +477,7 @@ export default function PrintSheet({
               </tbody>
             </table>
           )}
+          <SupportAttachmentPrint data={data} posts={posts} lang={lang}/>
           {posts.some((po) => po.plate || po.anchors || po.substrate || po.edgeDist || po.obstruction) && (
             <div className="mt-1" style={{ fontSize: 11 }}>
               {posts.map((po, i) =>
@@ -497,7 +500,7 @@ export default function PrintSheet({
             <div key={i} className="mt-2">
               <b>{mt(lang, pl.turn === "none" ? "platform" : "landing")}: </b>
               {mt(lang, "length")}: <Val v={pl.length} /> · {mt(lang, "depth")}:{" "}
-              <Val v={pl.depth} /> · {mt(lang, "slope")}: <Val v={pl.slope} />
+              <Val v={pl.depth} /> · {lang==='pt'?'Altura até o patamar':lang==='es'?'Subida al descanso':'Rise to platform'}: {pl.entryRise?.trim()?<Val v={pl.entryRise}/>:!platformEntryRise(pl,data.segments[data.segments.indexOf(pl)-1]).provisional?<Val v="0"/>:<strong>{lang==='pt'?'Não confirmada':lang==='es'?'Sin confirmar':'Unconfirmed'}</strong>} · {mt(lang, "slope")}: <Val v={pl.slope} />
               {pl.slopeDir && pl.slopeDir.trim() !== "" && <> → {pl.slopeDir}</>}
             </div>
           ))}

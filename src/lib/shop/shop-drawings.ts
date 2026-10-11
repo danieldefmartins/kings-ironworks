@@ -32,7 +32,7 @@ export function blenderPayload(request: DrawingRequest) {
       const walls=override?{left:override==='left'||override==='both',right:override==='right'||override==='both'}:flightWalls(seg,data.datums.orientation);
       return (['left','right'] as const).filter(side=>walls[side]).map(side=>({segment:t.segIdx,points:side==='left'?[t.corners[0],t.corners[1]]:[t.corners[3],t.corners[2]]}));
     }),
-    posts: posts.filter(p => p.base && p.top).map(p => ({ label: p.label, sourcePost: p.post, base: p.base!, top: p.top!, provisional: p.provisional, segment: p.post.segIdx, side: p.post.side, pointType: p.post.pointType, firstStepToPostEdge: p.post.firstStepToPostEdge })),
+    posts: posts.filter(p => p.base && p.top).map(p => ({ label: p.label, sourcePost: p.post, ...("terminal" in p&&p.terminal?{terminal:p.terminal}:{}), base: p.base!, top: p.top!, provisional: p.provisional, segment: p.post.segIdx, side: p.post.side, pointType: p.post.pointType, firstStepToPostEdge: p.post.firstStepToPostEdge })),
     transitions: landingConnections(data).flatMap((t, i) => {
       if (t.kind !== 'drop' && t.kind !== 'level') return [];
       const g = landingConnectionGeometry(data, t);

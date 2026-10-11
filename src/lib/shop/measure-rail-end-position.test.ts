@@ -1,0 +1,5 @@
+import {expect,it} from 'vitest';
+import {newSiteObject} from './measure-site';
+import {railFaceSpan,railAlongFromDistance} from './measure-rail-end-position';
+it('uses host-local face dimensions and exact fractional inch conversion',()=>{const host={...newSiteObject('wall','w','Wall'),length:'120',depth:'8',rotation:90};expect(railFaceSpan(host,'near')).toEqual({length:120,datum:'left'});expect(railFaceSpan(host,'far')).toEqual({length:120,datum:'left'});expect(railFaceSpan(host,'left')).toEqual({length:8,datum:'near'});expect(railFaceSpan(host,'right')).toEqual({length:8,datum:'near'});expect(railAlongFromDistance('2 1/2',8)).toBe(.3125);expect(railAlongFromDistance('0',8)).toBe(0);expect(railAlongFromDistance('8',8)).toBe(1);});
+it('refuses unknown, round, out-of-bounds and invalid dimensions without guessing',()=>{const host=newSiteObject('column','c','Column');expect(railFaceSpan(host,'near')).toBeNull();expect(railFaceSpan({...host,length:'8',section:'round'},'radial')).toBeNull();for(const value of ['','bad','-1','9','1/0'])expect(railAlongFromDistance(value,8)).toBeNull();expect(railAlongFromDistance('2',0)).toBeNull();});

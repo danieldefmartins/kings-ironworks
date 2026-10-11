@@ -29,3 +29,18 @@ it('rejects changed geometry and shape even when a drawing is ready',async()=>{
  }
  expect(m.url).not.toHaveBeenCalled();
 });
+it.each(['','bad','-1'])('rejects unresolved platform entry rise %s before fetching an artifact',async entryRise=>{
+ const data=newMeasureData('stair_platform',2);const p=data.segments[1];if(p.kind!=='platform')throw Error();p.entryRise=entryRise;
+ m.select.mockReset().mockResolvedValueOnce([{id,job_id:id,updated_at:updated,shape:'stair_platform',data}]);
+ const response=await request();expect(response.status).toBe(409);expect((await response.json()).error).toMatch(/rise to the platform/);expect(m.url).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();expect(m.select).toHaveBeenCalledOnce();
+});
+it.each(['0','7 1/2'])('permits a matching drawing with explicit platform rise %s',async entryRise=>{
+ const data=newMeasureData('stair_platform',2);const p=data.segments[1];if(p.kind!=='platform')throw Error();p.entryRise=entryRise;
+ m.select.mockReset().mockResolvedValueOnce([{id,job_id:id,updated_at:updated,shape:'stair_platform',data}]).mockResolvedValueOnce([{id,source_updated_at:updated,artifact_path:`tenant/${id}/drawing.zip`,snapshot:{shape:'stair_platform',data}}]).mockResolvedValueOnce([{updated_at:updated}]);
+ const response=await request();expect(response.status).toBe(200);expect((await response.json()).snapshot.signature).toContain('platformGeometryRevision');expect(m.url).toHaveBeenCalledOnce();
+});
+it('does not reimport an old missing-rise drawing after the platform has been measured',async()=>{
+ const oldData=newMeasureData('stair_platform',2),data=structuredClone(oldData);const p=data.segments[1];if(p.kind!=='platform')throw Error();p.entryRise='0';
+ m.select.mockReset().mockResolvedValueOnce([{id,job_id:id,updated_at:updated,shape:'stair_platform',data}]).mockResolvedValueOnce([{id,source_updated_at:updated,artifact_path:`tenant/${id}/drawing.zip`,snapshot:{shape:'stair_platform',data:oldData}}]);
+ expect((await request()).status).toBe(409);expect(m.url).not.toHaveBeenCalled();expect(fetch).not.toHaveBeenCalled();
+});

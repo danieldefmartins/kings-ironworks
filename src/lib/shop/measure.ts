@@ -1,3 +1,4 @@
+import type {SupportAttachment} from './measure-support-attachment';
 import type {SceneSetup} from './measure-scene-setup';
 import type {NativeSteelSnapshot} from './measure-native-steel';
 import type {SteelPlan} from './measure-steel';
@@ -112,6 +113,7 @@ export interface StepMeasure {
 }
 
 export interface PostMeasure {
+  supportAttachment?: SupportAttachment | null;
   id: string;
   pointType: "railing_post" | "existing_post" | "concrete_wall" | "clip";
   side: "" | "left" | "right"; // always viewed from bottom step looking up
@@ -186,6 +188,7 @@ export interface PlatformSegment {
   id?: string; // Stable attachment identity; legacy sheets gain deterministic IDs on load.
   wallSide?: "left" | "right" | "both" | "none";
   kind: "platform";
+  entryRise?: string; // Vertical rise from previous tread to platform; explicit 0 means flush.
   length: string; // along the rail run
   depth: string;
   diag: string; // corner-to-corner diagonal — verifies squareness
@@ -1356,7 +1359,7 @@ export function blankRamp(): RampSegment {
 }
 
 function blankPlatform(turn: PlatformSegment["turn"] = "none"): PlatformSegment {
-  return { kind: "platform", length: "", depth: "", diag: "", slope: "", slopeDir: "", turn };
+  return { kind: "platform", entryRise: "", length: "", depth: "", diag: "", slope: "", slopeDir: "", turn };
 }
 
 export function newMeasureData(

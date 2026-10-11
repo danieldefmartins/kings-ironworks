@@ -125,3 +125,11 @@ it('centers the actual viewport when placement starts without scrolling again on
  rerender(<SiteWorkspace {...props} data={structuredClone(data)}/>);
  expect(scroll).toHaveBeenCalledTimes(1);
 });
+
+it('records an existing column substrate and preserves it across selection changes',()=>{
+ render(<Harness/>);fireEvent.click(screen.getByRole('button',{name:'2D drawing'}));fireEvent.click(screen.getByText(/Site objects/,{selector:'summary'}));fireEvent.click(screen.getByRole('button',{name:/Left column.*Verified/}));
+ const before=saved(),column=before.site!.objects.find(o=>o.label==='Left column')!;
+ fireEvent.change(screen.getByLabelText(/Existing material \/ substrate/),{target:{value:'Wood'}});
+ const updated=saved().site!.objects.find(o=>o.id===column.id)!;expect(updated.material).toBe('Wood');expect(updated.verified).toBe(false);expect(updated.length).toBe(column.length);expect(saved().posts).toEqual(before.posts);
+ fireEvent.click(screen.getByRole('button',{name:/House wall.*Verified/}));fireEvent.click(screen.getByRole('button',{name:/Left column.*Needs verification/}));expect((screen.getByLabelText(/Existing material \/ substrate/) as HTMLInputElement).value).toBe('Wood');
+});

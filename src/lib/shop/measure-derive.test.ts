@@ -52,7 +52,7 @@ describe("stairTotals", () => {
       .filter((i) => i >= 0);
     idx.forEach((i) => (data.segments[i] = flight(3, "7", "11")));
     const plat = data.segments.find((s) => s.kind === "platform");
-    if (plat && plat.kind === "platform") plat.length = "48";
+    if (plat && plat.kind === "platform") {plat.length = "48";plat.entryRise="0";}
 
     const t = stairTotals(data)!;
     expect(t.totalRise).toBe(42);

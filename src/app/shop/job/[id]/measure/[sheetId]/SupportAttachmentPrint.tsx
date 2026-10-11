@@ -1,0 +1,12 @@
+import type {MeasureData,PostMeasure} from '@/lib/shop/measure';
+import {resolveSite} from '@/lib/shop/measure-wall-placement';
+import {railFaceSpan} from '@/lib/shop/measure-rail-end-position';
+import {supportTerminal} from '@/lib/shop/measure-support-attachment';
+import {formatIn} from '@/lib/shop/measure-parse';
+export default function SupportAttachmentPrint({data,posts,lang}:{data:MeasureData;posts:PostMeasure[];lang:string}){
+ const rows=posts.flatMap((post,i)=>post.supportAttachment?[{post,number:i+1,attachment:post.supportAttachment}]:[]);if(!rows.length)return null;
+ const site=resolveSite(data),tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
+ return <section aria-label={tx('Existing structural support connections','Ligações aos apoios estruturais existentes','Conexiones a soportes estructurales existentes')} style={{marginTop:12,fontSize:11,breakInside:'avoid'}}><h3 style={{fontWeight:700}}>{tx('Existing structural supports — do not fabricate as steel posts','Apoios estruturais existentes — não fabricar como postes','Soportes estructurales existentes — no fabricar como postes')}</h3>
+ {rows.map(({post,number,attachment:a})=>{const host=site?.objects.find(h=>h.id===a.objectId),span=railFaceSpan(host,a.face),resolved=supportTerminal(data,site,post);return <div key={post.id} style={{borderTop:'1px solid #ccc',padding:'6px 0'}}><strong>P{number} · {host?.label||tx('MISSING SUPPORT','APOIO AUSENTE','SOPORTE AUSENTE')}</strong> · {tx('Face','Face','Cara')}: {a.face}<br/>{tx('From face edge','Da borda da face','Desde borde de cara')}: {span?`${formatIn(span.length*a.along)} (${span.datum})`:'VERIFY'} · {tx('Rail datum above support bottom','Referência do corrimão acima da base','Referencia sobre base del soporte')}: {a.elevation||'VERIFY'} · {tx('Rail-to-face gap','Folga até a face','Holgura a la cara')}: {a.gap||'VERIFY'}<br/>{tx('Clip / fastener / substrate detail','Detalhes de presilha / fixação / substrato','Detalle de clip / fijación / sustrato')}: {a.connection||'VERIFY'}<br/><em>{resolved.provisional?tx('UNRESOLVED — do not fabricate','NÃO RESOLVIDO — não fabricar','SIN RESOLVER — no fabricar'):tx('Measured support location; connection and cut fit require shop review.','Local do apoio medido; ligação e ajuste exigem conferência da oficina.','Ubicación medida; conexión y ajuste requieren revisión del taller.')}</em></div>;})}
+ </section>;
+}

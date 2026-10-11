@@ -1,3 +1,4 @@
+import {SupportAttachmentSchema} from '@/lib/shop/measure-support-attachment';
 import {SceneSetupSchema} from '@/lib/shop/measure-scene-setup';
 import {NativeSteelSnapshotSchema} from '@/lib/shop/measure-native-steel';
 import {SteelPlanSchema} from '@/lib/shop/measure-steel';
@@ -70,6 +71,7 @@ const FlightSchema = z.object({
 const PlatformSchema = z.object({
   id: z.string().min(1).max(80).optional(),
   kind: z.literal("platform"),
+  entryRise: meas.optional(),
   wallSide: z.enum(["left", "right", "both", "none"]).optional(),
   length: meas,
   depth: meas,
@@ -102,6 +104,7 @@ const CurveSchema = z.object({
   width: meas,
 });
 const PostSchema = z.object({
+  supportAttachment: SupportAttachmentSchema.nullable().optional(),
   id: z.string().max(40),
   pointType: z.enum(["railing_post", "existing_post", "concrete_wall", "clip"]).optional(),
   side: z.enum(["", "left", "right"]).optional(),
@@ -668,8 +671,9 @@ export async function POST(req: NextRequest) {
           return bad(`Bad payload: ${parsed.error.issues[0]?.message || "invalid"}`);
         }
         // An older tab/client must not silently remove the additive site layer.
-        if (parsed.data.segments.some(s=>s.id===undefined) || parsed.data.site?.objects.some(o=>o.wallAnchor===undefined) || parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
+        if (parsed.data.posts.some(p=>p.supportAttachment===undefined) || parsed.data.segments.some(s=>s.id===undefined) || parsed.data.site?.objects.some(o=>o.wallAnchor===undefined || o.material===undefined) || parsed.data.sceneSetup?.house === undefined || parsed.data.sceneSetup?.placement === undefined || parsed.data.nativeSteel === undefined || parsed.data.specialtySteel === undefined || parsed.data.steelPlan === undefined || !parsed.data.site || parsed.data.site.rails === undefined || parsed.data.site.rails.some(r => r.fabrication === undefined || r.fabrication.secondTop === undefined)) {
           const existing = await loadSheet(body.id, jobOk);
+          for(const post of parsed.data.posts){if(post.supportAttachment===undefined){const old=existing?.data.posts.find(p=>p.id===post.id);if(old?.supportAttachment!==undefined)post.supportAttachment=old.supportAttachment;}}
           parsed.data.site = preserveSiteExtensions(parsed.data.site, existing?.data.site);
           // Old clients may omit stable segment identities. Match by complete,
           // unique content, never by array position: a reordered flight must not

@@ -1,9 +1,11 @@
-import {afterEach,expect,it} from 'vitest';
-import {cleanup,render,screen} from '@testing-library/react';
+import {afterEach,expect,it,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {porchSiteFixture} from '@/lib/shop/measure-site.fixture';
 import {newSiteObject,siteMeshes} from '@/lib/shop/measure-site';
 import {drawingProjection} from '@/lib/shop/measure-projection';
 import DrawingSvg from './DrawingSvg';
+import {drawingPosts} from '@/lib/shop/measure-drawing';
+import {stairGeometry} from '@/lib/shop/measure-geometry';
 afterEach(cleanup);
 it('shows real site geometry in the same projection, within drawing bounds, only when requested',()=>{
  const data=porchSiteFixture(),before=JSON.stringify(data),mesh=siteMeshes(data.site)[0],view=render(<DrawingSvg data={data} lang="en" view="iso" showSiteContext/>);
@@ -36,4 +38,17 @@ it('carries an anchored draft into the measuring sketch but excludes it from pri
  expect(document.querySelector('[data-site-context="draft-anchor"]')).toBeNull();
  view.rerender(<DrawingSvg data={data} lang="en" view="iso" showSiteContext/>);
  expect(document.querySelector('[data-draft-wall="draft-anchor"]')).toBeNull();
+});
+it('draws a measured platform riser from the shared geometry in side and isometric views',async()=>{
+ const {newMeasureData}=await import('@/lib/shop/measure');const {stairGeometry}=await import('@/lib/shop/measure-geometry');
+ const data=newMeasureData('stair_platform',1);const flight=data.segments[0],platform=data.segments[1];if(flight.kind!=='flight'||platform.kind!=='platform')throw Error();flight.width='36';flight.steps[0].rise='7';flight.steps[0].run='11';Object.assign(platform,{entryRise:'6 1/2',length:'48',depth:'36',slope:'0'});
+ const before=JSON.stringify(data),t=stairGeometry(data)!.treads[1];const [a,, ,d]=t.corners;const low={...a,z:a.z-t.rise};
+ const view=render(<DrawingSvg data={data} lang="en" view="side" onDimension={()=>{}}/>);
+ const side=drawingProjection('side',0).project;expect([...document.querySelectorAll('polyline')].map(p=>p.getAttribute('points'))).toContain([low,a,t.corners[1]].map(p=>side(p).join(',')).join(' '));expect(screen.getByRole('button',{name:'Edit rise · segment 2'})).toBeTruthy();expect(screen.getByText('6 1/2')).toBeTruthy();
+ view.rerender(<DrawingSvg data={data} lang="en" view="iso"/>);const iso=drawingProjection('iso',0).project;expect([...document.querySelectorAll('polygon')].map(p=>p.getAttribute('points'))).toContain([low,a,d,{...d,z:d.z-t.rise}].map(p=>iso(p).join(',')).join(' '));expect(JSON.stringify(data)).toBe(before);
+});
+
+it('draws a selectable face connection marker and rail continuation instead of a fabricated support post',()=>{
+ const data=porchSiteFixture(),post=data.posts[1];post.pointType='existing_post';post.supportAttachment={objectId:'column-1',face:'left',along:.5,angle:0,elevation:'0',connection:'Measured clip',gap:'1/8'};const tap=vi.fn(),before=JSON.stringify(data);render(<DrawingSvg data={data} lang="en" view="iso" showSiteContext onTapPost={tap}/>);
+ const marker=document.querySelector(`[data-support-terminal="${post.id}"]`)!;expect(marker).toBeTruthy();expect(marker.querySelector('[data-post-axis]')).toBeNull();expect(marker.querySelector('circle')).toBeTruthy();const line=[...document.querySelectorAll('[data-native-rail]')].find(node=>node.getAttribute('data-native-rail')?.includes(post.id))!;expect(line).toBeTruthy();const terminal=drawingPosts(data,stairGeometry(data)!).find(p=>p.post.id===post.id)!,point=drawingProjection('iso',0).project(terminal.top!);expect([line.getAttribute('x2'),line.getAttribute('y2')]).toEqual(point.map(String));fireEvent.click(marker.querySelector('[role="button"]')!);expect(tap).toHaveBeenCalledWith(post.id);expect(JSON.stringify(data)).toBe(before);
 });

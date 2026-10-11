@@ -4,7 +4,7 @@ import {landingConnections,landingConnectionGeometry,landingConnectionComplete,l
 const fixture=()=>{
   const d=newMeasureData('straight',2),lower=d.segments[0] as FlightSegment;
   lower.width='36';lower.steps.forEach(s=>Object.assign(s,{rise:'7',run:'11'}));
-  d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'0',exitOffset:'0'},structuredClone(lower));
+  d.segments.push({kind:'platform',entryRise:'7',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'0',exitOffset:'0'},structuredClone(lower));
   d.rail.height='36';d.rail.side='Left';d.datums.postRef='centerline';
   d.posts=[Object.assign(newPost(0,1),{side:'left',fromNosing:'2',fromEdge:'3 1/2'}),Object.assign(newPost(2,0),{side:'left',fromNosing:'2',fromEdge:'3 1/2'})];
   return d;
@@ -18,13 +18,13 @@ describe('multi-flight railing layout',()=>{
   });
   it('connects flights across a landing without creating a landing post',()=>{
     const d=fixture(),t=landingConnections(d)[0];expect(t).toMatchObject({landingSegIdx:1,lowerFlightIdx:0,upperFlightIdx:2,side:'left'});
-    Object.assign(t,{kind:'drop',lowerPostId:d.posts[0].id,upperPostId:d.posts[1].id,lowerReach:'0',upperReach:'0',heightDifference:'7',higherEnd:'upper',verticalAt:'lower'});
+    Object.assign(t,{kind:'drop',lowerPostId:d.posts[0].id,upperPostId:d.posts[1].id,lowerReach:'0',upperReach:'0',heightDifference:'14',higherEnd:'upper',verticalAt:'lower'});
     const geometry=landingConnectionGeometry(d,t)!;t.horizontalSpan=String(geometry.horizontalSpan);
-    expect(geometry.heightDifference).toBeCloseTo(7);expect(geometry.higherEnd).toBe('upper');expect(geometry.path[1].z).toBe(geometry.upper.z);
+    expect(geometry.heightDifference).toBeCloseTo(14);expect(geometry.higherEnd).toBe('upper');expect(geometry.path[1].z).toBe(geometry.upper.z);
     expect(landingConnectionComplete(d,t)).toBe(true);expect(d.posts).toHaveLength(2);expect(d.posts.every(p=>p.stepIdx!==null)).toBe(true);
   });
   it('accounts for rail extensions that reverse which connection end is higher',()=>{
-    const d=fixture(),t=landingConnections(d)[0];Object.assign(t,{kind:'drop',lowerPostId:d.posts[0].id,upperPostId:d.posts[1].id,lowerReach:'22',upperReach:'0',heightDifference:'7',higherEnd:'lower',verticalAt:'upper'});
+    const d=fixture(),t=landingConnections(d)[0];Object.assign(t,{kind:'drop',lowerPostId:d.posts[0].id,upperPostId:d.posts[1].id,lowerReach:'33',upperReach:'0',heightDifference:'7',higherEnd:'lower',verticalAt:'upper'});
     const g=landingConnectionGeometry(d,t)!;t.horizontalSpan=String(g.horizontalSpan);
     expect(g.higherEnd).toBe('lower');expect(g.heightDifference).toBeCloseTo(7);expect(g.path[1].z).toBe(g.lower.z);expect(landingConnectionComplete(d,t)).toBe(true);
   });

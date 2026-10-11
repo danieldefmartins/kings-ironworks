@@ -32,14 +32,14 @@ describe('measured stair geometry', () => {
     expect(model.treads[1].riseLabel).toBe('?');
     expect(model.treads.every(t => Number.isFinite(t.x + t.z))).toBe(true);
   });
-  it('keeps a landing at the top elevation with its own measured footprint', () => {
+  it('keeps an explicitly flush landing at the top elevation with its own measured footprint', () => {
     const data = fixture();
-    data.segments.push({kind:'platform',length:'48',depth:'42',diag:'',slope:'',slopeDir:'',turn:'none'});
+    data.segments.push({kind:'platform',entryRise:'0',length:'48',depth:'42',diag:'',slope:'',slopeDir:'',turn:'none'});
     expect(stairGeometry(data)?.treads[2]).toMatchObject({x:22,z:14.5,run:48,width:42,stepIdx:null});
   });
   it('draws turns and flags missing winder measurements while retaining focused flights', () => {
     const data = fixture();
-    data.segments.push({kind:'platform',length:'48',depth:'42',diag:'',slope:'',slopeDir:'',turn:'left'});
+    data.segments.push({kind:'platform',entryRise:'0',length:'48',depth:'42',diag:'',slope:'',slopeDir:'',turn:'left'});
     expect(stairGeometry(data)?.treads).toHaveLength(3);
     expect(stairGeometry(data,0)?.provisional).toBe(false);
     (data.segments[0] as FlightSegment).steps[0].winder = true;
@@ -54,7 +54,7 @@ describe('measured stair geometry', () => {
 
 describe('assembly placement',()=>{
   const assembly=(turn:'left'|'right'|'u'|'none')=>{
-    const d=fixture();d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn,exitOffset:'0'},structuredClone(d.segments[0]));return d;
+    const d=fixture();d.segments.push({kind:'platform',entryRise:'0',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn,exitOffset:'0'},structuredClone(d.segments[0]));return d;
   };
   it('rotates upper flights left and right in plan without changing their rise',()=>{
     const left=stairGeometry(assembly('left'))!,right=stairGeometry(assembly('right'))!;
@@ -110,7 +110,7 @@ describe('assembly placement',()=>{
 describe('landing registration and inherited uncertainty',()=>{
   const modelData=()=>{
     const d=fixture();
-    d.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'8',exitOffset:'4'},structuredClone(d.segments[0]));
+    d.segments.push({kind:'platform',entryRise:'0',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',entryOffset:'8',exitOffset:'4'},structuredClone(d.segments[0]));
     return d;
   };
   it('registers a wider landing against the incoming flight before placing the return',()=>{
@@ -140,4 +140,27 @@ describe('landing registration and inherited uncertainty',()=>{
     const t=stairGeometry(d)!.treads[2];
     expect(t.corners[0].z+.03125*-8).toBeCloseTo(14.5);
   });
+});
+
+describe('platform entry step',()=>{
+ const withPlatform=()=>{const data=fixture();data.segments.push({kind:'platform',entryRise:'7',length:'48',depth:'36',diag:'',slope:'0',slopeDir:'',turn:'none',entryOffset:'0',exitOffset:'0'});return data;};
+ it('adds the measured entry step before drawing the platform and downstream flight',()=>{
+  const data=withPlatform();data.segments.push(structuredClone(data.segments[0]));const before=structuredClone(data);const model=stairGeometry(data)!;
+  expect(model.treads[2]).toMatchObject({rise:7,riseLabel:'7',z:21.5,provisional:false});expect(model.treads[2].corners.every(p=>p.z===21.5)).toBe(true);expect(model.treads[3].z).toBe(28.5);expect(model.rise).toBe(36);expect(data).toEqual(before);
+ });
+ it('previews an unmeasured platform step and propagates its uncertainty without storing defaults',()=>{
+  const data=withPlatform();const platform=data.segments[1];if(platform.kind!=='platform')throw Error();delete platform.entryRise;data.segments.push(structuredClone(data.segments[0]));const before=JSON.stringify(data);const model=stairGeometry(data)!;
+  expect(model.treads[2]).toMatchObject({rise:7.5,riseLabel:'?',z:22,provisional:true});expect(model.treads[3].provisional).toBe(true);expect(JSON.stringify(data)).toBe(before);
+  expect(stairGeometry(data,1)!.treads[0]).toMatchObject({z:7.5,rise:7.5,provisional:true});
+ });
+ it('retains entry height through slope registration and assembly rotation',()=>{
+  const data=withPlatform();const platform=data.segments[1];if(platform.kind!=='platform')throw Error();platform.entryOffset='8';platform.depth='52';platform.slope='3/8"/ft';platform.slopeDir='Right';
+  const initial=stairGeometry(data)!.treads[2];expect(initial.corners[0].z-.03125*8).toBeCloseTo(21.5);
+  data.sceneSetup={environment:'exterior',projectType:'stairs',placement:{x:'10',y:'20',z:'30',rotation:90}};const moved=stairGeometry(data)!.treads[2];
+  initial.corners.forEach((p,i)=>{expect(moved.corners[i].z).toBeCloseTo(p.z+30);expect(moved.corners[i].x).toBeCloseTo(10-p.y);expect(moved.corners[i].y).toBeCloseTo(20+p.x);});
+ });
+ it('starts both branches at the raised landing elevation',()=>{
+  const data=withPlatform();const platform=data.segments[1];if(platform.kind!=='platform')throw Error();platform.depth='84';const left=structuredClone(data.segments[0]) as FlightSegment;left.branch='left';left.branchOffset='0';const right=structuredClone(left);right.branch='right';data.segments.push(left,right);
+  const model=stairGeometry(data)!;expect(model.treads[3].z).toBe(28.5);expect(model.treads[5].z).toBe(28.5);expect(model.rise).toBe(36);
+ });
 });

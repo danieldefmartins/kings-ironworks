@@ -53,16 +53,19 @@ export function measureScene(data:MeasureData):MeasureScene{
    const seg=data.segments[t.segIdx],override=seg.kind==='flight'&&t.stepIdx!==null?seg.steps[t.stepIdx].wallSide:undefined,walls=override?{left:override==='left'||override==='both',right:override==='right'||override==='both'}:flightWalls(seg,data.datums.orientation);
    for(const side of ['left','right'] as const)if(walls[side])lines.push({id:`wall-edge:${id}:${side}`,label:`${side} wall boundary`,kind:'wall-edge',provisional:t.provisional,referenceOnly:true,entity,points:(side==='left'?[t.corners[0],t.corners[1]]:[t.corners[3],t.corners[2]]).map(p=>({...p}))});
   });
-  const posts=drawingPosts(data,model).filter(p=>p.base&&p.top),groups=new Map<string,typeof posts>();
+  const resolvedPosts=drawingPosts(data,model);for(const p of resolvedPosts)if(p.post.supportAttachment&&(!p.base||!p.top))pending.push(`${p.label} · support connection`);
+  const posts=resolvedPosts.filter(p=>p.base&&p.top),groups=new Map<string,typeof posts>();
   for(const p of posts){
    const entity={postId:p.post.id,segmentIndex:p.post.segIdx,segmentId:segmentIdAt(data.segments[p.post.segIdx],p.post.segIdx),stepIndex:p.post.stepIdx},item={id:`post:${p.post.id}`,label:p.label,kind:'post' as const,provisional:p.provisional,referenceOnly:true,entity};
+   const terminal='terminal' in p?p.terminal:undefined;
    const w=siteNumber(p.post.existingW),d=siteNumber(p.post.existingD);
    const section=p.post.pointType==='railing_post'?postSection(data.materials.post):p.post.pointType==='existing_post'&&w!==null&&d!==null&&w>0&&d>0?{width:w,depth:d,round:false}:null;
-   if(section)meshes.push({...item,...postEnvelope(p.base!,p.top!,section)});else lines.push({...item,points:[{...p.base!},{...p.top!}]});
-   if(p.post.pointType==='railing_post'){const key=`${p.post.segIdx}:${p.post.side}`;groups.set(key,[...(groups.get(key)||[]),p]);}
+   if(terminal){const center=p.top!,tangent={x:-terminal.normal.y,y:terminal.normal.x};lines.push({...item,label:`${p.label} · support connection`,points:[{x:center.x-tangent.x,y:center.y-tangent.y,z:center.z},{x:center.x+tangent.x,y:center.y+tangent.y,z:center.z},{...center},{...center,z:center.z-1},{...center,z:center.z+1}]});}
+   else if(section)meshes.push({...item,...postEnvelope(p.base!,p.top!,section)});else lines.push({...item,points:[{...p.base!},{...p.top!}]});
+   if(p.post.pointType==='railing_post'||terminal){const key=`${p.post.segIdx}:${p.post.side}`;groups.set(key,[...(groups.get(key)||[]),p]);}
   }
   for(const [group,list] of groups){
-   const tread=model.treads.find(t=>t.segIdx===list[0].post.segIdx)!;const [a,b]=tread.corners,dx=b.x-a.x,dy=b.y-a.y;
+   const tread=model.treads.find(t=>t.segIdx===list[0].post.segIdx);if(!tread)continue;const [a,b]=tread.corners,dx=b.x-a.x,dy=b.y-a.y;
    list.sort((p,q)=>(p.base!.x-q.base!.x)*dx+(p.base!.y-q.base!.y)*dy);
    for(let i=1;i<list.length;i++)lines.push({id:`rail:${list[i-1].post.id}:${list[i].post.id}`,label:`Railing ${group}`,kind:'rail',provisional:list[i-1].provisional||list[i].provisional,referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[list[i].post.segIdx],list[i].post.segIdx),segmentIndex:list[i].post.segIdx},points:[{...list[i-1].top!},{...list[i].top!}]});
   }

@@ -63,3 +63,12 @@ describe('attached railing references',()=>{
   d.site!.rails!.push(structuredClone(d.site!.rails![0]));expect(SiteModelSchema.safeParse(d.site).success).toBe(false);
  });
 });
+
+it('preserves optional existing substrate through old clients and invalidates a checked connection when changed',()=>{
+ const data=attachedPorchFixture(),site=data.site!,rail=site.rails![0],host=site.objects.find(o=>o.id===rail.start.objectId)!;
+ const legacy=structuredClone(site);host.material='Wood structural column';
+ expect(SiteModelSchema.parse(site).objects.find(o=>o.id===host.id)?.material).toBe('Wood structural column');
+ expect(preserveSiteExtensions(legacy,site)?.objects.find(o=>o.id===host.id)?.material).toBe('Wood structural column');
+ const cleared=structuredClone(site);cleared.objects.find(o=>o.id===host.id)!.material='';expect(preserveSiteExtensions(cleared,site)?.objects.find(o=>o.id===host.id)?.material).toBe('');
+ rail.checkedSignature=siteRailSignature(site,rail);const checked=rail.checkedSignature;host.material='Concrete';expect(siteRailSignature(site,rail)).not.toBe(checked);expect(siteRailVerified(site,rail)).toBe(false);
+});

@@ -1,3 +1,5 @@
+import {supportTerminal} from './measure-support-attachment';
+import {resolveSite} from './measure-wall-placement';
 // Geometry verification for measure sheets. Field values are free-text
 // (inches + fractions, optional feet); this module parses them, cross-checks
 // redundant measurements against each other, and reports green/yellow/red
@@ -5,7 +7,8 @@
 
 import { landingConnections, landingConnectionMeasured } from "./measure-landings";
 import { parseMeas } from "./measure-parse";
-import { deckPerimeter, fenceRun, flightTotals } from "./measure-derive";
+import {platformEntryRise} from "./measure-platform-rise";
+import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
 import {
   requiredPhotoSlots,
   isFabCriticalPhoto,
@@ -783,25 +786,7 @@ export function runChecks(
     }
     return { r, u };
   });
-  const commonRise = sums.reduce<number | null>((acc, x, i) => {
-    if (flights[i].branch) return acc;
-    return acc === null || x.r === null ? null : acc + x.r;
-  }, 0);
-  const branchRises = sums
-    .map((x, i) => (flights[i].branch ? x.r : null))
-    .filter((x): x is number => x !== null);
-  // A bifurcated stair has alternate upper routes. Floor-to-floor follows the
-  // taller branch; adding left + right would manufacture a false discrepancy.
-  let riseSum = commonRise === null
-    ? null
-    : commonRise + (branchRises.length ? Math.max(...branchRises) : 0);
-  // curves and ramps in a mixed assembly contribute to the total rise
-  for (const seg of data.segments) {
-    if (seg.kind === "curve" || seg.kind === "ramp") {
-      const rv = seg.rise.trim() === "" ? 0 : parseMeas(seg.rise);
-      riseSum = riseSum === null || rv === null ? null : riseSum + rv;
-    }
-  }
+  const riseSum=measuredAssemblyRise(data);
 
   // 1) sum of ALL risers vs floor-to-floor — vertical heights add regardless
   // of turns, so this stays global.
@@ -1137,6 +1122,8 @@ export function flightGaps(
 // one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const gaps: Gap[] = [];
+  const supportSite=data.posts.some(p=>p.supportAttachment)?resolveSite(data):undefined;
+  data.posts.forEach((p,i)=>{if(p.supportAttachment&&supportTerminal(data,supportSite,p).provisional)gaps.push({key:'post',detail:`P${i+1} · support connection`});});
   const has = (s: string | undefined | null) => !!s && s.trim() !== "";
   // A well sheet may be grate-only, in which case there is no rail piece and
   // none of the guardrail material or span requirements apply.
@@ -1504,6 +1491,10 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if (seg.kind !== "platform") return;
     const pl = seg as PlatformSegment;
     const tag = data.segments.length > 2 ? `#${si}` : undefined;
+    if(platformEntryRise(pl,data.segments[si-1]).provisional){
+      const previousFlight=data.segments.slice(0,si).filter(s=>s.kind==='flight').length-1;
+      gaps.push({key:'landing_entry_rise',detail:`#${si+1}`,...(previousFlight>=0?{flight:previousFlight}:{})});
+    }
     if (!has(pl.length) && shape !== "level_run") gaps.push({ key: "landing_length", detail: tag });
     if (!has(pl.depth)) gaps.push({ key: "landing_depth", detail: tag });
     if (!has(pl.diag)) gaps.push({ key: "landing_diag", detail: tag });
@@ -1522,6 +1513,8 @@ export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   const postPhotos = new Set(data.photos.map((p) => p.slot));
   data.posts.forEach((p, i) => {
     const tag = `P${i + 1}`;
+    // A linked existing support is positioned by its surveyed face, not by a fabricated post setback.
+    if(p.supportAttachment)return;
     const posOk = p.stepIdx !== null ? has(p.fromNosing) : has(p.pos);
     if (p.stepIdx !== null && !has(p.firstStepToPostEdge)) {
       gaps.push({ key: "post_first_post_edge", detail: tag });

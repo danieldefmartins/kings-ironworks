@@ -38,3 +38,8 @@ it('does not stale existing native cuts when stable segment identifiers are intr
  expect(nativeGeometrySignature({...original,segments:original.segments.map(s=>({...s,id:'stable-flight'}))})).toBe(nativeGeometrySignature(original));
  expect(nativeGeometrySignature({...original,posts:[{id:'p2'}]})).not.toBe(nativeGeometrySignature(original));
 });
+it('invalidates old platform caches while preserving unrelated legacy signature bytes',()=>{
+ const platform={segments:[{kind:'platform',length:'48'}]};const legacy=JSON.stringify(platform);expect(nativeGeometrySignature(platform)).not.toBe(legacy);expect(nativeGeometrySignature(platform)).toContain('platformGeometryRevision');
+ const flight={segments:[{kind:'flight',steps:[]}]};expect(nativeGeometrySignature(flight)).toBe(JSON.stringify(flight));
+ expect(nativeGeometrySignature(platform)).not.toBe(nativeGeometrySignature({segments:[{kind:'platform',length:'48',entryRise:'0'}]}));
+});

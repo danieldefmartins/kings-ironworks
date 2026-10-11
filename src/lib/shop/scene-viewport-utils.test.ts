@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {Vector3,BufferGeometry,BufferAttribute,Mesh,MeshBasicMaterial,DoubleSide,Raycaster,Plane} from 'three';
-import {TapGesture,localPositions,placeSceneTargets,fitScene,viewDirection,faceIndices,isSceneSelected} from './scene-viewport-utils';
+import {PostDragGesture,TapGesture,localPositions,placeSceneTargets,fitScene,viewDirection,faceIndices,isSceneSelected} from './scene-viewport-utils';
 import type {SceneMesh} from './measure-scene';
 const mesh:SceneMesh={id:'site:wall1',label:'Wall',kind:'site',provisional:false,referenceOnly:false,entity:{siteId:'wall1'},vertices:[{x:0,y:0,z:0},{x:30,y:0,z:0},{x:30,y:2,z:0},{x:0,y:2,z:0}],faces:[[0,1,2,3]]};
 describe('viewport geometry and interaction',()=>{
@@ -29,5 +29,14 @@ describe('phone wall touch targets',()=>{
  });
  it('preserves separated anchors instead of moving every label to a fixed dock',()=>{
   const anchors=[{x:60,y:80},{x:200,y:80},{x:60,y:280},{x:200,y:280}];expect(placeSceneTargets(anchors,320,455)).toEqual(anchors);
+ });
+});
+
+describe('post drag gesture contract',()=>{
+ it('separates click from explicit drag and commits only once',()=>{
+  const gesture=new PostDragGesture();gesture.down(1,10,10);expect(gesture.up(1,14,12)).toBe('tap');expect(gesture.up(1,14,12)).toBeNull();gesture.down(2,10,10);expect(gesture.move(2,30,10)).toBe(true);expect(gesture.up(2,10,10)).toBe('drop');expect(gesture.up(2,10,10)).toBeNull();
+ });
+ it('cancels second-finger gestures and pointer cancellation without a drop',()=>{
+  const gesture=new PostDragGesture();gesture.down(1,10,10);expect(gesture.down(2,20,20)).toBe(false);expect(gesture.up(1,30,30)).toBeNull();gesture.down(3,0,0);gesture.move(3,30,30);gesture.cancel();expect(gesture.up(3,30,30)).toBeNull();
  });
 });

@@ -17,6 +17,7 @@ export const SiteObjectSchema = z.object({
   riseX: dimension, riseY: dimension,
   source: z.enum(['tape', 'laser', 'drawing', 'scan', 'unknown']),
   verified: z.boolean(),
+  material: z.string().max(120).optional(),
   notes: z.string().max(1000),
   photoPaths: z.array(z.string().max(300)).max(20),
 });
@@ -104,7 +105,7 @@ export function pointDistance(a: Point3, b: Point3) {
 /** Old clients omit new optional fields. An explicit [] still means intentional removal. */
 export function preserveSiteExtensions(incoming:SiteModel|undefined,existing:SiteModel|undefined):SiteModel|undefined {
   if(!incoming)return existing;
-  const objects=incoming.objects.map(o=>{const stored=existing?.objects.find(p=>p.id===o.id);return o.wallAnchor===undefined&&stored?.wallAnchor!==undefined?{...o,wallAnchor:stored.wallAnchor}:o;});
+  const objects=incoming.objects.map(o=>{const stored=existing?.objects.find(p=>p.id===o.id);return {...o,...(o.wallAnchor===undefined&&stored?.wallAnchor!==undefined?{wallAnchor:stored.wallAnchor}:{}),...(o.material===undefined&&stored?.material!==undefined?{material:stored.material}:{})};});
   const rails=incoming.rails===undefined?existing?.rails:incoming.rails.map(r=>{
     const stored=existing?.rails?.find(old=>old.id===r.id);
     if(r.fabrication===undefined&&stored?.fabrication)return {...r,fabrication:stored.fabrication};

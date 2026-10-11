@@ -42,5 +42,8 @@ export function nativeGeometrySignature(data:Record<string,unknown>|object):stri
  const canonical=(value:unknown):unknown=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([,v])=>v!==undefined).sort(([a],[b])=>a<b?-1:a>b?1:0).map(([k,v])=>[k,canonical(v)])):value;
  // Segment IDs identify wall anchors; adding them to legacy records does not change native cuts.
  const physical=Object.fromEntries(Object.entries(data).filter(([k])=>!omitted.has(k)).map(([k,v])=>[k,k==='segments'&&Array.isArray(v)?v.map(segment=>Object.fromEntries(Object.entries(segment).filter(([key])=>key!=='id'))):v]));
+ // Entry-step geometry changed for legacy platform records even before a field is edited.
+ // Leave unrelated legacy signatures byte-for-byte compatible.
+ if(Array.isArray(physical.segments)&&physical.segments.some(segment=>segment.kind==='platform'))physical.platformGeometryRevision=1;
  return JSON.stringify(canonical(physical));
 }

@@ -147,7 +147,7 @@ describe('measurement persistence',()=>{
     data.joints=[{...blankJoint(0),method:'weld',gap:'1/8',offsetV:'8',offsetH:'3 1/2',angleChange:'90',carriedBy:'upper'}];
     data.rail.sideSetback='3 1/2';(data.segments[0] as FlightSegment).wallSide='left';
     data.landingTransitions=[{...blankLandingTransition(1,0,2,'left'),kind:'drop',heightDifference:'17',horizontalSpan:'8',higherEnd:'upper',verticalAt:'lower'}];
-    data.segments.push({kind:'platform',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',uDirection:'left',entryOffset:'8',exitOffset:'4'});
+    data.segments.push({kind:'platform',entryRise:'7 1/2',length:'48',depth:'84',diag:'',slope:'0',slopeDir:'',turn:'u',uDirection:'left',entryOffset:'8',exitOffset:'4'});
     (data.segments[0] as FlightSegment).steps[0].wallSide="none";
     data.posts[0].firstStepToPostEdge="25 1/2";
     data.posts[0].distanceFromFirst="22";
@@ -163,6 +163,7 @@ describe('measurement persistence',()=>{
     expect(saved.fab).toEqual(data.fab);
     expect(saved.segments[1].uDirection).toBe('left');
     expect(saved.segments[1].entryOffset).toBe("8");
+    expect(saved.segments[1].entryRise).toBe("7 1/2");
     expect(saved.segments[0].steps[0].wallSide).toBe("none");
     expect(saved.posts[0].firstStepToPostEdge).toBe("25 1/2");
     expect(saved.posts[0].embedment).toBe("4");
@@ -193,4 +194,13 @@ describe('Submit to Shop Drawings',()=>{
     mocks.rpc.mockRejectedValueOnce(Error('DRAWING_CHANGED'));
     expect((await submit()).status).toBe(409);
   });
+});
+
+it('retains support attachments from older tabs and accepts explicit disconnection',async()=>{
+ const attachment={objectId:'column-1',face:'left' as const,along:.5,angle:0,elevation:'0',connection:'Clip detail',gap:'1/8'};
+ data.posts[0].supportAttachment=attachment;data.posts[0].pointType='existing_post';const oldTab=structuredClone(data);delete oldTab.posts[0].supportAttachment;
+ mocks.update.mockResolvedValue([{id,updated_at:stamp}]);
+ expect((await request({type:'update',data:oldTab})).status).toBe(200);expect(mocks.update.mock.calls.at(-1)![2].data.posts[0].supportAttachment).toEqual(attachment);
+ oldTab.posts[0].supportAttachment=null;expect((await request({type:'update',data:oldTab})).status).toBe(200);expect(mocks.update.mock.calls.at(-1)![2].data.posts[0].supportAttachment).toBeNull();
+ const invalid=structuredClone(data);invalid.posts[0].supportAttachment!.along=2;expect((await request({type:'update',data:invalid})).status).toBe(400);
 });

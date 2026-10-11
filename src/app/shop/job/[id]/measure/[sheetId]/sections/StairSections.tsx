@@ -359,7 +359,9 @@ export default function StairSections({
       {/* Platforms / landings */}
       {platforms.map(({ seg, i }) => (
         <Card stage="level" key={i} title={mt(lang, seg.turn === "none" ? "platform" : "landing")}>
+          <p className="mb-3 text-xs text-neutral-400">{data.segments[i-1]?.kind!=='flight'?(lang==='pt'?'Altura desde o apoio anterior. Sem escada anterior, em branco significa mesmo nível.':lang==='es'?'Altura desde el apoyo anterior. Sin escalera anterior, vacío significa mismo nivel.':'Rise from the previous support. Without preceding stairs, blank means the same level.'):lang==='pt'?'Altura até o patamar: medida vertical desde o degrau anterior. Use 0 para o mesmo nível. Em branco: prévia não confirmada.':lang==='es'?'Subida al descanso: medida vertical desde el peldaño anterior. Use 0 para el mismo nivel. Vacío: vista previa sin confirmar.':'Rise to platform: measured vertically from the previous tread. Enter 0 for the same level. Blank: unconfirmed preview.'}</p>
           <Grid>
+            <MInput label={lang==='pt'?'Altura até o patamar':lang==='es'?'Subida al descanso':'Rise to platform'} value={seg.entryRise||''} onChange={v=>set(d=>void((d.segments[i] as PlatformSegment).entryRise=v))}/>
             <MInput help="length" label={mt(lang, "length")} value={seg.length}
               onChange={(v) => set((d) => void ((d.segments[i] as PlatformSegment).length = v))} />
             <MInput help="depth" label={mt(lang, "depth")} value={seg.depth}

@@ -1,0 +1,7 @@
+import {expect,it} from 'vitest';
+import {newMeasureData,type FlightSegment,type PlatformSegment} from './measure';
+import {platformEntryRise} from './measure-platform-rise';
+const platform=():PlatformSegment=>({kind:'platform',length:'36',depth:'36',diag:'',slope:'0',slopeDir:'',turn:'none'});
+it('accepts measured fractional and zero platform rises',()=>{expect(platformEntryRise({...platform(),entryRise:'7 1/2'})).toEqual({rise:7.5,measured:true,provisional:false,label:'7 1/2'});expect(platformEntryRise({...platform(),entryRise:'0'}).rise).toBe(0);});
+it('previews the last valid preceding riser without writing an assumed measurement',()=>{const previous=newMeasureData('straight',3).segments[0] as FlightSegment;previous.steps[0].rise='6';previous.steps[1].rise='7 1/2';previous.steps[2].rise='invalid';const current=platform(),before=structuredClone(current);expect(platformEntryRise(current,previous)).toEqual({rise:7.5,measured:false,provisional:true,label:'?'});expect(current).toEqual(before);previous.steps.forEach(s=>s.rise='');expect(platformEntryRise(current,previous).rise).toBe(7);});
+it('adds no inferred step to first platforms or nonflight joins and keeps invalid values unresolved',()=>{expect(platformEntryRise(platform())).toEqual({rise:0,measured:false,provisional:false,label:''});expect(platformEntryRise(platform(),platform()).provisional).toBe(false);for(const entryRise of ['-2','bad','1/0','Infinity'])expect(platformEntryRise({...platform(),entryRise})).toMatchObject({provisional:true,measured:false,label:'?'});});

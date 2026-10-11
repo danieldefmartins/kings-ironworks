@@ -26,6 +26,7 @@ import { flightWalls, planPaths } from "@/lib/shop/measure";
 import { mt, optLabel } from "@/lib/shop/measure-i18n";
 import { formatIn, orderedPosts, parseMeas, sortPlatPosts, wellClearance } from "@/lib/shop/measure-checks";
 export { sortPlatPosts };
+import {platformEntryRise} from "@/lib/shop/measure-platform-rise";
 
 const RUN = 46;
 const RISE = 26;
@@ -1186,6 +1187,7 @@ function StairSketch({
       hRise += seg.steps.length * RISE;
     } else if (seg.kind === "platform") {
       w += PLAT;
+      if(platformEntryRise(seg,data.segments[segIdx-1]).rise>0)hRise+=RISE;
     } else if (seg.kind === "curve") {
       w += 110;
       if (seg.rise.trim() !== "") hRise += 60;
@@ -1298,6 +1300,11 @@ function StairSketch({
     } else if (seg.kind === "platform") {
       const pl = seg as PlatformSegment;
       const x0 = x;
+      const entryRise=platformEntryRise(pl,data.segments[segIdx-1]);
+      if(entryRise.rise>0){
+        const previousY=y;y-=RISE;outline+=` L ${x} ${y}`;
+        els.push(<g key={`platform-rise-${segIdx}`} data-platform-entry-rise={segIdx}><line x1={x} y1={previousY} x2={x} y2={y} stroke={entryRise.provisional?p.miss:p.line} strokeDasharray={entryRise.provisional?'4 3':undefined}/><text x={x+8} y={(previousY+y)/2} fontSize={9} fill={entryRise.provisional?p.miss:p.val}>{entryRise.label}</text></g>);
+      }
       outline += ` L ${x + PLAT} ${y}`;
 
       const lv = v(pl.length, p);

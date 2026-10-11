@@ -4,7 +4,7 @@ import {applyStandardReturn} from './measure-standard-layout';
 import {stairGeometry} from './measure-geometry';
 function fixture(){
  const {data}=newPresetMeasureData('multi_flight',5,5);
- for(const s of data.segments){if(s.kind==='flight'){s.width='36';s.steps.forEach(t=>Object.assign(t,{run:'11',rise:'7'}));}else if(s.kind==='platform')Object.assign(s,{length:'48',depth:'84',slope:'0'});}
+ for(const s of data.segments){if(s.kind==='flight'){s.width='36';s.steps.forEach(t=>Object.assign(t,{run:'11',rise:'7'}));}else if(s.kind==='platform')Object.assign(s,{length:'48',depth:'84',slope:'0',entryRise:'7'});}
  return data;
 }
 describe('standard two-flight U stair',()=>{
@@ -16,6 +16,8 @@ describe('standard two-flight U stair',()=>{
    const t=flights[i];const dx=t.corners[1].x-t.corners[0].x;
    expect(Math.sign(dx)).toBe(i%2?-1:1);
    expect(t.corners[1].y-t.corners[0].y).toBeCloseTo(0);
+   expect(t.corners[0].z).toBeCloseTo(i*42+7);
+   if(i<4)expect(g.treads.find(part=>part.segIdx===i*2+1)!.corners[0].z).toBeCloseTo((i+1)*42);
    expect(t.corners[0].x).toBeCloseTo(i%2?55:0);
    expect(t.corners[0].y).toBeCloseTo(i%2?(wall==='right'?-12:84):0);
   }
@@ -39,7 +41,7 @@ it('uses both setbacks and post registration to size a square U bridge',()=>{
  expect(g.layout.alongRailEnds).toBeCloseTo(0);
  expect(g.layout.clearGapBetweenFlights).toBeCloseTo(12);
  expect(g.horizontalSpan).toBeCloseTo(19);
- expect(g.heightDifference).toBeCloseTo(15.27272727);
+ expect(g.heightDifference).toBeCloseTo(22.27272727);
  d.posts[0].fromEdge='4 1/2';d.posts[1].fromEdge='4 1/2';g=landingConnectionGeometry(d,t)!;
  expect(g.horizontalSpan).toBeCloseTo(21);expect(g.layout.clearGapBetweenFlights).toBeCloseTo(12);
 });

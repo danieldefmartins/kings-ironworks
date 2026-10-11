@@ -7,6 +7,7 @@ import {newSiteModel} from '@/lib/shop/measure-site';
 import {newSiteRail,reuseSiteRail,railHosts,siteRailLayout,siteRailProblems,siteRailSignature,siteRailVerified,type SiteRail,type SiteRailEnd} from '@/lib/shop/measure-site-rails';
 import {siteRailLabels} from '@/lib/shop/measure-site-rails-i18n';
 import {formatIn} from '@/lib/shop/measure-parse';
+import {railFaceSpan,railAlongFromDistance} from '@/lib/shop/measure-rail-end-position';
 import {mt} from '@/lib/shop/measure-i18n';
 
 const field='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900';
@@ -27,11 +28,18 @@ export default function AttachedRails({data,set,lang,stage:controlledStage,onSta
  function endpoint(which:'start'|'end'){
   if(!rail)return null;
   const end=rail[which],host=hosts.find(o=>o.id===end.objectId);
+  const span=railFaceSpan(host,end.face);
   const change=(patch:Partial<SiteRailEnd>)=>update({[which]:{...end,...patch}});
   return <fieldset className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50 p-3"><legend className="px-1 font-bold text-slate-900">{l[which]}</legend>
    <label className="block text-sm font-semibold text-slate-600">{l.host}<select className={field} value={end.objectId} onChange={e=>{const o=hosts.find(o=>o.id===e.target.value);change({objectId:e.target.value,face:o?.section==='round'?'radial':'near'});}}><option value="">{l.choose}</option>{end.objectId&&!host&&<option value={end.objectId}>{l.missing}</option>}{hosts.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}</select></label>
    <label className="mt-3 block text-sm font-semibold text-slate-600">{l.face}<select className={field} value={(host?.section==='round')===(end.face==='radial')?end.face:''} onChange={e=>change({face:e.target.value as SiteRailEnd['face']})}><option value="" disabled>—</option>{(host?.section==='round'?['radial'] as const:['left','right','near','far'] as const).map(f=><option key={f} value={f}>{l[f]}</option>)}</select></label>
+   {host?.section!=='round'&&<>
+    <EndpointDistance key={`${rail.id}-${which}-${host?.id}-${end.face}-${span?.length}-${end.along}`} value={span?String(Number((span.length*end.along).toFixed(8))):''} span={span?.length??null} label={span?.datum==='near'?tx('From near edge · inches','Da borda próxima · polegadas','Desde borde cercano · pulgadas'):tx('From left edge · inches','Da borda esquerda · polegadas','Desde borde izquierdo · pulgadas')} hint={span?tx(`Measured along the selected face in the support’s local direction (0–${formatIn(span.length)}).`,`Medido na face selecionada, na direção local do apoio (0–${formatIn(span.length)}).`,`Medido sobre la cara elegida en la dirección local del soporte (0–${formatIn(span.length)}).`):tx('Measure the support face first.','Meça primeiro a face do apoio.','Mida primero la cara del soporte.')} invalidLabel={tx('Enter a distance within this face. Last saved position is unchanged.','Informe uma distância dentro desta face. A posição salva permanece.','Introduzca una distancia dentro de esta cara. Se conserva la posición guardada.')} onCommit={along=>change({along})}/>
+    <p className="mt-1 text-xs text-slate-500">{tx('Position stays proportional when the support size changes; recheck after resizing.','A posição acompanha a proporção do apoio; confira após redimensionar.','La posición mantiene su proporción al cambiar el soporte; vuelva a comprobarla.')}</p>
+   </>}
+   <details open={host?.section==='round'} className="mt-2"><summary className="cursor-pointer py-2 text-xs text-slate-500">{host?.section==='round'?l.angle:tx('Relative position · %','Posição relativa · %','Posición relativa · %')}</summary>
    <label className="mt-3 block text-sm font-semibold text-slate-600">{host?.section==='round'?l.angle:l.along}<input className={field} type="number" min={host?.section==='round'?-360:0} max={host?.section==='round'?360:100} step="any" value={host?.section==='round'?end.angle:Math.round(end.along*10000)/100} onChange={e=>{if(e.target.value==='')return;const n=Number(e.target.value);if(!Number.isFinite(n))return;if(host?.section==='round'&&Math.abs(n)<=360)change({angle:n});else if(host?.section!=='round'&&n>=0&&n<=100)change({along:n/100});}}/></label>
+   </details>
    <label className="mt-3 block text-sm font-semibold text-slate-600">{l.elevation}<input className={field} value={end.elevation} maxLength={40} onChange={e=>change({elevation:e.target.value})}/><span className="mt-1 block text-xs font-normal">{l.elevationHint}</span></label>
    <label className="mt-3 block text-sm font-semibold text-slate-600">{l.connection}<textarea className={field} rows={3} value={end.connection} maxLength={1000} onChange={e=>change({connection:e.target.value})}/></label>
   </fieldset>;
@@ -62,4 +70,10 @@ export default function AttachedRails({data,set,lang,stage:controlledStage,onSta
   {removed&&<button type="button" className={`${button} mt-3`} disabled={rails.length>=100} onClick={()=>{set(d=>{d.site??=newSiteModel();d.site.rails??=[];d.site.rails.push(removed);});select(removed.id);setRemoved(null);}}>{l.restore}: {removed.label}</button>}
   {rails.length>0&&<p className="mt-3 text-xs text-slate-600">{l.layout}</p>}
  </section>;
+}
+
+export function EndpointDistance({value,span,label,hint,invalidLabel,onCommit}:{value:string;span:number|null;label:string;hint:string;invalidLabel:string;onCommit:(along:number)=>void}){
+ const [draft,setDraft]=useState(value),[invalid,setInvalid]=useState(false);
+ const commit=()=>{if(span===null)return;const along=railAlongFromDistance(draft,span);if(along===null){setInvalid(true);return;}setInvalid(false);onCommit(along);};
+ return <label className="mt-3 block text-sm font-semibold text-slate-600">{label}<input className={field} value={draft} disabled={span===null} maxLength={40} aria-invalid={invalid} onChange={e=>{setDraft(e.target.value);setInvalid(false);}} onBlur={commit} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();commit();}}}/><span className="mt-1 block text-xs font-normal">{hint}</span>{invalid&&<span role="alert" className="mt-1 block text-xs text-red-700">{invalidLabel}</span>}</label>;
 }

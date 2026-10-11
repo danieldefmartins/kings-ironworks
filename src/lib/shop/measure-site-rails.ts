@@ -51,7 +51,7 @@ export function siteRailLayout(site:SiteModel|undefined, rail:SiteRail) {
 function hostSignature(o:SiteObject|undefined) {
   if(!o)return null;
   const {id,kind,section,x,y,z,length,depth,height,rotation,source,verified}=o;
-  return {id,kind,section,x,y,z,length,depth,height,rotation,source,verified};
+  return {id,kind,section,x,y,z,length,depth,height,rotation,source,verified,...(o.material!==undefined?{material:o.material}:{})};
 }
 export function siteRailSignature(site:SiteModel|undefined,rail:SiteRail):string {
   // Rebuild explicitly so database JSON key order cannot invalidate a valid check.

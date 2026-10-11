@@ -291,3 +291,44 @@ An optional `steelPlan` stores catalog assignments, stock choices, checked cut l
 Stock planning groups identical SKU/spec/grade/stock lengths and uses best-fit decreasing packing across all assigned roles, reserving saw kerf per piece and trim at both bar ends. It is a practical draft layout, not guaranteed minimum bar count. Missing checks/allowances, oversized pieces, duplicate linked members and unavailable source geometry are flagged and excluded from totals; incomplete takeoffs remain visibly incomplete. Limits bound schedules to 10,000 pieces. CSV and the printed field sheet include bar quantities, cut layout, remaining lengths and pending issues. This does not reserve inventory, place orders, or infer completeness for unassigned members. Sheet/each materials require area/item planning and are not treated as linear stock. Unsolved specialty/curved geometry still requires checked cut lengths; adding a second-rail material row does not add measured second-rail geometry.
 
 Measuring now shares the shop appearance store: **Light defaults**, saved Dark preference respected, inline Appearance control available. Site/material canvases, member editors and native sketches follow the selection; printed sheets remain white. Verification: stock packing and data-preservation tests, catalog privacy allowlist test, material-map/linked-member UI tests, mobile no-overflow and light/dark visual checks.
+
+## October 11: surveyed site supports and raised platforms
+
+The Existing site workspace is the starting point for existing walls, structural
+columns and posts. Site objects retain their own dimensions, position and optional
+recorded material; they are not manufactured railing posts. Landing registration
+is editable beside the sketch. `entryRise` records the rise from the last tread
+to the platform; explicit zero means flush. Missing values after a flight remain
+provisional and block release/native cut imports. Old platform cut caches expire.
+
+Tap a railing post to edit it or drag it onto a measured tread. A completed valid
+drop is one undoable edit. Structural objects cannot be moved by this post gesture.
+Face-datum offsets require explicit resolution before a centerline drag is accepted.
+
+Existing-post, wall and clip connection points can link to a surveyed rectangular
+support face. The connection records the face, distance from a named local edge,
+rail datum above the support base, explicit horizontal fit gap and connection
+notes. The sloped rail may end at one column face while a separate attached return
+starts at another face and ends at the house. The column is excluded from fabricated
+post members and cuts. Linked face changes propagate to the drawing and invalidate
+source-bound cut results. Older clients preserve omitted optional attachment data;
+explicit null disconnects it.
+
+The automatic native cutting solver currently supports aligned plumb rectangular
+faces with adequate profile clearance. Round, sloped, oblique, internal or unresolved
+support terminals require detailing. A recorded side-mount choice is not yet a
+complete fascia-post geometry/anchor design. Horizontal/custom infill, bracket and
+anchor engineering, base trim collision resolution and unsupported post mounting
+cut lengths must remain explicit shop review items. Site objects currently have
+independent surveyed coordinates; assembly rotation does not silently relocate them.
+
+Research references informing the mounting distinctions:
+- https://feeneyinc.com/product/aluminum-railing/detail/
+- https://www.viewrail.com/railing-posts/
+- https://wagnercompanies.com/resources/guides
+- https://developer.apple.com/design/human-interface-guidelines/gestures
+- https://developer.apple.com/design/human-interface-guidelines/disclosure-controls
+
+Validation uses synthetic site data, direct browser post dragging, mobile light/dark
+connection editing and an actual generated/reopened Blender package. It does not
+claim a site survey or structural approval for the user's reference photos.

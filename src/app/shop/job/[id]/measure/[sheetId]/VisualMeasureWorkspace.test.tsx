@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {afterEach,expect,it} from 'vitest';
 import {cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {porchSiteFixture} from '@/lib/shop/measure-site.fixture';
 import {newMeasureData,type MeasureData} from '@/lib/shop/measure';
 import VisualMeasureWorkspace from './VisualMeasureWorkspace';
 afterEach(cleanup);
@@ -55,4 +56,24 @@ it('skips invalid fields, leaves blank source fields alone, and preserves later 
 });
 it('disables copying when no valid populated dimension exists',()=>{
  const data=newMeasureData('straight',2);if(data.segments[0].kind==='flight')Object.assign(data.segments[0].steps[0],{run:'-1',rise:'0',nosing:'bad'});render(<CopyHarness initial={data}/>);expect((screen.getByRole('button',{name:'Copy to all treads'}) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('records a separate platform entry rise including same-level zero without changing existing tread measurements',()=>{
+ const initial=newMeasureData('l_shape',2,2),before=structuredClone(initial);
+ function PlatformHarness(){const [data,setData]=useState(initial);return <><output hidden data-testid="saved-measurement">{JSON.stringify(data)}</output><VisualMeasureWorkspace data={data} set={fn=>setData(d=>{const copy=structuredClone(d);fn(copy);return copy;})} lang="en" shape="l_shape" initialTarget={{segment:1,step:null}}/></>;}
+ render(<PlatformHarness/>);expect((screen.getByLabelText('Rise to platform') as HTMLInputElement).value).toBe('');expect(saved()).toEqual(before);expect(screen.getByText(/Blank: unconfirmed preview/)).toBeTruthy();
+ fireEvent.change(screen.getByLabelText('Rise to platform'),{target:{value:'7 1/2'}});expect(saved().segments[1]).toMatchObject({entryRise:'7 1/2'});expect(saved().segments[0]).toEqual(before.segments[0]);expect(saved().segments[2]).toEqual(before.segments[2]);
+ fireEvent.change(screen.getByLabelText('Rise to platform'),{target:{value:'0'}});expect(saved().segments[1]).toMatchObject({entryRise:'0'});expect((screen.getByLabelText('Rise to platform') as HTMLInputElement).value).toBe('0');
+});
+
+it('records a landing entry offset from its left edge without changing widths or stair measurements',()=>{
+ function LandingHarness(){const [data,setData]=useState(()=>newMeasureData('stair_platform',2));return <><output hidden data-testid="saved-measurement">{JSON.stringify(data)}</output><VisualMeasureWorkspace initialTarget={{segment:1,step:null}} data={data} set={fn=>setData(old=>{const d=structuredClone(old);fn(d);return d;})} lang="en" shape="stair_platform"/></>;}
+ render(<LandingHarness/>);const before=saved();fireEvent.change(screen.getByLabelText('Landing left edge to stair left edge'),{target:{value:'12 1/2'}});expect(saved().segments[1]).toMatchObject({entryOffset:'12 1/2'});expect(saved().segments[0]).toEqual(before.segments[0]);expect((saved().segments[1] as {depth:string}).depth).toBe((before.segments[1] as {depth:string}).depth);
+});
+
+it('edits a rail connection on a structural column face without changing the column or turning it into a fabricated post',()=>{
+ const initial=porchSiteFixture();initial.posts[0].pointType='existing_post';const originalPost=structuredClone(initial.posts[0]),originalSite=structuredClone(initial.site);
+ function AttachedHarness(){const [data,setData]=useState(initial);return <><output hidden data-testid="saved-measurement">{JSON.stringify(data)}</output><VisualMeasureWorkspace embedded data={data} set={fn=>setData(d=>{const copy=structuredClone(d);fn(copy);return copy;})} lang="en" shape="stair_platform" initialPostId={initial.posts[0].id}/></>;}
+ render(<AttachedHarness/>);fireEvent.click(screen.getByRole('button',{name:'Choose measured column or wall'}));fireEvent.change(screen.getByLabelText('Measured support'),{target:{value:'column-1'}});fireEvent.change(screen.getByLabelText('Support face'),{target:{value:'far'}});fireEvent.change(screen.getByLabelText('Rail datum above support bottom · inches'),{target:{value:'0'}});fireEvent.change(screen.getByLabelText('Rail end to support face gap · inches'),{target:{value:'1/4'}});
+ expect(saved().posts[0]).toMatchObject({id:originalPost.id,pointType:'existing_post',fromNosing:originalPost.fromNosing,fromEdge:originalPost.fromEdge,supportAttachment:{objectId:'column-1',face:'far',elevation:'0',gap:'1/4'}});expect(saved().site).toEqual(originalSite);expect(screen.queryByLabelText('From side edge')).toBeNull();expect(screen.getByRole('heading',{name:'Support connection'})).toBeTruthy();expect(screen.queryByRole('button',{name:'Move on the drawing'})).toBeNull();expect(screen.queryByText(/Offsets use the sheet/)).toBeNull();expect(screen.queryByLabelText('Post measurement reference')).toBeNull();expect(screen.getByLabelText('Railing height')).toBeTruthy();expect(screen.getByText(/Existing supports are not fabricated posts/)).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Disconnect support'}));expect(screen.getByLabelText('From side edge')).toBeTruthy();expect(saved().posts[0].fromEdge).toBe(originalPost.fromEdge);
 });

@@ -1,5 +1,6 @@
 import type { MeasureData } from './measure';
 import { parseMeas } from './measure-parse';
+import {platformEntryRise} from './measure-platform-rise';
 import {siteNumber} from './measure-site';
 
 export type Point3 = { x: number; y: number; z: number };
@@ -94,6 +95,7 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
         runTotal += d;
       });
     } else if (segment.kind === 'platform') {
+      const entryRise=platformEntryRise(segment,data.segments[segIdx-1]);
       const run=value(segment.length), width=value(segment.depth), d=run??36;
       const incomingWidth=widthOf(segIdx-1),nextWidth=widthOf(segIdx+1);
       const w=width??(segment.turn==='u'?incomingWidth+nextWidth:Math.max(incomingWidth,nextWidth));
@@ -104,11 +106,11 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       const gx=direction==='Toward stairs' ? grade??0 : direction==='Away from stairs' ? -(grade??0) : 0;
       const gy=direction==='Left' ? grade??0 : direction==='Right' ? -(grade??0) : 0;
       const entryUnknown=focusSeg===undefined && segIdx>0 && (entry===null && Math.abs(w-incomingWidth)>.001 || entryOffset+incomingWidth>w);
-      pose=poseAt(pose,0,-entryOffset,-gy*entryOffset);
+      pose=poseAt(pose,0,-entryOffset,entryRise.rise-gy*entryOffset);
       const corners: MeasuredTread['corners']=[point(pose,0,0),point(pose,d,0,gx*d),point(pose,d,w,gx*d+gy*w),point(pose,0,w,gy*w)];
-      treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:0,run:d,width:w,corners,
-        riseLabel:'',runLabel:run===null?'?':segment.length,widthLabel:width===null?'?':segment.depth,
-        provisional:originProvisional||entryUnknown||run===null||width===null||!segment.slope.trim()||grade===null||(grade!==0&&!knownDirection)});
+      treads.push({segIdx,stepIdx:null,number:null,x:pose.x,z:pose.z,rise:entryRise.rise,run:d,width:w,corners,
+        riseLabel:entryRise.label,runLabel:run===null?'?':segment.length,widthLabel:width===null?'?':segment.depth,
+        provisional:originProvisional||entryRise.provisional||entryUnknown||run===null||width===null||!segment.slope.trim()||grade===null||(grade!==0&&!knownDirection)});
       landing={pose:{...pose},run:d,width:w,gradeX:gx,gradeY:gy,provisional:treads[treads.length-1].provisional};
       const offset=value(segment.exitOffset,true);
       const x=segment.turn==='left' ? (d-nextWidth)/2 : segment.turn==='right' ? (d+nextWidth)/2 : segment.turn==='u' ? 0 : d;

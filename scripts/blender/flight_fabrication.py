@@ -1,5 +1,6 @@
 """Rectangular flight fitting, only from explicitly recorded face and gap datums."""
 import math
+from support_terminals import is_terminal,face_inset,terminal_gap
 from cut_geometry import rail_between_plumb_faces, vertical_picket_between_parallel_faces
 
 def add_flight_fabrication(payload,assembly):
@@ -46,12 +47,15 @@ def add_flight_fabrication(payload,assembly):
             slope=(b['z']-a['z'])/run;factor=math.hypot(1,slope);theta=math.atan(slope)
             lower=member_lookup.get(bay['mark']+'-B')
             if not lower:continue
-            try:cut=rail_between_plumb_faces(run-post_shape['width'],slope*(run-post_shape['width']),bottom_shape['depth'],bottom_gap)
+            start_face=face_inset(p,post_shape['width']);end_face=face_inset(q,post_shape['width'])
+            offset=start_face+(terminal_gap(p) if is_terminal(p) else bottom_gap)
+            end_offset=end_face+(terminal_gap(q) if is_terminal(q) else bottom_gap)
+            retained_run=run-offset-end_offset
+            try:cut=rail_between_plumb_faces(retained_run,slope*retained_run,bottom_shape['depth'],0)
             except ValueError as e:assembly['issues'].append(bay['mark']+': '+str(e));continue
-            offset=post_shape['width']/2+bottom_gap
             def axis_at(u,z):return dict(x=a['x']+hx*u,y=a['y']+hy*u,z=a['z']+slope*u+z)
             lower['a']=axis_at(offset,clearance+bottom_shape['depth']*factor/2)
-            lower['b']=axis_at(run-offset,clearance+bottom_shape['depth']*factor/2)
+            lower['b']=axis_at(run-end_offset,clearance+bottom_shape['depth']*factor/2)
             lower['vertices'],lower['faces']=envelope(lower['a'],lower['b'],bottom_shape)
             axis=(hx/factor,hy/factor,slope/factor);normal=(-hx*slope/factor,-hy*slope/factor,1/factor)
             for i,v in enumerate(lower['vertices']):
@@ -59,11 +63,13 @@ def add_flight_fabrication(payload,assembly):
                 d=sum((v[k]-center[k])*normal[j] for j,k in enumerate(('x','y','z')))
                 for j,k in enumerate(('x','y','z')):v[k]+=axis[j]*d*slope
             lower['length']=distance(lower['a'],lower['b']);lower['provisional']=False
-            assembly['cut_parts'].append(dict(mark=lower['mark'],kind='Bottom rail',profile=lower['profile'],quantity=1,section=section['mark'],notes='Between plumb post faces; end gaps measured horizontally. '+str(bottom_gap)+' inch each end.',**cut))
+            assembly['cut_parts'].append(dict(mark=lower['mark'],kind='Bottom rail',profile=lower['profile'],quantity=1,section=section['mark'],notes='Between plumb support faces; horizontal start/end gaps '+str(offset-start_face)+' / '+str(end_offset-end_face)+' in.',**cut))
             pickets=[m for m in members if m['kind']=='Picket' and m['mark'].startswith(bay['mark']+'-I')]
             layout=[]
             for m in pickets:
                 u=(m['a']['x']-a['x'])*hx+(m['a']['y']-a['y'])*hy
+                if u-picket_shape['width']/2<offset-1e-8 or u+picket_shape['width']/2>run-end_offset+1e-8:
+                    assembly['issues'].append(m['mark']+': picket lies beyond the retained bottom rail; resolve support gaps and spacing.');continue
                 bottom=a['z']+slope*u+clearance+bottom_shape['depth']*factor
                 top=p['top']['z']+slope*u-top_shape['depth']*factor
                 try:cut=vertical_picket_between_parallel_faces(top-bottom,math.degrees(theta),picket_shape['depth'],picket_gap)
@@ -75,9 +81,9 @@ def add_flight_fabrication(payload,assembly):
                     v['x']=m['a']['x']+hx*dx-hy*dy;v['y']=m['a']['y']+hy*dx+hx*dy;v['z']+=slope*dx
                 m['length']=distance(m['a'],m['b']);m['provisional']=False
                 assembly['cut_parts'].append(dict(mark=m['mark'],kind='Picket',profile=m['profile'],quantity=1,section=section['mark'],notes='Vertical member. Parallel raked end faces; '+str(picket_gap)+' inch vertical gap to each rail face.',**cut))
-                layout.append(dict(mark=m['mark'],centerFromStartPostFace=u-post_shape['width']/2))
+                layout.append(dict(mark=m['mark'],centerFromStartPostFace=u-start_face))
             if layout:
-                clear=run-post_shape['width'];width=picket_shape['depth'];gap=layout[0]['centerFromStartPostFace']-width/2
+                clear=run-start_face-end_face;width=picket_shape['depth'];gap=layout[0]['centerFromStartPostFace']-width/2
                 assembly['picket_layouts'].append(dict(bay=bay['mark'],section=section['mark'],startPost=p['label'],endPost=q['label'],clearWidth=clear,quantity=len(layout),equalClearGap=gap,picketWidth=width,centers=layout))
                 assembly['issues'][:]=[i for i in assembly['issues'] if not i.startswith(bay['mark']+': infill preview treats')]
     if assembly.get('post_cuts') or len(assembly.get('cut_parts',[]))>len(assembly.get('sections',[])):

@@ -21,3 +21,12 @@ it('separates draft walls and illustrative houses from actual site meshes and su
  for(const p of [...scene.meshes.flatMap(m=>m.vertices),...scene.lines.flatMap(l=>l.points)])for(const k of ['x','y','z'] as const){expect(p[k]).toBeGreaterThanOrEqual(scene.bounds.min[k]);expect(p[k]).toBeLessThanOrEqual(scene.bounds.max[k]);}
 });
 it('does not invent a steel section when a post material is unresolved',()=>{const data=porchSiteFixture();data.materials.post='custom ornamental unknown';const scene=measureScene(data);expect(scene.meshes.some(m=>m.kind==='post')).toBe(false);expect(scene.lines.filter(m=>m.kind==='post')).toHaveLength(data.posts.length);});
+
+it('ends native rail references at linked support faces without inventing a second structural post',()=>{
+ const data=porchSiteFixture(),post=data.posts[1];post.pointType='existing_post';post.existingW='8';post.existingD='8';post.supportAttachment={objectId:'column-1',face:'left',along:.5,angle:0,elevation:'0',connection:'Measured clip',gap:'1/8'};
+ const before=JSON.stringify(data),scene=measureScene(data),terminal=drawingPosts(data,stairGeometry(data)!).find(p=>p.post.id===post.id)!;
+ expect(scene.meshes.some(mesh=>mesh.entity.postId===post.id)).toBe(false);expect(scene.meshes.filter(mesh=>mesh.entity.siteId==='column-1')).toHaveLength(1);const marker=scene.lines.find(line=>line.entity.postId===post.id)!;expect(marker.referenceOnly).toBe(true);expect(marker.points).toContainEqual(terminal.top);expect(Math.max(...marker.points.map(p=>p.z))-Math.min(...marker.points.map(p=>p.z))).toBe(2);
+ const rail=scene.lines.find(line=>line.kind==='rail'&&line.id.includes(post.id))!;expect(rail.points).toContainEqual(terminal.top);expect(JSON.stringify(data)).toBe(before);
+ data.site!.objects.find(o=>o.id==='column-1')!.x='50';expect(measureScene(data).lines.find(line=>line.id===rail.id)!.points).toContainEqual({...terminal.top!,x:50});
+ data.site!.objects=[];const unresolved=measureScene(data);expect(unresolved.lines.some(line=>line.entity.postId===post.id)).toBe(false);expect(unresolved.pending.some(label=>label.includes('support connection'))).toBe(true);
+});

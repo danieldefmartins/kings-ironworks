@@ -113,3 +113,11 @@ it('opens the externally selected rail and keeps scene selection synchronized wi
  render(<Embedded/>);fireEvent.click(screen.getByRole('button',{name:'Pick other panel in scene'}));fireEvent.click(screen.getByText('Connections',{selector:'summary'}));expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('42');
  fireEvent.click(screen.getByRole('button',{name:/SR1 · Porch side railing/}));expect(screen.getByTestId('selected-panel').textContent).toBe('panel-1');fireEvent.click(screen.getByText('Connections',{selector:'summary'}));expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('36');
 });
+it('commits fractional inches from a selected face edge and retains the last saved position for invalid drafts',()=>{
+ const saved=vi.fn();function ExactHarness(){const [data,setData]=useState(attachedPorchFixture);return <AttachedRails data={data} set={fn=>setData(old=>{const next=structuredClone(old);fn(next);saved(next);return next;})} lang="en" autoSelect/>;}
+ render(<ExactHarness/>);const start=()=>within(screen.getByRole('group',{name:'Start connection'}));
+ const distance=()=>start().getByLabelText(/From near edge · inches/) as HTMLInputElement;
+ expect(distance().value).toBe('4');fireEvent.change(distance(),{target:{value:'2 1/2'}});expect(saved).not.toHaveBeenCalled();fireEvent.blur(distance());expect(saved.mock.calls.at(-1)![0].site.rails[0].start.along).toBe(.3125);expect(saved.mock.calls.at(-1)![0].site.rails[0].checkedSignature).toBe('');
+ const count=saved.mock.calls.length;fireEvent.change(distance(),{target:{value:'9'}});fireEvent.blur(distance());expect(saved).toHaveBeenCalledTimes(count);expect(start().getByRole('alert').textContent).toContain('Last saved position is unchanged');
+ fireEvent.change(distance(),{target:{value:''}});fireEvent.blur(distance());expect(saved).toHaveBeenCalledTimes(count);
+});

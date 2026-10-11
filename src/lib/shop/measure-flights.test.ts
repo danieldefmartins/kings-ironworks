@@ -52,8 +52,9 @@ describe("a multi-flight sheet is not done until every flight is", () => {
 
     const gaps = requiredGaps(data, "l_shape");
     const flightsWithGaps = new Set(
-      gaps.filter((g) => g.flight !== undefined).map((g) => g.flight)
+      gaps.filter((g) => g.flight !== undefined && g.key !== "landing_entry_rise").map((g) => g.flight)
     );
+    expect(gaps.find(g=>g.key==="landing_entry_rise")).toMatchObject({flight:0});
     expect(flightsWithGaps.has(0)).toBe(false);
     expect(flightsWithGaps.has(1)).toBe(true);
   });

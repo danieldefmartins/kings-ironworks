@@ -1,4 +1,5 @@
 "use client";
+import SupportAttachmentEditor from "../SupportAttachmentEditor";
 
 // Every point the railing touches down on, in the order they run: where it
 // sits, how it mounts, and what it mounts into.
@@ -118,6 +119,7 @@ export default function PostsSection({
                   ] as [string, string][])}
                   onChange={(v) => setPost(set, po.id, "pointType", v || "railing_post")}
                 />
+                {!isDrawn&&<SupportAttachmentEditor data={data} post={po} set={set} lang={lang}/>}
                 <ChipRow help="stairSideLookingUp" label={mt(lang, "stairSideLookingUp")} value={po.side}
                   options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
                   onChange={(v) => setPost(set, po.id, "side", v)} />

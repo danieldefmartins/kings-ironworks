@@ -68,10 +68,12 @@ def build_assembly(payload):
         if not section:issue(f'{kind}: specify an unambiguous inch profile (recorded: {spec or "missing"}).')
         vertices,faces=envelope(a,b,section) if section else ([],[])
         members.append(dict(mark=mark,kind=kind,a=a,b=b,profile=spec or 'VERIFY',section=section,segment=segment,length=distance(a,b),vertices=vertices,faces=faces,provisional=provisional))
+    from support_terminals import is_terminal,face_inset
     posts=[p for p in payload.get('posts',[]) if p.get('pointType')=='railing_post']
+    supports=[p for p in payload.get('posts',[]) if p.get('pointType')=='railing_post' or is_terminal(p)]
     for p in posts:add(p['label'],'Post',p['base'],p['top'],materials.get('post',''),p['segment'],p['provisional'])
     groups={}
-    for p in posts:groups.setdefault((p['segment'],p['side']),[]).append(p)
+    for p in supports:groups.setdefault((p['segment'],p['side']),[]).append(p)
     for (segment,side),group in sorted(groups.items()):
         surfaces=[s for s in payload['surfaces'] if s['segment']==segment]
         if not surfaces:continue
@@ -101,12 +103,13 @@ def build_assembly(payload):
                 issue(f'{mark}: post, top rail and picket profiles plus numeric clear picket spacing are required.');continue
             # Recorded spacing lacks a clear/center convention: never silently resolve it.
             issue(f'{mark}: infill preview treats picket spacing as maximum horizontal clear opening; confirm spacing convention and rail face datums.')
-            clear=run-post['width'];count=max(0,math.ceil((clear-spacing)/(picket['width']+spacing)))
+            start_face=face_inset(p,post['width']);end_face=face_inset(q,post['width'])
+            clear=run-start_face-end_face;count=max(0,math.ceil((clear-spacing)/(picket['width']+spacing)))
             if count>1000:issue(f'{mark}: picket count exceeds drawing limit.');continue
             gap=(clear-count*picket['width'])/(count+1)
             if gap<0:issue(f'{mark}: picket profile does not fit between posts.');continue
             for i in range(count):
-                t=(post['width']/2+gap+picket['width']/2+i*(gap+picket['width']))/run
+                t=(start_face+gap+picket['width']/2+i*(gap+picket['width']))/run
                 bottom=moved(mix(low_a,low_b,t),lower['depth']*factor/2)
                 top=moved(mix(p['top'],q['top'],t),-upper['depth']*factor/2)
                 if top['z']<=bottom['z']:issue(f'{mark}: infill height is not positive.');break
@@ -114,7 +117,7 @@ def build_assembly(payload):
     for t in payload.get('transitions',[]):
         for i,(a,b) in enumerate(zip(t['points'],t['points'][1:])):add(f'{t["label"]}-{i+1}','Transition',a,b,materials.get('topRail',''),None,t['provisional'])
     if data.get('rail',{}).get('kind')=='Both':issue('Separate graspable handrail, brackets and returns require detailing in addition to the guard assembly.')
-    if not posts and not any(r.get('fabrication',{}).get('parts') for r in payload.get('site',{}).get('rails',[])):issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
+    if not supports and not any(r.get('fabrication',{}).get('parts') for r in payload.get('site',{}).get('rails',[])):issue('No measured railing posts: add supports before a complete railing assembly can be generated.')
     issue('Member lengths are reference-axis lengths, not saw cut lengths. Confirm rail face offsets, end cuts, weld gaps, embedment and joint allowances before fabrication.')
     from flight_sections import apply_flight_sections
     from connector_details import add_connector_details

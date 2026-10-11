@@ -201,7 +201,14 @@ def generate(payload,output):
         if joined:notes.append('Landing connections: '+', '.join(joined))
         for section in assembly.get('sections',[]):
             if section['segment']==segment:
-                notes.append('Cap past first / last post face: '+('VERIFY' if section.get('capStartOverhang') is None else fmt(section['capStartOverhang']))+' / '+('VERIFY' if section.get('capEndOverhang') is None else fmt(section['capEndOverhang'])))
+                terminals={t['end']:t for t in section.get('supportTerminals',[])}
+                if not terminals:
+                    notes.append('Cap past first / last post face: '+('VERIFY' if section.get('capStartOverhang') is None else fmt(section['capStartOverhang']))+' / '+('VERIFY' if section.get('capEndOverhang') is None else fmt(section['capEndOverhang'])))
+                else:
+                    for end,extension in [('start','capStartOverhang'),('end','capEndOverhang')]:
+                        terminal=terminals.get(end)
+                        if terminal:notes.append('Existing support '+end+' / '+terminal['mark']+': horizontal face gap '+('VERIFY' if terminal['gap'] is None else fmt(terminal['gap']))+'; not a fabricated post.')
+                        else:notes.append('Cap '+end+' overhang past post face: '+('VERIFY' if section.get(extension) is None else fmt(section[extension])))
         bays=[b['mark'] for b in assembly['bays'] if b['segment']==segment]
         notes+=['Assemblies: '+(', '.join(bays) or 'No connected post bays')]
         for layout in assembly.get('picket_layouts',[]):
@@ -352,6 +359,7 @@ def generate(payload,output):
             if o.get('section')=='round':dims='DIA '+str(o.get('length') or 'VERIFY')+' x HT '+str(o.get('height') or 'VERIFY')
             rows.append((o['label']+' / '+o['kind'], ' / '.join(str(o.get(k) or 'VERIFY') for k in ('x','y','z')),dims,str(o.get('rotation',0))+' deg',o.get('source','unknown')+' / '+('FIELD VERIFIED' if o.get('verified') else 'VERIFY')))
             detail=o.get('notes','')
+            if o.get('material'):detail='Existing material / substrate: '+o['material']+'. '+detail
             if o['kind']=='slab':detail+=' | TOP RISE X: '+o.get('riseX','?')+' / Y: '+o.get('riseY','?')
             if o.get('photoPaths'):detail+=' | '+str(len(o['photoPaths']))+' linked photos (see measurement snapshot)'
             if o['kind']=='opening':detail+=' | CLEARANCE REFERENCE, not a boolean wall opening'

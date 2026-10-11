@@ -42,3 +42,13 @@ export function placeSceneTargets(anchors:{x:number;y:number}[],width:number,hei
  }
  return placed;
 }
+
+export type ScenePostDrop=import('./measure-scene').SceneSelection&{postId:string;segmentIndex:number;point:Point3};
+/** A drag is explicit movement, never a tap or a second-finger gesture. */
+export class PostDragGesture{
+ private start:{id:number;x:number;y:number}|null=null;private moved=false;
+ down(id:number,x:number,y:number){if(this.start){this.cancel();return false;}this.start={id,x,y};this.moved=false;return true;}
+ move(id:number,x:number,y:number){if(this.start?.id!==id)return false;if(Math.hypot(x-this.start.x,y-this.start.y)>8)this.moved=true;return this.moved;}
+ up(id:number,x:number,y:number):'tap'|'drop'|null{if(this.start?.id!==id)return null;this.move(id,x,y);const result=this.moved?'drop':'tap';this.cancel();return result;}
+ cancel(){this.start=null;this.moved=false;}
+}

@@ -23,6 +23,7 @@
 // bay entered as 8' when it is 6'. Showing the sum there is a convenience, and
 // the sheet says so rather than reporting a check that nobody made.
 
+import {platformEntryRise} from "./measure-platform-rise";
 import { parseMeas } from "./measure-parse";
 import type {
   DeckData,
@@ -76,6 +77,27 @@ export function flightTotals(fl: FlightSegment): FlightTotals | null {
   return { rise, run, rake: Math.hypot(rise, run) };
 }
 
+/** Measured elevation along the assembly; branches restart from their shared landing.
+ * Preview risers never participate in checks or derived fabrication values. */
+export function measuredAssemblyRise(data:MeasureData):number|null{
+ let elevation=0,landingElevation=0,branchMaximum:number|null=null;
+ for(let i=0;i<data.segments.length;i++){
+  const segment=data.segments[i];
+  if(segment.kind==='flight'){
+   const rise=sumAll(segment.steps.map(step=>step.rise));if(rise===null)return null;
+   if(segment.branch)elevation=landingElevation;
+   elevation+=rise;
+   if(segment.branch)branchMaximum=Math.max(branchMaximum??elevation,elevation);
+  }else if(segment.kind==='platform'){
+   const entry=platformEntryRise(segment,data.segments[i-1]);if(entry.provisional)return null;
+   elevation+=entry.rise;landingElevation=elevation;
+  }else if(segment.kind==='ramp'||segment.kind==='curve'){
+   const rise=segment.rise.trim()===''?0:parseMeas(segment.rise);if(rise===null)return null;elevation+=rise;
+  }
+ }
+ return branchMaximum===null?elevation:Math.max(elevation,branchMaximum);
+}
+
 export interface StairTotals {
   totalRise: number;
   /** Flights only — the going of the stair itself. */
@@ -97,12 +119,13 @@ export function stairTotals(data: MeasureData): StairTotals | null {
     rise += t.rise;
     run += t.run;
   }
+  const measuredRise=measuredAssemblyRise(data);if(measuredRise===null)return null;
   // Landings are part of the footprint but not of the pitch, so they are
   // carried separately rather than folded into the going.
   const plats = data.segments.filter((s) => s.kind === "platform") as PlatformSegment[];
   const platLen = sumAll(plats.map((p) => p.length));
   return {
-    totalRise: rise,
+    totalRise: measuredRise,
     totalRun: run,
     totalRunWithLandings: platLen === null ? run : run + platLen,
     rakeLength: Math.hypot(rise, run),
