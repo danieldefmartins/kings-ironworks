@@ -2,12 +2,15 @@
 // landed on; the same tap on the posts step still places a post, and the two
 // must never be confused.
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Job } from "@/lib/shop/shared";
 import { newMeasureData, type MeasureSheet } from "@/lib/shop/measure";
 import { installFetch } from "./useSheetSync.harness";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {}, refresh: () => {} }) }));
+import type {SceneViewportProps} from './SceneViewport';
+vi.mock('./SceneViewport',()=>({default:({data,onSelect}:SceneViewportProps)=><div>{data.segments.flatMap((s,i)=>s.kind==='flight'?s.steps.map((_,j)=><button key={`${i}-${j}`} onClick={()=>onSelect?.({segmentIndex:i,stepIndex:j})}>Pick step {j+1}</button>):[])}{data.posts.map((p,i)=><button key={p.id} onClick={()=>onSelect?.({postId:p.id})}>Pick post {i+1}</button>)}</div>}));
+vi.mock('./PrintSheet',()=>({default:()=>null}));
 import MeasureEditor from "./MeasureEditor";
 
 const job: Job = {
@@ -31,110 +34,34 @@ function show(steps = 6) {
     updated_at: "2026-08-01T00:00:00.000Z",
   };
   const rendered=render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="T" />);
-  expect(screen.getByRole("heading",{name:"Where are we working?"})).toBeTruthy();
-  fireEvent.click(screen.getByRole("button",{name:"All tools"}));
+
   return {data,...rendered};
 }
-/** The transparent hit targets the sketch lays over each tread, in order. */
-const treads = () => Array.from(document.querySelectorAll("svg rect[style*='cursor']"));
-
 afterEach(cleanup);
 
-describe("measuring by tapping the drawing", () => {
-  it("lets the user place posts directly from the measuring stage, then return to sizing", () => {
-    show(4);
-    fireEvent.click(screen.getByRole('button',{name:/^＋ Place posts$/}));
-    fireEvent.click(document.querySelector('polygon[data-tread-surface="true"]')!);
-    expect(document.querySelector('svg [aria-label="P1"]')).toBeTruthy();
-    expect(document.querySelector('[data-step-editor]')).toBeNull();
-    fireEvent.click(screen.getByRole('button',{name:'Measure steps'}));
-    fireEvent.click(screen.getByRole('button',{name:'Step 2'}));
-    expect(document.querySelector('[data-step-editor]')).toBeTruthy();
-    expect(screen.getByText(/2 of 4/)).toBeTruthy();
-  });
-  it("adds a post from the tread surface in Railing & basics", () => {
-    show(4);
-    fireEvent.click(screen.getByRole("button", { name: /Railing & basics/i }));
-    expect(screen.getByText(/Tap a step surface or number to add a post/)).toBeTruthy();
-    const surface = document.querySelector('polygon[data-tread-surface="true"]');
-    expect(surface).toBeTruthy();
-    fireEvent.click(surface!);
-    expect(document.querySelectorAll('svg [aria-label="P1"]').length).toBeGreaterThan(0);
-    expect(document.querySelector('[data-step-editor]')).toBeNull();
-    fireEvent.click(surface!);
-    expect(screen.getByRole("button", { name: /Relocate/i })).toBeTruthy();
-  });
-
-  it("opens the tread that was tapped, not a post", () => {
-    show();
-    act(() => { fireEvent.click(treads()[2]); });
-    expect(screen.getByText("Step 3")).toBeTruthy();
-    expect(screen.getByText(/3 of 6/)).toBeTruthy();
-    // A post would have shown up in the drawing instead.
-    expect(screen.queryByText(/Choose what is at this point/i)).toBeNull();
-  });
-
-  it("walks up the flight without going back to the list", () => {
-    show();
-    act(() => { fireEvent.click(treads()[0]); });
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Next step ↑/ })); });
-    expect(screen.getByText("Step 2")).toBeTruthy();
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Previous step/ })); });
-    expect(screen.getByText("Step 1")).toBeTruthy();
-  });
-
-  it("writes what is typed onto that step, and only that step", () => {
-    show(3);
-    act(() => { fireEvent.click(treads()[1]); });
-    const rise = screen.getByLabelText("Rise") as HTMLInputElement;
-    act(() => { fireEvent.change(rise, { target: { value: "7 1/4" } }); });
-    // Reopen step 1: it is still blank, so nothing leaked sideways.
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Previous step/ })); });
-    expect((screen.getByLabelText("Rise") as HTMLInputElement).value).toBe("");
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Next step ↑/ })); });
-    expect((screen.getByLabelText("Rise") as HTMLInputElement).value).toBe("7 1/4");
-  });
-
-  it("the row list is opt-in, and says how far along the flight is", () => {
-    show(6);
-    expect(screen.getByText(/0 measured/)).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Copy step 1 to all/ })).toBeNull();
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Type the list instead/ })); });
-    expect(screen.getByRole("button", { name: /Copy step 1 to all/ })).toBeTruthy();
-  });
-});
-
-describe("what the sheet is waiting on shows red", () => {
-  it("marks a required empty field, and only while it is empty", () => {
-    show(3);
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Type the list instead/ })); });
-    const rise = screen.getAllByLabelText("Rise")[0] as HTMLInputElement;
-    const nosing = screen.getAllByLabelText("Nosing")[0] as HTMLInputElement;
-    // Rise is required and empty; nosing is not required at all.
-    expect(rise.className).toContain("border-red-500");
-    expect(nosing.className).not.toContain("border-red-500");
-
-    act(() => { fireEvent.change(rise, { target: { value: "7" } }); });
-    expect((screen.getAllByLabelText("Rise")[0] as HTMLInputElement).className)
-      .not.toContain("border-red-500");
-  });
-});
-
-describe("the layout numbers that repeat down a run", () => {
-  it("gives a new post the setback and edge distance the run already uses", () => {
-    show(4);
-    // Place two posts by tapping treads on the posts step.
-    act(() => { fireEvent.click(screen.getByRole("button", { name: /Posts & locations/i })); });
-    act(() => { fireEvent.click(treads()[0]); });
-    const distance = screen.getByLabelText("First-step edge → post edge · P1");
-    fireEvent.change(distance, { target: { value: "25 1/2" } });
-    expect(document.querySelector('[data-post-distance]')?.textContent).toContain("25 1/2");
-    const setback = screen.getAllByLabelText(/Setback on destination step/)[0] as HTMLInputElement;
-    act(() => { fireEvent.change(setback, { target: { value: "2" } }); });
-    act(() => { fireEvent.click(treads()[2]); });
-    const all = screen.getAllByLabelText(/Setback on destination step/) as HTMLInputElement[];
-    // The standards panel plus one field per post, all carrying the same answer.
-    expect(all.length).toBeGreaterThan(2);
-    expect(all.every((el) => el.value === "2")).toBe(true);
-  });
+describe('measuring with the shared scene',()=>{
+ it('opens the selected tread without creating a post',()=>{show();fireEvent.click(screen.getByRole('button',{name:'Pick step 3'}));expect(screen.getByRole('heading',{name:'Step 3'})).toBeTruthy();expect(screen.queryByRole('button',{name:'Pick post 1'})).toBeNull();});
+ it('walks up and down a flight in the contextual inspector',()=>{show();fireEvent.click(screen.getByRole('button',{name:'Pick step 1'}));fireEvent.click(screen.getByRole('button',{name:'Next step'}));expect(screen.getByRole('heading',{name:'Step 2'})).toBeTruthy();fireEvent.click(screen.getByRole('button',{name:'Previous step'}));expect(screen.getByRole('heading',{name:'Step 1'})).toBeTruthy();});
+ it('changes only the selected step and retains it across tool switches',()=>{
+  show(3);fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));fireEvent.change(screen.getByLabelText('Riser height'),{target:{value:'7 1/4'}});
+  fireEvent.click(screen.getByRole('button',{name:'Previous step'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('');
+  fireEvent.click(screen.getByRole('button',{name:'Site objects'}));fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect((screen.getByLabelText('Riser height') as HTMLInputElement).value).toBe('7 1/4');
+ });
+ it('adds a post explicitly and returns to step dimensions',()=>{
+  show(4);fireEvent.click(screen.getByRole('button',{name:'Pick step 1'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));expect(screen.getByRole('heading',{name:'Post position'})).toBeTruthy();expect(screen.getByRole('button',{name:'Pick post 1'})).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Pick step 2'}));expect(screen.getByRole('heading',{name:'Step 2'})).toBeTruthy();
+ });
+ it('keeps the detailed row list optional and missing-field highlighting accurate',()=>{
+  show(3);fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'structure'}});
+  expect(screen.queryByRole('button',{name:/Copy step 1 to all/})).toBeNull();fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
+  expect(screen.getByRole('button',{name:/Copy step 1 to all/})).toBeTruthy();
+  const rise=screen.getAllByLabelText('Rise')[0] as HTMLInputElement,nosing=screen.getAllByLabelText('Nosing')[0] as HTMLInputElement;
+  expect(rise.className).toContain('border-red-500');expect(nosing.className).not.toContain('border-red-500');fireEvent.change(rise,{target:{value:'7'}});expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).className).not.toContain('border-red-500');
+ });
+ it('retains run setback and edge defaults when explicitly adding the next post',()=>{
+  show(4);fireEvent.click(screen.getByRole('button',{name:'Pick step 1'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));
+  fireEvent.change(screen.getByLabelText('From tread nosing / support edge'),{target:{value:'2'}});fireEvent.change(screen.getByLabelText('From side edge'),{target:{value:'3'}});
+  fireEvent.click(screen.getByRole('button',{name:'Pick step 3'}));fireEvent.click(screen.getByRole('button',{name:'Add railing post here'}));
+  expect((screen.getByLabelText('From tread nosing / support edge') as HTMLInputElement).value).toBe('2');expect((screen.getByLabelText('From side edge') as HTMLInputElement).value).toBe('3');
+ });
 });

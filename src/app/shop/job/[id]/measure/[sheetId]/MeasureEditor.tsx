@@ -9,7 +9,6 @@ import {
   newPost,
   newPlanPost,
   planPaths,
-  sheetProgress,
   type FlightSegment,
   type MeasureData,
   type MeasureSheet,
@@ -54,7 +53,6 @@ import BalconySections from "./shapes/BalconySections";
 import DeckSections from "./shapes/DeckSections";
 import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
-import SectionsDrawer from "./overlays/SectionsDrawer";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
@@ -69,7 +67,6 @@ import RailSections from "./sections/RailSections";
 import ShopSections from "./sections/ShopSections";
 import PlanSection from "./sections/PlanSection";
 import PhotosSection from "./sections/PhotosSection";
-import MeasurementProgress from "./MeasurementProgress";
 import ReviewSection from "./sections/ReviewSection";
 import {
   EDITOR_STAGES,
@@ -79,21 +76,22 @@ import {
   MissingCtx,
   SetupLockCtx,
   StageCtx,
+  DetailStagesCtx,
   type EditorStage,
 } from "./fields";
 import MoreMenu, { MoreItem } from "../../../../MoreMenu";
 import SiteWorkspace from './SiteWorkspace';
 import ShopAppearance from '../../../../ShopAppearance';
 import SteelWorkspace from './SteelWorkspace';
-import SceneStart from './SceneStart';
-import SketchWorkflow,{type SketchStage} from './SketchWorkflow';
+import ProWorkspace from './ProWorkspace';
+import {WorkspaceScene} from './ProWorkspace';
+import {DETAIL_TOPICS,detailTopicForStage,detailStagesForTopic,detailTopicLabel,legacyStageForGap,type ProDetailsTopic} from '@/lib/shop/measure-workspace';
+import type {SceneSelection} from '@/lib/shop/measure-scene';
 import VisualMeasureWorkspace from './VisualMeasureWorkspace';
 import SpecialtySteelBuilder from './SpecialtySteelBuilder';
-import FabricationHandoff from './FabricationHandoff';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
 import type {PanelStage} from './AttachedRails';
-import { siteLabels } from '@/lib/shop/measure-site-i18n';
 
 // Where a multi-flight sheet should open. Reopening on flight 1 after a day
 // spent finishing it is the moment a measurer decides the app is not paying
@@ -174,17 +172,25 @@ export default function MeasureEditor({
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
   const [slotErr, setSlotErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
-  const [sectionsOpen, setSectionsOpen] = useState(false);
   const [activeFlight, setActiveFlight] = useState(() => firstOpenFlight(sheet.data));
-  // Site modeling comes first; the existing detailed measuring stages remain available.
-  const [activeStage, setActiveStage] = useState<EditorStage>("steps");
-  const [workspace, setWorkspace] = useState<'start'|'site'|'visual'|'tune'|'handoff'|'details'|'panels'|'steel'>(sheet.data.sceneSetup?.projectType?'site':'start');
-  const [railingMode,setRailingMode]=useState<'details'|'panels'>(sheet.data.site?.rails?.length?'panels':'details');
+  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
+  const [workspace,setWorkspace]=useState<'design'|'review'>('design');
+  const [designTool,setDesignTool]=useState<'site'|'measure'|'panels'|'materials'|'details'|'specialty'>(['grate','ladder'].includes(sheet.data.sceneSetup?.projectType||'')?'specialty':'site');
+  const [detailTopic,setDetailTopic]=useState<ProDetailsTopic>('project');
+  const activeStage=detailStagesForTopic(detailTopic)[0];
   const [visualSite,setVisualSite]=useState<string|undefined>();
   const [visualPost,setVisualPost]=useState<string|undefined>();
+  const [visualRail,setVisualRail]=useState<string|undefined>();
   const [visualTarget,setVisualTarget]=useState<{segment:number;step:number|null}|undefined>();
   const [panelStage,setPanelStage]=useState<PanelStage>('design');
-  const siteText = siteLabels(lang);
+  function openDetails(topic:ProDetailsTopic){setDetailTopic(topic);if(topic==='review'){setWorkspace('review');return;}setWorkspace('design');setDesignTool('details');}
+  function selectScene(target:SceneSelection){
+    setWorkspace('design');
+    if(target.siteId){setVisualSite(target.siteId);setDesignTool('site');}
+    else if(target.postId){setVisualPost(target.postId);setVisualTarget(undefined);setDesignTool('measure');}
+    else if(target.railId){setVisualRail(target.railId);setDesignTool('panels');}
+    else if(target.segmentIndex!==undefined){setVisualPost(undefined);setVisualTarget({segment:target.segmentIndex,step:target.stepIndex??null});setDesignTool('measure');}
+  }
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
   // Setback and edge distance repeat down a run: a new post takes them from
@@ -558,53 +564,7 @@ export default function MeasureEditor({
   const docGaps = ready.docGaps;
   const redChecks = ready.redChecks;
   const canSubmit = ready.ready;
-  const gapStage = (key: string): EditorStage => {
-    if (key === "orientation" || key === "floor_change" || key.endsWith("_adjustment")) return "setup";
-    if (key.startsWith("gate_")) return key === "gate_opener" || key === "gate_power" || key === "gate_safety" ? "specs" : "setup";
-    if (key.startsWith("fence_")) return key.startsWith("fence_seg") ? "steps" : "setup";
-    if (key.startsWith("bal_")) return key.includes("anchor") || key.includes("embed") || key.includes("edge_distance") || key.includes("slab") ? "locations" : "setup";
-    if (key.startsWith("fire_")) {
-      if (key.startsWith("fire_stair") || key === "fire_floor_to_floor") return "steps";
-      if (key.startsWith("fire_ladder")) return "specs";
-      if (key.includes("rating") || key.includes("condition") || key === "fire_load_test" || key === "fire_repair_scope") return "review";
-      return "setup";
-    }
-    if (key.startsWith("well_")) {
-      if (key.startsWith("well_grate") || key.startsWith("well_ladder") || key.startsWith("well_gate")) return "specs";
-      if (key.startsWith("well_wall") || key === "well_post_to_wall" || key === "well_band_fields") return "locations";
-      return "setup";
-    }
-    if (key === "photo" || key === "post_photo" || key === "term_photo") return "photos";
-    // A gap has to name the step that can actually answer it. Joints are only
-    // editable on the joints step, and a flight's rake sits on its step card —
-    // sending either to a step that shows neither is a dead end.
-    if (key.startsWith("joint_") || key === "landing_transition") return "locations";
-    if (key === "flight_width" || key === "flight_rake") return "steps";
-    if (key === "flight_angle") return "locations";
-    if (key.startsWith("post")) return "locations";
-    if (key.startsWith("span") || key.startsWith("term") ||
-        ["rail_height", "returns", "extensions", "brackets"].includes(key)) return "posts";
-    if (key.startsWith("mat_") || key === "splices" || key === "max_piece") return "specs";
-    if (key === "steps" || key === "winder") return "steps";
-    if (key.includes("angle") || key.includes("rake")) return "locations";
-    if (key.startsWith("landing_")) return "level";
-    return "steps";
-  };
-  const zeroByStage = (): Record<EditorStage, number> => ({
-    setup: 0, posts: 0, level: 0, steps: 0, locations: 0, specs: 0, photos: 0, review: 0,
-  });
-  // Blockers and follow-ups are counted separately so a stage can say "3
-  // missing" or "2 photos to add" — never one number standing for both.
-  const stageMissing = gaps.reduce((acc, g) => {
-    acc[gapStage(g.key)] += 1;
-    return acc;
-  }, zeroByStage());
-  stageMissing.review += redChecks.length;
-  const stageDocs = docGaps.reduce((acc, g) => {
-    acc[gapStage(g.key)] += 1;
-    return acc;
-  }, zeroByStage());
-  const activeStageIndex = EDITOR_STAGES.findIndex((s) => s.id === activeStage);
+  const gapStage=(key:string):EditorStage=>(sheet.shape==='custom'||sheet.shape==='deck')&&key.startsWith('post')&&key!=='post_photo'?'steps':legacyStageForGap(key);
   // One set, rebuilt on every keystroke, of the requirements still open. A
   // field is red only while its key is in here AND the field is empty, so a
   // box stops being red the moment it is answered.
@@ -621,56 +581,7 @@ export default function MeasureEditor({
     g.key === "photo"
       ? `${mt(lang, "gap_photo")}: ${mt(lang, `slot_${g.detail}`)}`
       : `${mt(lang, `gap_${g.key}`)}${g.detail ? ` (${g.detail})` : ""}`;
-  const targetOf = (g: Gap) => ({ stage: gapStage(g.key), label: gapLabel(g), flight: g.flight });
-  const currentStageGap = orderedGaps.find(g => gapStage(g.key) === activeStage);
-  const nextTarget: { stage: EditorStage; label: string; flight?: number } | null = currentStageGap
-    ? targetOf(currentStageGap)
-    : orderedGaps.length
-    ? targetOf(orderedGaps[0])
-    : redChecks.length
-      ? { stage: "review" as EditorStage, label: mt(lang, "check_" + redChecks[0].key) }
-      : orderedDocGaps.length
-        ? targetOf(orderedDocGaps[0])
-        : null;
-  function goToStage(st: EditorStage) {
-    setActiveStage(st);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  function nextStage() {
-    const st = EDITOR_STAGES[EDITOR_STAGES.findIndex((x) => x.id === activeStage) + 1];
-    if (!st) return;
-    // A new step starts at flight 1: the step is asking a different question,
-    // and it asks it of every flight.
-    setActiveFlight(0);
-    setActiveStage(st.id);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  function goToFlight(i: number) {
-    setActiveFlight(i);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-  // Leaving mid-stair is allowed and normal — a flight can be behind a locked
-  // door or a scaffold that comes down tomorrow. What is not allowed is
-  // leaving without knowing it: the sheet list carries the unfinished flight
-  // count, and the sheet reopens on the flight that still owes numbers.
-  function finishLater() {
-    requestSave();
-    router.push(`/shop/job/${job.id}/measure`);
-  }
-  // Jumping to a specific missing item must never land on a step that is
-  // holding its content back — the routing card still comes first, but the
-  // item the worker asked for is there too.
-  function jumpToGap(st: EditorStage, flight?: number) {
-    if (st === "setup") setSetupUnlocked(true);
-    // On a multi-flight sheet a gap belongs to one flight, and the stage only
-    // shows one flight at a time — landing on the stage without switching the
-    // flight shows the measurer a card that is already filled in.
-    if (flight !== undefined) setActiveFlight(flight);
-    goToStage(st);
-  }
-  // Nothing measured yet reads as "Start measuring" rather than "Continue".
-  const started = sheetProgress(data).filled > 0 || data.photos.length > 0;
-
+  function jumpToGap(st:EditorStage,flight?:number){if(flight!==undefined)setActiveFlight(flight);openDetails(detailTopicForStage(st));}
   // ---- Carried-over answers ------------------------------------------------
   // A field is badged only while it still reads exactly as it was suggested.
   // The moment the measurer edits it, the value is theirs and the badge goes.
@@ -763,9 +674,7 @@ export default function MeasureEditor({
   // The joints step is a step of the angles stage — that is where the joint
   // cards live. Landing on it from another stage would otherwise drop the
   // one-flight-at-a-time rule and put every flight on screen at once.
-  const onJointsStep =
-    multiFlightSheet && activeFlight >= allFlights.length && activeStage === "locations";
-  const flights = multiFlightSheet && !onJointsStep ? [allFlights[flightAt]] : allFlights;
+  const flights=allFlights.length>1?[allFlights[flightAt]]:allFlights;
   const platforms = data.segments
     .map((s, i) => ({ seg: s, i }))
     .filter((x) => x.seg.kind === "platform") as { seg: PlatformSegment; i: number }[];
@@ -779,7 +688,7 @@ export default function MeasureEditor({
   const turns = data.segments.some(
     (sg) => sg.kind === "platform" && (sg as PlatformSegment).turn !== "none"
   );
-  const multiFlight = flights.length > 1 || turns;
+  const multiFlight = allFlights.length > 1 || turns;
   const hasFlights = flights.length > 0;
 
   // ---- Flight by flight ----------------------------------------------------
@@ -791,34 +700,6 @@ export default function MeasureEditor({
   const flightGapList = allFlights.map(({ seg }, i) =>
     flightGaps(seg, i, { needRake: turns || allFlights.length > 1, multi: multiFlightSheet })
   );
-  const flightStarted = allFlights.map(({ seg }) =>
-    seg.steps.some((st) => st.rise.trim() !== "" || st.run.trim() !== "") ||
-    seg.width.trim() !== "" ||
-    seg.angleDeg.trim() !== ""
-  );
-  const flightDone = flightGapList.map((g) => g.length === 0);
-  const flightsFinished = flightDone.filter(Boolean).length;
-  const openFlights = flightDone.map((d, i) => (d ? -1 : i)).filter((i) => i >= 0);
-  const jointGaps = gaps.filter((g) => g.key.startsWith("joint_"));
-  const hasJoints = (data.joints || []).length > 0;
-  // The stages that show one flight at a time. Everything after them describes
-  // the whole sheet, so they are the only place this gate applies.
-  const flightStageIds: EditorStage[] = ["steps", "locations", "level"];
-  const onFlightStage = multiFlightSheet && flightStageIds.includes(activeStage);
-  // Gaps for one flight that THIS step can actually answer. The step gate has
-  // to be per step: a flight's angle lives on the angles step, so demanding it
-  // before leaving the steps step would trap the measurer on a card that never
-  // asks for it.
-  const flightStageOpen = allFlights
-    .map((_, i) => i)
-    .filter((i) => flightGapList[i].some((g) => gapStage(g.key) === activeStage));
-  const jointStageOpen =
-    hasJoints && jointGaps.some((g) => gapStage(g.key) === activeStage);
-  const stageFlightsBlocked = onFlightStage && (flightStageOpen.length > 0 || jointStageOpen);
-  // The flight the measurer is standing on is already on screen; the list is
-  // for the ones they cannot see.
-  const otherOpenFlights = openFlights.filter((i) => onJointsStep || i !== flightAt);
-
   // What the step overlay needs to say where it is: the number the measurer
   // reads on the drawing, which flight it belongs to, and how many steps that
   // flight has so the arrows know where the ends are.
@@ -881,10 +762,8 @@ export default function MeasureEditor({
   // The routing card collapses once answered; "Show everything anyway" is the
   // escape hatch for a measurer who wants the whole step regardless.
   const [routingOpen, setRoutingOpen] = useState(false);
-  const [setupUnlocked, setSetupUnlocked] = useState(false);
   // A first-run funnel, not a cage: a sheet that already has measurements in
   // it is never re-gated, and the escape hatch is always on the card.
-  const setupLocked = !routingDone && !setupUnlocked && !started;
   const showRoutingCard = !routingDone || routingOpen;
   const setRouting = (fn: (r: typeof routing) => void) => set((d) => fn(d.routing));
   // The shop's usual finish for this sheet — whatever the sheet already holds,
@@ -934,6 +813,248 @@ export default function MeasureEditor({
     }
   }
 
+  const detailContent=<DetailStagesCtx.Provider value={detailStagesForTopic(detailTopic)}><StageCtx.Provider value={activeStage}><SetupLockCtx.Provider value={false}>
+        <RoutingCard
+          lang={lang}
+          data={data}
+          set={set}
+          routing={routing}
+          setRouting={setRouting}
+          asksOrientation={asksOrientation}
+          asksRailKind={asksRailKind}
+          asksExisting={asksExisting}
+          asksFloorChange={asksFloorChange}
+          asksStdFinish={asksStdFinish}
+          routingAnswered={routingAnswered}
+          routingTotal={routingTotal}
+          routingDone={routingDone}
+          routingOpen={routingOpen}
+          setRoutingOpen={setRoutingOpen}
+          setupLocked={false}
+          setSetupUnlocked={() => {}}
+          showRoutingCard={showRoutingCard}
+          routingSummary={routingSummary}
+          standardFinishLine={standardFinishLine}
+          usesStandardFinish={usesStandardFinish}
+          hasFlights={hasFlights}
+          needsPostReference={needsPostReference}
+        />
+        {isGate && gate && (
+          <GateSections
+            lang={lang}
+            gate={gate}
+            setGate={setGate}
+          />
+        )}
+
+        {isFence && fence && (
+          <FenceSections
+            lang={lang}
+            fence={fence}
+            setFence={setFence}
+            setSeg={setSeg}
+          />
+        )}
+
+        {isDeck && deck && (
+          <DeckSections
+            lang={lang}
+            deck={deck}
+            setDeck={setDeck}
+            setSide={setDeckSide}
+          />
+        )}
+
+        {isBalcony && balcony && (
+          <BalconySections
+            lang={lang}
+            balcony={balcony}
+            setBalcony={setBalcony}
+          />
+        )}
+
+        {isFire && fire && (
+          <FireEscapeSections
+            lang={lang}
+            fire={fire}
+            firePurpose={firePurpose}
+            fireSurvey={fireSurvey}
+            setFire={setFire}
+            setLevel={setLevel}
+          />
+        )}
+
+        {isWell && well && (
+          <WellSections
+            lang={lang}
+            well={well}
+            clearance={clearance}
+            setWell={setWell}
+            toggleDeliverable={toggleDeliverable}
+            setBand={setBand}
+            wellWants={wellWants}
+          />
+        )}
+
+        {allFlights.length>1&&['structure','survey','connections'].includes(detailTopic)&&<label className="mb-4 block text-sm font-semibold">{mt(lang,'flight')}<select className="mt-1 min-h-12 w-full rounded-xl border border-slate-200 bg-white px-3" value={activeFlight} onChange={e=>setActiveFlight(Number(e.target.value))}>{allFlights.map((_,i)=><option key={i} value={i}>{mt(lang,'flight')} {i+1} · {flightGapList[i].length} {tx('open measurements','medidas pendentes','medidas pendientes')}</option>)}</select></label>}
+        <SketchSections embedded
+          focusSeg={allFlights[flightAt]?.i}
+          lang={lang}
+          data={data}
+          set={set}
+          shape={sheet.shape}
+          activeStage={activeStage}
+          view={view}
+          viewList={viewList}
+          setView={setView}
+          movingPostId={movingPostId}
+          setMovingPostId={setMovingPostId}
+          posts={posts}
+          platforms={platforms}
+          anchorOptions={anchorOptions}
+          addStepPost={addStepPost}
+          onMeasureStep={measureStep}
+          addPlatformPost={addPlatformPost}
+          holdStepLocation={holdStepLocation}
+          addPlanPost={addPlanPost}
+          holdPlanLocation={holdPlanLocation}
+          holdPlatformLocation={holdPlatformLocation}
+          tapStructureStep={tapStructureStep}
+          tapStructurePlatform={tapStructurePlatform}
+          tapPost={tapPost}
+          removePost={removePost}
+          toggleSketchWall={toggleSketchWall}
+        />
+        {/* Joints last: a joint's gap and angle only mean something once the
+            flights on both sides of it have been measured. */}
+        {(
+          <JointSections lang={lang} data={data} set={set} />
+        )}
+        <StairSections
+          lang={lang}
+          data={data}
+          set={set}
+          isSpiral={isSpiral}
+          isBuilder={isBuilder}
+          hasWinders={hasWinders}
+          multiFlight={multiFlight}
+          flights={flights}
+          platforms={platforms}
+          ramps={ramps}
+          curves={curves}
+          stepListOpen={stepListOpen}
+          setStepListOpen={setStepListOpen}
+        />
+        {/* The pieces this stair is made of, after the steps rather than before
+            them: the flight count came from the sheet picker, and what shows up
+            here is the curve or the extra landing nobody knew about. */}
+        {<SegmentsCard lang={lang} data={data} set={set} />}
+        <PostsSection
+          lang={lang}
+          data={data}
+          set={set}
+          posts={posts}
+          anchorOptions={anchorOptions}
+          carriedNote={carriedNote}
+          removePost={removePost}
+          setPhotoSlot={setPhotoSlot}
+          isSpiral={isSpiral}
+          isWallRail={isWallRail}
+          isCustom={isCustom}
+          isWell={isWell}
+          isFire={isFire}
+          isGate={isGate}
+          isFence={isFence}
+          isBalcony={isBalcony}
+          isDeck={isDeck}
+        />
+        <RailSections
+          lang={lang}
+          data={data}
+          set={set}
+          posts={posts}
+          anchorOptions={anchorOptions}
+          carriedNote={carriedNote}
+          setSpan={setSpan}
+          setTerm={setTerm}
+          setHw={setHw}
+          setPhotoSlot={setPhotoSlot}
+          hasHandrail={hasHandrail}
+          isWallRail={isWallRail}
+          isWell={isWell}
+          isFire={isFire}
+          isGate={isGate}
+          isFence={isFence}
+          fireNew={fireNew}
+          wellWants={wellWants}
+        />
+        <ShopSections
+          lang={lang}
+          data={data}
+          set={set}
+          presets={presets}
+          finishOptions={finishOptions}
+          colorOptions={colorOptions}
+          carriedNote={carriedNote}
+          setRouting={setRouting}
+          usesStandardFinish={usesStandardFinish}
+          standardFinishLine={standardFinishLine}
+          asksFloorChange={asksFloorChange}
+          hasGuardrail={hasGuardrail}
+          hasFlights={hasFlights}
+          multiFlight={multiFlight}
+          isSpiral={isSpiral}
+          isWallRail={isWallRail}
+          isCustom={isCustom}
+          shape={sheet.shape}
+        />
+        <PlanSection
+          lang={lang}
+          data={data}
+          set={set}
+          /* Decks draw too: the perimeter is rarely a plain rectangle. */
+          isCustom={isCustom || isDeck}
+        />
+        <PhotosSection
+          lang={lang}
+          data={data}
+          shape={sheet.shape}
+          setPhotoSlot={setPhotoSlot}
+          directSlotPhoto={directSlotPhoto}
+          slotBusy={slotBusy}
+          slotErr={slotErr}
+        />
+  </SetupLockCtx.Provider></StageCtx.Provider></DetailStagesCtx.Provider>;
+  const reviewContent=<StageCtx.Provider value="review"><SetupLockCtx.Provider value={false}>
+        {isFire && fire && <FireEscapeSections lang={lang} fire={fire} firePurpose={firePurpose} fireSurvey={fireSurvey} setFire={setFire} setLevel={setLevel} />}
+        <ReviewSection embedded
+          data={data}
+          lang={lang}
+          sheet={sheet}
+          job={job}
+          status={status}
+          rev={rev}
+          isAdmin={isAdmin}
+          nameById={nameById}
+          history={history}
+          checks={checks}
+          ready={ready}
+          redChecks={redChecks}
+          orderedGaps={orderedGaps}
+          orderedDocGaps={orderedDocGaps}
+          carriedSummary={carriedSummary}
+          canSubmit={canSubmit}
+          pendingLocal={pendingLocal}
+          saveState={saveState}
+          gapLabel={gapLabel}
+          gapStage={gapStage}
+          jumpToGap={jumpToGap}
+          submitSheet={submitSheet}
+          submitDrawing={submitDrawing}
+          approveSheet={approveSheet}
+          sendBackSheet={sendBackSheet}
+        />  </SetupLockCtx.Provider></StageCtx.Provider>;
+
   return (
     <LangCtx.Provider value={lang}>
     <PlaceholderCtx.Provider value={unitPh}>
@@ -944,7 +1065,7 @@ export default function MeasureEditor({
         colouring those red teaches a measurer to ignore the colour. */}
     <MissingCtx.Provider value={missingKeys}>
       {/* Room for the fixed action bar at the bottom. */}
-      <div data-measure-ui className={`mx-auto ${workspace!=='details'?'max-w-7xl':'max-w-4xl'} p-4 pb-44 print:hidden`}>
+      <div data-measure-ui className="mx-auto max-w-[1600px] p-3 pb-36 print:hidden sm:p-4">
         {!online && (
           <div className="sticky top-0 z-30 -mx-4 mb-3 bg-amber-600 px-4 py-2 text-center text-sm font-bold text-black">
             {mt(lang, "offlineBanner")}
@@ -1102,609 +1223,27 @@ export default function MeasureEditor({
         <div className="mb-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-1"><button type="button" aria-label={lang==='pt'?'Desfazer':lang==='es'?'Deshacer':'Undo'} disabled={!canUndo} onClick={undo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↶</button><button type="button" aria-label={lang==='pt'?'Refazer':lang==='es'?'Rehacer':'Redo'} disabled={!canRedo} onClick={redo} className="min-h-11 min-w-11 rounded-xl border border-slate-200 bg-white text-xl font-semibold disabled:opacity-30">↷</button></div>
           <details className="relative"><summary className="min-h-11 cursor-pointer rounded-xl px-3 py-2 text-sm font-semibold text-slate-500">{lang==='pt'?'Aparência':lang==='es'?'Apariencia':'Appearance'}</summary><div className="absolute left-0 top-full z-40 min-w-56 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl"><ShopAppearance lang={lang}/></div></details>
-          <button type="button" className="min-h-11 rounded-xl px-3 py-2 text-sm font-semibold text-slate-500" onClick={()=>{setWorkspace(workspace==='details'?'visual':'details');setSetupUnlocked(true);goToStage('steps');}}>{workspace==='details'?(lang==='pt'?'Voltar ao desenho':lang==='es'?'Volver al dibujo':'Back to sketch'):(lang==='pt'?'Todas as ferramentas':lang==='es'?'Todas las herramientas':'All tools')}</button>
+          <button type="button" className="min-h-11 rounded-xl px-3 text-sm font-semibold" onClick={()=>{requestSave();router.push(`/shop/job/${job.id}/measure`);}}>{tx('Save & close','Salvar e fechar','Guardar y cerrar')}</button>
         </div>
-        <SketchWorkflow lang={lang} stage={workspace==='start'?'project':workspace==='site'?'site':workspace==='visual'?'measure':workspace==='tune'||workspace==='panels'&&panelStage==='design'?'tune':workspace==='handoff'||workspace==='steel'||workspace==='panels'?'fabricate':null} onChange={(part:SketchStage)=>{setWorkspace(part==='project'?'start':part==='site'?'site':part==='measure'?'visual':part==='tune'?(railingMode==='panels'?'panels':'tune'):'handoff');if(part==='tune')setPanelStage('design');}}/>
-        {workspace==='start'&&<SceneStart data={data} set={set} lang={lang} onContinue={()=>setWorkspace('site')}/>}
-        {(workspace==='visual'||workspace==='tune')&&<>
-          {workspace==='visual'&&['grate','ladder'].includes(data.sceneSetup?.projectType||'')?<div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm"><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></div>:<VisualMeasureWorkspace initialPostId={visualPost} onSiteObject={id=>{setVisualSite(id);setWorkspace('site');}} onAttached={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode={workspace==='tune'?'tune':'measure'}/>}
-          <div className="mt-5 flex flex-wrap justify-between gap-3"><button type="button" className="min-h-12 rounded-2xl px-4 font-semibold text-slate-500" onClick={()=>setWorkspace('site')}>← {lang==='pt'?'Editar local':lang==='es'?'Editar lugar':'Edit site'}</button><button type="button" className="min-h-12 rounded-2xl bg-indigo-600 px-6 font-semibold text-white shadow-md" onClick={()=>{if(workspace==='visual'){setWorkspace(['grate','ladder'].includes(data.sceneSetup?.projectType||'')?'handoff':railingMode==='panels'?'panels':'tune');setPanelStage('design');}else setWorkspace('handoff');}}>{workspace==='visual'&&!['grate','ladder'].includes(data.sceneSetup?.projectType||'')?(lang==='pt'?'Posicionar guarda-corpo':lang==='es'?'Colocar barandilla':'Position the railing'):(lang==='pt'?'Preparar fabricação':lang==='es'?'Preparar fabricación':'Prepare fabrication')} →</button></div>
-          <button type="button" className="mt-3 min-h-11 rounded-xl px-4 text-sm font-semibold text-slate-500" onClick={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}>{siteText.panels} →</button>
-        </>}
-        {workspace==='handoff'&&<FabricationHandoff data={data} shape={sheet.shape} lang={lang} onMaterials={()=>setWorkspace('steel')} onReview={()=>{setWorkspace('details');goToStage('review');}} onPrint={()=>{fetch('/shop/api/measure',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'log_print',id:sheet.id,jobId:job.id,rev})}).catch(()=>{});window.print();}}/>}
-        {workspace==='steel'&&<><button type="button" className="mb-3 min-h-11 px-3 text-sm font-semibold text-slate-500" onClick={()=>setWorkspace('handoff')}>← {lang==='pt'?'Pacote de fabricação':lang==='es'?'Paquete de fabricación':'Fabrication package'}</button><SteelWorkspace data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/></>}
-        {workspace==='panels'&&<><div className="mb-3 flex flex-wrap gap-2"><button type="button" className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600" onClick={()=>{setRailingMode('details');setWorkspace('tune');}}>{lang==='pt'?'Postes da escada':lang==='es'?'Postes de escalera':'Stair railing posts'}</button><button type="button" className="min-h-11 rounded-xl bg-white px-4 text-sm font-semibold text-slate-600" onClick={()=>setWorkspace('handoff')}>{lang==='pt'?'Pacote de fabricação':lang==='es'?'Paquete de fabricación':'Fabrication package'} →</button></div><PanelWorkspace data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setWorkspace('site')} onReview={()=>{setWorkspace('details');goToStage('review');}}/></>}
-        {workspace==='site'&&<SiteWorkspace initialObjectId={visualSite} data={data} set={set} lang={lang}
-          onPanels={()=>{setRailingMode('panels');setWorkspace('panels');setPanelStage('design');}}
-          onContinue={()=>setWorkspace('visual')}
-          onDetails={()=>{setWorkspace('details');setSetupUnlocked(true);goToStage('photos');}}
-          onPost={id=>{setVisualPost(id);setVisualTarget(undefined);setRailingMode('details');setWorkspace('tune');}}
-          onMeasure={(segment,step)=>{setVisualPost(undefined);setVisualTarget(segment===undefined?undefined:{segment,step:step??null});setWorkspace('visual');}}
-        />}
-        <div hidden={workspace!=='details'}>
-        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 mb-4 bg-neutral-950/95 backdrop-blur border-y border-neutral-800">
-          {/* The single truth, and the single next action. Everything else on
-              this screen is secondary to it. */}
-          {status === "in_progress" && (
-            <button
-              type="button"
-              onClick={() => jumpToGap(nextTarget ? nextTarget.stage : "review", nextTarget?.flight)}
-              className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left min-h-[64px] ${
-                ready.remaining > 0
-                  ? "border-amber-500 bg-amber-500/10 active:bg-amber-500/20"
-                  : "border-green-600 bg-green-600/10 active:bg-green-600/20"
-              }`}
-            >
-              <span className="min-w-0 flex-1">
-                <span
-                  className={`block text-base font-bold ${
-                    ready.remaining > 0 ? "text-amber-300" : "text-green-300"
-                  }`}
-                >
-                  {ready.remaining > 0
-                    ? mt(lang, started ? "continueMeasuring" : "startMeasuring")
-                    : `✓ ${mt(lang, ready.complete ? "allDone" : "readyForShop")}`}
-                </span>
-                {nextTarget && (
-                  <span className="mt-0.5 block truncate text-sm text-neutral-300">
-                    {mt(lang, "nextUp")}: {nextTarget.label}
-                  </span>
-                )}
-                {ready.docsOpen && (
-                  <span className="mt-0.5 block text-xs text-neutral-400">
-                    {ready.docRemaining} {mt(lang, "docsStillToAdd")}
-                  </span>
-                )}
-              </span>
-              <span aria-hidden className="shrink-0 text-2xl text-neutral-400">
-                →
-              </span>
-            </button>
-          )}
-          {/* A phone cannot show eight stages at once, and half-clipped chips
-              tell a worker nothing. There, one line says where they are and
-              opens the full list; a tablet has the room for the strip. */}
-          <button
-            type="button"
-            onClick={() => setSectionsOpen(true)}
-            className="flex min-h-[48px] w-full items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-left sm:hidden"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-[10px] font-bold uppercase tracking-wide text-neutral-400">
-                {mt(lang, "stepWord")} {activeStageIndex + 1} {mt(lang, "ofWord")} {EDITOR_STAGES.length}
-              </span>
-              <span className="block truncate text-sm font-bold text-neutral-100">
-                {mt(lang, EDITOR_STAGES[activeStageIndex]?.labelKey || "stageSite")}
-                {stageMissing[activeStage]
-                  ? ` · ${stageMissing[activeStage]} ${mt(lang, "stageMissing")}`
-                  : stageDocs[activeStage]
-                    ? ` · ${stageDocs[activeStage]} ${mt(lang, "stageToAdd")}`
-                    : ""}
-              </span>
-            </span>
-            <span aria-hidden className="shrink-0 text-neutral-400">
-              ☰
-            </span>
-          </button>
-          <div className="hidden gap-2 overflow-x-auto pb-1 sm:flex" aria-label="Measurement stages">
-            {EDITOR_STAGES.map((s) => {
-              const missing = stageMissing[s.id];
-              const docs = stageDocs[s.id];
-              // Review is a verdict on the whole sheet, not a stage with its
-              // own to-do list: it must never read "Complete" while anything
-              // is still blocking submission.
-              const note =
-                s.id === "review"
-                  ? missing
-                    ? { text: mt(lang, "chipNotReady"), tone: "text-amber-400" }
-                    : { text: mt(lang, "chipReady"), tone: "text-green-400" }
-                  : missing
-                    ? { text: `${missing} ${mt(lang, "stageMissing")}`, tone: "text-amber-400" }
-                    : docs
-                      ? { text: `${docs} ${mt(lang, "stageToAdd")}`, tone: "text-sky-400" }
-                      : { text: mt(lang, "stageDone"), tone: "text-green-400" };
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => goToStage(s.id)}
-                  className={`shrink-0 rounded-xl border px-3 py-2 text-left min-h-[48px] ${
-                    activeStage === s.id
-                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                      : "border-neutral-700 bg-neutral-900 text-neutral-300"
-                  }`}
-                >
-                  <span className="block text-[10px] font-bold uppercase tracking-wide">{s.icon}. {mt(lang, s.labelKey)}</span>
-                  <span className={`block text-[10px] mt-0.5 ${note.tone}`}>{note.text}</span>
-                </button>
-              );
-            })}
-          </div>
+        <nav aria-label="Professional workspace" className="mb-4 flex gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
+          {([['drawing',tx('Drawing','Desenho','Dibujo')],['materials',tx('Materials','Materiais','Materiales')],['review',tx('Shop package','Pacote da oficina','Paquete del taller')]] as const).map(([key,label])=><button type="button" key={key} aria-current={(key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials'))?'page':undefined} className={`min-h-12 flex-1 rounded-xl px-3 text-sm font-semibold ${((key==='review'?workspace==='review':workspace==='design'&&(key==='materials'?designTool==='materials':designTool!=='materials')))?'bg-indigo-600 text-white shadow-sm':'text-slate-600'}`} onClick={()=>{if(key==='review')setWorkspace('review');else{setWorkspace('design');if(key==='materials')setDesignTool('materials');else if(designTool==='materials')setDesignTool('measure');}}}>{label}{key==='review'&&ready.remaining>0&&<span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">{ready.remaining}</span>}</button>)}
+        </nav>
+        <div hidden={workspace!=='design'}>
+          <ProWorkspace data={data} lang={lang} onSelect={selectScene} toolbar={designTool!=='materials'?<div className="flex flex-wrap items-center gap-2">
+            {([['site',tx('Site objects','Objetos do local','Objetos del sitio')],['measure',tx('Dimensions & posts','Medidas e postes','Medidas y postes')],['panels',tx('Railing panels','Painéis de corrimão','Paneles de barandilla')],['specialty',tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')]] as const).map(([tool,label])=><button type="button" key={tool} aria-pressed={designTool===tool} className={`min-h-11 rounded-xl px-3 text-sm font-semibold ${designTool===tool?'bg-indigo-50 text-indigo-800':'bg-white text-slate-600'}`} onClick={()=>setDesignTool(tool)}>{label}</button>)}
+            <label className="ml-auto"><span className="sr-only">{tx('Project controls','Controles do projeto','Controles del proyecto')}</span><select aria-label={tx('Project controls','Controles do projeto','Controles del proyecto')} className="min-h-11 max-w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" value={designTool==='details'?detailTopic:''} onChange={e=>{if(e.target.value)openDetails(e.target.value as ProDetailsTopic);}}><option value="">{tx('Project controls','Controles do projeto','Controles del proyecto')}</option>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang)}</option>)}</select></label>
+          </div>:undefined}>
+            {designTool==='site'&&<SiteWorkspace embedded key={`site:${visualSite||''}`} initialObjectId={visualSite} data={data} set={set} lang={lang} onPanels={()=>setDesignTool('panels')} onContinue={()=>setDesignTool('measure')} onDetails={()=>openDetails('photos')} onPost={id=>selectScene({postId:id})} onMeasure={(segment,step)=>{if(segment!==undefined)selectScene({segmentIndex:segment,stepIndex:step??null});else setDesignTool('measure');}}/>}
+            {designTool==='measure'&&<><VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang)}</button>)}</div></>}
+            {designTool==='panels'&&<PanelWorkspace embedded selectedRailId={visualRail} onSelectRail={setVisualRail} onSceneSelect={selectScene} data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setDesignTool('site')} onReview={()=>setWorkspace('review')}/>}
+            {designTool==='materials'&&<><SteelWorkspace embedded onSceneSelect={selectScene} data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/><button type="button" className="mt-3 min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" onClick={()=>openDetails('specifications')}>{detailTopicLabel('specifications',lang)}</button></>}
+            {designTool==='specialty'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></>}
+            {designTool==='details'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><h2 className="mb-3 text-lg font-bold">{detailTopicLabel(detailTopic,lang)}</h2>{detailContent}</>}
+          </ProWorkspace>
         </div>
-
-        {status === "in_progress" && <MeasurementProgress data={data} lang={lang} stage={activeStage}/>}
-        <StageCtx.Provider value={activeStage}>
-        <SetupLockCtx.Provider value={setupLocked}>
-
-        {/* Routing — the few answers that decide what the rest of this sheet
-            needs to ask at all. */}
-        <RoutingCard
-          lang={lang}
-          data={data}
-          set={set}
-          routing={routing}
-          setRouting={setRouting}
-          asksOrientation={asksOrientation}
-          asksRailKind={asksRailKind}
-          asksExisting={asksExisting}
-          asksFloorChange={asksFloorChange}
-          asksStdFinish={asksStdFinish}
-          routingAnswered={routingAnswered}
-          routingTotal={routingTotal}
-          routingDone={routingDone}
-          routingOpen={routingOpen}
-          setRoutingOpen={setRoutingOpen}
-          setupLocked={setupLocked}
-          setSetupUnlocked={setSetupUnlocked}
-          showRoutingCard={showRoutingCard}
-          routingSummary={routingSummary}
-          standardFinishLine={standardFinishLine}
-          usesStandardFinish={usesStandardFinish}
-          hasFlights={hasFlights}
-          needsPostReference={needsPostReference}
-        />
-        {isGate && gate && (
-          <GateSections
-            lang={lang}
-            gate={gate}
-            setGate={setGate}
-          />
-        )}
-
-        {isFence && fence && (
-          <FenceSections
-            lang={lang}
-            fence={fence}
-            setFence={setFence}
-            setSeg={setSeg}
-          />
-        )}
-
-        {isDeck && deck && (
-          <DeckSections
-            lang={lang}
-            deck={deck}
-            setDeck={setDeck}
-            setSide={setDeckSide}
-          />
-        )}
-
-        {isBalcony && balcony && (
-          <BalconySections
-            lang={lang}
-            balcony={balcony}
-            setBalcony={setBalcony}
-          />
-        )}
-
-        {isFire && fire && (
-          <FireEscapeSections
-            lang={lang}
-            fire={fire}
-            firePurpose={firePurpose}
-            fireSurvey={fireSurvey}
-            setFire={setFire}
-            setLevel={setLevel}
-          />
-        )}
-
-        {isWell && well && (
-          <WellSections
-            lang={lang}
-            well={well}
-            clearance={clearance}
-            setWell={setWell}
-            toggleDeliverable={toggleDeliverable}
-            setBand={setBand}
-            wellWants={wellWants}
-          />
-        )}
-
-        {/* Which flight is being measured, which ones are finished, and what
-            the unfinished ones still owe. Progress a measurer can see, rather
-            than one long form that never visibly shortens — and no way to
-            believe a stair is measured while two of its flights are blank. */}
-        {multiFlightSheet && (
-          <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-900 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-bold">
-                {onJointsStep
-                  ? mt(lang, "jointTableTitle")
-                  : `${mt(lang, "flight")} ${flightAt + 1} ${mt(lang, "ofWord")} ${allFlights.length}`}
-              </span>
-              <span className="text-[11px] text-neutral-500">
-                {onJointsStep ? mt(lang, "jointsAfterFlights") : mt(lang, "oneFlightAtATime")}
-              </span>
-            </div>
-            {/* The count that moves. Every finished flight fills a bar segment
-                green and stays green — the visible reward for finishing one. */}
-            <div className="mt-2 flex items-center gap-2">
-              <span className="flex flex-1 gap-1">
-                {allFlights.map((_, i) => (
-                  <span
-                    key={i}
-                    className={`h-1.5 flex-1 rounded ${
-                      flightDone[i]
-                        ? "bg-green-500"
-                        : flightStarted[i]
-                          ? "bg-amber-500/60"
-                          : "bg-neutral-800"
-                    }`}
-                  />
-                ))}
-              </span>
-              <span
-                className={`shrink-0 text-[11px] font-bold ${
-                  flightsFinished === allFlights.length ? "text-green-400" : "text-amber-300"
-                }`}
-              >
-                {flightsFinished === allFlights.length
-                  ? `✓ ${mt(lang, "allFlightsDone")}`
-                  : `${flightsFinished}/${allFlights.length} ${mt(lang, "flightsMeasured")}`}
-              </span>
-            </div>
-            <div className="mt-2 flex gap-1.5">
-              {allFlights.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => goToFlight(i)}
-                  className={`min-h-[48px] min-w-9 flex-1 rounded-lg border text-xs font-bold ${
-                    !onJointsStep && i === flightAt
-                      ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                      : flightDone[i]
-                        ? "border-green-700 bg-green-600/10 text-green-300"
-                        : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                  }`}
-                >
-                  <span className="block">{i + 1}</span>
-                  <span
-                    className={`block text-[10px] font-bold ${
-                      flightDone[i] ? "text-green-400" : "text-amber-400"
-                    }`}
-                  >
-                    {flightDone[i] ? "✓" : flightGapList[i].length}
-                  </span>
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => goToFlight(allFlights.length)}
-                className={`min-h-[48px] flex-1 rounded-lg border px-2 text-xs font-bold ${
-                  onJointsStep
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : hasJoints && jointGaps.length === 0
-                      ? "border-green-700 bg-green-600/10 text-green-300"
-                      : "border-neutral-700 bg-neutral-800 text-neutral-400"
-                }`}
-              >
-                <span className="block">🔗</span>
-                {hasJoints && (
-                  <span
-                    className={`block text-[10px] font-bold ${
-                      jointGaps.length === 0 ? "text-green-400" : "text-amber-400"
-                    }`}
-                  >
-                    {jointGaps.length === 0 ? "✓" : jointGaps.length}
-                  </span>
-                )}
-              </button>
-            </div>
-            {/* Named, not counted: "Flight 3 — not started" is the sentence
-                that stops a stair leaving half measured. */}
-            {otherOpenFlights.length > 0 && (
-              <div className="mt-2 space-y-1">
-                {otherOpenFlights.map((i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => goToFlight(i)}
-                    className="flex w-full items-center gap-2 rounded-lg border border-neutral-800 bg-neutral-950/40 px-2 py-2 text-left text-[11px] text-neutral-300"
-                  >
-                    <span className="flex-1">
-                      {mt(lang, "flight")} {i + 1} —{" "}
-                      {flightStarted[i]
-                        ? `${flightGapList[i].length} ${mt(lang, "flightLeftToDo")}`
-                        : mt(lang, "flightNotStarted")}
-                    </span>
-                    <span className="text-neutral-500">→</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-        <SketchSections
-          focusSeg={multiFlightSheet && !onJointsStep ? allFlights[flightAt]?.i : undefined}
-          lang={lang}
-          data={data}
-          set={set}
-          shape={sheet.shape}
-          activeStage={activeStage}
-          view={view}
-          viewList={viewList}
-          setView={setView}
-          movingPostId={movingPostId}
-          setMovingPostId={setMovingPostId}
-          posts={posts}
-          platforms={platforms}
-          anchorOptions={anchorOptions}
-          addStepPost={addStepPost}
-          onMeasureStep={measureStep}
-          addPlatformPost={addPlatformPost}
-          holdStepLocation={holdStepLocation}
-          addPlanPost={addPlanPost}
-          holdPlanLocation={holdPlanLocation}
-          holdPlatformLocation={holdPlatformLocation}
-          tapStructureStep={tapStructureStep}
-          tapStructurePlatform={tapStructurePlatform}
-          tapPost={tapPost}
-          removePost={removePost}
-          toggleSketchWall={toggleSketchWall}
-        />
-        {/* Joints last: a joint's gap and angle only mean something once the
-            flights on both sides of it have been measured. */}
-        {(!multiFlightSheet || onJointsStep) && (
-          <JointSections lang={lang} data={data} set={set} />
-        )}
-        <StairSections
-          lang={lang}
-          data={data}
-          set={set}
-          isSpiral={isSpiral}
-          isBuilder={isBuilder}
-          hasWinders={hasWinders}
-          multiFlight={multiFlight}
-          flights={flights}
-          platforms={platforms}
-          ramps={ramps}
-          curves={curves}
-          stepListOpen={stepListOpen}
-          setStepListOpen={setStepListOpen}
-        />
-        {/* The pieces this stair is made of, after the steps rather than before
-            them: the flight count came from the sheet picker, and what shows up
-            here is the curve or the extra landing nobody knew about. */}
-        {isBuilder && <SegmentsCard lang={lang} data={data} set={set} />}
-        <PostsSection
-          lang={lang}
-          data={data}
-          set={set}
-          posts={posts}
-          anchorOptions={anchorOptions}
-          carriedNote={carriedNote}
-          removePost={removePost}
-          setPhotoSlot={setPhotoSlot}
-          isSpiral={isSpiral}
-          isWallRail={isWallRail}
-          isCustom={isCustom}
-          isWell={isWell}
-          isFire={isFire}
-          isGate={isGate}
-          isFence={isFence}
-          isBalcony={isBalcony}
-          isDeck={isDeck}
-        />
-        <RailSections
-          lang={lang}
-          data={data}
-          set={set}
-          posts={posts}
-          anchorOptions={anchorOptions}
-          carriedNote={carriedNote}
-          setSpan={setSpan}
-          setTerm={setTerm}
-          setHw={setHw}
-          setPhotoSlot={setPhotoSlot}
-          hasHandrail={hasHandrail}
-          isWallRail={isWallRail}
-          isWell={isWell}
-          isFire={isFire}
-          isGate={isGate}
-          isFence={isFence}
-          fireNew={fireNew}
-          wellWants={wellWants}
-        />
-        <ShopSections
-          lang={lang}
-          data={data}
-          set={set}
-          presets={presets}
-          finishOptions={finishOptions}
-          colorOptions={colorOptions}
-          carriedNote={carriedNote}
-          setRouting={setRouting}
-          usesStandardFinish={usesStandardFinish}
-          standardFinishLine={standardFinishLine}
-          asksFloorChange={asksFloorChange}
-          hasGuardrail={hasGuardrail}
-          hasFlights={hasFlights}
-          multiFlight={multiFlight}
-          isSpiral={isSpiral}
-          isWallRail={isWallRail}
-          isCustom={isCustom}
-          shape={sheet.shape}
-        />
-        <PlanSection
-          lang={lang}
-          data={data}
-          set={set}
-          /* Decks draw too: the perimeter is rarely a plain rectangle. */
-          isCustom={isCustom || isDeck}
-        />
-        <PhotosSection
-          lang={lang}
-          data={data}
-          shape={sheet.shape}
-          setPhotoSlot={setPhotoSlot}
-          directSlotPhoto={directSlotPhoto}
-          slotBusy={slotBusy}
-          slotErr={slotErr}
-        />
-        <ReviewSection
-          data={data}
-          lang={lang}
-          sheet={sheet}
-          job={job}
-          status={status}
-          rev={rev}
-          isAdmin={isAdmin}
-          nameById={nameById}
-          history={history}
-          checks={checks}
-          ready={ready}
-          redChecks={redChecks}
-          orderedGaps={orderedGaps}
-          orderedDocGaps={orderedDocGaps}
-          carriedSummary={carriedSummary}
-          canSubmit={canSubmit}
-          pendingLocal={pendingLocal}
-          saveState={saveState}
-          gapLabel={gapLabel}
-          gapStage={gapStage}
-          jumpToGap={jumpToGap}
-          submitSheet={submitSheet}
-          submitDrawing={submitDrawing}
-          approveSheet={approveSheet}
-          sendBackSheet={sendBackSheet}
-        />
-        </SetupLockCtx.Provider>
-        </StageCtx.Provider>
-        </div>
+        {workspace==='review'&&<div className="mx-auto max-w-5xl"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-xl font-bold">{tx('Shop package','Pacote da oficina','Paquete del taller')}</h2><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold" onClick={()=>{setWorkspace('design');setDesignTool('materials');}}>{tx('Materials & stock','Materiais e barras','Materiales y barras')}</button></div>{reviewContent}</div>}
       </div>
 
-      {/* The one thing to do next, always on screen.
-          It used to sit at the end of the page, which meant that on a step
-          long enough to scroll — every step with a list of treads on it — the
-          measurer had to scroll to find the control that tells them where to
-          go. That is how the flight buttons were being missed. It is a bar
-          now, and it says the same thing the page did: walk the flights while
-          the step is still open, change the step once it is not.
-
-          It sits under the fraction bar deliberately: while a measurement
-          field has focus, fractions are what the thumb is reaching for. */}
-      {status === "in_progress" && workspace === 'details' && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-neutral-800 bg-neutral-950/95 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur print:hidden">
-          <div className="mx-auto max-w-4xl">
-            <div className="flex items-center gap-2">
-              {activeStageIndex > 0 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveFlight(0);
-                    setActiveStage(EDITOR_STAGES[activeStageIndex - 1].id);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  aria-label={mt(lang, "previousStage")}
-                  className="h-14 w-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 text-xl font-bold text-neutral-300"
-                >
-                  ←
-                </button>
-              )}
-              {/* Flight → flight → joints, in the order they are walked. While
-                  anything on this step is still open the walk button IS the
-                  forward button; once nothing is, the step change takes over. */}
-              {onFlightStage && stageFlightsBlocked ? (
-                !onJointsStep && flightAt + 1 < allFlights.length ? (
-                  <button
-                    type="button"
-                    onClick={() => goToFlight(flightAt + 1)}
-                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500 font-bold text-black"
-                  >
-                    {mt(lang, "saveAndNextFlight")} ({flightAt + 2}) →
-                  </button>
-                ) : flightStageOpen.length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => goToFlight(flightStageOpen[0])}
-                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500/10 font-bold text-amber-300"
-                  >
-                    {flightStageOpen.length} {mt(lang, "flight")} · {mt(lang, "goToFlight")} →
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => goToFlight(allFlights.length)}
-                    className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500/10 font-bold text-amber-300"
-                  >
-                    ⚠ {mt(lang, "jointTableTitle")} →
-                  </button>
-                )
-              ) : onFlightStage && !onJointsStep && hasJoints && activeStage === "locations" &&
-                flightAt + 1 >= allFlights.length ? (
-                <button
-                  type="button"
-                  onClick={() => goToFlight(allFlights.length)}
-                  className="h-14 flex-1 rounded-xl border border-amber-500 bg-amber-500 font-bold text-black"
-                >
-                  {mt(lang, "saveAndJoints")} 🔗
-                </button>
-              ) : activeStageIndex < EDITOR_STAGES.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={nextStage}
-                  className="h-14 flex-1 truncate rounded-xl border border-amber-500 bg-amber-500 px-3 font-bold text-black"
-                >
-                  {onFlightStage
-                    ? `✓ ${mt(lang, "allFlightsDone")} · ${mt(lang, "nextStage")} →`
-                    : `${mt(lang, "nextStage")} →`}
-                </button>
-              ) : (
-                <span className="flex-1" />
-              )}
-              {/* Nothing on this step is waiting, but there are still flights
-                  the measurer may want to look over. */}
-              {onFlightStage && !stageFlightsBlocked && !onJointsStep &&
-                flightAt + 1 < allFlights.length && (
-                  <button
-                    type="button"
-                    onClick={() => goToFlight(flightAt + 1)}
-                    aria-label={`${mt(lang, "flight")} ${flightAt + 2}`}
-                    className="h-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 px-3 text-xs font-bold text-neutral-300"
-                  >
-                    {flightAt + 2} →
-                  </button>
-                )}
-              {/* Stopping for the day is a first-class move on a stair that
-                  takes two visits. */}
-              {onFlightStage && (
-                <button
-                  type="button"
-                  onClick={finishLater}
-                  aria-label={mt(lang, "finishLater")}
-                  title={mt(lang, "finishLater")}
-                  className="h-14 w-14 shrink-0 rounded-xl border border-neutral-700 bg-neutral-900 text-lg font-bold text-neutral-300"
-                >
-                  ⬇
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {sectionsOpen && (
-        <SectionsDrawer
-          lang={lang}
-          activeStage={activeStage}
-          stageMissing={stageMissing}
-          stageDocs={stageDocs}
-          onPick={(st) => {
-            setSectionsOpen(false);
-            goToStage(st);
-          }}
-          onClose={() => setSectionsOpen(false)}
-        />
-      )}
       <PointMenus
         lang={lang}
         data={data}

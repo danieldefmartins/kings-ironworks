@@ -7,7 +7,7 @@
 // nothing about sheets, jobs, saving or shapes — which is what lets the
 // section modules stay about measuring rather than about markup.
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ATTACH_TARGETS,
@@ -48,6 +48,7 @@ export const LangCtx = createContext<string>("en");
 
 export type EditorStage = "setup" | "posts" | "level" | "steps" | "locations" | "specs" | "photos" | "review";
 export const StageCtx = createContext<EditorStage>("setup");
+export const DetailStagesCtx = createContext<readonly EditorStage[] | null>(null);
 // True while the Site step is holding everything back behind the routing card.
 export const SetupLockCtx = createContext<boolean>(false);
 
@@ -236,7 +237,8 @@ export function Card({
 }) {
   const activeStage = useContext(StageCtx);
   const setupLocked = useContext(SetupLockCtx);
-  if (activeStage !== stage) return null;
+  const detailStages=useContext(DetailStagesCtx);
+  if (detailStages?!detailStages.includes(stage):activeStage !== stage) return null;
   // Until the routing questions are answered there is no point showing the
   // conditions they decide the relevance of.
   if (stage === "setup" && setupLocked && !always) return null;

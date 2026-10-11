@@ -57,7 +57,9 @@ export default function ReviewSection({
   submitDrawing,
   approveSheet,
   sendBackSheet,
+  embedded = false,
 }: {
+  embedded?: boolean;
   lang: string;
   data: MeasureData;
   sheet: MeasureSheet;
@@ -85,68 +87,22 @@ export default function ReviewSection({
   sendBackSheet: () => void;
 }) {
   const hasDrawing=!!stairGeometry(data);
-  return (
-    <>
+  const previews=<>
       {!!data.site?.objects.length&&<Card stage="review" title={siteLabels(lang).title}>
         <p className="mb-3 text-sm">{data.site.datum}</p>
         <SiteDrawing data={data}/>
-        {siteIssues(resolveSite(data)).map(issue=><p key={issue} className="mt-2 text-sm text-amber-600">{mt(lang,issue)}</p>)}
       </Card>}
-      {history.length > 0 && (
-        <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>
-          {sheet.created_by && (
-            <div className="text-xs text-neutral-500 mb-2">
-              {mt(lang, "histOriginalBy")}{" "}
-              <span className="text-neutral-300 font-semibold">
-                {nameById[sheet.created_by] || "—"}
-              </span>
-            </div>
-          )}
-          <div className="space-y-1.5">
-            {history.map((h, i) => {
-              const otherEdit =
-                h.action === "sheet_update" &&
-                !!sheet.created_by &&
-                !!h.workerId &&
-                h.workerId !== sheet.created_by;
-              return (
-                <div
-                  key={i}
-                  className={`flex items-center gap-2 text-sm rounded-lg px-2.5 py-1.5 border ${
-                    otherEdit
-                      ? "border-amber-700/60 bg-amber-950/30"
-                      : "border-neutral-800 bg-neutral-950/40"
-                  }`}
-                >
-                  <span className="text-neutral-500 text-xs shrink-0 tabular-nums">
-                    {new Date(h.at).toLocaleString()}
-                  </span>
-                  <span className="font-semibold truncate">
-                    {h.workerId ? nameById[h.workerId] || "—" : "—"}
-                  </span>
-                  <span className="text-neutral-400 truncate">
-                    {mt(lang, `hist_${h.action}`)}
-                  </span>
-                  {otherEdit && (
-                    <span className="ml-auto text-[11px] text-amber-300 shrink-0">
-                      ⚠ {mt(lang, "histOtherEdit")}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
       {hasDrawing && <Card stage="review" title={mt(lang,"drawingDetails")}>
         <p className="mb-3 text-sm">{mt(lang,"drawingReleaseReview")}</p>
         {(["side","plan","iso"] as const).map(view=><div key={view} className="mb-3"><DrawingSvg data={data} lang={lang} view={view}/></div>)}
         <DrawingReport data={data} lang={lang} sheetId={sheet.id}/>
       </Card>}
-      {<Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
+  </>;
+  return (
+    <>
       {/* Review & submit — checks, gaps, and the approval gate */}
       <Card stage="review" title={`✅ ${mt(lang, "reviewTitle")}`}>
+        {siteIssues(resolveSite(data)).map(issue=><p key={issue} className="mb-2 text-sm text-amber-600">{mt(lang,issue)}</p>)}
         <div className="text-xs text-neutral-500 mb-2">{mt(lang, "neverCorrects")}</div>
         <div className="space-y-1.5 mb-4">
           {checks.map((c, i) => (
@@ -258,6 +214,60 @@ export default function ReviewSection({
           </div>
         )}
       </Card>
+      {embedded ? <details className="rounded-2xl border border-slate-200 bg-white p-3">
+        <summary className="min-h-11 cursor-pointer font-semibold">{lang==='pt'?'Prévia das folhas':lang==='es'?'Vista previa de planos':'Drawing sheets preview'}</summary>
+        {previews}
+      </details> : previews}
+            {<Card stage="review" title="Shop Drawings"><ShopDrawingSubmission sheetId={sheet.id} lang={lang} disabled={!canSubmit || pendingLocal || saveState === "dirty" || saveState === "saving"} submit={submitDrawing}/></Card>}
+
+      {history.length>0&&<details className="rounded-2xl border border-slate-200 bg-white p-3"><summary className="min-h-11 cursor-pointer font-semibold">{mt(lang,'historyTitle')}</summary>      {history.length > 0 && (
+        <Card stage="review" title={`🕘 ${mt(lang, "historyTitle")}`}>
+          {sheet.created_by && (
+            <div className="text-xs text-neutral-500 mb-2">
+              {mt(lang, "histOriginalBy")}{" "}
+              <span className="text-neutral-300 font-semibold">
+                {nameById[sheet.created_by] || "—"}
+              </span>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            {history.map((h, i) => {
+              const otherEdit =
+                h.action === "sheet_update" &&
+                !!sheet.created_by &&
+                !!h.workerId &&
+                h.workerId !== sheet.created_by;
+              return (
+                <div
+                  key={i}
+                  className={`flex items-center gap-2 text-sm rounded-lg px-2.5 py-1.5 border ${
+                    otherEdit
+                      ? "border-amber-700/60 bg-amber-950/30"
+                      : "border-neutral-800 bg-neutral-950/40"
+                  }`}
+                >
+                  <span className="text-neutral-500 text-xs shrink-0 tabular-nums">
+                    {new Date(h.at).toLocaleString()}
+                  </span>
+                  <span className="font-semibold truncate">
+                    {h.workerId ? nameById[h.workerId] || "—" : "—"}
+                  </span>
+                  <span className="text-neutral-400 truncate">
+                    {mt(lang, `hist_${h.action}`)}
+                  </span>
+                  {otherEdit && (
+                    <span className="ml-auto text-[11px] text-amber-300 shrink-0">
+                      ⚠ {mt(lang, "histOtherEdit")}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+</details>}
     </>
   );
 }

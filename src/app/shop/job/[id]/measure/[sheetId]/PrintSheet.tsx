@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
+import { sceneProjectLabel } from "@/lib/shop/measure-scene-setup";
 import type { Job } from "@/lib/shop/shared";
 import { planPaths } from "@/lib/shop/measure";
 import type {
@@ -276,7 +277,7 @@ export default function PrintSheet({
       </div>
 
       {data.sceneSetup?.projectType&&<p style={{fontSize:12,fontWeight:700,marginBottom:10}}>
-        {lang==='pt'?'Projeto':lang==='es'?'Proyecto':'Project'}: {({stairs:['Stairs','Escadas','Escaleras'],landing:['Landing','Patamar','Descanso'],ramp:['Ramp','Rampa','Rampa'],railing:['Railing','Guarda-corpo','Barandilla'],window_well:['Window well','Poço de janela','Pozo de ventana'],grate:['Grate','Grelha','Rejilla'],ladder:['Ladder','Escada vertical','Escalera vertical'],custom:['Custom metalwork','Metal sob medida','Metal a medida']}[data.sceneSetup.projectType])[lang==='pt'?1:lang==='es'?2:0]}
+        {lang==='pt'?'Projeto':lang==='es'?'Proyecto':'Project'}: {sceneProjectLabel(data.sceneSetup.projectType,lang)}
       </p>}
       {data.sceneSetup?.placement&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Posição da escada e guarda-corpo':lang==='es'?'Posición de escalera y barandilla':'Stair and railing placement'}: X {data.sceneSetup.placement.x||'?'}″ · Y {data.sceneSetup.placement.y||'?'}″ · Z {data.sceneSetup.placement.z||'?'}″ · {data.sceneSetup.placement.rotation}°</p>}
       {data.sceneSetup?.house&&<p style={{fontSize:11,marginBottom:10}}>{lang==='pt'?'Casa ilustrativa, sem medidas. Usar as paredes medidas e detalhes de ligação para fabricar.':lang==='es'?'Casa ilustrativa, sin medir. Utilice paredes medidas y detalles de unión para fabricar.':'Illustrative house, unmeasured. Use measured walls and connection details for fabrication.'}</p>}

@@ -4,7 +4,8 @@ import {nativeGeometrySignature} from '@/lib/shop/measure-native-steel';
 import type {MeasureData} from '@/lib/shop/measure';
 import {applySteelCatalogProfile,catalogProfile,newSteelPlan,newSteelRow,rowPieces,steelRowChecked,steelSources,steelTakeoff,steelCsv,type SteelRow,type SteelCatalogItem} from '@/lib/shop/measure-steel';
 import SiteDrawing from './SiteDrawing';
-import SceneViewport,{type SceneSelection} from './SceneViewport';
+import type {SceneSelection} from './SceneViewport';
+import {WorkspaceScene as SceneViewport} from './ProWorkspace';
 import {orderedPosts} from '@/lib/shop/measure-checks';
 import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import SketchZoom from './SketchZoom';
@@ -13,7 +14,7 @@ import {useDrawingPinch} from './useDrawingPinch';
 const roles=[['toprail','Top rail'],['second_toprail','Second top rail'],['picket','Pickets'],['bottomrail','Bottom rail'],['post','Posts'],['newel','Newel posts'],['frame','Frame'],['bearing','Grate bearing bars'],['crossbar','Grate crossbars'],['stringer','Ladder / stair stringers'],['rung','Ladder rungs'],['handrail','Handrail'],['custom','Other member']] as const;
 const field='mt-1 min-h-12 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900';
 const button='min-h-12 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm';
-export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;catalog:SteelCatalogItem[];lang:string;builder?:ReactNode;sheetId?:string}){
+export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId,embedded=false,onSceneSelect}:{onSceneSelect?:(selection:SceneSelection)=>void;embedded?:boolean;data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;catalog:SteelCatalogItem[];lang:string;builder?:ReactNode;sheetId?:string}){
  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
  const [importing,setImporting]=useState(false),[importMessage,setImportMessage]=useState('');
  const [stage,setStage]=useState<'assign'|'stock'>('assign'),[swap,setSwap]=useState(false);
@@ -38,6 +39,7 @@ export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{
  }
  function selectMeasured(key:string){const matches=sources.filter(s=>s.key===key),source=matches.length===1?matches[0]:undefined;if(source){setSceneMessage('');add(source.role,source.key);return true;}return false;}
  function selectScene(selection:SceneSelection){
+  if(!selection.railId&&!selection.postId&&(selection.siteId||selection.segmentIndex!==undefined)&&onSceneSelect){setSceneMessage('');onSceneSelect(selection);return;}
   if(selection.railId&&selection.part&&selectMeasured(`${selection.railId}:${selection.part}`))return;
   if(selection.postId){const posts=orderedPosts(data),index=posts.findIndex(p=>p.id===selection.postId);if(index>=0&&posts[index].pointType==='railing_post'&&selectMeasured(`native:P${index+1}`))return;}
   setSceneMessage(tx('This is a layout reference, not a finished cut. Import the latest drawing cuts, then choose the exact member from Measured members below.','Esta é uma referência de posição, não um corte final. Importe os cortes do último desenho e escolha a peça exata em Peças medidas abaixo.','Esta es una referencia de posición, no un corte final. Importe los cortes del último plano y elija la pieza exacta en Piezas medidas abajo.'));
@@ -60,23 +62,25 @@ export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{
   </g>;
  }
 
- return <section className="rounded-3xl border border-slate-200 bg-slate-100 p-3 text-slate-900 shadow-xl sm:p-5" aria-label="Materials & stock">
-  <h2 className="text-xl font-bold">{tx('Materials & stock','Materiais e barras','Materiales y barras')}</h2>
+ return <section className={embedded?"text-slate-900":"rounded-3xl border border-slate-200 bg-slate-100 p-3 text-slate-900 shadow-xl sm:p-5"} aria-label="Materials & stock">
+  {embedded&&<><SceneViewport data={data} lang={lang} selectedId={selectedSceneId} onSelect={selectScene}/><p className="mb-3 text-sm text-slate-600">{unassigned} {tx('measured members unassigned','peças medidas sem material','piezas medidas sin material')}</p></>}
+  {!embedded&&<><h2 className="text-xl font-bold">{tx('Materials & stock','Materiais e barras','Materiales y barras')}</h2>
   <p className="mb-4 mt-1 text-sm text-slate-600">{tx('Select a member. Choose its steel. Review the stock needed.','Selecione a peça, escolha o aço e confira as barras necessárias.','Seleccione la pieza, elija el acero y revise las barras necesarias.')}</p>
   <div className="mb-4 flex flex-wrap items-center gap-3">
    <nav aria-label="Material workflow" className="flex min-w-0 flex-1 rounded-2xl bg-slate-100 p-1 shadow-inner">{(['assign','stock'] as const).map((step,index)=><button key={step} type="button" aria-current={stage===step?'step':undefined} onClick={()=>setStage(step)} className={`min-h-12 flex-1 rounded-xl px-3 text-sm font-semibold transition ${stage===step?'bg-white text-slate-900 shadow-sm':'text-slate-600'}`}>{index+1}. {step==='assign'?tx('Assign steel','Atribuir aço','Asignar acero'):tx('Stock & review','Barras e revisão','Barras y revisión')}</button>)}</nav>
    <span className="text-sm font-medium text-slate-600">{plan.rows.filter(r=>steelRowChecked(data,r,sources)).length} / {plan.rows.length} {tx('assignments checked','atribuições conferidas','asignaciones revisadas')}<span className="block">{unassigned} {tx('measured members unassigned','peças medidas sem material','piezas medidas sin material')}</span></span>
   </div>
-  <div hidden={stage!=='assign'}>
+  </>}
+  <div hidden={!embedded&&stage!=='assign'}>
   {builder}
   {sheetId&&<div className="mb-4 rounded-2xl bg-white p-3 shadow-sm"><button type="button" className={button} disabled={importing} onClick={importNativeCuts}>{importing?tx('Importing cuts…','Importando cortes…','Importando cortes…'):tx('Import stair & railing cuts from drawing','Importar cortes de escada e corrimão do desenho','Importar cortes de escalera y barandilla del dibujo')}</button><p className="mt-2 text-xs text-slate-500">{tx('Uses your latest completed fabrication drawing. Changed measurements require a new drawing.','Usa o último desenho de fabricação concluído. Medidas alteradas exigem novo desenho.','Usa el último plano de fabricación terminado. Las medidas modificadas requieren un plano nuevo.')}</p>{importMessage&&<p role="status" className="mt-2 text-sm text-slate-700">{importMessage}</p>}</div>}
-  <details className="mb-4 rounded-2xl bg-white p-3 shadow-sm"><summary className="min-h-12 cursor-pointer text-base font-semibold">{tx('Build a measured grate or ladder','Criar grelha ou escada medida','Crear rejilla o escalera medida')} {data.specialtySteel?.length?`(${data.specialtySteel.length})`:''}</summary><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={items=>set(d=>{d.specialtySteel=items;})} lang={lang} onSelect={key=>{const matches=sources.filter(s=>s.key===key),source=matches.length===1?matches[0]:undefined;if(source)add(source.role,key);}}/></details>
-  <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+  {!embedded&&<details className="mb-4 rounded-2xl bg-white p-3 shadow-sm"><summary className="min-h-12 cursor-pointer text-base font-semibold">{tx('Build a measured grate or ladder','Criar grelha ou escada medida','Crear rejilla o escalera medida')} {data.specialtySteel?.length?`(${data.specialtySteel.length})`:''}</summary><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={items=>set(d=>{d.specialtySteel=items;})} lang={lang} onSelect={key=>{const matches=sources.filter(s=>s.key===key),source=matches.length===1?matches[0]:undefined;if(source)add(source.role,key);}}/></details>}
+  <div className={embedded?"space-y-3":"grid items-start gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]"}>
    <div className="min-w-0 space-y-3 xl:sticky xl:top-4">
-    <div className="rounded-2xl bg-white p-3 shadow-sm">
+    <details open={!embedded} className="rounded-2xl bg-white p-3 shadow-sm"><summary className="min-h-11 cursor-pointer font-semibold">{tx('Custom members','Peças personalizadas','Piezas personalizadas')}</summary>
      <label className="block text-sm font-semibold">{tx('Choose assembly','Escolher conjunto','Elegir conjunto')}<select className={field} value={kind} onChange={e=>{setKind(e.target.value);setZoom(1);}}><option value="railing">{tx('Railing / ramp / window well','Corrimão / rampa / poço de janela','Barandilla / rampa / pozo de ventana')}</option><option value="grate">{tx('Grate','Grelha','Rejilla')}</option><option value="ladder">{tx('Ladder','Escada vertical','Escalera vertical')}</option>{sources.length>0&&<option value="measured">{tx('Measured job · 3D','Serviço medido · 3D','Trabajo medido · 3D')}</option>}</select></label>
-     {kind==='measured'&&<div className="my-2 flex gap-2">{(['3d','2d'] as const).map(mode=><button type="button" key={mode} className={button} aria-pressed={sceneMode===mode} onClick={()=>setSceneMode(mode)}>{mode==='3d'?'3D':tx('2D drawing','Desenho 2D','Dibujo 2D')}</button>)}</div>}
-     {kind==='measured'&&sceneMode==='3d'?<SceneViewport data={data} lang={lang} selectedId={selectedSceneId} onSelect={selectScene} onUnavailable={()=>setSceneMode('2d')}/>:<>
+     {!embedded&&kind==='measured'&&<div className="my-2 flex gap-2">{(['3d','2d'] as const).map(mode=><button type="button" key={mode} className={button} aria-pressed={sceneMode===mode} onClick={()=>setSceneMode(mode)}>{mode==='3d'?'3D':tx('2D drawing','Desenho 2D','Dibujo 2D')}</button>)}</div>}
+     {kind==='measured'&&sceneMode==='3d'?(embedded?null:<SceneViewport data={data} lang={lang} selectedId={selectedSceneId} onSelect={selectScene} onUnavailable={()=>setSceneMode('2d')}/>):<>
      <SketchZoom zoom={zoom} onChange={setZoom} lang={lang} light onFit={()=>{if(viewport.current){viewport.current.scrollLeft=0;viewport.current.scrollTop=0;}}}/>
      <div ref={viewport} className="max-h-[55dvh] overflow-auto overscroll-contain" style={{touchAction:'pan-x pan-y'}}><div ref={drawing} style={{width:`${zoom*100}%`}}>
       {kind==='measured'?<SiteDrawing data={data} onMember={(railId,part)=>{if(!selectMeasured(`${railId}:${part}`))selectScene({railId,part});}}/>:<svg viewBox="0 0 400 220" role="group" aria-label="Select member material" className="w-full">
@@ -88,7 +92,7 @@ export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{
      {sceneMessage&&<p role="status" className="mt-2 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{sceneMessage}</p>}
      <p className="mt-2 text-xs text-slate-500">{kind==='measured'?tx('Tap a measured member to link its calculated stock length.','Toque numa peça para vincular o comprimento calculado.','Toque una pieza para vincular su longitud calculada.'):tx('Material map only · not a measured fabrication drawing. Optional members are included only when you add them.','Mapa de materiais · não é desenho de fabricação medido. Peças opcionais só entram quando adicionadas.','Mapa de materiales · no es un plano de fabricación medido. Las piezas opcionales solo se incluyen al añadirlas.')}</p>
      <details className="mt-3"><summary className="min-h-11 cursor-pointer font-semibold">{tx('Choose a member by name','Escolher peça pelo nome','Elegir pieza por nombre')}</summary><div className="mt-2 grid grid-cols-2 gap-2">{roles.map(([key,label])=><button key={key} type="button" className={button} onClick={()=>add(key)}>{label}</button>)}</div></details>
-    </div>
+    </details>
     {!!sources.length&&<label className="block rounded-2xl bg-white p-3 text-sm font-semibold shadow-sm">{tx('Measured members','Peças medidas','Piezas medidas')}<select className={field} value="" onChange={e=>{const source=sources.find(s=>s.key===e.target.value);if(source)add(source.role,source.key);}}><option value="">{tx('Choose a measured member…','Escolha uma peça medida…','Elija una pieza medida…')}</option>{sources.map(source=><option key={source.key} value={source.key}>{source.label}</option>)}</select></label>}
     {!!plan.rows.length&&<div className="grid max-h-80 gap-2 overflow-auto rounded-2xl" aria-label="Assigned members">{plan.rows.map(r=><button type="button" key={r.id} aria-pressed={r.id===selected} className={`${button} text-left ${r.id===selected?'!border-indigo-400':''}`} onClick={()=>focus(r.id)}><strong className="block">{r.label}</strong><span className="text-xs text-slate-500">{r.item?.display||tx('Choose material','Escolher material','Elegir material')} · {steelRowChecked(data,r,sources)?'✓':tx('Needs review','Revisar','Revisar')}</span></button>)}</div>}
    </div>
@@ -108,9 +112,9 @@ export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{
     {removed&&<button type="button" disabled={plan.rows.length>=200} className={`${button} mt-3`} onClick={()=>{set(d=>{d.steelPlan??=newSteelPlan();d.steelPlan.rows.push(removed);});focus(removed.id);undo(null);}}>{tx('Undo removal','Desfazer remoção','Deshacer eliminación')}</button>}
    </div>
   </div>
-  <div className="mt-4 flex justify-end"><button type="button" className="min-h-12 rounded-xl bg-indigo-600 px-5 font-semibold text-white shadow-sm" onClick={()=>setStage('stock')}>{tx('Review stock →','Conferir barras →','Revisar barras →')}</button></div>
+  {!embedded&&<div className="mt-4 flex justify-end"><button type="button" className="min-h-12 rounded-xl bg-indigo-600 px-5 font-semibold text-white shadow-sm" onClick={()=>setStage('stock')}>{tx('Review stock →','Conferir barras →','Revisar barras →')}</button></div>}
   </div>
-  <div hidden={stage!=='stock'}>
+  <details open={!embedded&&stage==='stock'} hidden={!embedded&&stage!=='stock'}><summary className="min-h-11 cursor-pointer py-3 font-semibold">{tx('Stock & review','Barras e revisão','Barras y revisión')}</summary>
   {(nativeStale||!!data.nativeSteel?.pending.length)&&<div role="status" className="mb-4 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">{nativeStale&&<p className="font-semibold">{tx('Imported drawing cuts are outdated. Generate a new drawing and import its cuts again.','Os cortes importados estão desatualizados. Gere um novo desenho e importe os cortes novamente.','Los cortes importados están desactualizados. Genere un plano nuevo e importe los cortes otra vez.')}</p>}{!!data.nativeSteel?.pending.length&&<p>{data.nativeSteel.pending.length} {tx('drawing members still need resolved fabrication cuts. They are not included in stock totals.','peças do desenho ainda precisam de cortes de fabricação resolvidos. Não estão incluídas no total de barras.','piezas del plano aún necesitan cortes de fabricación resueltos. No se incluyen en el total de barras.')}</p>}</div>}
   {!plan.rows.length&&<div className="rounded-2xl bg-white p-6 text-center text-slate-600"><p>{tx('Assign steel to a member to begin your stock schedule.','Atribua aço a uma peça para iniciar a lista de barras.','Asigne acero a una pieza para iniciar la lista de barras.')}</p><button type="button" className={`${button} mt-4`} onClick={()=>setStage('assign')}>{tx('Assign steel','Atribuir aço','Asignar acero')}</button></div>}
   {!!plan.rows.length&&<div className="mt-4 rounded-2xl bg-white p-4 shadow-sm"><h3 className="text-lg font-bold">{tx('Stock needed','Barras necessárias','Barras necesarias')}</h3><p className="my-2 text-sm text-slate-600">{tx('Draft · assigned members only. Practical cutting layout; review before ordering. Does not reserve inventory.','Rascunho · apenas peças atribuídas. Confira antes de comprar. Não reserva estoque.','Borrador · solo piezas asignadas. Revise antes de comprar. No reserva inventario.')}</p><div className="grid grid-cols-2 gap-3">{(['kerf','trim'] as const).map(k=><label key={k} className="text-sm font-semibold">{k==='kerf'?tx('Saw kerf · inches','Corte da serra · pol.','Ancho de sierra · pulg.'):tx('Trim EACH end · inches','Aparar CADA ponta · pol.','Recorte CADA extremo · pulg.')}<input className={field} value={plan[k]} maxLength={40} onChange={e=>{const v=e.target.value;set(d=>{d.steelPlan??=newSteelPlan();d.steelPlan[k]=v;});}}/></label>)}</div>
@@ -119,6 +123,6 @@ export default function SteelWorkspace({data,set,catalog,lang,builder,sheetId}:{
    {result.groups.map(g=><details key={g.key} className="mt-3 rounded-xl border border-slate-200 p-3"><summary className="min-h-12 cursor-pointer"><strong className="block">{g.bars.length} × {g.stock/12}′ · {g.item.display}</strong><span className="text-sm text-slate-500">{g.item.sku} · {g.feet.toFixed(2)} ft</span></summary><div className="mt-3 space-y-3">{g.bars.map((b,i)=><div key={i} className="rounded-xl bg-slate-100 p-3 text-sm"><strong>{tx('Bar','Barra','Barra')} {i+1}</strong><p>{b.cuts.map(c=>`${c.mark}: ${c.length.toFixed(3)}″`).join(' + ')}</p><p className="mt-1 text-slate-500">{tx('Remaining','Sobra','Restante')}: {b.remaining.toFixed(3)}″</p></div>)}</div></details>)}
    {!!result.groups.length&&<button type="button" className="mt-4 min-h-12 rounded-xl bg-indigo-600 px-4 font-semibold text-white" onClick={()=>{const url=URL.createObjectURL(new Blob([steelCsv(data)],{type:'text/csv;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='kiw-material-takeoff-draft.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}}>{tx('Download stock schedule','Baixar lista de barras','Descargar lista de barras')}</button>}
   </div>}
- </div>
+ </details>
  </section>;
 }

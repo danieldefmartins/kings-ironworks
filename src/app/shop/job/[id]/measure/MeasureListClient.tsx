@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Job } from "@/lib/shop/shared";
 import {
   newMeasureData,
-  PICKER_SHAPES,
-  PICKER_PRESETS,
+  MEASURE_PRESETS,
   TWO_FLIGHT_SHAPES,
   sheetProgress,
   type FlightSegment,
@@ -18,7 +17,7 @@ import { mt, shapeLabel } from "@/lib/shop/measure-i18n";
 import { sheetReadiness, flightGaps, type Tolerances } from "@/lib/shop/measure-checks";
 import ShapeIcon from "./ShapeIcon";
 import SceneStart from "./[sheetId]/SceneStart";
-import type {SceneSetup} from "@/lib/shop/measure-scene-setup";
+import {sceneProjectShape,sceneProjectLabel,type SceneSetup} from "@/lib/shop/measure-scene-setup";
 
 export default function MeasureListClient({
   job,
@@ -110,9 +109,10 @@ export default function MeasureListClient({
         </button>
       ) : (
         <div className="mb-6">
-          {!sceneReady?<><SceneStart data={sceneDraft} set={fn=>setSceneDraft(old=>{const next=structuredClone(old);fn(next);return next;})} lang={lang} onContinue={()=>{const project=sceneDraft.sceneSetup?.projectType;const selected:MeasureShape=project==='stairs'?'straight':project==='ramp'?'ramp':project==='window_well'?'window_well':project==='railing'||project==='landing'?'level_run':'custom';setShape(selected);setPreset(null);setName('');setSceneReady(true);}}/><button type="button" className="mt-3 min-h-11 px-4 text-sm text-neutral-400" onClick={()=>setCreating(false)}>{mt(lang,'cancel')}</button></>:<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+          {!sceneReady?<><SceneStart data={sceneDraft} set={fn=>setSceneDraft(old=>{const next=structuredClone(old);fn(next);return next;})} lang={lang} onContinue={()=>{const project=sceneDraft.sceneSetup?.projectType;const selected:MeasureShape=project?sceneProjectShape(project):'custom';setShape(selected);setPreset(null);setName('');setSceneReady(true);}}/><button type="button" className="mt-3 min-h-11 px-4 text-sm text-neutral-400" onClick={()=>setCreating(false)}>{mt(lang,'cancel')}</button></>:<div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
           <button type="button" className="mb-4 min-h-11 rounded-xl border border-neutral-700 px-4 text-sm font-semibold" onClick={()=>setSceneReady(false)}>← {tx('Change project','Alterar projeto','Cambiar proyecto')}</button>
-          <details open={sceneDraft.sceneSetup?.projectType==='stairs'}><summary className="mb-4 min-h-11 cursor-pointer text-base font-bold">{tx('Layout options · all tools','Opções de layout · todas as ferramentas','Opciones de diseño · todas las herramientas')}</summary>
+          <h2 className="mb-4 text-xl font-bold">{sceneDraft.sceneSetup?.projectType?sceneProjectLabel(sceneDraft.sceneSetup.projectType,lang):''}</h2>
+          {sceneDraft.sceneSetup?.projectType==='stairs'&&<>
           {/* Stairs first, because almost every sheet is one and the answer is
               always the same two questions. L, U, three-flight and any longer
               run are the SAME structure — flight, landing, flight — differing
@@ -159,27 +159,9 @@ export default function MeasureListClient({
             </div>
           )}
 
-          <div className="font-bold mb-3">{mt(lang, "chooseShapeOther")}</div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            {PICKER_SHAPES.map((s) => (
-              <button
-                key={s}
-                onClick={() => { setShape(s); setPreset(null); }}
-                className={`rounded-xl border p-3 flex flex-col items-center gap-2 text-xs font-semibold text-center ${
-                  shape === s
-                    ? "border-amber-500 bg-amber-500/10 text-amber-300"
-                    : "border-neutral-700 bg-neutral-800/60 text-neutral-300"
-                }`}
-              >
-                <ShapeIcon shape={s} />
-                {shapeLabel(lang, s)}
-              </button>
-            ))}
-          </div>
-
           <div className="font-bold mb-2 mt-5">{mt(lang, "commonSpecialLayouts")}</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
-            {PICKER_PRESETS.map((p) => {
+            {MEASURE_PRESETS.filter(p=>p!=='multi_flight').map((p) => {
               const presetShape: MeasureShape = p === "winder_l" ? "l_shape" : p === "winder_u" ? "u_shape" : "builder";
               return (
                 <button
@@ -202,7 +184,7 @@ export default function MeasureListClient({
             })}
           </div>
 
-          </details>
+          </>}
           {/* The two counts decide the whole sheet — how many step rows it
               opens with, how many flights it walks you through — and they were
               a pair of small steppers at the bottom of a long picker, below

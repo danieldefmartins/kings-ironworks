@@ -10,6 +10,9 @@ import { installFetch } from "./useSheetSync.harness";
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: () => {} }) }));
 
+vi.mock('./SceneViewport',()=>({default:()=> <div/>}));
+vi.mock('./PrintSheet',()=>({default:()=>null}));
+vi.mock('./ShopDrawingSubmission',()=>({default:()=> <div>Drawing submission retained</div>}));
 import MeasureEditor from "./MeasureEditor";
 import {attachedFabricationFixture} from "@/lib/shop/measure-site.fixture";
 
@@ -47,7 +50,7 @@ function sheetWith(measured: number): MeasureSheet {
 function show(measured: number) {
   installFetch();
   const rendered=render(<MeasureEditor job={job} sheet={sheetWith(measured)} lang="en" workerName="Tester" />);
-  fireEvent.click(screen.getByRole("button",{name:"All tools"}));
+  fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'structure'}});
   return rendered;
 }
 
@@ -56,91 +59,45 @@ const click = (name: RegExp) => act(() => { fireEvent.click(screen.getByRole("bu
 beforeEach(() => { push.mockReset(); });
 afterEach(cleanup);
 
-describe("three-flight stair", () => {
-  it.each(['This flight only','All flights'])('applies typical steps with scope: %s', (scope) => {
-    show(0);
-    fireEvent.change(screen.getByLabelText('Typical rise'),{target:{value:'7 1/4'}});
-    fireEvent.change(screen.getByLabelText('Typical run'),{target:{value:'11 1/2'}});
-    fireEvent.change(screen.getByLabelText('Typical nosing'),{target:{value:'1'}});
-    fireEvent.click(screen.getByRole('button',{name:scope}));
-    fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
-    expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe('7 1/4');
-    click(/Save · next flight \(2\)/);
-    if(screen.queryByRole('button',{name:/Type the list instead/})) fireEvent.click(screen.getByRole('button',{name:/Type the list instead/}));
-    expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'7 1/4':'');
-    expect((screen.getAllByLabelText('Run')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'11 1/2':'');
-  });
-  it("opens on the flight that still owes numbers", () => {
-    show(2);
-    expect(screen.getByText(/Flight 3 of 3/)).toBeTruthy();
-    expect(screen.getByText(/2\/3 flights measured/)).toBeTruthy();
-  });
-
-  it("sends the bottom button to the next flight, not the next step", () => {
-    show(0);
-    expect(screen.getByText(/Flight 1 of 3/)).toBeTruthy();
-    click(/Save · next flight \(2\)/);
-    expect(screen.getByText(/Flight 2 of 3/)).toBeTruthy();
-    // Still on step 1 of 8 — walking the flights never advances the step.
-    expect(screen.getAllByText(/Step 1 of 8/).length).toBeGreaterThan(0);
-  });
-
-  it("refuses the next step while a flight is blank, and offers the way there", () => {
-    show(2);
-    expect(screen.queryByText(/^Next →/)).toBeNull();
-    // On the last flight with one still open, the forward button is the
-    // amber "take me there" rather than a step change.
-    click(/Take me there/);
-    expect(screen.getByText(/Flight 3 of 3/)).toBeTruthy();
-    expect(screen.getAllByText(/Step 1 of 8/).length).toBeGreaterThan(0);
-  });
-
-  it("hands over the next step once every flight is measured", () => {
-    show(3);
-    expect(screen.getAllByText(/Every flight measured/).length).toBeGreaterThan(0);
-    // Walking the flights stays available, as a compact button beside it.
-    expect(screen.getByRole("button", { name: /^Flight 2$/ })).toBeTruthy();
-    click(/Every flight measured · Next →/);
-    expect(screen.getAllByText(/Step 2 of 8/).length).toBeGreaterThan(0);
-  });
-
-  it("can stop for the day and go back to the sheet list", () => {
-    show(1);
-    click(/Save and finish later/);
-    expect(push).toHaveBeenCalledWith("/shop/job/job-1/measure");
-  });
+describe('multi-flight contextual measurements',()=>{
+ it.each(['This flight only','All flights'])('applies typical steps with scope: %s',(scope)=>{
+  show(0);
+  fireEvent.change(screen.getByLabelText('Typical rise'),{target:{value:'7 1/4'}});
+  fireEvent.change(screen.getByLabelText('Typical run'),{target:{value:'11 1/2'}});
+  fireEvent.change(screen.getByLabelText('Typical nosing'),{target:{value:'1'}});
+  click(new RegExp(`^${scope}$`));click(/Type the list instead/);
+  expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe('7 1/4');
+  fireEvent.change(screen.getByRole('combobox',{name:'Flight'}),{target:{value:'1'}});
+  if(screen.queryByRole('button',{name:/Type the list instead/}))click(/Type the list instead/);
+  expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'7 1/4':'');
+  expect((screen.getAllByLabelText('Run')[0] as HTMLInputElement).value).toBe(scope==='All flights'?'11 1/2':'');
+ });
+ it('opens the flight still missing measurements',()=>{show(2);expect((screen.getByRole('combobox',{name:'Flight'}) as HTMLSelectElement).value).toBe('2');});
+ it('switches flights without leaving the structure topic or changing measurements',()=>{
+  show(1);fireEvent.change(screen.getByRole('combobox',{name:'Flight'}),{target:{value:'0'}});
+  click(/Type the list instead/);expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe('7');
+  fireEvent.change(screen.getByRole('combobox',{name:'Flight'}),{target:{value:'1'}});
+  expect((screen.getByRole('combobox',{name:'Project controls'}) as HTMLSelectElement).value).toBe('structure');
+  expect((screen.getAllByLabelText('Rise')[0] as HTMLInputElement).value).toBe('');
+ });
+ it('allows review navigation but blocks submission with blank flights',()=>{
+  show(2);click(/^Shop package/);expect((screen.getByRole('button',{name:/Submit for shop review/}) as HTMLButtonElement).disabled).toBe(true);
+ });
+ it('keeps survey reachable after measured flights without an extra wizard',()=>{
+  show(3);fireEvent.change(screen.getByRole('combobox',{name:'Project controls'}),{target:{value:'survey'}});
+  expect(screen.getByRole('heading',{name:'Landings & level checks'})).toBeTruthy();expect(screen.queryByText(/Step 2 of 8/)).toBeNull();
+ });
+ it('can save and close for the day',()=>{show(1);click(/^Save & close$/);expect(push).toHaveBeenCalledWith('/shop/job/job-1/measure');});
 });
-
-it('opens saved attached panels from the main navigation and keeps edits across workspaces',()=>{
- installFetch();const sheet=sheetWith(0);sheet.data=attachedFabricationFixture();
- render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
- fireEvent.click(screen.getByRole('button',{name:'Refine'}));
- expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
- expect(screen.getByRole('button',{name:'Zoom in'})).toBeTruthy();
+it('keeps attached-panel edits across tools and exposes member/review details',()=>{
+ installFetch();const sheet=sheetWith(0);sheet.data=attachedFabricationFixture();render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
+ click(/^Railing panels$/);expect(screen.getByRole('group',{name:'Start connection'})).toBeTruthy();
  fireEvent.change(screen.getByLabelText('Finished railing height above floor'),{target:{value:'43'}});
- fireEvent.click(screen.getByRole('button',{name:'2. Members & gaps'}));
- expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
- expect(screen.queryByRole('group',{name:'Start connection'})).toBeNull();
- fireEvent.click(screen.getByRole('button',{name:'Site'}));
- fireEvent.click(screen.getByRole('button',{name:/Design attached panels/}));
- expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
- fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
- expect(screen.getByRole('button',{name:'Review drawing package →'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:'Review drawing package →'}));
- expect(screen.getByRole('button',{name:'Back to sketch'})).toBeTruthy();
+ fireEvent.click(screen.getByText('Members',{selector:'summary'}));expect(screen.getByRole('group',{name:'Top rail'})).toBeTruthy();
+ click(/^Site objects$/);click(/^Railing panels$/);expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('43');
+ fireEvent.click(screen.getByText('Verification & cuts',{selector:'summary'}));expect(screen.getByText(/Verification & cuts/)).toBeTruthy();
+ click(/^Shop package/);expect(screen.getByText('Drawing submission retained')).toBeTruthy();
 });
-
-it('guides environment to sketch measuring and handoff without changing saved geometry',()=>{
- installFetch();const sheet=sheetWith(1);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
- expect(screen.getByRole('heading',{name:'Where are we working?'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:/Exterior/}));
- fireEvent.click(screen.getByRole('button',{name:'Stairs'}));
- fireEvent.click(screen.getByRole('button',{name:/Build the site/}));
- expect(screen.getByRole('region',{name:'Build the job site'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:'Measure'}));
- expect(screen.getByRole('heading',{name:'Measure the drawing'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:'Fabricate'}));
- expect(screen.getByRole('region',{name:'Fabrication handoff'})).toBeTruthy();
- fireEvent.click(screen.getByRole('button',{name:'All tools'}));
- expect(screen.getByText(/Flight 2 of 3/)).toBeTruthy();
+it('opens saved geometry directly without repeating project creation',()=>{
+ show(1);expect(screen.queryByRole('heading',{name:'Where are we working?'})).toBeNull();expect((screen.getByRole('combobox',{name:'Flight'}) as HTMLSelectElement).value).toBe('1');
 });

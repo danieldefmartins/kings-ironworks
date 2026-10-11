@@ -34,6 +34,7 @@ import { stairGeometry } from "@/lib/shop/measure-geometry";
 import Sketch, { type SketchView } from "../Sketch";
 
 export default function SketchSections({
+  embedded=false,
   lang,
   data,
   set,
@@ -61,6 +62,7 @@ export default function SketchSections({
   removePost,
   toggleSketchWall,
 }: {
+  embedded?: boolean;
   lang: string;
   data: MeasureData;
   set: (fn: (d: MeasureData) => void) => void;
@@ -111,7 +113,7 @@ export default function SketchSections({
       {!isSpiral && !isWallRail && !isCustom && !isWell && !isFire && !isGate && !isFence && !isBalcony && (
         <Card stage="setup" title={`🏛 ${mt(lang, "existingStructuresTitle")}`}>
           <p className="mb-3 text-xs text-neutral-400">{mt(lang, "existingStructuresHint")}</p>
-          <div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
+          {!embedded&&<div className="mb-4 rounded-xl border border-neutral-700 bg-neutral-950/60 p-3">
             <SketchZoom zoom={zoom} onChange={setZoom} lang={lang}/>
             {viewList.length > 1 && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -147,7 +149,8 @@ export default function SketchSections({
               onToggleWallSide={toggleSketchWall}
             />
           </div>
-          <p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>
+          }
+          {!embedded&&<p className="text-sm text-neutral-500">{mt(lang, "holdToAddExisting")}</p>}
           <div className="space-y-3">
             {posts.filter((po) => po.pointType !== "railing_post").map((po, n) => (
               <div key={po.id} className="rounded-lg border border-neutral-800 bg-neutral-950/60 p-3">
@@ -211,7 +214,7 @@ export default function SketchSections({
           It shows on the steps step too, where a tap means "measure this
           step" rather than "put a post here" — the drawing is the one thing
           on screen that knows which tread is which. */}
-      {measuredWorkspace && <DrawingWorkspace key={activeStage} data={data} lang={lang} set={set} focusSeg={focusSeg} onMeasureStep={onMeasureStep} onPlaceStep={addStepPost} onTapPost={tapPost} placingPosts={!measuring} onTapPlatform={addPlatformPost} />}
+      {!embedded && measuredWorkspace && <DrawingWorkspace key={activeStage} data={data} lang={lang} set={set} focusSeg={focusSeg} onMeasureStep={onMeasureStep} onPlaceStep={addStepPost} onTapPost={tapPost} placingPosts={!measuring} onTapPlatform={addPlatformPost} />}
       {!measuredWorkspace && !isCustom && ["steps", "posts", "locations"].includes(activeStage) && (
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mb-4">
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>

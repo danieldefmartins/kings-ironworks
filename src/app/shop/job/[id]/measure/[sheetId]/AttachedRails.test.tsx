@@ -4,6 +4,7 @@ import {cleanup,fireEvent,render,screen,within} from '@testing-library/react';
 import {attachedPorchFixture,attachedFabricationFixture} from '@/lib/shop/measure-site.fixture';
 import {siteRailSignature} from '@/lib/shop/measure-site-rails';
 import SiteWorkspace from './SiteWorkspace';
+import AttachedRails from './AttachedRails';
 function Harness({fabrication=false}:{fabrication?:boolean}){
  const [data,setData]=useState(()=>{const d=fabrication?attachedFabricationFixture():attachedPorchFixture();d.site!.rails![0].checkedSignature=siteRailSignature(d.site,d.site!.rails![0]);return d;});
  return <SiteWorkspace data={data} set={fn=>setData(prev=>{const next=structuredClone(prev);fn(next);return next;})} lang="en" onContinue={()=>{}} onMeasure={()=>{}} onDetails={()=>{}}/>;
@@ -97,4 +98,18 @@ it('adds and removes a second top rail with explicit dimensions and a new cut ma
  fireEvent.click(screen.getByRole('button',{name:'3. Review & cuts'}));
  expect(screen.queryByRole('cell',{name:'SR1-T2'})).toBeNull();
  expect(screen.getByRole('cell',{name:'SR1-T'})).toBeTruthy();
+});
+
+it('embeds one panel inspector with collapsible details and preserves review invalidation without wizard navigation',()=>{
+ function Embedded(){const [data,setData]=useState(()=>{const d=attachedFabricationFixture(),r=d.site!.rails![0];r.checkedSignature=siteRailSignature(d.site,r);r.fabrication!.reviewedSignature=siteRailSignature(d.site,r);return d;});return <AttachedRails embedded autoSelect data={data} set={fn=>setData(old=>{const next=structuredClone(old);fn(next);return next;})} lang="en"/>;}
+ render(<Embedded/>);expect(screen.queryByRole('navigation')).toBeNull();expect(screen.queryByRole('button',{name:/Continue:/})).toBeNull();
+ fireEvent.click(screen.getByText('Members',{selector:'summary'}));const top=screen.getByRole('group',{name:'Top rail'});fireEvent.change(within(top).getByLabelText('Width across railing'),{target:{value:'2'}});
+ fireEvent.click(screen.getByText('Verification & cuts',{selector:'summary'}));expect((screen.getByRole('checkbox',{name:/Field layout verified/}) as HTMLInputElement).checked).toBe(false);expect((screen.getByRole('checkbox',{name:/Shop details checked/}) as HTMLInputElement).checked).toBe(false);expect(screen.getByRole('button',{name:'Download cut CSV'})).toBeTruthy();
+ fireEvent.click(screen.getByText('Members',{selector:'summary'}));fireEvent.click(screen.getByText('Members',{selector:'summary'}));expect((within(screen.getByRole('group',{name:'Top rail'})).getByLabelText('Width across railing') as HTMLInputElement).value).toBe('2');
+});
+
+it('opens the externally selected rail and keeps scene selection synchronized with local panel choices',()=>{
+ function Embedded(){const [data,setData]=useState(()=>{const d=attachedFabricationFixture(),second=structuredClone(d.site!.rails![0]);second.id='second-panel';second.label='Other opening';second.height='42';d.site!.rails!.push(second);return d;}),[selected,select]=useState('panel-1');return <><button type="button" onClick={()=>select('second-panel')}>Pick other panel in scene</button><output data-testid="selected-panel">{selected}</output><AttachedRails embedded selectedRailId={selected} onSelectRail={select} data={data} set={fn=>setData(old=>{const next=structuredClone(old);fn(next);return next;})} lang="en"/></>;}
+ render(<Embedded/>);fireEvent.click(screen.getByRole('button',{name:'Pick other panel in scene'}));fireEvent.click(screen.getByText('Connections',{selector:'summary'}));expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('42');
+ fireEvent.click(screen.getByRole('button',{name:/SR1 · Porch side railing/}));expect(screen.getByTestId('selected-panel').textContent).toBe('panel-1');fireEvent.click(screen.getByText('Connections',{selector:'summary'}));expect((screen.getByLabelText('Finished railing height above floor') as HTMLInputElement).value).toBe('36');
 });

@@ -6,14 +6,20 @@ import {siteLabels} from '@/lib/shop/measure-site-i18n';
 import {mt} from '@/lib/shop/measure-i18n';
 import AttachedRails,{type PanelStage} from './AttachedRails';
 import SiteDrawing,{type SiteView} from './SiteDrawing';
+import {WorkspaceScene} from './ProWorkspace';
+import type {SceneSelection} from './SceneViewport';
 import SketchZoom from './SketchZoom';
 import {useDrawingPinch} from './useDrawingPinch';
 
-export default function PanelWorkspace({data,set,lang,stage,onStageChange,onSite,onReview}:{data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string;stage:PanelStage;onStageChange:(stage:PanelStage)=>void;onSite:()=>void;onReview:()=>void}){
+export default function PanelWorkspace({data,set,lang,stage,onStageChange,onSite,onReview,embedded=false,selectedRailId:controlledRailId,onSelectRail,onSceneSelect}:{onSceneSelect?:(selection:SceneSelection)=>void;selectedRailId?:string;onSelectRail?:(id:string)=>void;embedded?:boolean;data:MeasureData;set:(fn:(d:MeasureData)=>void)=>void;lang:string;stage:PanelStage;onStageChange:(stage:PanelStage)=>void;onSite:()=>void;onReview:()=>void}){
  const l=siteLabels(lang),[view,setView]=useState<SiteView>('iso'),[zoom,setZoom]=useState(1);
  const viewport=useRef<HTMLDivElement>(null),drawing=useRef<HTMLDivElement>(null),editor=useRef<HTMLDivElement>(null),sketch=useRef<HTMLDivElement>(null);
  useDrawingPinch(viewport,drawing,zoom,setZoom);
+ const [localRailId,setLocalRailId]=useState(data.site?.rails?.[0]?.id||'');
+ const selectedRailId=controlledRailId??localRailId;
+ const setSelectedRailId=(id:string)=>{setLocalRailId(id);onSelectRail?.(id);};
  const button='min-h-12 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-sm';
+ if(embedded)return <section aria-label={l.panels}><WorkspaceScene data={data} lang={lang} selectedId={selectedRailId} onSelect={target=>{if(target.railId)setSelectedRailId(target.railId);else onSceneSelect?.(target);}}/><AttachedRails embedded selectedRailId={selectedRailId} onSelectRail={setSelectedRailId} data={data} set={set} lang={lang} autoSelect/></section>;
  return <section aria-label={l.panels} className="rounded-3xl border border-slate-200 bg-slate-100 p-3 text-slate-900 shadow-xl sm:p-5">
   <h2 className="text-xl font-bold">{l.panels}</h2><p className="mb-4 mt-1 text-sm text-slate-600">{l.panelHint}</p>
   <button type="button" className={`${button} mb-3 w-full xl:hidden`} onClick={()=>editor.current?.scrollIntoView({behavior:'smooth',block:'start'})}>{l.panelDetails} ↓</button>

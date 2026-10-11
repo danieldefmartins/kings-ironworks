@@ -102,3 +102,9 @@ it('only links native posts to current exact imported cut marks',()=>{
 it('rejects stale native post sources without creating a manual assignment',()=>{
  const data=attachedFabricationFixture();data.nativeSteel={signature:'old geometry',sourceUpdatedAt:'today',drawingId:'drawing',pending:[],sources:[{key:'native:P1',label:'P1',role:'post',length:40,profile:'2 sq tube',signature:'drawing'}]};render(<Harness initialData={data}/>);fireEvent.click(screen.getByRole('button',{name:'Pick native post'}));expect(screen.queryByLabelText('Member name')).toBeNull();expect(screen.getByText(/This is a layout reference, not a finished cut/)).toBeTruthy();
 });
+
+it('routes surface picks to shared object controls while unresolved native posts keep their material explanation',()=>{
+ const route=vi.fn();render(<SteelWorkspace embedded data={attachedFabricationFixture()} set={()=>{}} lang="en" catalog={[]} onSceneSelect={route}/>);
+ fireEvent.click(screen.getByRole('button',{name:'Pick native reference'}));expect(route).toHaveBeenCalledWith({segmentIndex:0});
+ fireEvent.click(screen.getByRole('button',{name:'Pick native post'}));expect(route).toHaveBeenCalledTimes(1);expect(screen.getByText(/This is a layout reference, not a finished cut/)).toBeTruthy();
+});
