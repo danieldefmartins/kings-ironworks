@@ -3,6 +3,27 @@ import type {Point3} from './measure-geometry';
 import type {MeasureScene,SceneMesh,SceneLine} from './measure-scene';
 export type SceneView='iso'|'plan'|'front';
 export const viewDirection=(view:SceneView)=>new Vector3(...(view==='plan'?[0,-0.000001,1]:view==='front'?[0,-1,0]:[1,-1,0.85]) as [number,number,number]).normalize();
+/**
+ * The opening 3D camera for this model. The fixed corner view looked down
+ * every stair from its top end (+x travel seen from +x,−y), so risers faced
+ * away and a turning stair's two flights lined up along the view diagonal —
+ * an L read as one straight run. Instead, look from in front of the steps:
+ * against their combined direction of travel, so every flight shows its
+ * risers and a turn opens up as a visible corner. A single straight run gets
+ * a three-quarter view (45° off its axis); with no steps, or flights that
+ * cancel out (a U), the shop's usual corner view stays.
+ */
+export function isoDirection(model:Pick<MeasureScene,'meshes'>|null|undefined){
+ const fallback=viewDirection('iso');if(!model)return fallback;
+ const steps=model.meshes.filter(m=>m.kind==='surface'&&m.entity.stepIndex!==null&&m.entity.stepIndex!==undefined&&m.vertices.length>=2);
+ let sx=0,sy=0,n=0;
+ for(const m of steps){const dx=m.vertices[1].x-m.vertices[0].x,dy=m.vertices[1].y-m.vertices[0].y,len=Math.hypot(dx,dy);if(!(len>1e-6))continue;sx+=dx/len;sy+=dy/len;n++;}
+ if(!n)return fallback;
+ const mag=Math.hypot(sx,sy)/n;if(mag<.3)return fallback;
+ let x=-sx,y=-sy;
+ if(mag>.95){const c=Math.SQRT1_2;[x,y]=[c*x-c*y,c*x+c*y];}
+ const h=Math.hypot(x,y);return new Vector3(x/h,y/h,.85/Math.SQRT2).normalize();
+}
 export function fitScene(bounds:MeasureScene['bounds'],aspect:number,direction:Vector3){
  const min=new Vector3(bounds.min.x,bounds.min.y,bounds.min.z),max=new Vector3(bounds.max.x,bounds.max.y,bounds.max.z),center=min.clone().add(max).multiplyScalar(.5);
  const forward=direction.clone().normalize(),right=new Vector3(0,0,1).cross(forward).normalize(),up=forward.clone().cross(right).normalize();

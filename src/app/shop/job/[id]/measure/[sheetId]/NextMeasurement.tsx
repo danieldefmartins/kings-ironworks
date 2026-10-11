@@ -95,7 +95,7 @@ export default function NextMeasurement({
       <div className="h-full rounded-full bg-indigo-600 transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${pct}%` }} />
     </div>
   );
-  const navBtn = "grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 active:scale-95 disabled:opacity-30";
+  const navBtn = "grid h-14 w-11 shrink-0 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-600 active:scale-95 disabled:opacity-30";
 
   if (!item) {
     return (
@@ -167,11 +167,12 @@ export default function NextMeasurement({
             autoComplete="off"
             inputMode="decimal"
             enterKeyHint="next"
-            className="h-12 w-full bg-transparent px-3 pr-24 text-2xl font-semibold tabular-nums tracking-tight outline-none placeholder:font-normal"
+            style={{ outline: "none" }}
+            className="h-14 w-full bg-transparent px-3 pr-24 text-[28px] font-semibold tabular-nums tracking-tight outline-none placeholder:font-normal"
           />
           {rb.text && <span aria-live="polite" className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 truncate text-xs font-semibold tabular-nums ${rb.ok ? "text-slate-500" : "text-amber-700"}`}>{rb.text}</span>}
         </div>
-        <button type="button" onClick={() => go(1)} className={`flex h-12 shrink-0 items-center gap-1 rounded-2xl px-4 font-semibold active:scale-95 ${filled ? "bg-indigo-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
+        <button type="button" onClick={() => go(1)} className={`flex h-14 shrink-0 items-center gap-1 rounded-2xl px-4 font-semibold active:scale-95 ${filled ? "bg-indigo-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
           {filled ? tr(lang, "Next", "Próxima", "Siguiente") : tr(lang, "Skip", "Pular", "Saltar")}<ChevronRight aria-hidden className="h-4 w-4" />
         </button>
       </div>
