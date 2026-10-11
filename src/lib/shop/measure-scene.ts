@@ -8,6 +8,7 @@ import {siteRailLayout,siteRailFabReviewed} from './measure-site-rails';
 import {attachedCuts} from './measure-attached-fab';
 import {landingConnections,landingConnectionGeometry} from './measure-landings';
 import {houseContext} from './measure-house-context';
+import {SCENE_SHAPES,sceneShapeOf} from './scene-shapes';
 export type SceneKind='surface'|'site'|'wall-preview'|'post'|'rail'|'attached'|'wall-edge'|'house';
 export type SceneEntity={segmentId?:string;segmentIndex?:number;stepIndex?:number|null;siteId?:string;postId?:string;railId?:string;part?:string;role?:string;side?:'left'|'right'|'start'|'end'};
 export type SceneSelection=SceneEntity&{point?:Point3};
@@ -83,6 +84,8 @@ export function measureScene(data:MeasureData):MeasureScene{
  for(const edge of wallPlacementEdges(data))lines.push({id:`placement-edge:${edge.segmentId}:${edge.side}`,label:`Place wall · ${edge.side}`,kind:'wall-edge',provisional:edge.provisional,referenceOnly:true,entity:{segmentId:edge.segmentId,segmentIndex:edge.segmentIndex,side:edge.side},points:[{...edge.start},{...edge.end}]});
  const house=houseContext(data);
  if(house){const item={kind:'house' as const,provisional:true,referenceOnly:true,entity:{},label:'House · unmeasured reference'};meshes.push({...item,id:'house:reference',vertices:house.vertices.map(p=>({...p})),faces:house.faces.map(f=>[...f])});house.roof.forEach((points,i)=>lines.push({...item,id:`house:roof:${i}`,points:points.map(p=>({...p}))}));}
+ const shape=sceneShapeOf(data),adapter=shape?SCENE_SHAPES[shape]:undefined;
+ if(adapter){const extra=adapter(data);meshes.push(...extra.meshes);lines.push(...extra.lines);pending.push(...extra.pending);}
  const points=[...meshes.flatMap(m=>m.vertices),...lines.flatMap(l=>l.points)];
  const bounds={min:{x:0,y:0,z:0},max:{x:0,y:0,z:0}};
  if(points.length){bounds.min={...points[0]};bounds.max={...points[0]};for(const p of points)for(const k of ['x','y','z'] as const){bounds.min[k]=Math.min(bounds.min[k],p[k]);bounds.max[k]=Math.max(bounds.max[k],p[k]);}}
