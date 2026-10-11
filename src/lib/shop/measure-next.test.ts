@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { newMeasureData, newPresetMeasureData, normalizeMeasureData, type FlightSegment } from './measure';
 import { sheetReadiness } from './measure-checks';
-import { currentItem, measurementQueue, nextOpenItem } from './measure-next';
+import { copyStepValue, currentItem, measurementQueue, nextOpenItem, stepCopyTargets, stepPart } from './measure-next';
 import { applyTemplate } from './measure-structural';
 
 const queueOf = (data: ReturnType<typeof newMeasureData>, shape: Parameters<typeof sheetReadiness>[1]) =>
@@ -154,8 +154,51 @@ describe('walking order per work type', () => {
   it('gives every other work type a sensible first number', () => {
     const first: [Shape, string][] = [
       ['gate', 'gateWidthTop'], ['balcony', 'balEdgeLength'], ['window_well', 'wellLengthAtHouse'], ['fire_escape', 'fireTotalHeight'],
-      ['spiral', 'floorToFloor'], ['ramp', 'segmentRise'], ['wall_rail', 'rise'], ['straight', 'rise'], ['custom', 'railHeight'],
+      ['spiral', 'floorToFloor'], ['ramp', 'segmentRise'], ['wall_rail', 'nx_rise'], ['straight', 'nx_rise'], ['custom', 'railHeight'],
     ];
     for (const [shape, key] of first) expect(labels(normalizeMeasureData(newMeasureData(shape, 2)), shape)[0]).toBe(key);
+  });
+});
+
+describe('stair walk: rise then tread, step by step, and copy to the rest', () => {
+  it('asks Step N rise before Step N tread, for every step in order', () => {
+    const data = normalizeMeasureData(newMeasureData('straight', 4));
+    const q = queueOf(data, 'straight');
+    const steps = q.open.flatMap(i => (i.type === 'slot' && i.slot.stepNumber ? [`${i.slot.stepNumber}:${i.slot.labelKey}`] : []));
+    expect(steps).toEqual(['1:nx_rise', '1:nx_tread', '2:nx_rise', '2:nx_tread', '3:nx_rise', '3:nx_tread', '4:nx_rise', '4:nx_tread']);
+    expect(stepPart(q.slots.find(x => x.id === 's0.2.run')!)).toEqual({ segIdx: 0, stepIdx: 2, key: 'run' });
+    expect(stepPart(q.slots.find(x => x.id === 's0.1.rise')!)).toEqual({ segIdx: 0, stepIdx: 1, key: 'rise' });
+  });
+
+  it('copies a rise to the empty steps of its flight only, then the queue skips them', () => {
+    const data = normalizeMeasureData(newMeasureData('straight', 5));
+    const fl = data.segments[0] as FlightSegment;
+    fl.steps[0].rise = '7 1/2';
+    fl.steps[3].rise = '7 3/4';
+    expect(stepCopyTargets(data, 0, 0, 'rise')).toEqual([1, 2, 4]);
+    expect(copyStepValue(data, 0, 0, 'rise')).toBe(3);
+    expect(fl.steps.map(s => s.rise)).toEqual(['7 1/2', '7 1/2', '7 1/2', '7 3/4', '7 1/2']);
+    const open = queueOf(data, 'straight').open.map(i => i.id);
+    expect(open.filter(id => id.endsWith('.rise'))).toEqual([]);
+    expect(open[0]).toBe('s0.0.run');
+    // Nothing left empty: copying again changes nothing; overwrite replaces the odd one.
+    expect(copyStepValue(data, 0, 0, 'rise')).toBe(0);
+    expect(stepCopyTargets(data, 0, 0, 'rise', true)).toEqual([3]);
+    expect(copyStepValue(data, 0, 0, 'rise', true)).toBe(1);
+    expect(fl.steps[3].rise).toBe('7 1/2');
+  });
+
+  it('never copies a non-number, never crosses flights, never lands a tread on a winder', () => {
+    const data = normalizeMeasureData(newMeasureData('l_shape', 3));
+    const flights = data.segments.flatMap((s, i) => (s.kind === 'flight' ? [i] : []));
+    const a = data.segments[flights[0]] as FlightSegment;
+    a.steps[0].run = 'abc';
+    expect(stepCopyTargets(data, flights[0], 0, 'run')).toEqual([]);
+    a.steps[0].run = '11';
+    a.steps[2].winder = true;
+    expect(copyStepValue(data, flights[0], 0, 'run')).toBe(a.steps.length - 2);
+    expect(a.steps[2].run).toBe('');
+    expect(flights.length).toBe(2);
+    expect((data.segments[flights[1]] as FlightSegment).steps.every(s => s.run === '')).toBe(true);
   });
 });

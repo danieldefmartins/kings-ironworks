@@ -16,6 +16,25 @@ type SceneItem={id:string;label:string;kind:SceneKind;provisional:boolean;refere
 export type SceneMesh=SceneItem&{vertices:Point3[];faces:number[][]};
 export type SceneLine=SceneItem&{points:Point3[]};
 export type MeasureScene={meshes:SceneMesh[];lines:SceneLine[];bounds:{min:Point3;max:Point3};pending:string[]};
+/** What the Next card is asking for, lit on the 3D: a step's riser (rise), its tread (run), or a landing's top (surface). */
+export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface';/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string};
+/**
+ * The face to light for a focus: the surface mesh it belongs to and the quad
+ * (4 corners) of just that face. A step mesh is its tread top (corners 0–3,
+ * front edge 0→3) plus, when it has a rise, the riser hanging from the front
+ * edge (vertices 4, 5). Null when the sheet has no such step.
+ */
+export function focusFace(scene:Pick<MeasureScene,'meshes'>,focus:SceneFocus|null|undefined):{mesh:SceneMesh;quad:Point3[]}|null{
+ if(!focus)return null;
+ const mesh=scene.meshes.find(m=>m.kind==='surface'&&m.entity.segmentIndex===focus.segmentIndex&&(m.entity.stepIndex??null)===focus.stepIndex);
+ if(!mesh||mesh.vertices.length<4)return null;
+ const [a,b,c,d]=mesh.vertices;
+ if(focus.part==='rise'){
+  if(mesh.vertices.length<6)return null;
+  return {mesh,quad:[{...mesh.vertices[4]},{...mesh.vertices[5]},{...d},{...a}]};
+ }
+ return {mesh,quad:[a,b,c,d].map(p=>({...p}))};
+}
 /** Same unambiguous outer-profile convention as Blender assembly.profile.
  * Missing/ambiguous sections remain axes, with no invented steel dimensions. */
 function postSection(spec:string){

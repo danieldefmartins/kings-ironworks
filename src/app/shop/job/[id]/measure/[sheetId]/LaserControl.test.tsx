@@ -37,7 +37,7 @@ describe('laser editor input', () => {
   it('writes the Next field, advances, preserves a readback, and accepts consecutive identical distances', async () => {
     const emit = mockBluetooth(); render(<Harness/>); await connect();
     act(() => emit(0.1905));
-    expect(screen.getByRole('textbox', { name: 'Next: Step 1 · Run' })).toBeTruthy();
+    expect(screen.getByRole('textbox', { name: 'Next: Step 1 · Tread depth' })).toBeTruthy();
     expect(JSON.parse(screen.getByTestId('saved').textContent!).segments[0].steps[0].rise).toBe('7 1/2"');
     expect(screen.getByRole('status').textContent).toContain('7 1/2"');
     act(() => emit(0.1905));

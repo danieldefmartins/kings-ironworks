@@ -6,7 +6,7 @@
 // work type feeds it — a stair, a gate, an opening in a wall, a steel frame.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Crosshair } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import type { Gap } from "@/lib/shop/measure-checks";
 import { LASER_INPUT_EVENT, type LaserInputDetail } from '@/lib/shop/laser/field-input';
@@ -14,9 +14,20 @@ import { mt } from "@/lib/shop/measure-i18n";
 import { nxText } from "@/lib/shop/measure-next-i18n";
 import { locateMeasure } from "@/lib/shop/measure-locate";
 import { formatIn, parseMeas } from "@/lib/shop/measure-parse";
-import { currentItem, measurementQueue, nextOpenItem, type NextItem, type NextSlot } from "@/lib/shop/measure-next";
+import { copyStepValue, currentItem, measurementQueue, nextOpenItem, stepCopyTargets, stepPart, type NextItem, type NextSlot } from "@/lib/shop/measure-next";
+import type { SceneFocus } from "@/lib/shop/measure-scene";
 
 const nx = (lang: string, key: string, vars?: Record<string, string | number>) => nxText(lang, key, vars) ?? key;
+
+/** The face of the stair a slot is about, for lighting it on the 3D. */
+export function slotFocus(item: NextItem | null, data: MeasureData): SceneFocus | null {
+  if (item?.type !== "slot") return null;
+  const step = stepPart(item.slot);
+  if (step) return { segmentIndex: step.segIdx, stepIndex: step.stepIdx, part: step.key };
+  const at = item.slot.segIdx;
+  if (at !== undefined && item.slot.stepIdx === undefined && data.segments[at]?.kind === "platform") return { segmentIndex: at, stepIndex: null, part: "surface" };
+  return null;
+}
 
 export function slotLabel(slot: NextSlot, lang: string): string {
   const own = nxText(lang, slot.labelKey);
@@ -70,7 +81,9 @@ const MOTION = `
 [data-nx-anim="fwd"] { animation: nx-in-fwd .26s cubic-bezier(.2,.8,.2,1) both; }
 [data-nx-anim="back"] { animation: nx-in-back .26s cubic-bezier(.2,.8,.2,1) both; }
 [data-nx-pop] { animation: nx-pop .42s cubic-bezier(.2,.8,.2,1) both; }
-@media (prefers-reduced-motion: reduce) { [data-nx-anim], [data-nx-pop] { animation: none; } }
+@keyframes nx-toast { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+[data-nx-toast] { animation: nx-toast .24s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) { [data-nx-anim], [data-nx-pop], [data-nx-toast] { animation: none; } }
 `;
 
 export default function NextMeasurement({
@@ -84,6 +97,8 @@ export default function NextMeasurement({
   onOpenGap,
   onShow,
   onDone,
+  onFocus,
+  onUndo,
 }: {
   data: MeasureData;
   shape: MeasureShape;
@@ -96,6 +111,10 @@ export default function NextMeasurement({
   onOpenGap: (g: Gap) => void;
   onShow?: (slot: NextSlot) => void;
   onDone?: () => void;
+  /** The step face this card is on, for the 3D to light (null when it is on nothing drawable). */
+  onFocus?: (focus: SceneFocus | null) => void;
+  /** The sheet's undo, for taking back a copy. */
+  onUndo?: () => void;
 }) {
   const queue = useMemo(() => measurementQueue(data, shape, gaps), [data, shape, gaps]);
   const [currentId, setCurrentId] = useState<string | null>(null);
@@ -107,6 +126,27 @@ export default function NextMeasurement({
   const item: NextItem | null = currentItem(queue, currentId);
   const openSlots = queue.open.filter((i) => i.type === "slot").length;
   const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details));
+  // Copy a step's rise or tread to the rest of its flight: the choice sheet, then a short "Copied · Undo".
+  const [copyMenu, setCopyMenu] = useState(false);
+  const [toast, setToast] = useState<{ n: number; restore: () => void } | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 5000);
+    return () => clearTimeout(t);
+  }, [toast]);
+  useEffect(() => { setCopyMenu(false); }, [item?.id]);
+
+  // Light the step being asked about on the 3D, following Next and Previous.
+  const focusAt = finished ? null : slotFocus(item, data);
+  const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : null;
+  const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.label}` : "";
+  const focusRef = useRef(onFocus);
+  focusRef.current = onFocus;
+  useEffect(() => {
+    focusRef.current?.(focus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusKey]);
+  useEffect(() => () => focusRef.current?.(null), []);
 
   useEffect(() => {
     if (!refocus.current) return;
@@ -122,6 +162,7 @@ export default function NextMeasurement({
       if (!value) return;
       event.preventDefault();
       set(d => item.slot.put(d, value));
+      setToast(null);
       const next = nextOpenItem({ ...queue, open: queue.open.filter(entry => entry.id !== item.id) }, item.id);
       setCurrentId(next?.id ?? null);
     };
@@ -137,6 +178,24 @@ export default function NextMeasurement({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followSlot?.id]);
+
+  function copy(slot: NextSlot, overwrite: boolean) {
+    const step = stepPart(slot);
+    if (!step) return;
+    const seg = data.segments[step.segIdx];
+    if (seg?.kind !== "flight") return;
+    const targets = stepCopyTargets(data, step.segIdx, step.stepIdx, step.key, overwrite);
+    if (!targets.length) return;
+    const before = targets.map((k) => [k, seg.steps[k][step.key]] as const), value = seg.steps[step.stepIdx][step.key];
+    set((d) => void copyStepValue(d, step.segIdx, step.stepIdx, step.key, overwrite));
+    setCopyMenu(false);
+    // Undo through the sheet's history; without one, put back exactly the steps this copy wrote.
+    const restore = onUndo ?? (() => set((d) => {
+      const fl = d.segments[step.segIdx];
+      if (fl?.kind === "flight") for (const [k, old] of before) if (fl.steps[k]?.[step.key] === value) fl.steps[k][step.key] = old;
+    }));
+    setToast({ n: targets.length, restore });
+  }
 
   function go(direction: 1 | -1) {
     const next = nextOpenItem(queue, item?.id ?? null, direction);
@@ -242,6 +301,15 @@ export default function NextMeasurement({
   const valid = filled && rb.ok;
   const placeholder = slot.unit === "deg" ? "0°" : slot.unit === "count" ? "0" : unitPlaceholder;
   const canShow = !!onShow && (slot.segIdx !== undefined || !!slot.group || !!slot.part);
+  // A step in a flight of several reserves the copy row, so the card never jumps as the number goes in.
+  const step = stepPart(slot);
+  const flightSteps = step && data.segments[step.segIdx]?.kind === "flight" ? (data.segments[step.segIdx] as { steps: unknown[] }).steps.length : 0;
+  const copyRow = step && flightSteps > 1
+    ? { empty: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key).length, all: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key, true).length }
+    : null;
+  const canCopy = valid && !!copyRow && copyRow.all > 0;
+  // Tapping a copy button must not drop the keyboard (or the fraction bar riding on it).
+  const keep = (e: React.PointerEvent) => { if (document.activeElement === input.current) e.preventDefault(); };
   return (
     <section aria-label={label} data-next-measure data-next-slot={slot.id} className={`@container ${shell}`}>
       <style>{MOTION}</style>
@@ -261,8 +329,52 @@ export default function NextMeasurement({
         {bar}
         </div>
         <div className="@2xl:w-[440px] @2xl:shrink-0">
-        <div className="mt-2.5 flex items-stretch gap-2 @2xl:mt-5">
-          <button type="button" aria-label={nx(lang, "nx_prev")} disabled={remaining < 1 || (remaining === 1 && !filled && queue.open[0]?.id === item.id)} onClick={() => go(-1)} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
+        {/* Copy sits above the tape box: with the keypad and fraction bar up, below it is hidden. */}
+        {(copyRow || toast) && (
+          <div className="mt-2.5 flex min-h-10 items-center gap-2">
+            {toast ? (
+              <div data-nx-toast role="status" className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full pl-3.5 pr-1.5 text-[15px] font-semibold"
+                style={{ background: "#1c1c1e", color: "#ffffff", boxShadow: "0 8px 20px -10px rgba(0,0,0,.55)" }}>
+                <Check aria-hidden className="h-4 w-4 shrink-0" color="#34d399" strokeWidth={3} />
+                <span className="min-w-0 flex-1 truncate">{toast.n === 1 ? nx(lang, "nx_copied1") : nx(lang, "nx_copied", { n: toast.n })}</span>
+                <button type="button" onPointerDown={keep} onClick={() => { toast.restore(); setToast(null); }}
+                  className="h-8 shrink-0 rounded-full px-3 text-[15px] font-semibold" style={{ color: "#a5b4fc", background: "rgba(255,255,255,.08)" }}>
+                  {nx(lang, "nx_undo")}
+                </button>
+              </div>
+            ) : copyMenu && copyRow ? (
+              <div data-nx-toast role="group" aria-label={nx(lang, "nx_copyAll")} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+                {copyRow.empty > 0 && (
+                  <button type="button" onPointerDown={keep} onClick={() => copy(slot, false)} className="flex h-10 items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 text-[15px] font-semibold text-indigo-700 active:scale-[.97]">
+                    {nx(lang, "nx_copyEmpty")}<span className="tabular-nums text-indigo-500">{copyRow.empty}</span>
+                  </button>
+                )}
+                <button type="button" onPointerDown={keep} onClick={() => copy(slot, true)} className="flex h-10 items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3.5 text-[15px] font-semibold text-amber-800 active:scale-[.97]">
+                  {nx(lang, "nx_copyOverwrite")}<span className="tabular-nums text-amber-600">{copyRow.all}</span>
+                </button>
+                <button type="button" onPointerDown={keep} aria-label={nx(lang, "nx_cancel")} onClick={() => setCopyMenu(false)} className="grid h-10 w-10 place-items-center rounded-full text-slate-500 active:bg-slate-100">
+                  <X aria-hidden className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+            ) : copyRow ? (
+              <>
+                <button type="button" onPointerDown={keep} data-nx-copy disabled={!canCopy} onClick={() => (copyRow.empty > 0 ? copy(slot, false) : setCopyMenu(true))}
+                  className="flex h-10 min-w-0 items-center gap-2 rounded-full bg-indigo-50 pl-3 pr-3.5 text-[15px] font-semibold text-indigo-700 transition-[transform,opacity] active:scale-[.97] disabled:bg-slate-100 disabled:text-slate-400">
+                  <Copy aria-hidden className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{nx(lang, "nx_copyAll")}</span>
+                  {canCopy && copyRow.empty > 0 && <span className="rounded-full bg-white px-1.5 text-[13px] tabular-nums text-indigo-600">{copyRow.empty}</span>}
+                </button>
+                {canCopy && copyRow.all > copyRow.empty && copyRow.empty > 0 && (
+                  <button type="button" onPointerDown={keep} data-nx-more aria-label={nx(lang, "nx_copyMore")} onClick={() => setCopyMenu(true)} className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-500 active:bg-slate-100">
+                    <MoreHorizontal aria-hidden className="h-5 w-5" />
+                  </button>
+                )}
+              </>
+            ) : null}
+          </div>
+        )}
+        <div className={`mt-2.5 flex items-stretch gap-2 ${copyRow || toast ? "" : "@2xl:mt-5"}`}>
+          <button type="button" data-nx-nav="prev" aria-label={nx(lang, "nx_prev")} disabled={remaining < 1 || (remaining === 1 && !filled && queue.open[0]?.id === item.id)} onClick={() => go(-1)} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
           <div className={`relative min-w-0 flex-1 rounded-2xl border bg-slate-50 transition-colors focus-within:bg-white ${rb.ok ? "border-slate-200 focus-within:border-indigo-500" : "border-amber-500"}`}>
             <input
               ref={input}
@@ -276,6 +388,7 @@ export default function NextMeasurement({
                 // Pin the card to this field: once it holds a value it leaves the
                 // open list, and the card must not jump mid-number.
                 if (currentId !== slot.id) setCurrentId(slot.id);
+                setToast(null);
                 set((d) => slot.put(d, e.target.value));
               }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); go(1); } }}
@@ -287,7 +400,7 @@ export default function NextMeasurement({
               className="h-14 w-full bg-transparent px-3 text-[28px] font-semibold tabular-nums tracking-tight outline-none placeholder:font-normal placeholder:text-slate-400"
             />
           </div>
-          <button type="button" onClick={() => go(1)} aria-label={valid ? nx(lang, "nx_next") : nx(lang, "nx_skip")}
+          <button type="button" data-nx-nav="next" onClick={() => go(1)} aria-label={valid ? nx(lang, "nx_next") : nx(lang, "nx_skip")}
             className={`flex h-14 shrink-0 items-center gap-1 rounded-2xl px-4 font-semibold transition-[transform,background-color,color] duration-200 active:scale-95 ${valid ? "bg-indigo-600 text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)]" : "border border-slate-200 bg-white text-slate-600"}`}>
             {valid ? nx(lang, "nx_next") : nx(lang, "nx_skip")}<ChevronRight aria-hidden className="h-4 w-4" />
           </button>
