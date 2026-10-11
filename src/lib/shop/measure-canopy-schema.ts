@@ -34,6 +34,7 @@ export const CanopySchema = z
     soffitR: meas,
     mount: meas,
     fall: meas,
+    fallSource: z.enum(["", "calculated-approved", "measured"]).optional(),
     drain: opt(CANOPY_DRAINS),
     support: opt(CANOPY_SUPPORTS),
     rodRise: meas,

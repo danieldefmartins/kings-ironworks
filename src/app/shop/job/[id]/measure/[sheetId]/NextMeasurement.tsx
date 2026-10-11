@@ -18,9 +18,11 @@ import { copyStepValue, currentItem, measurementQueue, nextOpenItem, stepCopyTar
 import type { SceneFocus } from "@/lib/shop/measure-scene";
 import { dimForSlot, sceneDims, type SceneDim } from "@/lib/shop/measure-dims";
 import { approveFlightAngle, approveJointAngle, flightAngleCalc, jointAngleCalc, type AngleSource } from "@/lib/shop/measure-angle";
-import { angleCheck, angleState } from "@/lib/shop/measure-angle";
 import { dimText } from "@/lib/shop/measure-dims";
 import { dimWord } from "@/lib/shop/measure-dims-i18n";
+import { calcCheck, calcState, DEG_TOL, type CalcSlot } from "@/lib/shop/measure-calc";
+import { slotCalc } from "@/lib/shop/measure-calc-registry";
+import { applyCopy, slotCopy } from "@/lib/shop/measure-copy";
 
 const CHECK_TONE = {
   green: "bg-emerald-50 text-emerald-700 ring-emerald-200",
@@ -171,7 +173,7 @@ export default function NextMeasurement({
   const [copyMenu, setCopyMenu] = useState(false);
   // The angle slot whose calculated value is being overridden with a reading.
   const [modifying, setModifying] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ n: number; restore: () => void } | null>(null);
+  const [toast, setToast] = useState<{ n: number; restore: () => void; keys?: [string, string] } | null>(null);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 5000);
@@ -226,6 +228,20 @@ export default function NextMeasurement({
   }, [followSlot?.id]);
 
   function copy(slot: NextSlot, overwrite: boolean) {
+    const plan = slotCopy(slot.id, data);
+    if (!stepPart(slot) && plan) {
+      // Another work type's "Same for all": every opening, every post.
+      let done: ReturnType<typeof applyCopy> | null = null;
+      const n = plan.targets(overwrite).length;
+      if (!n) return;
+      set((d) => { done = applyCopy(d, plan, overwrite); });
+      setCopyMenu(false);
+      const restore = onUndo ?? (() => set((d) => {
+        for (const b of (done as ReturnType<typeof applyCopy> | null)?.before ?? []) if (b.w.get(d) === b.value) b.w.set(d, b.old);
+      }));
+      setToast({ n, restore, keys: [plan.copied1Key, plan.copiedKey] });
+      return;
+    }
     const step = stepPart(slot);
     if (!step) return;
     const seg = data.segments[step.segIdx];
@@ -350,16 +366,19 @@ export default function NextMeasurement({
   // A step in a flight of several reserves the copy row, so the card never jumps as the number goes in.
   const step = stepPart(slot);
   const flightSteps = step && data.segments[step.segIdx]?.kind === "flight" ? (data.segments[step.segIdx] as { steps: unknown[] }).steps.length : 0;
+  const plan = step ? null : slotCopy(slot.id, data);
   const copyRow = step && flightSteps > 1
-    ? { empty: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key).length, all: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key, true).length }
-    : null;
-  const canCopy = valid && !!copyRow && copyRow.all > 0;
+    ? { empty: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key).length, all: stepCopyTargets(data, step.segIdx, step.stepIdx, step.key, true).length, label: "nx_copyAll" }
+    : plan ? { empty: plan.targets(false).length, all: plan.targets(true).length, label: plan.labelKey } : null;
+  const canCopy = (valid || !!plan) && !!copyRow && copyRow.all > 0;
   // Tapping a copy button must not drop the keyboard (or the fraction bar riding on it).
   const keep = (e: React.PointerEvent) => { if (document.activeElement === input.current) e.preventDefault(); };
   const angle = slotAngle(slot, data);
-  const approve = angle && angle.calc !== null ? angle : null;
-  const angleSt = approve ? angleState(value, approve.source, approve.calc) : "empty";
-  const angleChk = approve && angleSt === "measured" ? angleCheck(approve.calc, parseMeas(value)) : null;
+  // A stair angle, or any other work type's calculated number (leaf widths, fabricate-to size, fall …).
+  const calcSlot: CalcSlot | null = angle ? { ...angle, unit: "deg", tol: DEG_TOL } : slotCalc(slot.id, data);
+  const approve = calcSlot && calcSlot.calc !== null ? calcSlot : null;
+  const angleSt = approve ? calcState(value, approve.source, approve.calc, approve.unit) : "empty";
+  const angleChk = approve && angleSt === "measured" ? calcCheck(approve.calc, parseMeas(value), approve.tol, approve.unit) : null;
   const modifyingThis = modifying === slot.id;
   const approveAndGo = () => {
     if (!approve) return;
@@ -394,14 +413,14 @@ export default function NextMeasurement({
               <div data-nx-toast role="status" className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full pl-3.5 pr-1.5 text-[15px] font-semibold"
                 style={{ background: "#1c1c1e", color: "#ffffff", boxShadow: "0 8px 20px -10px rgba(0,0,0,.55)" }}>
                 <Check aria-hidden className="h-4 w-4 shrink-0" color="#34d399" strokeWidth={3} />
-                <span className="min-w-0 flex-1 truncate">{toast.n === 1 ? nx(lang, "nx_copied1") : nx(lang, "nx_copied", { n: toast.n })}</span>
+                <span className="min-w-0 flex-1 truncate">{toast.n === 1 ? nx(lang, toast.keys?.[0] ?? "nx_copied1") : nx(lang, toast.keys?.[1] ?? "nx_copied", { n: toast.n })}</span>
                 <button type="button" onPointerDown={keep} onClick={() => { toast.restore(); setToast(null); }}
                   className="h-8 shrink-0 rounded-full px-3 text-[15px] font-semibold" style={{ color: "#a5b4fc", background: "rgba(255,255,255,.08)" }}>
                   {nx(lang, "nx_undo")}
                 </button>
               </div>
             ) : copyMenu && copyRow ? (
-              <div data-nx-toast role="group" aria-label={nx(lang, "nx_copyAll")} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+              <div data-nx-toast role="group" aria-label={nx(lang, copyRow.label)} className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                 {copyRow.empty > 0 && (
                   <button type="button" onPointerDown={keep} onClick={() => copy(slot, false)} className="flex h-10 items-center gap-1.5 rounded-full bg-indigo-50 px-3.5 text-[15px] font-semibold text-indigo-700 active:scale-[.97]">
                     {nx(lang, "nx_copyEmpty")}<span className="tabular-nums text-indigo-500">{copyRow.empty}</span>
@@ -419,7 +438,7 @@ export default function NextMeasurement({
                 <button type="button" onPointerDown={keep} data-nx-copy disabled={!canCopy} onClick={() => (copyRow.empty > 0 ? copy(slot, false) : setCopyMenu(true))}
                   className="flex h-10 min-w-0 items-center gap-2 rounded-full bg-indigo-50 pl-3 pr-3.5 text-[15px] font-semibold text-indigo-700 transition-[transform,opacity] active:scale-[.97] disabled:bg-slate-100 disabled:text-slate-400">
                   <Copy aria-hidden className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{nx(lang, "nx_copyAll")}</span>
+                  <span className="truncate">{nx(lang, copyRow.label)}</span>
                   {canCopy && copyRow.empty > 0 && <span className="rounded-full bg-white px-1.5 text-[13px] tabular-nums text-indigo-600">{copyRow.empty}</span>}
                 </button>
                 {canCopy && copyRow.all > copyRow.empty && copyRow.empty > 0 && (
@@ -435,7 +454,7 @@ export default function NextMeasurement({
         {approve && (
           <div key={item.id} data-approve-calc data-approve-state={angleSt} className="mt-3 flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1.5">
             <p className="mr-auto shrink-0 whitespace-nowrap text-[15px] font-semibold text-slate-500">
-              {dimWord(lang, "calculated")} <span data-approve-calc-value className="text-[20px] tabular-nums tracking-tight text-slate-900">{dimText(approve.calc!, "deg")}</span>
+              {dimWord(lang, "calculated")} <span data-approve-calc-value className="text-[20px] tabular-nums tracking-tight text-slate-900">{dimText(approve.calc!, approve.unit)}</span>
             </p>
             {angleSt === "approved" ? (
               <span role="status" aria-label={dimWord(lang, "approvedA11y")} className="flex h-9 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-[15px] font-semibold text-emerald-700">
@@ -444,10 +463,12 @@ export default function NextMeasurement({
             ) : angleChk ? (
               <>
                 <span data-approve-check={angleChk.level} className={`inline-flex h-9 items-center rounded-full px-3 text-[14px] font-semibold tabular-nums ring-1 ${CHECK_TONE[angleChk.level]}`}>
-                  {angleChk.delta >= 0 ? "+" : "−"}{dimText(Math.abs(angleChk.delta), "deg")} {dimWord(lang, "vsCalc")}
+                  {angleChk.delta >= 0 ? "+" : "−"}{dimText(Math.abs(angleChk.delta), approve.unit)} {dimWord(lang, "vsCalc")}
                 </span>
                 <button type="button" onPointerDown={keep} onClick={() => set((d) => approve.approve(d))} className="h-9 rounded-full px-2.5 text-[15px] font-semibold text-indigo-600 active:bg-indigo-50">{dimWord(lang, "useCalc")}</button>
               </>
+            ) : angleSt === "measured" ? (
+              <button type="button" onPointerDown={keep} onClick={() => set((d) => approve.approve(d))} className="h-9 rounded-full px-2.5 text-[15px] font-semibold text-indigo-600 active:bg-indigo-50">{dimWord(lang, "useCalc")}</button>
             ) : angleSt === "empty" && !modifyingThis ? (
               <button type="button" data-approve-modify onClick={() => setModifying(slot.id)} className="h-9 rounded-full px-3 text-[15px] font-semibold text-indigo-600 active:bg-indigo-50">{dimWord(lang, "modify")}</button>
             ) : null}

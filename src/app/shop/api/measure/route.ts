@@ -176,6 +176,9 @@ const GateSchema = z
     automated: z.boolean(), opener: short,
     powerAtGate: z.enum(["", "yes", "no", "unknown"]),
     safetyDevices: short, notes: short,
+    hingeGap: meas.optional(), latchGap: meas.optional(), leafA: meas.optional(), leafB: meas.optional(),
+    leafASource: z.enum(["", "calculated-approved", "measured"]).optional(),
+    leafBSource: z.enum(["", "calculated-approved", "measured"]).optional(),
     hingeSub: SubstrateSchema.optional(), latchSub: SubstrateSchema.optional(),
   })
   .nullable();
@@ -312,6 +315,7 @@ const WellSchema = z
     windowSwing: z.enum(["", "in", "out", "slider", "fixed"]),
     deliverables: z.array(z.enum(["grate", "guard", "gate", "ladder"])).max(4),
     guardHeight: meas,
+    guardHeightSource: z.enum(["", "calculated-approved", "measured"]).optional(),
     gateWidth: meas,
     gateSwing: z.enum(["", "in", "out"]),
     gateHinge: z.enum(["", "left", "right"]),

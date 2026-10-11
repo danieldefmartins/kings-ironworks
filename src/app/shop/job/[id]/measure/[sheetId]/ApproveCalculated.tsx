@@ -21,7 +21,8 @@
  */
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { angleCheck, approvedAngle, type AngleSource } from "@/lib/shop/measure-angle";
+import type { AngleSource } from "@/lib/shop/measure-angle";
+import { calcCheck, calcState, DEG_TOL, LEN_TOL } from "@/lib/shop/measure-calc";
 import { dimText } from "@/lib/shop/measure-dims";
 import { dimWord } from "@/lib/shop/measure-dims-i18n";
 import { parseMeas } from "@/lib/shop/measure-parse";
@@ -42,6 +43,8 @@ export type ApproveProps = {
   inputId?: string;
   /** The reading box lives outside (a form field with its own help): show only the calculation, Approve and the cross-check. */
   external?: boolean;
+  /** Cross-check bands [green, yellow]; null = a choice, no colour. Default by unit. */
+  tol?: [number, number] | null;
 };
 
 const TONE = {
@@ -50,13 +53,13 @@ const TONE = {
   red: "bg-red-50 text-red-700 ring-red-200",
 } as const;
 
-export default function ApproveCalculated({ lang, calc, value, source, unit = "deg", onApprove, onChange, variant = "card", label, placeholder, inputId, external = false }: ApproveProps) {
+export default function ApproveCalculated({ lang, calc, value, source, unit = "deg", onApprove, onChange, variant = "card", label, placeholder, inputId, external = false, tol }: ApproveProps) {
   const fmt = (n: number) => dimText(n, unit);
   const stored = value.trim();
-  const approved = !!stored && source === "calculated-approved" && calc !== null && approvedAngle(calc) === stored;
+  const approved = calcState(value, source, calc, unit) === "approved";
   const [editing, setEditing] = useState(false);
   const reading = stored && !approved ? parseMeas(stored) : null;
-  const check = calc !== null && reading !== null ? angleCheck(calc, reading) : null;
+  const check = calcCheck(calc, reading, tol === undefined ? (unit === "deg" ? DEG_TOL : LEN_TOL) : tol, unit);
   const showBox = !external && (calc === null || editing || (!!stored && !approved));
   const showCheck = (external || showBox) && !!check;
   const card = variant === "card";

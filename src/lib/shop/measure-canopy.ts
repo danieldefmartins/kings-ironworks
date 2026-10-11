@@ -69,6 +69,8 @@ export interface CanopyData {
   soffitR: string; // … right end
   mount: string; // datum to underside of canopy frame at the wall
   fall: string; // drop from the wall to the front edge; negative = rises
+  /** How fall was set: the minimum pitch approved, or read / decided on site. */
+  fallSource?: "" | "calculated-approved" | "measured";
   drain: "" | CanopyDrain;
   support: "" | CanopySupport;
   rodRise: string; // tie-rod wall anchor above the top of the frame
@@ -153,6 +155,7 @@ export function normalizeCanopy(raw: Partial<CanopyData> | null | undefined): Ca
     soffitR: str(r.soffitR),
     mount: str(r.mount),
     fall: str(r.fall),
+    ...(r.fallSource === "calculated-approved" || r.fallSource === "measured" ? { fallSource: r.fallSource } : {}),
     drain: pick(r.drain, CANOPY_DRAINS),
     support: pick(r.support, CANOPY_SUPPORTS),
     rodRise: str(r.rodRise),
@@ -267,6 +270,18 @@ export function canopyGeometry(c: CanopyData): CanopyGeometry {
   const hs = c.posts.map((p) => num(p.height)).filter((n): n is number => n !== null);
   const postSpread = hs.length >= 2 ? Math.max(...hs) - Math.min(...hs) : null;
   return { width, projection, depth, mount, fall, front, slopePerFt, lowest, soffitMin, wallTop, trimClear, postSpread };
+}
+
+/**
+ * The fall a shedding roof needs: the projection at the minimum pitch
+ * (CANOPY_RULES.minSlopePerFt), rounded up to the next 1/8". Offered on the
+ * Next card to approve; null for an open pergola or before the projection.
+ */
+export function canopyFallCalc(c: CanopyData): number | null {
+  if (!c.kind || c.roof === "open") return null;
+  const p = num(c.projection);
+  if (p === null || p <= 0) return null;
+  return Math.ceil(((p / 12) * CANOPY_RULES.minSlopePerFt) * 8 - 1e-9) / 8;
 }
 
 /** Underside of the canopy at a distance `d` out from the wall. */

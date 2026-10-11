@@ -92,6 +92,11 @@ export interface OpeningUnit {
   sillAff: string; // sill above the finished floor inside (egress ≤ 44", fall protection < 24")
   dropOutside: string; // sill down to grade / the surface below outside
   squareFix: "" | "rect" | "template"; // decision once the hole is badly out
+  /** "Fabricate to" size, once approved (the calculation) or modified (a decision). */
+  fabW?: string;
+  fabH?: string;
+  fabWSource?: "" | "calculated-approved" | "measured";
+  fabHSource?: "" | "calculated-approved" | "measured";
   note: string;
 }
 
@@ -304,6 +309,21 @@ export function openingFabSize(
     allowance: a,
     face,
   };
+}
+
+/**
+ * The size the shop builds to, as recorded: an approved or modified "fabricate
+ * to" width / height wins over the calculation; otherwise the calculation.
+ */
+export function openingFabFinal(
+  o: Pick<OpeningData, "mount" | "clearance" | "overlap">,
+  u: OpeningUnit
+): { width: number; height: number } | null {
+  const calc = openingFabSize(o, u);
+  const w = parseMeas(u.fabW ?? ""), h = parseMeas(u.fabH ?? "");
+  const width = w !== null && w > 0 ? w : calc?.width ?? null;
+  const height = h !== null && h > 0 ? h : calc?.height ?? null;
+  return width !== null && height !== null ? { width, height } : null;
 }
 
 export interface Squareness {

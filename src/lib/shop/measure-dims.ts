@@ -5,6 +5,10 @@ import { flightAngleCalc, jointAngleCalc } from './measure-angle';
 import { platformEntryRise } from './measure-platform-rise';
 import { drawingPosts } from './measure-drawing';
 import { parseMeas } from './measure-parse';
+import { gateDims } from './measure-dims-gate';
+import { openingDims } from './measure-dims-opening';
+import { wellDims } from './measure-dims-well';
+import { canopyDims } from './measure-dims-canopy';
 
 /**
  * Architectural dimension lines for the sketch — every length, height or angle
@@ -62,6 +66,8 @@ export interface SceneDim {
   segs?: number[];
   /** Posts whose selection reveals it (rail spans). */
   postIds?: string[];
+  /** Scene parts (entity.part) whose selection reveals it: an opening, a gate leaf. */
+  parts?: string[];
   unit: 'len' | 'deg';
   state: DimState;
   /** The measured number, when entered. */
@@ -343,6 +349,10 @@ export function stairSlotsForKey(key: string): string[] {
 export const DIM_ADAPTERS: Partial<Record<MeasureShape, (data: MeasureData) => SceneDim[]>> = {
   straight: d => stairDims(d), stair_platform: d => stairDims(d), l_shape: d => stairDims(d),
   u_shape: d => stairDims(d), builder: d => stairDims(d),
+  gate: d => gateDims(d),
+  opening: d => openingDims(d),
+  window_well: d => wellDims(d),
+  canopy: d => canopyDims(d),
 };
 
 /** The dimension lines for a sheet of this shape (none for a shape with no adapter yet). */

@@ -1,6 +1,7 @@
 // Short names the sketch writes on its dimension lines, and the words of the
 // stair-angle approve / modify row. EN / PT (Brazil) / ES.
 import type { DimKind } from './measure-dims';
+import { OPEN_DIM_NAMES } from './measure-open-i18n';
 
 type Row = [en: string, pt: string, es: string];
 const pick = (lang: string, r: Row) => (lang === 'pt' ? r[1] : lang === 'es' ? r[2] : r[0]);
@@ -26,7 +27,7 @@ const NAMES: Record<DimKind, Row> = {
 
 /** Short name for a dimension kind; '' for a kind with no name here (the descriptor's own label is used). */
 export function dimName(lang: string, kind: DimKind | (string & {})): string {
-  const r = (NAMES as Record<string, Row>)[kind];
+  const r = (NAMES as Record<string, Row>)[kind] ?? OPEN_DIM_NAMES[kind];
   return r ? pick(lang, r) : '';
 }
 

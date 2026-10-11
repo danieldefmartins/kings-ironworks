@@ -7,6 +7,10 @@ import { type GateData } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
 import { Card, ChipRow, Grid, MInput, MSelect } from "../fields";
 import SubstrateEditor, { MATERIALS_GROUND } from "../SubstrateEditor";
+import ApproveCalculated from "../ApproveCalculated";
+import { gateLeafCalc } from "@/lib/shop/measure-dims-gate";
+import { nxText } from "@/lib/shop/measure-next-i18n";
+import { calcText } from "@/lib/shop/measure-calc";
 
 export default function GateSections({
   lang,
@@ -17,6 +21,18 @@ export default function GateSections({
   gate: GateData;
   setGate: (fn: (g: GateData) => void) => void;
 }) {
+  const nx = (k: string) => nxText(lang, k) ?? k;
+  const leaf = gateLeafCalc(gate);
+  const swings = gate.operation === "single_swing" || gate.operation === "double_swing" || gate.operation === "bifold";
+  const leafRow = (key: "leafA" | "leafB", calc: number | null, label: string, choice = false) => calc === null ? null : (
+    <div data-gate-leaf={key} className="sm:col-span-2">
+      <p className="text-sm font-semibold text-neutral-300">{label}</p>
+      <ApproveCalculated lang={lang} variant="form" unit="len" calc={calc} value={gate[key] ?? ""} source={gate[`${key}Source`]} tol={choice ? null : undefined}
+        label={label} placeholder={'0"'}
+        onApprove={() => setGate((g) => { const c = key === "leafA" ? gateLeafCalc(g).a : gateLeafCalc(g).b; if (c === null) return; g[key] = calcText(c, "len"); g[`${key}Source`] = "calculated-approved"; })}
+        onChange={(v) => setGate((g) => { g[key] = v; g[`${key}Source`] = v.trim() ? "measured" : ""; })} />
+    </div>
+  );
   return (
     <>
     <Card stage="setup" title={`🚪 ${mt(lang, "gateTitle")}`}>
@@ -42,6 +58,14 @@ export default function GateSections({
           onChange={(v) => setGate((g) => void (g.diagA = v))} />
         <MInput help="gateDiagB" label={mt(lang, "gateDiagB")} placeholder="—" value={gate.diagB}
           onChange={(v) => setGate((g) => void (g.diagB = v))} />
+        {swings && <>
+          <MInput label={nx("gateHingeGap")} placeholder={'1/2"'} value={gate.hingeGap ?? ""}
+            onChange={(v) => setGate((g) => void (g.hingeGap = v))} />
+          <MInput label={nx(gate.operation === "double_swing" ? "gateMeetGap" : "gateLatchGap")} placeholder={'1/2"'} value={gate.latchGap ?? ""}
+            onChange={(v) => setGate((g) => void (g.latchGap = v))} />
+          {leafRow("leafA", leaf.a, nx("gateLeafA"), leaf.double)}
+          {leaf.double && leafRow("leafB", leaf.b, nx("gateLeafB"))}
+        </>}
       </Grid>
 
       <div className="mt-4 mb-2 text-sm font-bold text-neutral-300">{mt(lang, "gateGroundTitle")}</div>
