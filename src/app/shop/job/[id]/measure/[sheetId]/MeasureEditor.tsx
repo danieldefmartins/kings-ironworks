@@ -58,6 +58,7 @@ import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
+import { BrandProvider } from "@/app/shop/brand/BrandContext";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
 import RoutingCard from "./sections/RoutingCard";
@@ -1105,6 +1106,7 @@ export default function MeasureEditor({
         />  </SetupLockCtx.Provider></StageCtx.Provider>;
 
   return (
+    <BrandProvider branding={orgSettings?.branding}>
     <LangCtx.Provider value={lang}>
     <SubstrateCtx.Provider value={{ data, set, shape: sheet.shape, lang, posts, anchorOptions: orgSettings?.options?.anchors || [], onPhoto: (slot, label) => setPhotoSlot({ slot, label }) }}>
     <PlaceholderCtx.Provider value={unitPh}>
@@ -1336,6 +1338,7 @@ export default function MeasureEditor({
     </PlaceholderCtx.Provider>
     </SubstrateCtx.Provider>
     </LangCtx.Provider>
+    </BrandProvider>
   );
 }
 

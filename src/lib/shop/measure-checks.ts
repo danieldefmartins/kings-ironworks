@@ -1,3 +1,4 @@
+import { shotGaps } from "./measure-shots";
 import {supportTerminal} from './measure-support-attachment';
 import {resolveSite} from './measure-wall-placement';
 // Geometry verification for measure sheets. Field values are free-text
@@ -1153,6 +1154,10 @@ export function flightGaps(
 // are conditional: what a base-plate post needs differs from a core-drilled
 // one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
+  // The pro shot list adds documentation shots on top (yellow, never blocking).
+  return [...baseRequiredGaps(data, shape), ...shotGaps(data, shape)];
+}
+function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // An opening sheet carries its own frame, sizes and photo list.
   if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
   // Structural steel carries its own member list; no rail, stair or post rules apply.

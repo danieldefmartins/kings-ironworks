@@ -22,3 +22,8 @@ it('blocks operational admins from signing financial images',async()=>{m.worker.
 
 it('waits for the expected photo instead of serving an older photo at the same index',async()=>{expect((await request('&expectedPath=job%2Fnew-photo.jpg')).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 it('signs the expected saved photo after autosave',async()=>{expect((await request('&expectedPath=job%2Fphoto.jpg')).status).toBe(307);expect(m.sign).toHaveBeenCalledWith('job/photo.jpg',300);});
+it('finds a shot-list thumbnail by its stored path, and only a path on this sheet',async()=>{
+  const byPath=(p:string)=>GET(new NextRequest(`http://localhost/shop/api/measure-photo?sheetId=${id}&path=${encodeURIComponent(p)}`));
+  expect((await byPath('job/photo.jpg')).status).toBe(307);expect(m.sign).toHaveBeenCalledWith('job/photo.jpg',300);
+  m.sign.mockClear();expect((await byPath('other/secret.jpg')).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();
+});

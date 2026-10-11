@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { allEdits, clearAllEdits } from "@/lib/shop/outbox";
 import Link from "next/link";
-import Image from "next/image";
+import { BrandMark, useBrand } from "./brand/BrandContext";
 import { t } from "@/lib/shop/i18n";
 import { isMeasuringPath, useShopOwner } from "./ShopAccess";
 import ShopAppearance, { useShopAppearance } from "./ShopAppearance";
@@ -29,6 +29,7 @@ export default function ShopTopBar({
   const measuring = isMeasuringPath(usePathname());
   const owner = useShopOwner();
   const appearance = useShopAppearance();
+  const brand = useBrand();
   const toolsLabel = lang === "pt" ? "Menu" : lang === "es" ? "Menú" : "Menu";
   async function logout() {
     // Anything still queued belongs to the worker signing out. A shop tablet
@@ -57,10 +58,10 @@ export default function ShopTopBar({
         ) : null}
         <Link
           href="/shop"
-          aria-label="King Iron Works"
+          aria-label={brand.displayName}
           className={`${measuring ? "" : "shop-brand"} flex h-10 w-[66px] shrink-0 items-center justify-center`}
         >
-          <Image src={!measuring && appearance === "light" ? "/images/logo-black.png" : "/images/logo-white-transparent.png"} alt="King Iron Works" width={1536} height={1024} className="h-auto w-full" priority />
+          <BrandMark dark={measuring || appearance !== "light"} />
         </Link>
       </div>
       <h1 className="min-w-0 truncate text-center text-base font-semibold tracking-tight text-neutral-100 sm:text-xl">{title}</h1>

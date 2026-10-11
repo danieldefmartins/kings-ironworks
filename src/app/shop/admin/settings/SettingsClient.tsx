@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import type { OrgSettings } from "@/lib/shop/shared";
 import { CODE_PROFILES, DEFAULT_CODE_PROFILE } from "@/lib/shop/measure-code";
 import { ct } from "@/lib/shop/measure-code-i18n";
+import BrandingCard from "./BrandingCard";
 
 const TOL_LABELS: [keyof OrgSettings["tolerances"] & string, string, string][] = [
   ["riseSum", "Riser sum vs floor-to-floor", "in"],
@@ -19,7 +20,7 @@ const TOL_LABELS: [keyof OrgSettings["tolerances"] & string, string, string][] =
   ["widthVar", "Width variation", "in"],
 ];
 
-export default function SettingsClient({ initial }: { initial: OrgSettings }) {
+export default function SettingsClient({ initial, lang = "en" }: { initial: OrgSettings; lang?: string }) {
   const router = useRouter();
   const [branding, setBranding] = useState(initial.branding);
   const [tol, setTol] = useState(initial.tolerances);
@@ -88,28 +89,7 @@ export default function SettingsClient({ initial }: { initial: OrgSettings }) {
 
   return (
     <div className="p-4 max-w-3xl mx-auto pb-24 space-y-4">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
-        <div className="font-bold mb-3">🏷 Branding (printouts & letterhead)</div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {(
-            [
-              ["name", "Company name"],
-              ["address", "Address"],
-              ["phone", "Phone"],
-              ["website", "Website"],
-            ] as const
-          ).map(([k, lbl]) => (
-            <label key={k} className={k === "address" ? "sm:col-span-2" : ""}>
-              <span className={label}>{lbl}</span>
-              <input
-                className={input}
-                value={branding[k]}
-                onChange={(e) => setBranding({ ...branding, [k]: e.target.value })}
-              />
-            </label>
-          ))}
-        </div>
-      </div>
+      <BrandingCard lang={lang} value={branding} onChange={setBranding} />
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
         <div className="font-bold mb-3">📘 Building code (default for new checks)</div>

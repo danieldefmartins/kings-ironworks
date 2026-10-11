@@ -3,6 +3,7 @@
 // Client pieces of the locked-revision viewer: the print button and the
 // on-screen render of the immutable snapshot (PrintSheet in visible mode).
 
+import type { OrgBranding } from "@/lib/shop/org-brand";
 import type { Job } from "@/lib/shop/shared";
 import type { MeasureData, MeasureSheet, PostMeasure } from "@/lib/shop/measure";
 import type { CheckResult } from "@/lib/shop/measure-checks";
@@ -30,7 +31,7 @@ export function RevisionSheet(props: {
   nameById: Record<string, string>;
   checks: CheckResult[];
   superseded: boolean;
-  branding?: { name: string; address: string; phone: string; website: string };
+  branding?: Partial<OrgBranding>;
   qrUrl: string;
 }) {
   return <PrintSheet {...props} visible gapCount={0} />;

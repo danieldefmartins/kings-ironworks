@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandMark } from "../brand/BrandContext";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import MotivationBanner from "../MotivationBanner";
@@ -82,12 +83,9 @@ export default function LoginClient({
         ))}
       </div>
       <div className="mb-6 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/images/logo-white-transparent.png"
-          alt="King Iron Works"
-          className="h-20 w-auto mx-auto mb-2"
-        />
+        <div className="mx-auto mb-2 flex h-20 w-[120px] items-center justify-center">
+          <BrandMark dark size="lg" />
+        </div>
         <div className="text-neutral-400 text-sm uppercase tracking-[0.2em]">
           {t(lang, "shopFloor")}
         </div>

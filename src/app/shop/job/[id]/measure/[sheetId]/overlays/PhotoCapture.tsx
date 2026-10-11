@@ -5,6 +5,7 @@
 // than adding a second one for the same slot.
 
 import PhotoMarkup from "../PhotoMarkup";
+import ShotCamera, { isShotRequest } from "./ShotCamera";
 import type { AnnotationStroke, MeasureData } from "@/lib/shop/measure";
 
 export default function PhotoCapture({
@@ -23,6 +24,10 @@ export default function PhotoCapture({
   onClose: () => void;
 }) {
   if (!slot) return null;
+  // The shot list opens the camera-first flow; everything else keeps the sheet.
+  if (isShotRequest(slot)) {
+    return <ShotCamera lang={lang} jobId={jobId} sheetName={sheetName} req={slot} set={set} onClose={onClose} />;
+  }
   return (
     <PhotoMarkup
       jobId={jobId}

@@ -2,6 +2,7 @@
 // This module must stay free of env access, secrets, and Supabase calls:
 // client components import from here, never from db.ts (whose org guard is
 // server-only and would crash the browser bundle).
+import type { OrgBranding } from "./org-brand";
 
 export const STAGES = [
   "Awarded",
@@ -329,7 +330,8 @@ export interface QcCheck {
 }
 
 export interface OrgSettings {
-  branding: { name: string; address: string; phone: string; website: string };
+  /** White-label letterhead (name, contact, licence, logo, accent). */
+  branding: OrgBranding;
   tolerances: Record<string, { green: number; yellow: number }>;
   presets: Record<string, string[]>;
   options: Record<string, string[]>;

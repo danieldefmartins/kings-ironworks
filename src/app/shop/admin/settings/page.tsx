@@ -25,7 +25,7 @@ export default async function OrgSettingsPage() {
         lang={worker.lang || "en"}
         adminLink
       />
-      <SettingsClient initial={settings} />
+      <SettingsClient initial={settings} lang={worker.lang || "en"} />
     </div>
   );
 }

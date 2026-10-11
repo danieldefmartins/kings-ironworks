@@ -1,3 +1,4 @@
+import { sanitizeBranding, auditableSettings } from "@/lib/shop/org-brand";
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionWorker, touchSession } from "@/lib/shop/session";
@@ -586,8 +587,6 @@ export async function POST(req: NextRequest) {
         }
         const prev = await getOrgSettings();
         const inb = (body.settings || {}) as Record<string, unknown>;
-        const str = (v: unknown, max = 200) =>
-          typeof v === "string" ? v.slice(0, max) : "";
         const list = (v: unknown, max = 30) =>
           Array.isArray(v)
             ? v.filter((x) => typeof x === "string").map((x) => (x as string).slice(0, 120)).slice(0, max)
@@ -606,12 +605,8 @@ export async function POST(req: NextRequest) {
         const inOptions = (inb.options || {}) as Record<string, unknown>;
         const inRules = (inb.rules || {}) as Record<string, unknown>;
         const next = {
-          branding: {
-            name: str(inBranding.name) || prev.branding.name,
-            address: str(inBranding.address, 300) || prev.branding.address,
-            phone: str(inBranding.phone, 60) || prev.branding.phone,
-            website: str(inBranding.website) || prev.branding.website,
-          },
+          // White-label letterhead: text, licence, accent and a small logo.
+          branding: sanitizeBranding(inBranding, prev.branding),
           tolerances: {
             riseSum: tolPair(inTol.riseSum, prev.tolerances.riseSum),
             runSum: tolPair(inTol.runSum, prev.tolerances.runSum),
@@ -643,7 +638,8 @@ export async function POST(req: NextRequest) {
         await audit("org_settings_change", {
           workerId: worker.id,
           entity: "org_settings",
-          detail: { prev, next },
+          // A logo is a data URL; the audit keeps its size, not the image.
+          detail: { prev: auditableSettings(prev), next: auditableSettings(next) },
         });
         break;
       }

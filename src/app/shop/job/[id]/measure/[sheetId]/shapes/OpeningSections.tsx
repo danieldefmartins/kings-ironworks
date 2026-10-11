@@ -4,6 +4,7 @@
 // widths, three heights and both diagonals against a live elevation, with the
 // size the shop builds to worked out on the spot.
 
+import ShotList from "../sections/ShotList";
 import { useRef, useState } from "react";
 import type { MeasureData } from "@/lib/shop/measure";
 import { formatIn, type CheckLevel } from "@/lib/shop/measure-checks";
@@ -13,7 +14,6 @@ import {
   OPENING_DOOR_PRODUCTS,
   OPENING_EGRESS_PRODUCTS,
   OPENING_MOUNTS,
-  OPENING_PHOTO_SLOTS,
   OPENING_PRODUCTS,
   OPENING_SILL_PRODUCTS,
   isFaceMount,
@@ -30,7 +30,7 @@ import {
   type OpeningProduct,
   type OpeningUnit,
 } from "@/lib/shop/measure-opening";
-import { MInput, RequiredChip, SlotRow, useRequiredNow } from "../fields";
+import { MInput, RequiredChip, useRequiredNow } from "../fields";
 import { specValue } from "@/lib/shop/i18n";
 import OpeningElevation, { type OpeningField } from "./OpeningElevation";
 import { revealElement, useMeasureLocate } from "@/lib/shop/measure-locate";
@@ -171,8 +171,6 @@ export default function OpeningSections({
   finishOptions,
   colorOptions,
   setPhotoSlot,
-  directSlotPhoto,
-  slotBusy,
   slotErr,
 }: {
   lang: string;
@@ -181,8 +179,9 @@ export default function OpeningSections({
   finishOptions: string[];
   colorOptions: string[];
   setPhotoSlot: (s: { slot: string; label: string } | null) => void;
-  directSlotPhoto: (slot: string, label: string, file: File) => void;
-  slotBusy: string | null;
+  /** Kept for callers; the shot list uploads through the camera flow. */
+  directSlotPhoto?: (slot: string, label: string, file: File) => void;
+  slotBusy?: string | null;
   slotErr: string | null;
 }) {
   const o = data.opening as OpeningData;
@@ -592,15 +591,7 @@ export default function OpeningSections({
       {/* ---- Photos ---------------------------------------------------------- */}
       <section className={CARD} data-op-photos="">
         <h2 className={H2}>{mt(lang, "opPhotosTitle")}</h2>
-        {slotErr && <p className="mb-2 text-sm text-red-400">{slotErr}</p>}
-        <div className="space-y-2">
-          {OPENING_PHOTO_SLOTS.map((slot) => (
-            <SlotRow key={slot} slot={slot} label={mt(lang, `slot_${slot}`)} required
-              data={data} lang={lang} busy={slotBusy === slot}
-              onFile={(f) => directSlotPhoto(slot, mt(lang, `slot_${slot}`), f)}
-              onTake={() => setPhotoSlot({ slot, label: mt(lang, `slot_${slot}`) })} />
-          ))}
-        </div>
+        <ShotList lang={lang} data={data} shape="opening" onShoot={setPhotoSlot} err={slotErr} />
       </section>
 
       <section className={CARD}>

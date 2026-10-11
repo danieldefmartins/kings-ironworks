@@ -377,6 +377,10 @@ const PhotoSchema = z.object({
   slot: z.string().max(60),
   path: z.string().max(300),
   takenAt: z.string().max(40),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  acc: z.number().min(0).max(1e6).optional(),
+  marked: z.boolean().optional(),
 });
 const StrokeSchema = z.object({
   tool: z.string().max(12),

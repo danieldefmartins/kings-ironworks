@@ -8,7 +8,8 @@ import { codeCheck } from "@/lib/shop/measure-code";
 import { codeActualText, codeLimitText, codeRuleLabel, ct } from "@/lib/shop/measure-code-i18n";
 import { signoffState } from "@/lib/shop/measure-signoff";
 
-const GOLD = "#b8860b";
+// Org accent (white-label), set on the print root; KIW gold otherwise.
+const GOLD = "var(--brand-accent, #b8860b)";
 const cell: React.CSSProperties = { border: "1px solid #ccc", padding: "2px 5px" };
 const head: React.CSSProperties = { ...cell, background: "#f4f0e6", textAlign: "left", fontWeight: 600 };
 const LEVEL = { red: ["✗", "#b32c35"], yellow: ["?", "#8a5100"], green: ["✓", "#217338"] } as const;
