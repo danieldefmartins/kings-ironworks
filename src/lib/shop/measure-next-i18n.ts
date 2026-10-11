@@ -37,6 +37,21 @@ const ROWS: Row[] = [
   ["nx_frameCc", "Column center to center", "Eixo a eixo das colunas", "Eje a eje de columnas"],
   ["nx_frame", "Frame", "Pórtico", "Pórtico"],
   ["nx_maxLength", "Longest piece that fits in", "Maior peça que entra", "Pieza más larga que entra"],
+  ["nx_cutLen", "Cut length", "Comprimento de corte", "Largo de corte"],
+  // Spiral — up the column, then round it
+  ["nx_spTreads", "Number of treads", "Número de degraus", "Número de peldaños"],
+  ["nx_spRiser", "Riser height", "Altura do espelho", "Altura de contrahuella"],
+  ["nx_spRotation", "Total rotation", "Rotação total", "Rotación total"],
+  ["nx_spTreadAngle", "Angle per tread", "Ângulo por degrau", "Ángulo por peldaño"],
+  // Shop piece — the size the shop builds to
+  ["nx_fabW", "Build width", "Largura a fabricar", "Ancho a fabricar"],
+  ["nx_fabH", "Build height", "Altura a fabricar", "Alto a fabricar"],
+  ["nx_fabD", "Build depth", "Profundidade a fabricar", "Fondo a fabricar"],
+  // Copy to all, by what repeats
+  ["nx_copyAll_levels", "Same for all floors", "Igual em todos os andares", "Igual en todos los pisos"],
+  ["nx_copyAll_columns", "Same for all columns", "Igual em todas as colunas", "Igual en todas las columnas"],
+  ["nx_copyAll_pieces", "Same for all pieces", "Igual em todas as peças", "Igual en todas las piezas"],
+  ["nx_copiedN", "Copied to {n}", "Copiado para {n}", "Copiado a {n}"],
   // Stairs — step by step, riser then tread
   ["nx_rise", "Rise", "Espelho", "Contrahuella"],
   ["nx_tread", "Tread depth", "Piso", "Huella"],

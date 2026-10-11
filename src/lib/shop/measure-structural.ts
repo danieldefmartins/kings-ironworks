@@ -89,6 +89,8 @@ export interface StructMember {
   dwgHeight: string;
   dwgElevation: string;
   notes: string;
+  /** Cut length the shop signs off: the calculated cut approved, or a modified one. */
+  cutLen?: string;
 }
 
 export interface StructFrame {

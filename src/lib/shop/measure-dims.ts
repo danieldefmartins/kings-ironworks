@@ -9,6 +9,11 @@ import { gateDims } from './measure-dims-gate';
 import { openingDims } from './measure-dims-opening';
 import { wellDims } from './measure-dims-well';
 import { canopyDims } from './measure-dims-canopy';
+import { structuralDims } from './measure-dims-structural';
+import { fireDims } from './measure-dims-fire';
+import { spiralDims } from './measure-dims-spiral';
+import { wallRailDims } from './measure-dims-wall-rail';
+import { shopPieceDims } from './measure-dims-shop-piece';
 
 /**
  * Architectural dimension lines for the sketch — every length, height or angle
@@ -353,6 +358,7 @@ export const DIM_ADAPTERS: Partial<Record<MeasureShape, (data: MeasureData) => S
   opening: d => openingDims(d),
   window_well: d => wellDims(d),
   canopy: d => canopyDims(d),
+  structural: d => structuralDims(d), fire_escape: d => fireDims(d), spiral: d => spiralDims(d), wall_rail: d => wallRailDims(d), shop_piece: d => shopPieceDims(d),
 };
 
 /** The dimension lines for a sheet of this shape (none for a shape with no adapter yet). */

@@ -160,6 +160,8 @@ const SpiralSchema = z
     columnSize: meas,
     clearWidth: meas,
     landingNote: short,
+    riser: meas.optional(),
+    treadAngle: meas.optional(),
   })
   .nullable();
 const GateSchema = z
@@ -524,6 +526,7 @@ const MeasureDataSchema = z.object({
     weldSize:meas.optional(),jointPreparation:short.optional(),
   })).max(60).optional(),
   spiral: SpiralSchema,
+  calcSources: z.record(z.string().max(160), z.enum(["calculated-approved", "measured"])).refine(r => Object.keys(r).length <= 600, "Too many calculated sources").optional(),
   well: WellSchema.optional(),
   fire: FireEscapeSchema.optional(),
   gate: GateSchema.optional(),

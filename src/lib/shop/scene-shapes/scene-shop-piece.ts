@@ -8,7 +8,8 @@
 import type { MeasureData } from "../measure";
 import { Geo, SceneOut, emptyScene, type ShapeSceneOutput } from "./build-kit";
 import type { Point3 } from "../measure-geometry";
-import { pieceQty, pieceTag, spFabSize } from "../measure-shop-piece";
+import { pieceQty, pieceTag } from "../measure-shop-piece";
+import { spBuildSize } from "../measure-dims-shop-piece";
 
 const TYP = { w: 36, h: 36, d: 12 };
 const TUBE = 1.5;
@@ -42,7 +43,7 @@ export function shopPieceScene(data: MeasureData): ShapeSceneOutput {
   let x = 0;
   s.pieces.forEach((p, i) => {
     const tag = pieceTag(p, i);
-    const f = spFabSize(s, p);
+    const f = spBuildSize(s, p);
     const provisional = f.width === null || f.height === null || f.depth === null;
     if (provisional) out.need(`${tag} · size`);
     const w = f.width ?? TYP.w, h = f.height ?? TYP.h, d = f.depth ?? TYP.d;

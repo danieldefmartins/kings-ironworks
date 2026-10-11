@@ -455,6 +455,7 @@ export default function NextMeasurement({
           <div key={item.id} data-approve-calc data-approve-state={angleSt} className="mt-3 flex min-h-11 flex-wrap items-center gap-x-2 gap-y-1.5">
             <p className="mr-auto shrink-0 whitespace-nowrap text-[15px] font-semibold text-slate-500">
               {dimWord(lang, "calculated")} <span data-approve-calc-value className="text-[20px] tabular-nums tracking-tight text-slate-900">{dimText(approve.calc!, approve.unit)}</span>
+              {approve.note && <span data-approve-calc-note className="ml-1.5 text-[13px] font-medium tabular-nums text-slate-400">{approve.note}</span>}
             </p>
             {angleSt === "approved" ? (
               <span role="status" aria-label={dimWord(lang, "approvedA11y")} className="flex h-9 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-[15px] font-semibold text-emerald-700">

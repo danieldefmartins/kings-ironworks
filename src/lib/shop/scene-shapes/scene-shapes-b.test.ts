@@ -31,7 +31,8 @@ describe('registry',()=>{
  it('merges the adapter output into measureScene, bounds included, without touching the sheet',()=>{
   const data=fireFixture(),before=JSON.stringify(data),scene=measureScene(data,'fire_escape'),own=fireEscapeScene(data);
   expect(scene.meshes.length).toBe(own.meshes.length);
-  const e=extent(own);expect(scene.bounds.min.z).toBeCloseTo(e.z[0]);expect(scene.bounds.max.z).toBeCloseTo(e.z[1]);
+  // Bounds hold the steel and its dimension lines (measure-dims-fire.ts).
+  const e=extent(own);expect(scene.bounds.min.z).toBeLessThanOrEqual(e.z[0]+1e-6);expect(scene.bounds.max.z).toBeGreaterThanOrEqual(e.z[1]-1e-6);expect(scene.lines.some(l=>l.dim?.key==='fire:total')).toBe(true);
   expect(JSON.stringify(data)).toBe(before);
   // A wall rail is a stair flight on paper: only the named shape adds the wall and brackets.
   const rail=wallRailFixture();expect(measureScene(rail).meshes.some(m=>m.id==='wall-rail:wall')).toBe(false);expect(measureScene(rail,'wall_rail').meshes.some(m=>m.id==='wall-rail:wall')).toBe(true);
