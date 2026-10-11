@@ -11,6 +11,8 @@ const STR: Record<Lang, Dict> = {
   en: {
     workerApplications: "Worker applications",
     workerApplicationsHint: "Review applications and approve new workers",
+    teamW9: "Team & W-9",
+    teamW9Hint: "Profiles, W-9s and 1099 readiness for every worker",
     actionsTitle: "Action dashboard",
     actionsHint: "See what needs attention and open the record to take action. A job may appear in more than one section.",
     actionsTimezone: "Shop time · New York",
@@ -307,6 +309,8 @@ const STR: Record<Lang, Dict> = {
   pt: {
     workerApplications: "Candidaturas",
     workerApplicationsHint: "Revisar candidaturas e aprovar novos funcionários",
+    teamW9: "Equipe e W-9",
+    teamW9Hint: "Perfis, W-9 e prontidão para o 1099 de cada trabalhador",
     actionsTitle: "Painel de ações",
     actionsHint: "Veja o que precisa de atenção e abra o registro para agir. Uma obra pode aparecer em mais de uma seção.",
     actionsTimezone: "Horário da oficina · Nova York",
@@ -604,6 +608,8 @@ const STR: Record<Lang, Dict> = {
   es: {
     workerApplications: "Solicitudes de empleo",
     workerApplicationsHint: "Revisar solicitudes y aprobar nuevos trabajadores",
+    teamW9: "Equipo y W-9",
+    teamW9Hint: "Perfiles, W-9 y preparación para el 1099 de cada trabajador",
     actionsTitle: "Panel de acciones",
     actionsHint: "Revisa lo que necesita atención y abre el registro para actuar. Un proyecto puede aparecer en varias secciones.",
     actionsTimezone: "Hora del taller · Nueva York",
