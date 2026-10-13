@@ -114,7 +114,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-sidebar-foreground/20">
           <div className="flex flex-col gap-2 text-xs sm:text-sm text-sidebar-foreground/50 text-center sm:text-left sm:flex-row sm:justify-between">
-            <p>&copy; 2026 King Iron Works. All rights reserved.</p>
+            <p>&copy; 2026 King Iron Works LLC. All rights reserved.</p>
             <p>Licensed Fire Escape Installer | MA State Building Code Compliant</p>
           </div>
         </div>

@@ -269,7 +269,7 @@ export default function PrivacyPolicy() {
               <strong>We DO NOT sell your phone number.</strong>
             </p>
             <p>
-              King Iron Works LLC does not sell, rent, lease, or trade your mobile phone number to third parties for their marketing purposes. Your phone number is only shared with trusted service providers (such as our SMS platform Go High Level) who are contractually obligated to protect your information and use it solely to provide services on our behalf.
+              No mobile information will be shared with third parties/affiliates for marketing/promotional purposes. King Iron Works LLC does not sell, rent, lease, or trade your mobile phone number to third parties for their marketing purposes. Your phone number is only shared with trusted service providers (such as our SMS messaging platform) who are contractually obligated to protect your information and use it solely to provide services on our behalf.
             </p>
             <p className="mt-3">
               <strong>Summary:</strong> Your phone number is NOT sold to advertisers, data brokers, or other third parties. We only share it with essential service providers to deliver the services you&apos;ve requested.
