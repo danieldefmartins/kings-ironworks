@@ -30,6 +30,7 @@ import MaterialKit from "./MaterialKit";
 import PhotosV2 from "./PhotosV2";
 import AddressLink from "../../AddressLink";
 import JobsMap from "../../JobsMap";
+import ShareJob, { type ShareCrew } from "./ShareJob";
 import { nextUp } from "@/lib/shop/next-up";
 import {
   SpecsPanel,
@@ -39,12 +40,13 @@ import {
 
 export default function TravelerV2({
   job, cut, materials, qc, photos, canSeePrices, isAdmin = false, lang,
-  myStartedAt, activeWorkers, totalHours, catalog,
+  myStartedAt, activeWorkers, totalHours, catalog, shareCrew = [], selfId = "",
 }: {
   job: Job; cut: CutItem[]; materials: Material[]; qc: QcCheck[]; photos: Photo[];
   canSeePrices: boolean; isAdmin?: boolean; lang: string;
   myStartedAt: string | null; activeWorkers: string[]; totalHours: number;
   catalog: CatalogItem[];
+  shareCrew?: ShareCrew[]; selfId?: string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -124,6 +126,7 @@ export default function TravelerV2({
           </span>
           {job.due_date && <span className={`rounded-lg px-3 py-2 font-extrabold shadow-sm ${due.cls}`}>{t(lang, "installBy")} {due.text}</span>}
           <span className="text-neutral-600">{job.job_number}</span>
+          <span className="ml-auto"><ShareJob jobId={job.id} crew={shareCrew} selfId={selfId} lang={lang} /></span>
         </div>
 
         {/* progress as progress, not as a menu of nine buttons */}

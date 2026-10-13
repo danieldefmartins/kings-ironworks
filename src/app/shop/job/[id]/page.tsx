@@ -17,10 +17,12 @@ import {
   entryHours,
   type Photo,
   listCatalog,
+  listShareRecipients,
 } from "@/lib/shop/db";
 import JobDocuments from "./JobDocuments";
 import JobGateScreen from "@/app/shop/JobGateScreen";
 import { loadJobGate } from "@/lib/shop/job-timer-db";
+import { toE164 } from "@/lib/shop/job-timer";
 import { loadLaborBoard } from "@/lib/shop/labor-board-db";
 import { JobLaborRow } from "../../admin/labor/JobCostBoard";
 import ShopTopBar from "../../ShopTopBar";
@@ -59,7 +61,7 @@ export default async function JobTravelerPage({
   // un-redacted row would still be readable in this page's RSC payload.
   const job = redactJobMoney(rawJob, canSeePrices);
 
-  const [cut, materials, qc, rawPhotos, workers, timeEntries, pieces] =
+  const [cut, materials, qc, rawPhotos, workers, timeEntries, pieces, shareRecipients] =
     await Promise.all([
       getCutItems(id),
       getMaterials(id),
@@ -68,7 +70,10 @@ export default async function JobTravelerPage({
       listWorkers(),
       getJobTimeEntries(id),
       listJobPieces(id),
+      v2 ? listShareRecipients().catch(() => []) : Promise.resolve([]),
     ]);
+  // Phones stay on the server; the share sheet only needs to know one exists.
+  const shareCrew = shareRecipients.map((w) => ({ id: w.id, name: w.name, hasPhone: !!toE164(w.phone) }));
 
   let estimates: Awaited<ReturnType<typeof getJobEstimates>> | null = null;
   try { estimates = await getJobEstimates(id, canSeePrices); } catch { /* Keep job work usable; show explicit estimate load error. */ }
@@ -136,6 +141,8 @@ export default async function JobTravelerPage({
           activeWorkers={othersRunning}
           totalHours={totalHours}
           catalog={catalog.map(item => canSeePrices ? item : { ...item, unit_cost: null })}
+          shareCrew={shareCrew}
+          selfId={worker.id}
         />
       ) : null}
       {v2 ? (

@@ -178,6 +178,14 @@ export async function listWorkers(): Promise<Worker[]> {
   );
 }
 
+/** Active crew with the fields "Share job" needs. Phones stay server-side. */
+export async function listShareRecipients(): Promise<Pick<Worker, "id" | "name" | "lang" | "phone">[]> {
+  return sbSelect<Pick<Worker, "id" | "name" | "lang" | "phone">[]>(
+    "kiw_shop_workers",
+    `select=id,name,lang,phone&org_id=eq.${ORG_ID}&active=eq.true&order=name.asc`
+  );
+}
+
 export async function verifyWorkerPin(
   workerId: string,
   pin: string
