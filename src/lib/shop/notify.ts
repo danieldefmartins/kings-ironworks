@@ -1,5 +1,6 @@
 // Telegram is how this company gets told things — never SMS, never email.
-// The bot is @daniel360bot; the chat is the operations group.
+// The bot is @daniel360bot; the chat is Daniel's HQ, and TELEGRAM_THREAD_ID
+// picks the King Iron Works topic inside it.
 //
 // A send that fails must never take down the thing that triggered it, so the
 // caller gets a boolean back and decides what to say. It returns false rather
@@ -9,6 +10,7 @@
 export async function sendTelegram(text: string): Promise<boolean> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
+  const threadId = Number(process.env.TELEGRAM_THREAD_ID) || undefined;
   if (!token || !chatId) {
     console.error("[notify] TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID not set");
     return false;
@@ -19,6 +21,7 @@ export async function sendTelegram(text: string): Promise<boolean> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: chatId,
+        ...(threadId ? { message_thread_id: threadId } : {}),
         text,
         parse_mode: "HTML",
         disable_web_page_preview: true,
