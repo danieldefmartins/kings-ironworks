@@ -28,7 +28,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Massachusetts law mandates fire escape inspections every five years. Learn what's required, who can inspect, consequences of non-compliance, and how to prepare.",
     category: "fire-escapes",
-    featuredImage: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-1.jpg`,
     publishedDate: "2026-02-25",
     readTime: "6 min read",
     tags: [
@@ -137,7 +137,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Rust, loose railings, sagging platforms? Learn the 5 warning signs that mean your fire escape needs repair now — before it becomes a safety hazard or code violation.",
     category: "fire-escapes",
-    featuredImage: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-brick-zigzag-1.jpg`,
     publishedDate: "2026-02-25",
     readTime: "6 min read",
     tags: [
@@ -256,7 +256,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Beacon Hill's historic ironwork tells the story of Boston's earliest architecture. Learn how period-accurate restoration preserves your property's value and meets commission requirements.",
     category: "restoration",
-    featuredImage: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-knuckle-stone-2.jpg`,
     publishedDate: "2026-02-25",
     readTime: "7 min read",
     tags: [
@@ -363,7 +363,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Failed your fire escape inspection in Massachusetts? Here's exactly what happens next — fines, legal exposure, insurance risk, mortgage complications, and how to get back into compliance fast.",
     category: "fire-escapes",
-    featuredImage: `${IMG_BASE}/VrmKyMuovdgoFRfz.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-1.jpg`,
     publishedDate: "2026-02-26",
     readTime: "7 min read",
     tags: [
@@ -486,7 +486,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Choosing between wrought iron and steel for your railings, fences, or gates? Boston's ironwork experts break down durability, cost, aesthetics, and maintenance — especially for New England's climate.",
     category: "guides",
-    featuredImage: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Gates/king-iron-works-gate-10.jpg`,
     publishedDate: "2026-02-26",
     readTime: "6 min read",
     tags: [
@@ -644,7 +644,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Planning new railings for your brownstone? From architectural style matching to building code requirements and historic commission approval, here's everything you need to know.",
     category: "railings",
-    featuredImage: `${IMG_BASE}/buMcGDTPsdJzspea.jpg`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-vert-picket-knuckle-stone-2.jpg`,
     publishedDate: "2026-02-26",
     readTime: "6 min read",
     tags: [
@@ -778,7 +778,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "New England winters are brutal on ironwork. Here's the practical, season-by-season maintenance routine that keeps your railings protected from road salt, freeze-thaw cycles, and rust.",
     category: "guides",
-    featuredImage: `${IMG_BASE}/aqPLHeShxXujREPn.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Railings/Exterior-Railing/king-iron-works-exterior-railing-hor-bar-stone-steps-craftsman-1.jpg`,
     publishedDate: "2026-02-26",
     readTime: "6 min read",
     tags: [
@@ -938,7 +938,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "The South End has the largest collection of Victorian residential ironwork in the country. Learn about its history, unique characteristics, common issues, and how to restore it properly.",
     category: "restoration",
-    featuredImage: `${IMG_BASE}/NgBghqHCKpNCJSJs.jpg`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-brick-zigzag-1.jpg`,
     publishedDate: "2026-02-26",
     readTime: "8 min read",
     tags: [
@@ -1060,7 +1060,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Need a new fire escape for your apartment building or commercial property? Here's the complete guide to code requirements, the installation process, managing tenants, and what affects cost.",
     category: "fire-escapes",
-    featuredImage: `${IMG_BASE}/PmBUKqXwdDkeqflj.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Fire-Escape/king-iron-works-fire-escape-brick-zigzag-1.jpg`,
     publishedDate: "2026-02-26",
     readTime: "7 min read",
     tags: [
@@ -1209,7 +1209,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt:
       "Protecting your storefront doesn't mean uglifying it. Learn about security gate types, historic district requirements, ADA compliance, and why custom iron gates are worth the investment.",
     category: "guides",
-    featuredImage: `${IMG_BASE}/ldKpYAFGAsEGkCVX.JPG`,
+    featuredImage: `${IMG_BASE}/portfolio-organized/Gates/king-iron-works-gate-10.jpg`,
     publishedDate: "2026-02-26",
     readTime: "6 min read",
     tags: [

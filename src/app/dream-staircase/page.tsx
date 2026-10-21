@@ -6,13 +6,14 @@ export const metadata: Metadata = {
   description:
     "Design your dream staircase with King Iron Works. Choose your structure, finish, and railing — we'll engineer and forge it into reality. Serving all of New England from our Everett facility.",
   alternates: {
-    canonical: "https://www.kingsironworks.com/dream-staircase",
+    canonical: "https://kingsironworks.com/dream-staircase",
   },
   openGraph: {
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Dream Staircase Designer — King Iron Works",
     description:
       "Design your dream staircase with King Iron Works. Choose your structure, finish, and railing — we'll engineer and forge it into reality.",
-    url: "https://www.kingsironworks.com/dream-staircase",
+    url: "https://kingsironworks.com/dream-staircase",
     siteName: "King Iron Works",
     type: "website",
   },

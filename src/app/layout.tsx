@@ -174,9 +174,9 @@ export default function RootLayout({
       {/* Google Tag Manager */}
       <Script
         src="https://www.googletagmanager.com/gtag/js?id=GT-P3H97K4D"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
@@ -185,7 +185,7 @@ export default function RootLayout({
           gtag('config', 'AW-817727428');`}
       </Script>
       {/* Google Ads phone conversion tracking */}
-      <Script id="google-ads-conversion" strategy="afterInteractive">
+      <Script id="google-ads-conversion" strategy="lazyOnload">
         {`function gtag_report_conversion(url) {
           var callback = function () {
             if (typeof(url) != 'undefined') { window.location = url; }

@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     canonical: "https://kingsironworks.com/cape-cod",
   },
   openGraph: {
+    type: "website",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Custom Ironwork & Fire Escapes in Cape Cod, MA | King Iron Works",
     description:
       "Cape Cod's premier ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration. Serving all of Cape Cod and the Islands.",

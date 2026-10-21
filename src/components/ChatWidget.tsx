@@ -23,7 +23,7 @@ export default function ChatWidget() {
       const widget = document.querySelector("chat-widget");
       if (!widget) return;
       widget.toggleAttribute("data-kiw-contact", pathname === "/contact");
-      widget.toggleAttribute("data-kiw-shop", pathname.startsWith("/shop"));
+      widget.toggleAttribute("data-kiw-shop", (pathname.startsWith("/shop") || pathname === "/florida"));
       const root = widget.shadowRoot;
       if (!root) return;
       if (!root.querySelector("#kiw-widget-layout")) {
@@ -43,7 +43,7 @@ export default function ChatWidget() {
     return () => { observer.disconnect(); if (timer) clearInterval(timer); clearTimeout(timeout); };
   }, [pathname]);
 
-  if (pathname.startsWith("/shop")) return null;
+  if ((pathname.startsWith("/shop") || pathname === "/florida")) return null;
   return <Script src="https://widgets.leadconnectorhq.com/loader.js"
     data-resources-url="https://widgets.leadconnectorhq.com/chat-widget/loader.js"
     data-widget-id="699737916e6009b3eccf3dff" strategy="afterInteractive" />;

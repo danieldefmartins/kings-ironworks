@@ -15,7 +15,7 @@ const parentCategories = [
   { id: "railings", label: "Railings", children: ["exterior-railings", "interior-railings", "cable-railings", "deck-railings", "commercial-railings", "small-railings"] },
   { id: "gates", label: "Gates", children: ["gates"] },
   { id: "fire-escapes", label: "Fire Escapes", children: ["fire-escapes"] },
-  { id: "balconies-group", label: "Balconies", children: ["balconies", "juliet-balconies"] },
+  { id: "balconies-group", label: "Balconies & Juliet Balconies", children: ["balconies", "juliet-balconies"] },
   { id: "fences", label: "Fences", children: ["fences"] },
   { id: "structural-steel", label: "Structural Steel", children: ["structural-steel"] },
   { id: "window-wells", label: "Window Wells", children: ["window-wells", "window-guards"] },
@@ -39,6 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${title} — Portfolio`,
     description: `Browse our ${title.toLowerCase()} projects. Custom ironwork crafted with 20+ years of expertise. King Iron Works serves New England, New York & Florida.`,
     openGraph: {
+    type: "website",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
       title: `${title} | King Iron Works Portfolio`,
       description: `Browse our ${title.toLowerCase()} projects. Custom ironwork crafted with 20+ years of expertise.`,
       url: `https://kingsironworks.com/portfolio/${category}`,

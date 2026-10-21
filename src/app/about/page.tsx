@@ -9,13 +9,14 @@ export const metadata: Metadata = {
   description:
     "Learn about King Iron Works — 20+ years of custom ironwork, fire escape services, and historic restoration in Boston. 100% in-house fabrication in Everett, MA.",
   alternates: {
-    canonical: "https://www.kingsironworks.com/about",
+    canonical: "https://kingsironworks.com/about",
   },
   openGraph: {
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "About King Iron Works — 20+ Years of Master Craftsmanship",
     description:
       "Learn about King Iron Works — 20+ years of custom ironwork, fire escape services, and historic restoration in Boston. 100% in-house fabrication in Everett, MA.",
-    url: "https://www.kingsironworks.com/about",
+    url: "https://kingsironworks.com/about",
     siteName: "King Iron Works",
     type: "website",
   },

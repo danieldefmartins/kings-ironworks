@@ -14,6 +14,7 @@ const ROUTE_PHONE_MAP: Record<string, PhoneEntry> = {
   '/cape-cod': PHONE_NUMBERS.CAPE_COD,
   '/worcester': PHONE_NUMBERS.WORCESTER,
   '/miami': PHONE_NUMBERS.MIAMI,
+  '/florida': PHONE_NUMBERS.MIAMI,
   '/new-hampshire': PHONE_NUMBERS.NEW_HAMPSHIRE,
   '/maine': PHONE_NUMBERS.MAINE,
   '/rhode-island': PHONE_NUMBERS.RHODE_ISLAND,

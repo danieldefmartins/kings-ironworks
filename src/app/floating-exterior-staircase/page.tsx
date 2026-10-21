@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     url: "https://kingsironworks.com/floating-exterior-staircase",
     images: [
       {
-        url: "/images/carousel/floating-exterior-staircase-16x9.jpg",
+        url: "/images/carousel/exterior-staircase-16x9.jpg",
         width: 2400,
         height: 1350,
         alt: "Custom exterior steel staircase with porcelain treads by King Iron Works",

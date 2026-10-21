@@ -549,6 +549,7 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip pt-18 lg:pt-28">
+      <div className="container py-10"><h1 className="text-display text-3xl md:text-5xl">{activeParentLabel === "Portfolio" ? "Our metalwork portfolio" : `${activeParentLabel} portfolio`}</h1><p className="text-muted-foreground mt-4">Explore completed King Iron Works projects. Select a category to see the details.</p></div>
       {/* Sticky filter stack — pins category + subcategory bars directly under the fixed nav */}
       <div className="sticky top-18 lg:top-28 z-30">
       {/* Main Category Bar */}

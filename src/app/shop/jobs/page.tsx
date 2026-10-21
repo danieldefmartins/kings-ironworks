@@ -19,7 +19,8 @@ import { isJobGateExempt, visibleJobsFor } from "@/lib/shop/job-timer";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopBoard({ searchParams }: { searchParams?: Promise<{ switch?: string }> } = {}) {
+export default async function ShopBoard(props: { searchParams?: Promise<{ switch?: string }> }) {
+  const { searchParams } = props ?? {};
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";

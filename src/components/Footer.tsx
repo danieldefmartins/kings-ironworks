@@ -38,13 +38,13 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-heading text-sm tracking-wider mb-4">QUICK LINKS</h4>
+            <p className="text-heading text-sm tracking-wider mb-4">QUICK LINKS</p>
             <ul className="space-y-2">
               {[
                 { href: "/services", label: "Services" },
                 { href: "/portfolio", label: "Portfolio" },
                 { href: "/blog", label: "Blog" },
-                { href: "/locations", label: "Our Facility" },
+                { href: "/florida", label: "Florida Operations" },
                 { href: "/about", label: "About Us" },
                 { href: "/contact", label: "Contact" },
                 { href: "/join-our-team", label: "Join Our Team" },
@@ -62,7 +62,7 @@ export default function Footer() {
 
           {/* Locations */}
           <div>
-            <h4 className="text-heading text-sm tracking-wider mb-4">LOCATIONS</h4>
+            <p className="text-heading text-sm tracking-wider mb-4">LOCATIONS</p>
             <ul className="space-y-3 text-sm">
               <li className="text-sidebar-foreground/70">
                 <div className="font-medium text-sidebar-foreground">Everett, MA</div>
@@ -82,7 +82,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-heading text-sm tracking-wider mb-4">CONTACT</h4>
+            <p className="text-heading text-sm tracking-wider mb-4">CONTACT</p>
             <ul className="space-y-3">
               <li>
                 <PhoneLink tel={localPhone.tel}

@@ -12,7 +12,8 @@ import { visibleJobsFor } from "@/lib/shop/job-timer";
 export const dynamic = "force-dynamic";
 
 // Sales measurements: projects measured before the deal closes.
-export default async function LeadsPage({ searchParams }: { searchParams?: Promise<{ switch?: string }> } = {}) {
+export default async function LeadsPage(props: { searchParams?: Promise<{ switch?: string }> }) {
+  const { searchParams } = props ?? {};
   const worker = await getSessionWorker();
   if (!worker) redirect("/shop/login");
   const lang = worker.lang || "en";

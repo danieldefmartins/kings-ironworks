@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     canonical: "https://kingsironworks.com/lowell",
   },
   openGraph: {
+    type: "website",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Custom Ironwork & Fire Escapes in Lowell, MA | King Iron Works",
     description:
       "Lowell MA's trusted ironwork specialists. Custom staircases, railings, gates, and structural steel.",

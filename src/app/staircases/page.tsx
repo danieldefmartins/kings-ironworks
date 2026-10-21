@@ -6,13 +6,14 @@ export const metadata: Metadata = {
   description:
     "Design your dream staircase with King Iron Works. Choose from curved, floating cantilever, mono-stringer, spiral, traditional, and L-shaped structures. 20+ years of master craftsmanship in New England.",
   alternates: {
-    canonical: "https://www.kingsironworks.com/staircases",
+    canonical: "https://kingsironworks.com/staircases",
   },
   openGraph: {
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Custom Staircases — Design Your Dream Staircase | King Iron Works",
     description:
       "Design your dream staircase with King Iron Works. Choose from curved, floating cantilever, mono-stringer, spiral, traditional, and L-shaped structures.",
-    url: "https://www.kingsironworks.com/staircases",
+    url: "https://kingsironworks.com/staircases",
     siteName: "King Iron Works",
     type: "website",
   },

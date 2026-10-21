@@ -14,13 +14,14 @@ export const metadata: Metadata = {
   description:
     "King Iron Works offers fire escape installation and repair, historic building restoration, custom railings, gates, fences, structural steel, and more across Massachusetts and Florida.",
   alternates: {
-    canonical: "https://www.kingsironworks.com/services",
+    canonical: "https://kingsironworks.com/services",
   },
   openGraph: {
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Services — Custom Ironwork, Fire Escapes, Structural Steel",
     description:
       "King Iron Works offers fire escape installation and repair, historic building restoration, custom railings, gates, fences, structural steel, and more across Massachusetts and Florida.",
-    url: "https://www.kingsironworks.com/services",
+    url: "https://kingsironworks.com/services",
     siteName: "King Iron Works",
     type: "website",
   },

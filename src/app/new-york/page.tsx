@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     canonical: "https://kingsironworks.com/new-york",
   },
   openGraph: {
+    type: "website",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Custom Ironwork & Fire Escapes in New York | King Iron Works",
     description:
       "New York's trusted ironwork specialists. Fire escapes, structural steel, custom fabrication, and building restoration.",

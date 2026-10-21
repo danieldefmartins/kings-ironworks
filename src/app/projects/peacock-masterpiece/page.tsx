@@ -6,13 +6,14 @@ export const metadata: Metadata = {
   description:
     "From a rough pencil concept to the most breathtaking staircase we've ever built. 1,200+ hours of fabrication, one-of-a-kind peacock panels, 300+ gold leaf pieces. The project that defines King Iron Works.",
   alternates: {
-    canonical: "https://www.kingsironworks.com/projects/peacock-masterpiece",
+    canonical: "https://kingsironworks.com/projects/peacock-masterpiece",
   },
   openGraph: {
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "The Peacock Masterpiece — King Iron Works",
     description:
       "From a rough pencil concept to the most breathtaking staircase we've ever built. 1,200+ hours of fabrication, one-of-a-kind peacock panels, 300+ gold leaf pieces.",
-    url: "https://www.kingsironworks.com/projects/peacock-masterpiece",
+    url: "https://kingsironworks.com/projects/peacock-masterpiece",
     siteName: "King Iron Works",
     type: "website",
   },

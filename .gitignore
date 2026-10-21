@@ -42,3 +42,5 @@ next-env.d.ts
 
 # Supabase CLI scratch state (project ref, versions) — not source
 supabase/.temp/
+
+/out-audit/

@@ -11,6 +11,8 @@ export const metadata: Metadata = {
     canonical: "https://kingsironworks.com/connecticut",
   },
   openGraph: {
+    type: "website",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom metalwork" }],
     title: "Custom Ironwork & Fire Escapes in Connecticut | King Iron Works",
     description:
       "Connecticut's trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration.",
