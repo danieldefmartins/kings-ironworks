@@ -1,6 +1,6 @@
 # Florida operations landing page — 2026-10-20
 
-Status: implementation and local checks complete; **not production-ready or deployed**. Native CRM setup and a verified test lead are still blocked by owner-login authorization. Automatic approval review rejected using saved owner credentials; a permission question is pending. No 360 CRM code was opened or changed.
+Status: implementation and local checks complete; **not production-ready or deployed**. Native CRM form configuration and a verified test lead are still blocked: the signed-in account can open the King Iron Works workspace, but form settings display a permission denial. The earlier login blocker has been resolved. No 360 CRM code was opened or changed.
 
 ## Changes
 
@@ -33,7 +33,7 @@ Baseline in `docs/search-baseline.md`. Existing www sitemap, submitted in 2020, 
 
 ## Required before production
 
-1. Receive explicit permission to use saved owner login or have the owner sign in to `app.get360crm.com`. Automatic approval review requires this privileged-account authorization.
+1. Resolve the existing form-settings permission denial through an authorized administrator. The owner is already signed in; do not request login again or bypass permissions.
 2. Read the existing King Iron Works published form and field identifiers. Do not modify CRM code or setup. Configure website environment values `KIW_360_FORM_SLUG`, `KIW_360_WORKSPACE_ID`, and `KIW_360_FIELD_MAP` (JSON keys: firstName, lastName, phone, email, city, projectType, message, photos). Verify published form consent matches the displayed wording; handle any mismatch on the website. Do not guess workspace IDs.
 3. Submit a clearly tagged test lead with photo and UTM/gclid; confirm contact, opportunity, photo and attribution in 360, then tag test data. Verify the Florida phone/text routing in the business workspace. Branding verification remains pending account access.
 4. Complete Lighthouse follow-up, deploy the reviewed commit, run the full live URL audit to **0 errors**, verify live forms, redirects and social card, and confirm Search Console discovers the newly deployed Florida URL.
@@ -54,3 +54,12 @@ Replaced the small structural installation image with the requested real steel b
 ## October 21 company-scale redesign
 
 Owner rejected the sparse monochrome presentation. Replaced it with the official white-and-gold logo, charcoal masthead, full company navigation (Home, Services, Projects, Our company, Locations, Contact), mobile disclosure menu, large photographic hero, gold estimate CTA, portfolio CTA and four-service jump navigation. Project photography now precedes detailed service content; planning details are expandable. Bridge feature retained. Desktop/phone captures updated; mobile menu verified with all seven destinations and no horizontal overflow at 390px. Production build and house build audit: 0 errors / 3,955 warnings. Live deployment remains blocked by the previously documented CRM form permission/configuration; no new live audit is claimed.
+
+
+## October 21 location-aware homepage
+
+Home requests now use Cloudflare US/Florida region headers to temporarily redirect to `/florida`, preserving campaign query parameters. An actual Florida page visit remembers the Florida home for 30 days; Home and logo links perform a server navigation. Other company pages remain accessible. `/?region=all` overrides detection and remembers the main-company homepage; `/?region=florida` explicitly selects Florida. Unknown locations retain the existing homepage. Prefetch requests do not change the preference. Regional responses use private, no-store caching.
+
+Validation: production build passed; nine routing tests passed; scoped lint has no errors. Actual HTTP checks verified default 200, Florida 307, remembered Florida 307, and manual override 200, all with private/no-store. Chrome checks verified Home and logo both return to Florida and the override opens the original homepage. Existing reviewed 390px/1440px design screenshots remain applicable; this change adds the utility switch without changing page layout. House build audit rerun: **0 errors / 3,955 warnings**.
+
+Before live activation, verify Cloudflare **Add visitor location headers** Managed Transform is enabled: state-level routing needs `cf-region-code` or `cf-region` plus `cf-ipcountry`. IP country alone cannot identify Florida. Live header configuration has not been verified. Deployment and post-deployment live audit remain pending the form configuration/delivery blocker above. No 360 CRM code was changed.
