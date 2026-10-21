@@ -29,20 +29,20 @@ The audit scans the entire incumbent marketing site. Warnings consist of existin
 
 ## Search Console
 
-Baseline in `docs/search-baseline.md`. Existing www sitemap, submitted in 2020, showed `Couldn't fetch` (last read December 2025). Submitted `https://kingsironworks.com/sitemap.xml` on October 20, 2026. Google accepted the submission but its table currently shows `Couldn't fetch`, no last-read date. Direct HTTP response is 200 XML. Screenshot `google-sitemap.png` preserves the result. Successful Google processing is **not** verified; investigate crawl access and recheck after launch.
+Baseline in `docs/search-baseline.md`. Existing www sitemap, submitted in 2020, showed `Couldn't fetch` (last read December 2025). Submitted `https://kingsironworks.com/sitemap.xml` on October 20, 2026. After processing, Search Console shows **Success**, last read October 20, 2026, **79 discovered pages**. Direct HTTP response is 200 XML. Screenshot `google-sitemap.png` preserves the verified result. The legacy www submission still shows its old error; the current apex sitemap is successfully read. Recheck the increased route count after deployment.
 
 ## Required before production
 
 1. Receive explicit permission to use saved owner login or have the owner sign in to `app.get360crm.com`. Automatic approval review requires this privileged-account authorization.
 2. Read the existing King Iron Works published form and field identifiers. Do not modify CRM code or setup. Configure website environment values `KIW_360_FORM_SLUG`, `KIW_360_WORKSPACE_ID`, and `KIW_360_FIELD_MAP` (JSON keys: firstName, lastName, phone, email, city, projectType, message, photos). Verify published form consent matches the displayed wording; handle any mismatch on the website. Do not guess workspace IDs.
 3. Submit a clearly tagged test lead with photo and UTM/gclid; confirm contact, opportunity, photo and attribution in 360, then tag test data. Verify the Florida phone/text routing in the business workspace. Branding verification remains pending account access.
-4. Complete Lighthouse follow-up, deploy the reviewed commit, run the full live URL audit to **0 errors**, verify live forms, redirects and social card, and confirm Search Console reads the sitemap.
+4. Complete Lighthouse follow-up, deploy the reviewed commit, run the full live URL audit to **0 errors**, verify live forms, redirects and social card, and confirm Search Console discovers the newly deployed Florida URL.
 5. Bing/GBP/citation checks and a 28-day search comparison remain follow-up work; no new public listings or profile uploads were made.
 
 ## Next five highest-value actions
 
 1. Unblock and verify Florida CRM delivery end to end.
-2. Deploy and prove live audit plus Google sitemap ingestion.
+2. Deploy and prove the live audit; recheck Google discovers the new Florida URL.
 3. Remove legacy analytics cookie issues and tune mobile LCP without losing conversion tracking.
 4. Improve high-impression home-page CTR and page-two structural steel/fire escape opportunities using the Search Console baseline.
 5. Add verified Florida job captions/reviews and unique local-service detail as real project evidence becomes available.

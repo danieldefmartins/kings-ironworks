@@ -7,3 +7,5 @@ Baseline premium audit: 514 errors and 4,069 warnings. Main errors: 420 oversize
 Page-two opportunities: iron works near me (8 impressions, position 18.5), railing contractors boston (7, 14.3), staircase installers boston (6, 17.5), wrought iron railings near me (3, 9.7), cable railing (1, 14.0). No Florida query appears among the 395 reported query rows.
 
 Sitemap check, October 20: legacy www sitemap `Couldn't fetch`; new apex sitemap submitted successfully but currently also `Couldn't fetch` with no last-read date. Direct apex sitemap response is HTTP 200, application/xml. Google ingestion remains open; see screenshot and HANDOFF.md.
+
+Follow-up the same evening: apex sitemap processed successfully, last read October 20, 2026, 79 pages discovered. Screenshot updated. Legacy www entry retains its historical failure.
