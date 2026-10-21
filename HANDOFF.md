@@ -46,3 +46,7 @@ Baseline in `docs/search-baseline.md`. Existing www sitemap, submitted in 2020, 
 3. Remove legacy analytics cookie issues and tune mobile LCP without losing conversion tracking.
 4. Improve high-impression home-page CTR and page-two structural steel/fire escape opportunities using the Search Console baseline.
 5. Add verified Florida job captions/reviews and unique local-service detail as real project evidence becomes available.
+
+## October 21 owner design refinement
+
+Replaced the small structural installation image with the requested real steel bridge between two buildings (portfolio Structural-Steel photo 21), now featured full-width with a structural-service link. Corrected the official logo's aspect ratio and increased its visual presence. The page and share card now use monochrome brand accents instead of gold. Rechecked 390px and 1440px: no horizontal overflow; photos render correctly. Production build and public build audit pass: 0 errors / 3,955 warnings. Updated screenshots in florida-checks. Deployment remains pending the unresolved native form access/configuration and end-to-end delivery check; prior Lighthouse reports predate this visual refinement.
