@@ -363,7 +363,7 @@ export function trackFormActivity(
     credentials: "omit",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: form.token, key, type, step, attribution }),
+    body: JSON.stringify({ token: form.token, key, type, step: Math.max(1, step), attribution }),
   }).catch(() => {
     /* analytics only: a failed ping must never interrupt the visitor */
   });

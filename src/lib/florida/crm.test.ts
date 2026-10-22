@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { checkPhotos, loadForm, newAttempt, normalizePhone, sendLead, type CrmConfig, type PublicForm } from "./crm";
+import { checkPhotos, trackFormActivity, loadForm, newAttempt, normalizePhone, sendLead, type CrmConfig, type PublicForm } from "./crm";
 const config:CrmConfig={apiBase:'/api/360',workspaceId:'test-workspace',formSlug:'test-form',fields:{firstName:'name',lastName:'last',phone:'phone',email:'email',city:'city',projectType:'service',message:'message',photos:'photos'}};
 const token=btoa(JSON.stringify({ws:'test-workspace',kind:'form',issuedAt:Date.now()-5000,exp:Date.now()+3600000}))+'.signature';
 const form:PublicForm={token,siteKey:null,config:{consentRequired:false,consentText:'',pro:{smsConsent:'optional text'},fields:[{id:'name',type:'text'},{id:'phone',type:'phone'},{id:'service',type:'text'},{id:'message',type:'text'},{id:'photos',type:'files'}]}};
 const values={firstName:'Website test',phone:'7545550123',city:'Miami',projectType:'Aluminum',message:'Test only'};
 afterEach(()=>vi.unstubAllGlobals());
 describe('Florida native lead delivery',()=>{
+ it('reports first-step activity using the public API one-based step number',()=>{const fetcher=vi.fn().mockResolvedValue(Response.json({}));vi.stubGlobal('fetch',fetcher);trackFormActivity(config,form,'test','view',0,{});expect(JSON.parse(fetcher.mock.calls[0][1].body).step).toBe(1);});
  it('normalizes US phones and rejects incomplete phones',()=>{expect(normalizePhone('(754) 555-0123')).toBe('+17545550123');expect(()=>normalizePhone('123')).toThrow('10-digit');});
  it('rejects oversized and unsupported photos before uploading',()=>{expect(()=>checkPhotos([new File(['x'],'plans.pdf',{type:'application/pdf'})])).toThrow("can't be sent");expect(()=>checkPhotos(Array.from({length:11},()=>new File(['x'],'photo.jpg',{type:'image/jpeg'})))).toThrow('up to 10');});
  it('fails closed for the wrong workspace and mismatched consent',async()=>{vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({...form,token:btoa(JSON.stringify({ws:'other',kind:'form'}))+'.sig'})));await expect(loadForm(config,'optional text')).rejects.toThrow('unavailable');vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json(form)));await expect(loadForm(config,'different wording')).rejects.toThrow('unavailable');});

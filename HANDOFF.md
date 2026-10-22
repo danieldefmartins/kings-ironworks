@@ -1,6 +1,6 @@
 # Florida operations landing page — 2026-10-20
 
-Status: implementation and local checks complete; **not production-ready or deployed**. Native CRM form configuration and a verified test lead are still blocked: the signed-in account can open the King Iron Works workspace, but form settings display a permission denial. The earlier login blocker has been resolved. No 360 CRM code was opened or changed.
+Status (October 22): Florida form access resolved in the owner's signed-in Incognito session. Published form and real test deliveries verified. Cloudflare visitor location headers enabled. Website configuration saved on Railway; deployment of `946289b` is QUEUED during Railway’s active platform outage. The live `/florida` route still returns 404, so post-deployment verification remains blocked. No 360 CRM code was opened or changed.
 
 ## Changes
 
@@ -63,3 +63,24 @@ Home requests now use Cloudflare US/Florida region headers to temporarily redire
 Validation: production build passed; nine routing tests passed; scoped lint has no errors. Actual HTTP checks verified default 200, Florida 307, remembered Florida 307, and manual override 200, all with private/no-store. Chrome checks verified Home and logo both return to Florida and the override opens the original homepage. Existing reviewed 390px/1440px design screenshots remain applicable; this change adds the utility switch without changing page layout. House build audit rerun: **0 errors / 3,955 warnings**.
 
 Before live activation, verify Cloudflare **Add visitor location headers** Managed Transform is enabled: state-level routing needs `cf-region-code` or `cf-region` plus `cf-ipcountry`. IP country alone cannot identify Florida. Live header configuration has not been verified. Deployment and post-deployment live audit remain pending the form configuration/delivery blocker above. No 360 CRM code was changed.
+
+
+## October 22 launch verification
+
+- Published native form `king-iron-works-florida` (ID `9d7ca153-e451-47d0-98e7-9d7261fe4a9d`) in the verified King Iron Works workspace. Required name/phone/service/city; optional email/photos/details and SMS consent. Existing spam protection retained. Website field mapping is in ignored `.env.local` and Railway environment variables, not committed credentials.
+- Website client now accepts the form's exact optional consent text from the legacy consent field when separate SMS wording is empty, and submits that consent only when checked. Mismatched or required consent still fails closed. Regression test added; 21 focused tests pass, production build passes, scoped lint passes.
+- Browser preview submission succeeded. Second test through the website public relay uploaded a real portfolio WebP and successfully submitted. Incognito CRM Responses shows two accepted submissions, the Miami/structural-steel details, downloadable photo, “Consent not given,” and source `website-test`. Contact 3706 is explicitly named `Website Test Florida October22`; phone is synthetic +17545550123. No messages/calls sent. Form generated follow-up task 69; no opportunity was automatically created (verified through list_deals). Do not claim opportunity automation is verified. Connector write permissions blocked marking task complete/adding QA note; the name and submission text already clearly label test data.
+- Cloudflare kingsironworks.com → Rules → Settings → Managed Transforms → Add visitor location headers changed from off to on, then verified on. Screenshot `cloudflare-location-headers.png`.
+- Railway CLI required renewed authorization; automatic approval review rejected broad CLI permissions until owner explicitly approved them. Fresh login succeeded. Website variables set with `--skip-deploys`; no CRM service or code changed.
+- Browser photo chooser was blocked by the extension's file-access setting; no extension permission expanded. Photo API delivery and CRM attachment were verified instead.
+- Build house audit remains **0 errors / 3,955 warnings**. `form-success.png` captures successful browser submission. Existing 390px/1440px design screenshots apply to this unchanged layout.
+
+
+## Current launch blocker (October 22, 15:55 UTC)
+
+Railway deployment `af29bbd2-77fe-43d8-be7e-65b2bef1eb9b` for commit `946289b` is **QUEUED**, confirmed via the provider API. Railway reports delayed Pro/Enterprise deployments and builds still disabled for lower tiers: https://status.railway.com/incident/QH8L8B3E. Do not submit duplicate deployments. The live Florida URL returns 404 because the old production build is still serving. No further user login is needed; approved CLI authorization and variable configuration succeeded.
+
+Latest configured-preview Lighthouse reports: desktop 98 performance / 100 accessibility / 74 best practices / 100 SEO, LCP 1.2s, CLS 0, TBT 0ms. Mobile 94 / 100 / 75 / 100, LCP 3.1s, CLS 0, TBT 60ms. Mobile performance score passes 90, while LCP remains above the 2.0s house target. Best-practices deductions include existing Google Ads third-party cookies and a local-only activity origin mismatch under 127.0.0.1. These are open items, not a completed house-standard claim. Latest mobile run used localhost; it revealed a 400 activity validation error because the form API requires step >= 1. Website activity now normalizes the first step to 1, with a regression test. Lighthouse reports predate that fix.
+
+
+Railway status polling subsequently failed with HTTP 503. The queued deployment was not canceled or duplicated. The current live audit was run despite the outage and reports **514 errors / 4,069 warnings** on the old production build (`docs/seo-audit-live-pending.json`); it is not a post-release result. Final analytics fix is pushed separately and must be included when deployment resumes. Next actions: inspect the existing deployment status, deploy the final branch HEAD once the provider is available, verify `/florida`, region routing and live form delivery, and rerun live audit to zero errors. No additional sign-in is requested from the owner.
