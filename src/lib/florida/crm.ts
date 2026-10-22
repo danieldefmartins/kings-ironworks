@@ -129,7 +129,7 @@ export async function loadForm(config: CrmConfig, smsConsent: string): Promise<P
   }
   if (payload.ws !== config.workspaceId || payload.kind !== "form") throw Error(UNAVAILABLE);
   // SMS consent must stay optional and the wording must match exactly what the visitor sees.
-  if (form.config.requireCaptcha || form.config.consentRequired || (form.config.pro?.smsConsent ?? "") !== smsConsent) throw Error(UNAVAILABLE);
+  if (form.config.requireCaptcha || form.config.consentRequired || (form.config.pro?.smsConsent || form.config.consentText) !== smsConsent) throw Error(UNAVAILABLE);
   const required: (keyof CrmFields)[] = ["firstName", "phone", "projectType"];
   for (const name of Object.keys(config.fields) as (keyof CrmFields)[]) {
     if (name === "photos") continue;
@@ -312,7 +312,7 @@ export async function sendLead(
       attribution,
       smsConsent,
       emailConsent: false,
-      consent: false,
+      consent: !form.config.pro?.smsConsent && smsConsent,
       website: values.website || "",
       turnstileToken: await challenge(),
     });
