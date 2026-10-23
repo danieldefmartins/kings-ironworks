@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SMS_CONSENT_TEXT } from "@/lib/crm360";
 
 
 
@@ -249,9 +250,7 @@ export default function GHLForm() {
             className="mt-1 w-4 h-4 accent-[oklch(0.66_0.12_75)]"
           />
           <label htmlFor="consent" className="text-xs text-muted-foreground leading-relaxed">
-            By checking this box, I consent to receive non-marketing text messages from King Iron Works LLC
-            including appointment reminders, project updates, and follow-ups. Message frequency varies.
-            Reply STOP to opt out. Standard message and data rates may apply.
+            {SMS_CONSENT_TEXT}
           </label>
         </div>
 

@@ -1,15 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { CALL_US, CRM_API, formToken, resetFormCache, toE164 } from "@/lib/crm360";
 
-// Routing stays on the server; visitors cannot choose another CRM account.
-const GHL_LOCATION_ID = "rJsKSnzzxWdCgDCq21rI";
-const CUSTOM_FIELDS = {
-  serviceType: "nuvjob3P8tJaWYgTM7Ij",
-  projectAddress: "JLi4GRVaRao06kcNtBhA",
-  projectDescription: "PcBIetyHt2Jm57sMQIqD",
-  timeline: "7okj02EErxszzbHAEYvB",
-  source: "UCThj36vlVaeVXvC4JWB",
-};
 const contactSchema = z.object({
   name: z.string().trim().min(1).max(120),
   preferredContact: z.enum(["phone", "email"]),
@@ -21,12 +14,16 @@ const contactSchema = z.object({
   timeline: z.string().trim().max(100).default(""),
   source: z.string().trim().max(100).default(""),
   consent: z.boolean().default(false),
+  website: z.string().max(200).default(""),
 }).superRefine((data, ctx) => {
-  if (data.preferredContact === "email" && !z.email().safeParse(data.email).success) {
+  if (data.email && !z.email().safeParse(data.email).success) {
+    ctx.addIssue({ code: "custom", path: ["email"], message: "Please enter a valid email address." });
+  }
+  if (data.preferredContact === "email" && !data.email) {
     ctx.addIssue({ code: "custom", path: ["email"], message: "Please enter a valid email address." });
   }
   const digits = data.phone.replace(/\D/g, "");
-  if (data.preferredContact === "phone" && (!/^[+()0-9 .-]+$/.test(data.phone) || digits.length < 7 || digits.length > 15)) {
+  if ((data.preferredContact === "phone" || data.phone) && (!/^[+()0-9 .-]+$/.test(data.phone) || digits.length < 7 || digits.length > 15)) {
     ctx.addIssue({ code: "custom", path: ["phone"], message: "Please enter a valid phone number." });
   }
 });
@@ -48,39 +45,49 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ success: false, error: parsed.error.issues[0].message }, { status: 400 });
   }
-  const token = process.env.GHL_PIT_TOKEN;
-  if (!token) {
-    return NextResponse.json({ success: false, error: "Please call (617) 404-2589 to request your quote." }, { status: 503 });
-  }
   const data = parsed.data;
   const [firstName, ...rest] = data.name.split(/\s+/);
-  const smsConsent = data.preferredContact === "phone" && data.consent;
-  const description = `${data.projectDescription}\n\nPreferred contact: ${data.preferredContact === "phone" ? "Phone call" : "Email"}\nSMS consent: ${smsConsent ? "Yes — appointment reminders, project updates, and follow-ups" : "Not given"}\nSubmitted: ${new Date().toISOString()}`;
+  const answers: Record<string, string> = {
+    first_name: firstName,
+    preferred: data.preferredContact === "phone" ? "Phone call" : "Email",
+    service: data.serviceType,
+    details: data.projectDescription,
+  };
+  if (rest.length) answers.last_name = rest.join(" ");
+  if (data.phone) answers.phone = toE164(data.phone);
+  if (data.email) answers.email = data.email;
+  if (data.projectAddress) answers.address = data.projectAddress;
+  if (data.timeline) answers.timeline = data.timeline;
+  if (data.source) answers.source = data.source;
   try {
-    const res = await fetch("https://services.leadconnectorhq.com/contacts/", {
+    const submit = async () => fetch(`${CRM_API}/direct-submit`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28", "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        firstName, ...(rest.length ? { lastName: rest.join(" ") } : {}),
-        ...(data.phone ? { phone: data.phone } : {}),
-        ...(data.email ? { email: data.email } : {}),
-        locationId: GHL_LOCATION_ID,
-        tags: ["website-form", data.serviceType.toLowerCase().replace(/\s+/g, "-"), `preferred-contact-${data.preferredContact}`],
-        // Never enable SMS automatically when permission was not given.
-        ...(!smsConsent ? { dndSettings: { SMS: { status: "active", message: "SMS consent not provided on website quote form" } } } : {}),
-        customFields: Object.entries(CUSTOM_FIELDS).map(([key, id]) => ({
-          id, fieldValue: key === "projectDescription" ? description : data[key as keyof typeof CUSTOM_FIELDS],
-        })),
-        source: "website-form",
+        token: await formToken(),
+        key: randomUUID(),
+        answers,
+        attribution: {},
+        // Text permission only when the visitor asked to be called and ticked the box.
+        smsConsent: data.preferredContact === "phone" && data.consent,
+        emailConsent: false,
+        consent: false,
+        website: data.website,
+        turnstileToken: "",
       }),
       signal: AbortSignal.timeout(15000),
     });
-    const result = await res.json();
-    if (!res.ok || !result.contact?.id) {
-      return NextResponse.json({ success: false, error: "We could not save your request. Please try again or call (617) 404-2589." }, { status: 502 });
+    let res = await submit();
+    if (res.status === 401 || res.status === 403) {
+      // The form was republished or its token expired early: fetch a fresh token once.
+      resetFormCache();
+      res = await submit();
+    }
+    if (!res.ok) {
+      return NextResponse.json({ success: false, error: `We could not save your request. ${CALL_US}` }, { status: res.status === 429 ? 429 : 502 });
     }
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ success: false, error: "We could not save your request. Please try again or call (617) 404-2589." }, { status: 502 });
+    return NextResponse.json({ success: false, error: `We could not save your request. ${CALL_US}` }, { status: 502 });
   }
 }
