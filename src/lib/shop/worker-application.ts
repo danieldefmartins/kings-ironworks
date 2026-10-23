@@ -1,7 +1,9 @@
 import { z } from "zod";
 
-export const APPLICATION_ROLES = ["Fabricator", "Welder", "Installer", "Shop helper", "Painter / finisher", "Driver", "Other"] as const;
-export const APPLICATION_SKILLS = ["MIG welding", "TIG welding", "Stick welding", "Fabrication", "Installation", "Reading drawings", "Measuring", "Grinding / finishing", "Painting", "Driving / deliveries"] as const;
+export const APPLICATION_ROLES = ["Fabricator", "Welder", "Installer", "Shop helper", "Painter / finisher", "Driver", "Office / admin", "Other"] as const;
+export const SHOP_SKILLS = ["MIG welding", "TIG welding", "Stick welding", "Fabrication", "Installation", "Reading drawings", "Measuring", "Grinding / finishing", "Painting", "Driving / deliveries"] as const;
+export const OFFICE_SKILLS = ["Office administration", "Customer service / phones", "Scheduling", "Bookkeeping / QuickBooks", "Estimating / quoting", "Computer / data entry"] as const;
+export const APPLICATION_SKILLS = [...SHOP_SKILLS, ...OFFICE_SKILLS] as const;
 const required = (max = 120) => z.string().trim().min(1, "Complete all required fields.").max(max);
 const optional = (max = 500) => z.string().trim().max(max).default("");
 const phone = required(40).refine(v => /^[+()0-9 .-]+$/.test(v) && v.replace(/\D/g, "").length >= 7 && v.replace(/\D/g, "").length <= 15, "Enter a valid phone number.");
