@@ -54,19 +54,30 @@ export default function OnTheClock({ rows, lang = "en" }: { rows: OnClockRow[]; 
   async function forceStop() {
     if (!closing || !endAt) return;
     setBusy(true);
-    await fetch("/shop/api/action", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: "shift_force_stop",
-        shiftId: closing.shiftId,
-        endedAt: fromShopInput(endAt),
-        note: `Closed by owner — ${closing.name} did not tap out.`,
-      }),
-    });
-    setBusy(false);
-    setClosing(null);
-    router.refresh();
+    const payload = {
+      type: "shift_force_stop",
+      shiftId: closing.shiftId,
+      endedAt: fromShopInput(endAt),
+      note: `Closed by owner — ${closing.name} did not tap out.`,
+    };
+    const send = (p: Record<string, unknown>) =>
+      fetch("/shop/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(p) });
+    try {
+      let r = await send(payload);
+      let j = await r.json().catch(() => ({}));
+      // A long shift is almost always a wrong date: ask before saving it.
+      if (!r.ok && j.confirmLong) {
+        if (!window.confirm(j.error)) return;
+        r = await send({ ...payload, confirmLong: true });
+        j = await r.json().catch(() => ({}));
+      }
+      // Never fail silently: say what went wrong and keep the sheet open.
+      if (!r.ok) { window.alert(j.error || "Could not close the shift. Try again."); return; }
+      setClosing(null);
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
   }
 
   // Elapsed time is recomputed from started_at on every tick rather than

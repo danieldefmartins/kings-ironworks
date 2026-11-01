@@ -18,7 +18,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
   const week = payrollWeek(typeof query.week === "string" ? query.week : undefined, now);
-  const [{ workers, shifts, breaks }, earliest] = await Promise.all([loadPayrollWeek(week), earliestPayrollDate()]);
+  const [{ workers, shifts, breaks, pendingCorrections }, earliest] = await Promise.all([loadPayrollWeek(week), earliestPayrollDate()]);
   const current = shopWeekKey(now);
   const first = earliest ? shopWeekKey(earliest) : current;
   const weeks: string[] = [];
@@ -27,10 +27,10 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   weeks.sort().reverse();
   // Owner-only page: where each punch happened. Best-effort, never blocks pay.
   const places = await loadShiftPlaces(shifts).catch(() => ({}));
-  const rows = calculatePayroll(workers, shifts, breaks, week, now);
+  const rows = calculatePayroll(workers, shifts, breaks, week, now, pendingCorrections);
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addPayrollDays(week.key, i);
-    return { date, rows: calculatePayroll(workers, shifts, breaks, { ...week, start: payrollMidnight(date), end: payrollMidnight(addPayrollDays(date, 1)) }, now) };
+    return { date, rows: calculatePayroll(workers, shifts, breaks, { ...week, start: payrollMidnight(date), end: payrollMidnight(addPayrollDays(date, 1)) }, now, pendingCorrections) };
   });
   // Round each daily wage to cents, then sum those displayed amounts so the
   // daily details, worker subtotal, and shop total always reconcile.

@@ -268,6 +268,12 @@ export default function ShopShell({
           removeFromOutbox(p.punchId);
           setError("");
           confirmPunch(p.type, result.at, result.late);
+          // A clock-out tapped the next morning: the shift is held out of pay
+          // until the real time is in. Tell the worker exactly what to do.
+          if (p.type === "shift_stop" && result.missedClockOut) setError(
+            lang === "pt" ? "Você esqueceu de bater a saída. Esse turno ficou em revisão e não entra no pagamento até corrigir: abra Horas › Pedir correção e coloque a hora real que saiu."
+            : lang === "es" ? "Olvidaste marcar la salida. Ese turno quedó en revisión y no entra en el pago hasta corregirlo: abre Horas › Pedir corrección y pon la hora real en que saliste."
+            : "You forgot to clock out. That shift is on hold and won't be paid until it's fixed: open Time › Request correction and enter the real time you left.");
           if (result.shiftId && (p.type === "shift_stop" || p.lat == null)) attachLocation(p.type, result.shiftId);
           transition(() => router.refresh());
         } catch {

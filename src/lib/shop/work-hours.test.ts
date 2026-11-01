@@ -97,12 +97,23 @@ describe("payrollTimes", () => {
     expect(payrollTimes(row, [end, { ...end, answer: "yes", at: "2026-10-13T22:41:00Z" }]).ended_at).toBe("2026-10-13T22:40:00.000Z");
   });
 
-  it("a shift entirely before the window pays zero, and Yes on the start restores it", () => {
+  it("a shift entirely before the window keeps its actual times — never rounded to zero", () => {
     const end = rec({ edge: "end", punchedAt: "2026-10-13T11:10:00.000Z", edgeAt: "2026-10-13T21:00:00.000Z", answer: "no", ask: false, at: "2026-10-13T11:10:01Z" });
     const row = { started_at: "2026-10-13T11:30:00.000Z", ended_at: "2026-10-13T11:30:00.000Z" };
-    expect(payrollTimes(row, [start, end])).toEqual({ started_at: "2026-10-13T11:30:00.000Z", ended_at: "2026-10-13T11:30:00.000Z" });
+    expect(payrollTimes(row, [start, end])).toEqual({ started_at: "2026-10-13T10:52:00.000Z", ended_at: "2026-10-13T11:10:00.000Z" });
     const yes = { ...start, answer: "yes" as const, at: "2026-10-13T12:00:00Z" };
     expect(payrollTimes(row, [start, end, yes])).toEqual({ started_at: "2026-10-13T10:52:00.000Z", ended_at: "2026-10-13T11:10:00.000Z" });
+  });
+
+  it("an evening call-back after the window is paid at actual times even when denied (Worker A 10/23)", () => {
+    // 7:09 PM → 8:23 PM EDT, window ends 5:00 PM. Owner pressed "deny".
+    const row = { started_at: "2026-10-23T23:09:46.455Z", ended_at: "2026-10-23T23:09:46.455Z" };
+    const pending = rec({ shiftId: "e", edge: "end", punchedAt: "2026-10-24T00:23:13.674Z", edgeAt: "2026-10-23T21:00:00.000Z", at: "2026-10-24T00:23:15Z" });
+    for (const answer of ["pending", "no", "denied"] as const) {
+      expect(payrollTimes(row, [{ ...pending, answer, at: "2026-10-26T11:48:45Z" }])).toEqual({
+        started_at: "2026-10-23T23:09:46.455Z", ended_at: "2026-10-24T00:23:13.674Z",
+      });
+    }
   });
 
   it("leaves edges with no record untouched", () => {

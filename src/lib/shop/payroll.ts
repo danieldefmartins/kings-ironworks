@@ -1,4 +1,5 @@
 import { SHOP_TZ, shopWeekKey, type TimeShift, type TimeBreak, type Worker } from "./shared";
+import { payableShiftMs, shiftHold, type ShiftHold } from "./clock-rules";
 
 export function addPayrollDays(key: string, days: number): string {
   const date = new Date(`${key}T12:00:00Z`);
@@ -27,20 +28,31 @@ export function payrollMidnight(day: string): string {
 
 // Review safeguard, not a limit on payable work: retain the original punch
 // and resume calculation once an owner confirms the actual clock-out.
-export function needsClockReview(shift: { started_at: string; ended_at: string | null; status?: string }, now = Date.now()) {
-  if (shift.ended_at && shift.status === "approved") return false;
-  return (shift.ended_at ? Date.parse(shift.ended_at) : now) - Date.parse(shift.started_at) > 24 * 3600000;
+// Threshold and rules live in clock-rules.ts (shared with 360 CRM). It was
+// 24 h, so a clock-out tapped the next morning at 23.9 h (André 10/21) was
+// paid in full.
+export function clockHold(shift: { id?: string; started_at: string; ended_at: string | null; status?: string }, now = Date.now(), pendingCorrections?: ReadonlySet<string>): ShiftHold | null {
+  return shiftHold({
+    startMs: Date.parse(shift.started_at),
+    endMs: shift.ended_at ? Date.parse(shift.ended_at) : null,
+    approved: shift.status === "approved",
+    correctionPending: !!(shift.id && pendingCorrections?.has(shift.id)),
+  }, now);
+}
+export function needsClockReview(shift: { id?: string; started_at: string; ended_at: string | null; status?: string }, now = Date.now(), pendingCorrections?: ReadonlySet<string>) {
+  return clockHold(shift, now, pendingCorrections) !== null;
 }
 
 export type PayrollRow = {
   reviewShifts?: number;
-  punches?: { id: string; startedAt: string; endedAt: string | null; hours: number; rejected: boolean; needsReview?: boolean }[];
+  punches?: { id: string; startedAt: string; endedAt: string | null; hours: number; rejected: boolean; needsReview?: boolean; hold?: ShiftHold | null }[];
   id: string; name: string; active: boolean; hours: number; regular: number; overtime: number;
   basePay: number; approvedHours: number; pendingHours: number; rejectedHours: number;
   openHours: number; openShifts: number; missingRateHours: number; shifts: number;
 };
 
-export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">[], shifts: TimeShift[], breaks: TimeBreak[], week: ReturnType<typeof payrollWeek>, now = Date.now()): PayrollRow[] {
+/** `pendingCorrections`: shift ids with a correction request still waiting — held out of pay. */
+export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">[], shifts: TimeShift[], breaks: TimeBreak[], week: ReturnType<typeof payrollWeek>, now = Date.now(), pendingCorrections?: ReadonlySet<string>): PayrollRow[] {
   const rows = new Map<string, PayrollRow>(workers.map(w => [w.id, { ...w, hours: 0, regular: 0, overtime: 0, basePay: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0, openHours: 0, openShifts: 0, missingRateHours: 0, shifts: 0 }]));
   const byShift = new Map<string, TimeBreak[]>();
   for (const b of breaks) byShift.set(b.shift_id, [...(byShift.get(b.shift_id) || []), b]);
@@ -53,14 +65,14 @@ export function calculatePayroll(workers: Pick<Worker, "id" | "name" | "active">
       row = { id: shift.worker_id, name: "Unknown worker", active: false, hours: 0, regular: 0, overtime: 0, basePay: 0, approvedHours: 0, pendingHours: 0, rejectedHours: 0, openHours: 0, openShifts: 0, missingRateHours: 0, shifts: 0 };
       rows.set(row.id, row);
     }
-    const intervals = (byShift.get(shift.id) || []).filter(b => !b.paid).map(b => [Math.max(start, Date.parse(b.started_at)), Math.min(end, b.ended_at ? Date.parse(b.ended_at) : now)]).filter(([a, b]) => b > a).sort((a, b) => a[0] - b[0]);
-    let unpaid = 0, cursor = start;
-    for (const [a, b] of intervals) { unpaid += Math.max(0, b - Math.max(a, cursor)); cursor = Math.max(cursor, b); }
-    const hours = Math.max(0, end - start - unpaid) / 3600000;
+    // Whole-minute punches (clock-rules.ts): the same arithmetic as 360 CRM.
+    const unpaidBreaks = (byShift.get(shift.id) || []).filter(b => !b.paid).map(b => [Date.parse(b.started_at), b.ended_at ? Date.parse(b.ended_at) : now] as const);
+    const hours = payableShiftMs(start, end, unpaidBreaks) / 3600000;
+    const hold = clockHold(shift, now, pendingCorrections);
     row.shifts++;
-    (row.punches ??= []).push({ id: shift.id, startedAt: shift.started_at, endedAt: shift.ended_at, hours, rejected: shift.status === "rejected", needsReview: needsClockReview(shift, now) });
+    (row.punches ??= []).push({ id: shift.id, startedAt: shift.started_at, endedAt: shift.ended_at, hours, rejected: shift.status === "rejected", needsReview: hold !== null, hold });
     if (shift.status === "rejected") { row.rejectedHours += hours; continue; }
-    if (needsClockReview(shift, now)) { row.reviewShifts = (row.reviewShifts ?? 0) + 1; continue; }
+    if (hold) { row.reviewShifts = (row.reviewShifts ?? 0) + 1; continue; }
     row.hours += hours;
     if (shift.status === "approved" && shift.ended_at) row.approvedHours += hours;
     else row.pendingHours += hours;

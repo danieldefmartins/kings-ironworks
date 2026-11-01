@@ -22,7 +22,21 @@ export async function loadPayrollWeek(week: ReturnType<typeof payrollWeek>) {
   const excludedWorkers = new Set(workers.filter(w => w.payroll_excluded || canViewOwnerFinancials(w)).map(w => w.id));
   const employeeShifts = shifts.filter(s => !excludedWorkers.has(s.worker_id));
   const excludedShiftIds = new Set(shifts.filter(s => excludedWorkers.has(s.worker_id)).map(s => s.id));
-  return { workers: workers.filter(w => !excludedWorkers.has(w.id)), shifts: employeeShifts, breaks: breaks.filter(b => !excludedShiftIds.has(b.shift_id)) };
+  const pendingCorrections = await pendingCorrectionShiftIds(employeeShifts.map(s => s.id));
+  return { workers: workers.filter(w => !excludedWorkers.has(w.id)), shifts: employeeShifts, breaks: breaks.filter(b => !excludedShiftIds.has(b.shift_id)), pendingCorrections };
+}
+
+/** Shifts the worker has asked to correct and nobody has answered yet — payroll
+ *  holds them (clock-rules.ts). André's "I didn't clock out" on 10/22 sat
+ *  pending while the 23.9-hour shift was paid. */
+export async function pendingCorrectionShiftIds(shiftIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  for (let i = 0; i < shiftIds.length; i += 100) {
+    const chunk = shiftIds.slice(i, i + 100);
+    const rows = await sbSelect<{ shift_id: string }[]>("kiw_shop_time_corrections", `select=shift_id&org_id=eq.${ORG_ID}&status=eq.pending&shift_id=in.(${chunk.join(",")})`);
+    for (const r of rows) out.add(r.shift_id);
+  }
+  return out;
 }
 
 export async function earliestPayrollDate(): Promise<string | undefined> {

@@ -8,8 +8,9 @@
 import { ORG_ID, audit, getOrgSettings, sbInsert, sbSelect, sbUpdate } from "./db";
 import type { TimeShift } from "./shared";
 import { sendSmsGroup, type SmsLang } from "./sms";
+import { isMissedClockOut } from "./clock-rules";
 import {
-  endDecision, payrollTimes, recordFromAudit, resolveWorkHours, startDecision,
+  endDecision, latestByEdge, payrollTimes, recordFromAudit, resolveWorkHours, startDecision,
   type WindowAnswer, type WindowEdge, type WindowRecord, type WorkHoursSettings,
 } from "./work-hours";
 
@@ -95,6 +96,12 @@ export async function applyEndWindow(actorId: string, shiftId: string, punchAt: 
   const startRec = records.filter((r) => r.edge === "start").pop();
   if (records.some((r) => r.edge === "end")) return false; // already handled (retry)
   const actualStart = startRec?.punchedAt ?? shift.started_at;
+  // A clock-out tapped the next morning is a forgotten clock-out, not
+  // overtime the team leader asked for. Do not ask "did the leader ask?" — a
+  // "yes" there kept 7:35 AM the next day as the real end and paid André
+  // 23.9 h for 10/21. Leave the actual tap untouched: payroll holds the
+  // shift (clock-rules.ts) until the real end time is entered.
+  if (isMissedClockOut(Date.parse(actualStart), Date.parse(punchAt), Date.now())) return false;
   const d = endDecision(actualStart, punchAt, settings);
   // Nothing to record when the end is inside the window and the start was
   // never moved: the shift is exactly as tapped.
@@ -105,6 +112,23 @@ export async function applyEndWindow(actorId: string, shiftId: string, punchAt: 
   });
   await recompute(shift, await listWindowRecords({ shiftId }));
   return d.ask;
+}
+
+/**
+ * The owner set this shift's times (edit, approved correction, forced close).
+ * Window records are replayed on every later answer/review, so without this a
+ * later recompute would put back the old tap time and undo the owner's fix.
+ * Only written when the shift already has window records.
+ */
+export async function pinOwnerTimes(ownerId: string, shiftId: string, startedAt: string, endedAt: string): Promise<void> {
+  const records = await listWindowRecords({ shiftId });
+  if (!records.length) return;
+  const workerId = records[0].workerId;
+  const last = latestByEdge(records);
+  for (const [edge, punchedAt] of [["start", startedAt], ["end", endedAt]] as const) {
+    if (!last[edge]) continue;
+    await writeRecord(ownerId, { shiftId, workerId, edge, punchedAt, edgeAt: last[edge]!.edgeAt, answer: "approved", ask: last[edge]!.ask });
+  }
 }
 
 export type { WindowQuestion } from "./work-hours";

@@ -25,18 +25,35 @@ import {
   getOrgSettings,
   setJobArchived,
 } from "@/lib/shop/db";
-import { canViewOwnerFinancials } from "@/lib/shop/shared";
+import { canViewOwnerFinancials, fmtDateTime } from "@/lib/shop/shared";
 import { getOpenShift, getWorkerShift } from "@/lib/shop/db";
 import { resolvePunchAt } from "@/lib/shop/punch";
 import { alertStaleShifts } from "@/lib/shop/stale-alert";
 import { alertForgottenJobTimers, endJobTimeOnClockOut } from "@/lib/shop/job-timer-db";
-import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, reviewWindow } from "@/lib/shop/work-hours-db";
+import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, pinOwnerTimes, reviewWindow } from "@/lib/shop/work-hours-db";
+import { MAX_SHIFT_HOURS, isMissedClockOut } from "@/lib/shop/clock-rules";
 import { resolveWorkHours } from "@/lib/shop/work-hours";
 import { reportClockInBlocked } from "@/lib/shop/clock-block";
 
 export const runtime = "nodejs";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Owner-entered times that make a shift longer than MAX_SHIFT_HOURS are almost
+// always a wrong DATE (10/26: André's 10/10 end typed as Sunday 1:44 PM
+// instead of Saturday → a 30-hour shift). Refuse once with the reason; the
+// page asks the owner and resends with confirmLong=true for a real long day.
+function longShiftRefusal(startIso: string, endIso: string, confirmed: unknown, lang: string) {
+  if (confirmed === true || !isMissedClockOut(Date.parse(startIso), Date.parse(endIso), Date.now())) return null;
+  const h = ((Date.parse(endIso) - Date.parse(startIso)) / 3600000).toFixed(1);
+  const span = `${fmtDateTime(startIso, lang)} → ${fmtDateTime(endIso, lang)}`;
+  const error = lang === "pt"
+    ? `Isso dá um turno de ${h} horas (${span}). Confira a DATA da saída. Se foi mesmo tão longo, confirme para salvar.`
+    : lang === "es"
+      ? `Eso da un turno de ${h} horas (${span}). Revisa la FECHA de salida. Si de verdad fue tan largo, confirma para guardar.`
+      : `That makes a ${h}-hour shift (${span}). Check the clock-out DATE. If it really was that long, confirm to save.`;
+  return NextResponse.json({ error, confirmLong: true, maxHours: MAX_SHIFT_HOURS }, { status: 409 });
+}
 
 function punchLocation(body: Record<string, unknown>) {
   if (typeof body.lat !== "number" || typeof body.lng !== "number") return null;
@@ -509,7 +526,12 @@ export async function POST(req: NextRequest) {
           punchAt: punch.at, delaySec: Math.round(punch.delayMs / 1000), reason: punch.reason, late: punch.late,
           punchId: typeof body.punchId === "string" ? body.punchId : null, nothingOpen: !closed,
         } });
-        result = { shiftId: closed?.id ?? null, at: closed ? punch.at : null, late: !!closed && punch.late, ask: asked };
+        // A clock-out long after the shift began (the next morning) is a
+        // forgotten one: payroll holds the shift until the real time is in.
+        // The phone uses this to ask the worker for a correction right away.
+        const missedClockOut = !!closed && !!actualStart && isMissedClockOut(Date.parse(actualStart), Date.parse(punch.at), receivedAt);
+        if (missedClockOut) await audit("shift_missed_clock_out", { workerId: worker.id, entity: "shift", entityId: closed!.id, detail: { actualStart, punchAt: punch.at } });
+        result = { shiftId: closed?.id ?? null, at: closed ? punch.at : null, late: !!closed && punch.late, ask: asked, missedClockOut };
         break;
       }
 
@@ -789,6 +811,7 @@ export async function POST(req: NextRequest) {
         const started = rows[0]?.started_at;
         if (!started) return NextResponse.json({ error: "Shift not found or already closed" }, { status: 404 });
         if (end.getTime() <= new Date(started).getTime()) return NextResponse.json({ error: "End must be after the clock-in" }, { status: 400 });
+        { const refused = longShiftRefusal(started, end.toISOString(), body.confirmLong, worker.lang || "en"); if (refused) return refused; }
         // Close any break still open, exactly as clocking out does.
         await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shiftId}&ended_at=is.null`, { ended_at: end.toISOString() });
         await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}`, {
@@ -817,14 +840,23 @@ export async function POST(req: NextRequest) {
         const en = typeof endedAt === "string" ? new Date(endedAt) : null;
         if (!st || !en || Number.isNaN(st.getTime()) || Number.isNaN(en.getTime())) return NextResponse.json({ error: "Bad times" }, { status: 400 });
         if (en.getTime() <= st.getTime()) return NextResponse.json({ error: "End must be after the clock-in" }, { status: 400 });
+        { const refused = longShiftRefusal(st.toISOString(), en.toISOString(), body.confirmLong, worker.lang || "en"); if (refused) return refused; }
+        // A long shift the owner explicitly confirmed is a real long day:
+        // approve it so payroll does not hold it as a forgotten clock-out.
+        const confirmedLong = body.confirmLong === true && isMissedClockOut(st.getTime(), en.getTime(), Date.now());
         await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shiftId}`, {
           started_at: st.toISOString(),
           ended_at: en.toISOString(),
-          status: "submitted",
+          status: confirmedLong ? "approved" : "submitted",
+          ...(confirmedLong ? { approved_by: worker.id, approved_at: now } : {}),
           manager_note: typeof note === "string" && note.trim() ? note.slice(0, 500) : "Times edited by owner.",
           updated_at: now,
         });
-        await audit("shift_edit", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { startedAt: st.toISOString(), endedAt: en.toISOString() } });
+        await audit("shift_edit", { workerId: worker.id, entity: "shift", entityId: shiftId, detail: { startedAt: st.toISOString(), endedAt: en.toISOString(), confirmedLong } });
+        // Window records are replayed later; pin the owner's times so a later
+        // answer/review cannot put the old tap time back.
+        try { await pinOwnerTimes(worker.id, shiftId, st.toISOString(), en.toISOString()); }
+        catch (err) { console.error("[work-hours] pin owner times failed:", err); }
         break;
       }
 
@@ -851,7 +883,17 @@ export async function POST(req: NextRequest) {
           "kiw_shop_time_corrections", `select=*&org_id=eq.${ORG_ID}&id=eq.${body.id}&status=eq.pending&limit=1`);
         const correction = rows[0];
         if (!correction) return NextResponse.json({ error: "Request not found" }, { status: 404 });
+        let pinned: { start: string; end: string } | null = null;
         if (body.status === "approved") {
+          const [shiftRow] = await sbSelect<{ started_at: string; ended_at: string | null }[]>(
+            "kiw_shop_shifts", `select=started_at,ended_at&org_id=eq.${ORG_ID}&id=eq.${correction.shift_id}&limit=1`);
+          const start = correction.requested_started_at ?? shiftRow?.started_at;
+          const end = correction.requested_ended_at ?? shiftRow?.ended_at ?? null;
+          if (start && end) {
+            const refused = longShiftRefusal(start, end, body.confirmLong, worker.lang || "en");
+            if (refused) return refused;
+            pinned = { start, end };
+          }
           const patch: Record<string, unknown> = { updated_at: now, status: "submitted" };
           if (correction.requested_started_at) patch.started_at = correction.requested_started_at;
           if (correction.requested_ended_at) patch.ended_at = correction.requested_ended_at;
@@ -862,6 +904,10 @@ export async function POST(req: NextRequest) {
           review_note: typeof body.note === "string" ? body.note.slice(0, 500) : null,
         });
         await audit("time_correction_review", { workerId: worker.id, entity: "shift", entityId: correction.shift_id, detail: { status: body.status } });
+        if (pinned) {
+          try { await pinOwnerTimes(worker.id, correction.shift_id, pinned.start, pinned.end); }
+          catch (err) { console.error("[work-hours] pin correction times failed:", err); }
+        }
         break;
       }
 

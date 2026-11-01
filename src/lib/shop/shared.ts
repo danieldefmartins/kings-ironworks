@@ -4,6 +4,7 @@
 // server-only and would crash the browser bundle).
 import type { OrgBranding } from "./org-brand";
 import type { WorkHoursSettings } from "./work-hours";
+import { payableShiftMs } from "./clock-rules";
 
 export const STAGES = [
   "Awarded",
@@ -380,19 +381,15 @@ export function shiftHours(
   breaks: TimeBreak[] = [],
   now = Date.now()
 ): number {
-  const gross = Math.max(
-    0,
-    ((shift.ended_at ? new Date(shift.ended_at).getTime() : now) -
-      new Date(shift.started_at).getTime()) /
-      3600000
-  );
+  // Whole-minute punches, the same arithmetic as payroll (clock-rules.ts).
   const unpaid = breaks
     .filter((b) => !b.paid)
-    .reduce((sum, b) => {
-      const end = b.ended_at ? new Date(b.ended_at).getTime() : now;
-      return sum + Math.max(0, end - new Date(b.started_at).getTime()) / 3600000;
-    }, 0);
-  return Math.max(0, gross - unpaid);
+    .map((b) => [new Date(b.started_at).getTime(), b.ended_at ? new Date(b.ended_at).getTime() : now] as const);
+  return payableShiftMs(
+    new Date(shift.started_at).getTime(),
+    shift.ended_at ? new Date(shift.ended_at).getTime() : now,
+    unpaid
+  ) / 3600000;
 }
 
 // ---- Material catalog ------------------------------------------------------

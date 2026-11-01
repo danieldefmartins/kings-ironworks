@@ -186,8 +186,17 @@ export function payrollTimes(
     const actual = Date.parse(last.end.punchedAt);
     e = keepsActual(last.end.answer) ? actual : Math.min(actual, Date.parse(last.end.edgeAt));
   }
-  // A shift entirely before the window, rounded up, pays zero — never negative.
-  if (e < s) e = s;
+  // A shift lying entirely outside the window (an evening call-back 7:09–8:23
+  // PM, or 6:40–7:10 AM) has no window edge inside it to round to. Rounding
+  // both ends to the edges used to pay it ZERO, silently — André 10/23 lost
+  // 1:14 that way. The window only trims a workday's edges; it never deletes
+  // a whole shift. Such a shift keeps its actual tap times, and the owner can
+  // still reject the whole shift explicitly.
+  if (e <= s) {
+    s = last.start ? Date.parse(last.start.punchedAt) : Date.parse(current.started_at);
+    e = last.end ? Date.parse(last.end.punchedAt) : Date.parse(current.ended_at);
+    if (e < s) e = s;
+  }
   return { started_at: new Date(s).toISOString(), ended_at: new Date(e).toISOString() };
 }
 
