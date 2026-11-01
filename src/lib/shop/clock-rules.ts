@@ -49,7 +49,10 @@ export function payableShiftMs(
   const e = floorToMinute(endMs);
   if (!(e > s)) return 0;
   const intervals = unpaidBreaks
-    .map(([a, b]) => [Math.max(s, floorToMinute(a)), Math.min(e, floorToMinute(b))] as const)
+    .map(
+      ([a, b]) =>
+        [Math.max(s, floorToMinute(a)), Math.min(e, floorToMinute(b))] as const,
+    )
     .filter(([a, b]) => b > a)
     .sort((x, y) => x[0] - y[0]);
   let unpaid = 0;
@@ -79,11 +82,18 @@ export type ShiftHold = "missed_clock_out" | "correction_pending";
  * (a confirmed real long day); a pending correction always holds.
  */
 export function shiftHold(
-  shift: { startMs: number; endMs: number | null; approved?: boolean; correctionPending?: boolean },
+  shift: {
+    startMs: number;
+    endMs: number | null;
+    approved?: boolean;
+    correctionPending?: boolean;
+  },
   now: number,
   maxHours: number = MAX_SHIFT_HOURS,
 ): ShiftHold | null {
   if (shift.correctionPending) return "correction_pending";
   if (shift.approved && shift.endMs != null) return null;
-  return isMissedClockOut(shift.startMs, shift.endMs, now, maxHours) ? "missed_clock_out" : null;
+  return isMissedClockOut(shift.startMs, shift.endMs, now, maxHours)
+    ? "missed_clock_out"
+    : null;
 }
