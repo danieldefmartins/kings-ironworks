@@ -45,3 +45,14 @@ it.each(["shift_start", "shift_stop", "shift_start_location", "shift_stop_locati
   expect(await response.json()).toMatchObject({ final: true });
   expect(m.start).not.toHaveBeenCalled(); expect(m.stop).not.toHaveBeenCalled(); expect(m.get).not.toHaveBeenCalled(); expect(m.open).not.toHaveBeenCalled();
 });
+it("a re-sent clock-out of a forgotten (16 h+) shift still reports it as held", async () => {
+  m.get.mockResolvedValue({ id, started_at: "2026-01-01T04:00:00Z", ended_at: "2026-01-01T21:00:00Z", status: "submitted" });
+  const response = await POST(request({ type: "shift_stop", workerId: "worker", shiftId: id, clientAt: "2026-01-01T21:00:00Z" }));
+  expect(response.status).toBe(200); expect(await response.json()).toMatchObject({ missedClockOut: true });
+  expect(m.stop).not.toHaveBeenCalled();
+});
+it("a re-sent clock-out of a normal shift is not reported as held", async () => {
+  m.get.mockResolvedValue({ id, started_at: "2026-01-01T12:00:00Z", ended_at: "2026-01-01T20:00:00Z", status: "submitted" });
+  const response = await POST(request({ type: "shift_stop", workerId: "worker", shiftId: id, clientAt: "2026-01-01T20:00:00Z" }));
+  expect(await response.json()).toMatchObject({ missedClockOut: false });
+});

@@ -8,6 +8,7 @@ import type { TimeBreak, TimeShift } from "@/lib/shop/shared";
 import { fmtTime, hoursToHm, shiftHours, shopDateKey } from "@/lib/shop/shared";
 import { ShopAccess, isMeasuringPath, isSheetEditorPath } from "./ShopAccess";
 import { calculatePayroll, payrollWeek, needsClockReview } from "@/lib/shop/payroll";
+import { MAX_SHIFT_HOURS } from "@/lib/shop/clock-rules";
 import { t } from "@/lib/shop/i18n";
 import { useShopAppearance } from "./ShopAppearance";
 import "./shop-ui.css";
@@ -500,7 +501,7 @@ export default function ShopShell({
                 </div>
               </div>
             </div>
-            {clockNeedsReview && <p role="alert" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{lang === "pt" ? "Ponto aberto há mais de 24 horas. Excluído da estimativa de pagamento até confirmar a saída real com o escritório." : lang === "es" ? "Turno abierto por más de 24 horas. Excluido de la estimación de pago hasta confirmar la salida real con la oficina." : "This punch has been open for over 24 hours. It is excluded from estimated pay until the office confirms the actual clock-out."}</p>}
+            {clockNeedsReview && <p role="alert" className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{lang === "pt" ? `Ponto aberto há mais de ${MAX_SHIFT_HOURS} horas. Excluído da estimativa de pagamento até confirmar a saída real com o escritório.` : lang === "es" ? `Turno abierto por más de ${MAX_SHIFT_HOURS} horas. Excluido de la estimación de pago hasta confirmar la salida real con la oficina.` : `This punch has been open for over ${MAX_SHIFT_HOURS} hours. It is excluded from estimated pay until the office confirms the actual clock-out.`}</p>}
             {shift && !clockNeedsReview && hours >= 12 && <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-300">{t(lang, "clockLongShift")}</p>}
             <p className="mb-4 rounded-2xl bg-neutral-800/70 p-3 text-sm leading-relaxed text-neutral-400">{t(lang, "payrollClockHint")}</p>
             {unconfirmed && pendingType && <p role="status" className="mb-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-center text-base font-semibold text-amber-200">{t(lang, "punchNotConfirmed")}</p>}

@@ -490,7 +490,15 @@ export async function POST(req: NextRequest) {
         }
         const open = body.shiftId ? await getWorkerShift(worker.id, body.shiftId) : await getOpenShift(worker.id);
         if (body.shiftId && !open) return NextResponse.json({ error: "Shift not found. Ask the office to review this punch.", final: true }, { status: 409 });
-        if (open?.ended_at) { result = { shiftId: open.id, at: open.ended_at, late: false }; break; }
+        if (open?.ended_at) {
+          // A re-sent clock-out (the first response was slow or lost) must
+          // still tell the phone when that shift is held as a forgotten one.
+          let start = open.started_at;
+          try { start = await actualStartOf(open); } catch { /* fall back to the stored start */ }
+          const missedClockOut = open.status !== "approved" && isMissedClockOut(Date.parse(start), Date.parse(open.ended_at), receivedAt);
+          result = { shiftId: open.id, at: open.ended_at, late: false, missedClockOut };
+          break;
+        }
         // A start rounded up to 7:30 must not make a 7:10 clock-out look like
         // a stale punch from an older shift: guard against the ACTUAL start.
         let actualStart = open?.started_at ?? null;
