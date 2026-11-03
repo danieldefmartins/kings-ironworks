@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/dream-staircase",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Dream Staircase Designer — King Iron Works",
     description:
       "Design your dream staircase with King Iron Works. Choose your structure, finish, and railing — we'll engineer and forge it into reality.",

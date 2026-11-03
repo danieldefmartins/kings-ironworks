@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/vermont",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in Vermont | King Iron Works",
     description:
       "Vermont's trusted ironwork specialists. Custom gates, railings, fire escapes, and historic restoration.",

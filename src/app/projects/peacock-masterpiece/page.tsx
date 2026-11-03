@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/projects/peacock-masterpiece",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "The Peacock Masterpiece — King Iron Works",
     description:
       "From a rough pencil concept to the most breathtaking staircase we've ever built. 1,200+ hours of fabrication, one-of-a-kind peacock panels, 300+ gold leaf pieces.",

@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import StickyMobileCTA from "./StickyMobileCTA";
 vi.mock("@/hooks/useLocalPhone", () => ({ useLocalPhone: () => ({ tel: "16174042589" }) }));
+vi.mock("@/lib/constants", () => ({ PHONE_NUMBERS: { MAIN: { tel: "16174042589" } } }));
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 it("keeps contact actions at the visible bottom as Safari toolbars and keyboard change the viewport", () => {
   vi.useFakeTimers();
@@ -15,8 +16,9 @@ it("keeps contact actions at the visible bottom as Safari toolbars and keyboard 
     act(() => { Object.assign(viewport, { height, offsetTop }); viewport.dispatchEvent(new Event("resize")); viewport.dispatchEvent(new Event("scroll")); vi.advanceTimersByTime(20); });
     expect(Number.parseFloat(layer.style.top) + Number.parseFloat(layer.style.height)).toBe(height + offsetTop);
   }
-  expect(screen.getByRole("link", { name: "Get a Free Quote" }).getAttribute("href")).toBe("/contact");
+  expect(screen.getByRole("link", { name: "Get a Free Estimate" }).getAttribute("href")).toBe("/contact");
   expect(screen.getByRole("link", { name: "Call Now" }).getAttribute("href")).toBe("tel:16174042589");
+  expect(screen.getByRole("link", { name: "Text us" }).getAttribute("href")).toBe("sms:+16174042589?&body=Hi%2C%20I'd%20like%20a%20free%20estimate");
   act(() => { viewport.scale = 2; viewport.dispatchEvent(new Event("resize")); vi.advanceTimersByTime(20); });
   expect(layer.style.height).toBe(""); expect(layer.style.top).toBe("");
   act(() => { viewport.scale = 1; viewport.dispatchEvent(new Event("resize")); });
@@ -27,5 +29,5 @@ it("keeps CSS fallback and both actions available without VisualViewport", () =>
   vi.stubGlobal("visualViewport", undefined);
   const { container } = render(<StickyMobileCTA />);
   expect(container.querySelector(".mobile-contact-viewport")?.getAttribute("style")).toBeNull();
-  expect(screen.getByRole("link", { name: "Get a Free Quote" })).toBeTruthy();
+  expect(screen.getByRole("link", { name: "Get a Free Estimate" })).toBeTruthy();
 });

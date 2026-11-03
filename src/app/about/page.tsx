@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/about",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "About King Iron Works — 20+ Years of Master Craftsmanship",
     description:
       "Learn about King Iron Works — 20+ years of custom ironwork, fire escape services, and historic restoration in Boston. 100% in-house fabrication in Everett, MA.",

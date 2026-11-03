@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/north-shore",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in North Shore, MA | King Iron Works",
     description:
       "North Shore MA's premier ironwork specialists. Custom staircases, railings, gates, and structural steel.",

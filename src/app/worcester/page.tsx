@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/worcester",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in Worcester, MA | King Iron Works",
     description:
       "Central Massachusetts' trusted ironwork specialists. Licensed fire escape installation, custom gates, railings, and historic restoration.",

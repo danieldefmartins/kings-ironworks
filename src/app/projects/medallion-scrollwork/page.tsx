@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/projects/medallion-scrollwork",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "The Medallion Scrollwork Staircase — King Iron Works",
     description:
       "From a pencil sketch to a two-story masterpiece in marble and iron. 800+ hours of fabrication, 14 medallion panels, 200+ gold leaf accents.",

@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${title} — Portfolio`,
     description: `Browse our ${title.toLowerCase()} projects. Custom ironwork crafted with 20+ years of expertise. King Iron Works serves New England, New York & Florida.`,
-    openGraph: {
+    openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
       title: `${title} | King Iron Works Portfolio`,
       description: `Browse our ${title.toLowerCase()} projects. Custom ironwork crafted with 20+ years of expertise.`,
       url: `https://kingsironworks.com/portfolio/${category}`,

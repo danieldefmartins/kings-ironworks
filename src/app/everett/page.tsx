@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/everett",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in Everett, MA | King Iron Works",
     description:
       "Everett MA — home of King Iron Works headquarters. Custom staircases, railings, gates, and structural steel.",

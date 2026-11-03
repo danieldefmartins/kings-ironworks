@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/manchester-nh",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in Manchester, NH | King Iron Works",
     description:
       "Manchester NH's trusted ironwork specialists. Custom staircases, railings, gates, and structural steel.",

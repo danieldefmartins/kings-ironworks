@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/miami",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Custom Ironwork & Fire Escapes in Miami, FL | King Iron Works",
     description:
       "South Florida's trusted ironwork specialists. Hurricane-rated gates, railings, fire escapes, and custom fabrication.",

@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://kingsironworks.com/locations",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Service Locations | King Iron Works",
     description:
       "Built in Everett, MA — delivered to your door. Serving 9 states across the Northeast and Florida.",

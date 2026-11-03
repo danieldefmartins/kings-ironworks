@@ -549,6 +549,9 @@ export default function PortfolioClient({ initialCategory }: { initialCategory?:
 
   return (
     <div className="min-h-screen bg-background overflow-x-clip pt-18 lg:pt-28">
+      <h1 className="sr-only">
+        {activeSubcategory ? getCategoryLabel(activeSubcategory) : activeParentLabel === "Portfolio" ? "Custom Ironwork Portfolio" : activeParentLabel} by King Iron Works
+      </h1>
       {/* Sticky filter stack — pins category + subcategory bars directly under the fixed nav */}
       <div className="sticky top-18 lg:top-28 z-30">
       {/* Main Category Bar */}

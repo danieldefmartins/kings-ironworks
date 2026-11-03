@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/contact",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Contact King Iron Works — Get a Free Quote",
     description:
       "Get a free consultation and quote for your ironwork project. Call (617) 404-2589 or fill out our form. Serving Boston, Cape Cod, Worcester, Miami, and the entire Northeast.",

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.kingsironworks.com/services",
   },
-  openGraph: {
+  openGraph: { images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "King Iron Works custom ironwork" }],
     title: "Services — Custom Ironwork, Fire Escapes, Structural Steel",
     description:
       "King Iron Works offers fire escape installation and repair, historic building restoration, custom railings, gates, fences, structural steel, and more across Massachusetts and Florida.",
