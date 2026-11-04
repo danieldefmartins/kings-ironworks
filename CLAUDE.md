@@ -18,7 +18,7 @@ Source project: /Users/danielmartins/projects/kings-ironworks
 
 ## Key Integrations
 - GHL Location ID: rJsKSnzzxWdCgDCq21rI
-- GHL Chat Widget: 699737916e6009b3eccf3dff
+- Website chat: 360 CRM chat widget (src/components/ChatWidget.tsx; configure in 360 → Online presence → Website & forms → Chat widget). GHL chat removed 2026-11-04.
 - GA4: G-040FS71NJ6 | GTM: GT-P3H97K4D | Google Ads: AW-817727428
 - Deploy: Railway (Node.js 22 + pnpm)
 
