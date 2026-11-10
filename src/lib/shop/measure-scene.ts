@@ -24,7 +24,7 @@ export type SceneMesh=SceneItem&{vertices:Point3[];faces:number[][]};
 export type SceneLine=SceneItem&{points:Point3[];text?:string;between?:[string,string];/** Points are disjoint pairs (drawn as segments, not a strip). */pairs?:boolean;/** An architectural dimension line (measure-dims); `dashed` marks its dashed companion (a diagonal, the floor line). */dim?:Omit<SceneDim,'lines'|'dashed'>;dashed?:boolean};
 export type MeasureScene={meshes:SceneMesh[];lines:SceneLine[];bounds:{min:Point3;max:Point3};pending:string[]};
 /** What the Next card is asking for, lit on the 3D: a step's riser (rise), its tread (run), or a landing's top (surface). */
-export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface'|'dim';/** With part 'dim': the Next slot id being asked; the dimension line whose `slots` hold it lights up. */dim?:string;/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string};
+export type SceneFocus={segmentIndex:number;stepIndex:number|null;part:'rise'|'run'|'surface'|'dim';/** With part 'dim': the Next slot id being asked; the dimension line whose `slots` hold it lights up. */dim?:string;/** Short tag shown on the lit face ("Step 3 · Rise"). */label?:string;/** With part 'dim': the line is lit for a question about the place it stands on, not for its number — its pill carries no value. */place?:boolean};
 /**
  * The face to light for a focus: the surface mesh it belongs to and the quad
  * (4 corners) of just that face. A step mesh is its tread top (corners 0–3,

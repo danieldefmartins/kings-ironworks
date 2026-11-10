@@ -75,7 +75,7 @@ export function askOnCard(segmentIndex: number, stepIndex: number | null): boole
 /** What the pill on a lit place says: the question without its mark; nothing when it is too long to sit on the drawing. */
 export function askedLabel(question: string): string {
   const text = question.replace(/[¿?:]/g, "").trim();
-  return text.length <= 34 ? text : "";
+  return text.length <= 36 ? text : "";
 }
 
 export function slotFocus(item: NextItem | null, data: MeasureData, dims: readonly SceneDim[] = []): SceneFocus | null {
@@ -243,10 +243,10 @@ export default function NextMeasurement({
   const asked = !finished && item?.type === "gap" ? gapChoices(item.gap, lang, data) : null;
   // Any other question about a place on the piece (a rail end, the posts, where it mounts) lights that place.
   const askedDim = !finished && item?.type === "gap" && !isShot(item.gap) ? asked?.dim ?? askSlot(item.gap, data) : null;
-  const askedFocus: SceneFocus | null = askedDim && item?.type === "gap" && dimForSlot(dims, askedDim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: askedDim, label: askedLabel(asked ? asked.question : gapLabel(item.gap)) }
+  const askedFocus: SceneFocus | null = askedDim && item?.type === "gap" && dimForSlot(dims, askedDim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: askedDim, place: !asked?.dim, label: asked?.dim ? asked.question.replace(/[¿?]/g, "").trim() : askedLabel(asked ? asked.question : gapLabel(item.gap)) }
     : asked?.segment !== undefined ? { segmentIndex: asked.segment, stepIndex: null, part: "surface", label: asked.question.replace(/[¿?]/g, "").trim() } : null;
   const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : askedFocus;
-  const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}` : "";
+  const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}:${focus.place ? 1 : 0}` : "";
   const focusRef = useRef(onFocus);
   focusRef.current = onFocus;
   useEffect(() => {

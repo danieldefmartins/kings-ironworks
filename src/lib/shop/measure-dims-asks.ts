@@ -76,7 +76,8 @@ function stairPiece(data: MeasureData): Piece | null {
   return {
     runs: [{ path, h }],
     posts: drawn.length ? drawn : undefined,
-    sides: treads.flatMap((t) => [[t.corners[0], t.corners[1]], [t.corners[3], t.corners[2]]] as Seg3[]),
+    // Each side as one line up the walk: along every tread and up every riser.
+    sides: [...strip(treads.flatMap((t) => [t.corners[0], t.corners[1]])), ...strip(treads.flatMap((t) => [t.corners[3], t.corners[2]]))],
     floors: [[foot(first.corners[0]), foot(first.corners[3])], [last.corners[1], last.corners[2]]],
   };
 }
