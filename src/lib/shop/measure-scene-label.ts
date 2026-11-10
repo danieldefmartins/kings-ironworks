@@ -14,7 +14,7 @@ const labels: Record<string, [string, string]> = {
  'House':['Casa','Casa'], 'unmeasured reference':['referência sem medidas','referencia sin medidas'],
  'Basement window':['Janela do porão','Ventana del sótano'], 'glass':['vidro','vidrio'],
  'Well grate':['Grelha do poço','Rejilla del foso'], 'Well guard':['Guarda-corpo do poço','Baranda del foso'],
- 'Well gate':['Portão do poço','Puerta del foso'], 'Grade along the run':['Terreno ao longo do trecho','Terreno a lo largo del tramo'],
+ 'Well gate':['Portão do poço','Puerta del foso'], 'Well ladder':['Escada do poço','Escalera del foso'], 'wall clip':['clip na parede','clip al muro'], 'Grade along the run':['Terreno ao longo do trecho','Terreno a lo largo del tramo'],
  'Deck surface':['Piso do deck','Piso de terraza'], 'Deck edge':['Borda do deck','Borde de terraza'],
  'decking + rim':['piso + viga de borda','piso + viga de borde'], 'height above grade':['altura sobre o terreno','altura sobre el terreno'],
  'Grade around the deck':['Terreno ao redor do deck','Terreno alrededor de la terraza'],

@@ -103,8 +103,7 @@ import { mountLocations, surfacesFor } from '@/lib/shop/measure-substrate';
 import ShopAppearance from '../../../../ShopAppearance';
 import SteelWorkspace from './SteelWorkspace';
 import ProWorkspace,{showMeasureTools} from './ProWorkspace';
-import type {PostDropTarget} from './SceneViewport';
-import {applyPostPoint} from '@/lib/shop/measure-scene-edit';
+import {useSceneActions} from './SceneActions';
 import {WorkspaceScene} from './ProWorkspace';
 import {DETAIL_TOPICS,detailTopicForStage,detailStagesForTopic,detailTopicLabel,legacyStageForGap,type ProDetailsTopic} from '@/lib/shop/measure-workspace';
 import type {SceneSelection} from '@/lib/shop/measure-scene';
@@ -223,16 +222,10 @@ export default function MeasureEditor({
   const [visualPost,setVisualPost]=useState<string|undefined>();
   const [visualRail,setVisualRail]=useState<string|undefined>();
   const [visualTarget,setVisualTarget]=useState<{segment:number;step:number|null}|undefined>();
-  const [postDropError,setPostDropError]=useState('');
-  function dropScenePost(target:PostDropTarget){
-    const draft=structuredClone(dataRef.current),original=draft.posts.find(p=>p.id===target.postId);
-    if(!original||original.pointType!=='railing_post'){setPostDropError(tx('Select an existing railing post to move.','Selecione um poste de corrimão existente para mover.','Seleccione un poste de barandilla existente para mover.'));return;}
-    const result=applyPostPoint(draft,target.postId,{segmentIndex:target.segmentIndex,stepIndex:target.stepIndex??null,worldPoint:target.point});
-    if(!result.ok){setPostDropError(result.error);return;}
-    const moved=draft.posts.find(p=>p.id===target.postId)!;set(d=>{const current=d.posts.find(p=>p.id===target.postId);if(current)Object.assign(current,moved);});setPostDropError('');selectScene({postId:target.postId});
-  }
   const [panelStage,setPanelStage]=useState<PanelStage>('design');
   const toolLabels={site:tx('Existing site','Local existente','Sitio existente'),measure:tx('Dimensions & posts','Medidas e postes','Medidas y postes'),panels:tx('Railing panels','Painéis de corrimão','Paneles de barandilla'),specialty:tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')} as const;
+  // A well sheet has its own grate and ladder (what the Next card asks about): the generic builder is offered only where one was already started.
+  const wellOwnLadder=sheet.shape==='window_well'&&!(data.specialtySteel||[]).length&&designTool!=='specialty';
   // Openings are measured on a form of their own; the scene has nothing to show yet.
   const openingForm=sheet.shape==='opening'&&!!data.opening&&designTool!=='materials';
   // Structural steel is a member list, not a stair scene: its own form is the primary content.
@@ -257,6 +250,9 @@ export default function MeasureEditor({
     else if(target.railId){setVisualRail(target.railId);setDesignTool('panels');}
     else if(target.segmentIndex!==undefined){setVisualPost(undefined);setVisualTarget({segment:target.segmentIndex,step:target.stepIndex??null});setDesignTool('measure');}
   }
+  // Taps on the drawing: the picked item's actions sit on the drawing; its full tools open on "Details".
+  const scenePick=useSceneActions({data,current:()=>dataRef.current,set,lang,enabled:workspace==='design'&&!ownForm&&designTool!=='materials'&&designTool!=='panels',onRoute:target=>selectScene(target),
+    onDetails:target=>{selectScene(target);window.setTimeout(()=>{const tools=document.querySelector('[data-selection-tools]'),el=tools?.querySelector('aside,[role="region"]')||tools;if(el)window.scrollTo?.({top:window.scrollY+el.getBoundingClientRect().top-76,behavior:'smooth'});},120);}});
   const viewList = sketchViews(sheet.shape);
   const [view, setView] = useState<SketchView>(viewList[0][0]);
   // Setback and edge distance repeat down a run: a new post takes them from
@@ -437,6 +433,8 @@ export default function MeasureEditor({
       w.deliverables = w.deliverables.includes(k)
         ? w.deliverables.filter((x) => x !== k)
         : [...w.deliverables, k];
+      // Ticked here, in the form: the card's "What are we making?" is answered.
+      w.scopeConfirmed = w.deliverables.length > 0;
     });
   }
 
@@ -1035,7 +1033,8 @@ export default function MeasureEditor({
         {/* The pieces this stair is made of, after the steps rather than before
             them: the flight count came from the sheet picker, and what shows up
             here is the curve or the extra landing nobody knew about. */}
-        {<SegmentsCard lang={lang} data={data} set={set} />}
+        {/* A well has no flights or landings to add. */}
+        {!isWell && <SegmentsCard lang={lang} data={data} set={set} />}
         <PostsSection
           lang={lang}
           data={data}
@@ -1298,7 +1297,7 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm} quiet={workspace==='design'&&designTool!=='materials'&&!ownForm&&status==='in_progress'&&cardGaps.length>0}
+        <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} pick={scenePick} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm} quiet={workspace==='design'&&designTool!=='materials'&&!ownForm&&status==='in_progress'&&cardGaps.length>0}
           lead={<>{workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?null:<NextMeasurement data={data} shape={sheet.shape} gaps={cardGaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
             // A required photo on the card opens the Photos stage's own camera on that shot. The request is ShotList's, narrowed to the photos the card is asking for: the camera walks those and closes, back on the card, instead of leading on through every recommended shot. A slot outside the shot list keeps the plain photo sheet.
             onShootGap={g=>{const slot=g.detail||'',label=mt(lang,`slot_${slot}`),shots=shotList(sheet.shape,data).filter(s=>s.slot===slot);const req:ShotRequest={slot,label,shots,filled:[]};setPhotoSlot(shots.some(s=>s.slot===slot)?req:{slot,label});}}
@@ -1314,16 +1313,15 @@ export default function MeasureEditor({
           toolbar={designTool==='materials'||ownForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
             <span className="min-w-0 flex-1 truncate">{designTool==='details'?detailTopicLabel(detailTopic,lang,{landings:hasLandings}):toolLabels[designTool as keyof typeof toolLabels]}</span><ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-slate-500"/>
             <select aria-label={tx('Tool','Ferramenta','Herramienta')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" value={designTool==='details'?detailTopic:designTool} onChange={e=>{const v=e.target.value;if(v in toolLabels){setDesignTool(v as keyof typeof toolLabels);}else openDetails(v as ProDetailsTopic);}}>
-              <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
+              <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).filter(tool=>tool!=='specialty'||!wellOwnLadder).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
               <optgroup label={tx('Project controls','Controles do projeto','Controles del proyecto')}>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang,{landings:hasLandings})}</option>)}</optgroup>
             </select>
           </label>}>
           <div hidden={workspace!=='design'}>
-          {postDropError&&<div role="alert" className="mb-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">{postDropError}{data.datums.postRef!=='centerline'&&<button type="button" className="mt-2 block min-h-11 rounded-xl bg-white px-3 font-semibold" onClick={()=>{set(d=>{d.datums.postRef='centerline';});setPostDropError('');}}>{tx('Use measurements to post centerlines','Usar medidas ao centro dos postes','Usar medidas al centro de postes')}</button>}</div>}
           {openingForm?<OpeningSections lang={lang} data={data} set={set} finishOptions={finishOptions} colorOptions={colorOptions} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/>:wallCapForm||shopPieceForm?<>{wallCapForm?<WallCapSections lang={lang} data={data} set={set}/>:<ShopPieceSections lang={lang} data={data} set={set}/>}<div className="mt-4 scroll-mt-24"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div><div className="mt-4"><SurveySection data={data} lang={lang} set={set} sheetId={sheet.id} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></div></>:canopyForm?<><CanopySections lang={lang} data={data} set={set}/>{!!data.canopy?.kind&&<div data-cn-photos="" className="mt-4 scroll-mt-24"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div>}</>:structuralForm?<><StructuralSections lang={lang} data={data} set={set}/>{!!data.structural?.members.some(m=>m.role==='column'||m.role==='post')&&<section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"><h3 className="mb-3 text-[15px] font-semibold text-slate-900">{mt(lang,'fin_title')}</h3><FinishedSurfaces lang={lang} data={data} shape={sheet.shape} set={set}/></section>}{!!data.structural?.members.length&&<div data-st-photos="" className="mt-4 scroll-mt-24"><StageCtx.Provider value="photos"><PhotosSection lang={lang} data={data} shape={sheet.shape} setPhotoSlot={setPhotoSlot} directSlotPhoto={directSlotPhoto} slotBusy={slotBusy} slotErr={slotErr}/></StageCtx.Provider></div>}</>:<>
             {designTool==='site'&&!hasExistingStructures&&<h2 className="mb-3 px-1 text-lg font-semibold tracking-tight text-slate-900">{tx('Start with the existing structures','Comece pelas estruturas existentes','Comience con las estructuras existentes')}</h2>}
             {designTool==='site'&&<SiteWorkspace embedded key={`site:${visualSite||''}`} initialObjectId={visualSite} data={data} set={set} lang={lang} onPanels={()=>setDesignTool('panels')} onContinue={()=>setDesignTool('measure')} onDetails={()=>openDetails('photos')} onPost={id=>selectScene({postId:id})} onMeasure={(segment,step)=>{if(segment!==undefined)selectScene({segmentIndex:segment,stepIndex:step??null});else setDesignTool('measure');}}/>}
-            {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3"><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang,{landings:hasLandings})}</button>)}</div></>}
+            {designTool==='measure'&&<>{!hasExistingStructures&&<div className="mb-3"><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-indigo-700" onClick={()=>{setVisualSite(undefined);setDesignTool('site');}}>{tx('Add existing structures','Adicionar estruturas existentes','Añadir estructuras existentes')}</button></div>}<VisualMeasureWorkspace embedded key={`measure:${visualPost||''}:${visualTarget?.segment??''}:${visualTarget?.step??''}`} initialPostId={visualPost} initialTarget={visualTarget} onPlacePost={scenePick.placePost} data={data} set={set} lang={lang} shape={sheet.shape} mode="measure" onSiteObject={id=>selectScene({siteId:id})} onAttached={id=>selectScene({railId:id})}/><div className="mt-3 flex flex-wrap gap-2">{(['structure','survey','connections'] as const).map(topic=><button type="button" className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" key={topic} onClick={()=>{if(visualTarget)setActiveFlight(Math.max(0,allFlights.findIndex(f=>f.i===visualTarget.segment)));openDetails(topic);}}>{detailTopicLabel(topic,lang,{landings:hasLandings})}</button>)}</div></>}
             {designTool==='panels'&&<PanelWorkspace embedded selectedRailId={visualRail} onSelectRail={setVisualRail} onSceneSelect={selectScene} data={data} set={set} lang={lang} stage={panelStage} onStageChange={setPanelStage} onSite={()=>setDesignTool('site')} onReview={()=>setWorkspace('review')}/>}
             {designTool==='materials'&&<><SteelWorkspace embedded onSceneSelect={selectScene} data={data} set={set} catalog={catalog} lang={lang} sheetId={sheet.id}/><button type="button" className="mt-3 min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold" onClick={()=>openDetails('specifications')}>{detailTopicLabel('specifications',lang)}</button></>}
             {designTool==='specialty'&&<><WorkspaceScene data={data} lang={lang} onSelect={selectScene}/><SpecialtySteelBuilder assemblies={data.specialtySteel||[]} onChange={assemblies=>set(d=>{d.specialtySteel=assemblies;})} lang={lang}/></>}

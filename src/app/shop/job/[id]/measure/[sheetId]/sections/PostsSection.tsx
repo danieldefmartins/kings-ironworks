@@ -13,6 +13,7 @@ import {
 } from "@/lib/shop/measure";
 import { planPaths, newPlanPost } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
+import { shopClipText } from "@/lib/shop/measure-shop-defaults";
 import {
   Card,
   Grid,
@@ -138,7 +139,13 @@ export default function PostsSection({
                     ["concrete_wall", mt(lang, "point_concrete_wall")],
                     ["clip", mt(lang, "point_clip")],
                   ] as [string, string][])}
-                  onChange={(v) => setPost(set, po.id, "pointType", v || "railing_post")}
+                  onChange={(v) => set((d) => {
+                    const p = d.posts.find((x) => x.id === po.id);
+                    if (!p) return;
+                    p.pointType = (v || "railing_post") as PostMeasure["pointType"];
+                    // A clip starts as the shop's usual clip; the line stays editable.
+                    if (p.pointType === "clip" && !p.clipDetail.trim()) p.clipDetail = shopClipText();
+                  })}
                 />
                 {!isDrawn&&<SupportAttachmentEditor data={data} post={po} set={set} lang={lang}/>}
                 <ChipRow help="stairSideLookingUp" label={mt(lang, "stairSideLookingUp")} value={po.side}

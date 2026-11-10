@@ -67,7 +67,8 @@ export interface NextSlot {
 }
 export type NextItem =
   | { type: 'slot'; id: string; slot: NextSlot }
-  | { type: 'gap'; id: string; gap: Gap };
+  /** `lead`: a one-tap question asked before the numbers (what we are making, where it goes). */
+  | { type: 'gap'; id: string; gap: Gap; lead?: boolean };
 export interface MeasureQueue {
   /** Every listed number, filled or not, in measuring order. */
   slots: NextSlot[];
@@ -282,10 +283,11 @@ function wellSlots(data: MeasureData, field: FieldFn) {
   const row = (gap: string, labelKey: string, key: string, extra: Partial<NextSlot> = {}) => field(`well.${key}`, gap, labelKey, well, key, { part: key, ...extra });
   row('well_length', 'wellLengthAtHouse', 'lengthAtHouse');
   row('well_projection', 'wellProjection', 'projection');
-  row('well_depth', 'wellDepth', 'depth');
   row('well_thickness', 'wellWallThickness', 'wallThickness');
+  row('well_depth', 'wellDepth', 'depth');
   // The guard height is set from here: asked whenever there is a guard.
   row('well_top_to_grade', 'wellTopToGrade', 'topToGrade', { ask: guard });
+  // House wall surfaces are optional: their numbers are walked once someone has added one.
   if (w.deliverables.includes('guard')) w.bands.forEach((b, n) => {
     const id = b.id, tag = b.label.trim() || `#${n + 1}`;
     const band = (d: MeasureData) => d.well?.bands.find(x => x.id === id) as unknown as Bag | undefined;
@@ -296,10 +298,13 @@ function wellSlots(data: MeasureData, field: FieldFn) {
   row('well_guard_height', 'wellGuardHeight', 'guardHeight');
   row('well_post_to_wall', 'wellPostToWall', 'postToWall');
   row('well_gate_width', 'wellGateWidth', 'gateWidth');
+  row('well_gate_offset', 'wellGateOffset', 'gateOffset');
   row('well_ladder_width', 'wellLadderWidth', 'ladderWidth');
-  row('well_ladder_rungs', 'wellLadderRungs', 'ladderRungs', { unit: 'count' });
   row('well_ladder_spacing', 'wellLadderSpacing', 'ladderSpacing');
   row('well_ladder_standoff', 'wellLadderStandoff', 'ladderStandoff');
+  row('well_ladder_offset', 'wellLadderOffset', 'ladderOffset');
+  // Follows from the depth and the spacing: listed once someone has counted them.
+  row('well_ladder_rungs', 'wellLadderRungs', 'ladderRungs', { unit: 'count' });
 }
 
 type FieldFn = (id: string, gap: string, labelKey: string, obj: (d: MeasureData) => Bag | null | undefined, key: string, extra?: Partial<NextSlot>) => void;
@@ -523,6 +528,10 @@ const OWN_SHAPE = /^(gate|fence|bal|deck|fire|well|op|struct|canopy|wc|sp)_/;
 // The stair's geometry is one walk: landings where they are reached, the
 // overall numbers right after the last step (not later with the posts).
 const WALK_WITH_STEPS = new Set(['spiral_treads', 'spiral_riser', 'diameter', 'spiral_rotation', 'spiral_tread_angle', 'landing_entry_rise', 'landing_length', 'landing_depth', 'landing_diag', 'flight_ctrl_rise', 'flight_ctrl_run', 'floor_to_floor', 'total_run', 'rake']);
+// One-tap questions that shape the drawing: what a well sheet is making and
+// where the gate, the ladder and the returns go. Asked before any number, so
+// every tape reading that follows lands on a picture of the right thing.
+const LEAD_GAPS = new Set(['well_scope', 'well_gate_run', 'well_gate_at', 'well_gate_hinge', 'well_gate_swing', 'well_ladder_wall', 'well_ladder_at', 'well_return_left', 'well_return_right', 'well_grate_bearing']);
 const stageRank = (key: string) => (OWN_SHAPE.test(key) ? -1 : WALK_WITH_STEPS.has(key) ? STAGE_ORDER.indexOf('steps') : STAGE_ORDER.indexOf(legacyStageForGap(key)));
 
 /** One slot of the sheet by id, whether or not it is listed now. */
@@ -540,11 +549,13 @@ export function measurementQueue(data: MeasureData, shape: MeasureShape, gaps: r
   // A requirement is answered by its numbers only while one of them is still
   // empty; otherwise (a reading row deleted, say) it stays on the list itself.
   const covered = (g: Gap) => openSlots.some(s => matches(s, g));
-  const rest = gaps.filter(g => !covered(g)).map((g, i) => ({ g, i })).sort((a, b) => stageRank(a.g.key) - stageRank(b.g.key) || a.i - b.i).map(x => x.g);
+  const lead = gaps.filter(g => LEAD_GAPS.has(g.key) && !covered(g));
+  const rest = gaps.filter(g => !LEAD_GAPS.has(g.key) && !covered(g)).map((g, i) => ({ g, i })).sort((a, b) => stageRank(a.g.key) - stageRank(b.g.key) || a.i - b.i).map(x => x.g);
   // What each post, bracket, hinge or bearing fastens into: not a number, so
   // an "Open" item after the measurements, never counted as one.
   const mounting = blankMountGaps(data, shape).filter(g => !gaps.some(x => x.key === g.key && x.detail === g.detail));
   const open: NextItem[] = [
+    ...lead.map(gap => ({ type: 'gap' as const, id: gapId(gap), gap, lead: true })),
     ...openSlots.map(slot => ({ type: 'slot' as const, id: slot.id, slot })),
     ...rest.map(gap => ({ type: 'gap' as const, id: gapId(gap), gap })),
     ...mounting.map(gap => ({ type: 'gap' as const, id: gapId(gap), gap })),
@@ -561,7 +572,7 @@ export function nextOpenItem(queue: MeasureQueue, currentId: string | null, dire
   const { open, slots } = queue;
   if (!open.length) return null;
   if (!currentId) return open[0];
-  const order = [...slots.map(s => s.id), ...open.filter(i => i.type === 'gap').map(i => i.id)];
+  const order = [...open.filter(i => i.type === 'gap' && i.lead).map(i => i.id), ...slots.map(s => s.id), ...open.filter(i => i.type === 'gap' && !i.lead).map(i => i.id)];
   const at = order.indexOf(currentId);
   if (at < 0) return open[0];
   const openIds = new Set(open.map(i => i.id));

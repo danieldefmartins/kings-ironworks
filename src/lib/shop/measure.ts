@@ -809,6 +809,16 @@ export type WellDeliverable = "grate" | "guard" | "gate" | "ladder";
 
 export const WELL_DELIVERABLES: WellDeliverable[] = ["grate", "guard", "gate", "ladder"];
 
+// Seen from outside, facing the house: the front run is parallel to the house,
+// the left and right runs return to it. A position along a run or wall goes
+// from its start (the left end of the front / far / house wall; the house end
+// of a side) to its end, or is a measured offset from the start.
+export type WellRun = "front" | "left" | "right";
+export type WellWall = "far" | "left" | "right" | "house";
+export type WellAlong = "start" | "center" | "end" | "offset";
+export type WellReturn = "clip" | "post" | "short";
+
+
 // One horizontal band of the house wall the guard runs past. The guard's end
 // post is dimensioned off the MOST PROUD surface (usually a water table trim),
 // so every other band is recorded by how far it sits BACK from that face —
@@ -840,6 +850,8 @@ export interface WellData {
   windowSwing: "" | "in" | "out" | "slider" | "fixed";
   // What KIW is supplying
   deliverables: WellDeliverable[];
+  /** The measurer answered "What are we making?" (asked first on the card). */
+  scopeConfirmed: boolean;
   // Guard + gate
   guardHeight: string;
   /** How guardHeight was set: the code height approved, or read on site. */
@@ -848,12 +860,27 @@ export interface WellData {
   gateSwing: "" | "in" | "out";
   gateHinge: "" | "left" | "right";
   gateLatch: string;
+  /** Guard run the gate is in. Blank reads as the front run. */
+  gateRun: "" | WellRun;
+  /** Where along that run. Blank reads as centred. */
+  gateAt: "" | WellAlong;
+  /** With gateAt "offset": the run's start post to the gate's near post. */
+  gateOffset: string;
+  /** How each side run ends at the house. Blank draws a plain end post. */
+  returnLeft: "" | WellReturn;
+  returnRight: "" | WellReturn;
   // Ladder
   ladderWidth: string;
   ladderRungs: string;
   ladderSpacing: string; // rung to rung, on centre
   ladderStandoff: string; // rung face to the wall behind it
   ladderTopExt: string; // how far the rails run above the well wall
+  /** Wall the ladder hangs on. Blank reads as the far wall. */
+  ladderWall: "" | WellWall;
+  /** Where along that wall. Blank reads as centred. */
+  ladderAt: "" | WellAlong;
+  /** With ladderAt "offset": the wall's start corner to the ladder's near rail. */
+  ladderOffset: string;
   // Grate
   grateBearing: "" | "surface" | "recessed" | "angle_frame";
   grateHinged: boolean;
@@ -889,17 +916,27 @@ export function blankWell(): WellData {
     windowH: "",
     sillToFloor: "",
     windowSwing: "",
-    deliverables: [],
+    // A guard is what a well sheet is nearly always for: the drawing starts with one.
+    deliverables: ["guard"],
+    scopeConfirmed: false,
     guardHeight: "",
     gateWidth: "",
     gateSwing: "",
     gateHinge: "",
     gateLatch: "",
+    gateRun: "",
+    gateAt: "",
+    gateOffset: "",
+    returnLeft: "",
+    returnRight: "",
     ladderWidth: "",
     ladderRungs: "",
     ladderSpacing: "",
     ladderStandoff: "",
     ladderTopExt: "",
+    ladderWall: "",
+    ladderAt: "",
+    ladderOffset: "",
     grateBearing: "",
     grateHinged: false,
     grateLoad: "",
@@ -1191,6 +1228,8 @@ export interface Termination {
   backing: string; // wall: structural backing behind finish; wood floor: blocking/through-bolt detail
   columnW: string; // existing column width facing the rail (at attachment elevation)
   columnD: string; // existing column depth
+  /** The drawn site column this end attaches to; its size and base molding are read from it. */
+  columnId?: string;
   molding: string; // molding projection at this end; "" = none
   moldingHeight: string; // how high the molding runs
   plumb: string; // square/plumb condition
@@ -1844,7 +1883,8 @@ export function normalizeMeasureData(raw: Partial<MeasureData> | null | undefine
       clipDetail: p.clipDetail ?? "",
     })),
     spiral: d.spiral ?? null,
-    well: d.well ? { ...blankWell(), ...d.well, deliverables: d.well.deliverables ?? [], bands: (d.well.bands || []).map((b) => ({ ...newWallBand(), ...b })) } : null,
+    // A sheet saved before "What are we making?" was asked: answered if anything was ticked.
+    well: d.well ? { ...blankWell(), ...d.well, deliverables: d.well.deliverables ?? [], scopeConfirmed: d.well.scopeConfirmed ?? (d.well.deliverables ?? []).length > 0, bands: (d.well.bands || []).map((b) => ({ ...newWallBand(), ...b })) } : null,
     fire: d.fire
       ? {
           ...blankFireEscape(1),
@@ -1955,7 +1995,7 @@ export function requiredPhotoSlots(shape: MeasureShape): string[] {
       return ["overall_bottom", "overall_top"];
     case "window_well":
       // The wall profile photo is the one that settles the 4" argument.
-      return ["well_overall", "well_wall_profile", "well_window", "well_inside"];
+      return ["well_overall", "well_wall_profile"];
     case "fire_escape":
       // The anchors and the drop ladder are what inspections turn on.
       return ["fe_elevation", "fe_anchors", "fe_ladder", "fe_deck"];
@@ -2000,11 +2040,9 @@ export const OPTIONAL_PHOTO_SLOTS = ["landing", "obstruction", "tape_critical"] 
 // Photos the shop genuinely cannot fabricate safely without. Everything else
 // in requiredPhotoSlots() is documentation: still asked for, still listed, but
 // it does not hold a finished set of measurements out of the shop.
-//   - well_wall_profile settles whether the guard clears the 4" sphere
 //   - bal_slab_edge is the slab condition the anchor spec is argued from
 //   - fe_anchors is the whole point of an escape inspection
 export const FAB_CRITICAL_PHOTO_SLOTS: readonly string[] = [
-  "well_wall_profile",
   "bal_slab_edge",
   "fe_anchors",
   "deck_framing",

@@ -126,8 +126,8 @@ export function shotList(shape: MeasureShape, data?: Pick<MeasureData, "segments
       return [
         R("well_overall", "overhead"),
         R("well_wall_profile", "closeup", true),
-        R("well_window", "opening"),
-        R("well_inside", "overhead"),
+        r("well_window", "opening"),
+        r("well_inside", "overhead"),
         r("well_grade", "grade"),
         TAPE,
       ];

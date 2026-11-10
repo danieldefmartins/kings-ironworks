@@ -40,3 +40,16 @@ describe('post drag gesture contract',()=>{
   const gesture=new PostDragGesture();gesture.down(1,10,10);expect(gesture.down(2,20,20)).toBe(false);expect(gesture.up(1,30,30)).toBeNull();gesture.down(3,0,0);gesture.move(3,30,30);gesture.cancel();expect(gesture.up(3,30,30)).toBeNull();
  });
 });
+
+import {closestOnTop,nearestTop,treadTops} from './scene-viewport-utils';
+const stepMesh=(i:number):SceneMesh=>({id:`surface:s:${i}`,label:`Step ${i+1}`,kind:'surface',provisional:false,referenceOnly:false,entity:{segmentIndex:0,stepIndex:i},vertices:[{x:i*10,y:0,z:(i+1)*7},{x:i*10+10,y:0,z:(i+1)*7},{x:i*10+10,y:36,z:(i+1)*7},{x:i*10,y:36,z:(i+1)*7},{x:i*10,y:0,z:i*7},{x:i*10,y:36,z:i*7}],faces:[[0,1,2],[0,2,3],[4,0,3,5]]});
+it('snaps a touch on a riser, a side or just off the stair to the nearest step top',()=>{
+ const tops=treadTops({meshes:[stepMesh(0),stepMesh(1),{...stepMesh(2),kind:'site'}]});expect(tops).toHaveLength(2);
+ expect(closestOnTop(tops[0].quad,{x:4,y:12,z:7})).toEqual({x:4,y:12,z:7});
+ // On step 2's riser: near its top the post means step 2 (at its nosing), near its foot step 1 (at its back edge).
+ expect(nearestTop(tops,{x:10,y:12,z:13})).toMatchObject({top:{mesh:{id:'surface:s:1'}},point:{x:10,y:12,z:14}});
+ expect(nearestTop(tops,{x:10,y:12,z:8})).toMatchObject({top:{mesh:{id:'surface:s:0'}},point:{x:10,y:12,z:7}});
+ // Off the open side: held on the edge. Out of reach: nothing.
+ expect(nearestTop(tops,{x:4,y:-3,z:7},24)).toMatchObject({point:{x:4,y:0,z:7},distance:3});
+ expect(nearestTop(tops,{x:4,y:-60,z:7},24)).toBeNull();
+});

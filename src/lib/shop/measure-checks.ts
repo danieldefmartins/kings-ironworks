@@ -1459,41 +1459,52 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if (!w) {
       gaps.push({ key: "well_missing" });
     } else {
-      if (w.deliverables.length === 0) gaps.push({ key: "well_deliverable" });
-      if (!has(w.construction)) gaps.push({ key: "well_construction" });
-      for (const [k, v] of [
-        ["well_length", w.lengthAtHouse],
-        ["well_projection", w.projection],
-        ["well_depth", w.depth],
-        ["well_thickness", w.wallThickness],
-      ] as const) if (!has(v)) gaps.push({ key: k });
-
-      if (w.deliverables.includes("guard")) {
+      // Only what the shop needs to cut steel (owner, 2026-11-10). The well's
+      // construction, inside sizes, diagonals, window and house wall surfaces
+      // keep their fields; nothing asks for them or waits on them.
+      const wants = (k: WellData["deliverables"][number]) => w.deliverables.includes(k);
+      // What we are making comes first: everything else follows from it.
+      if (!w.scopeConfirmed || w.deliverables.length === 0) gaps.push({ key: "well_scope" });
+      // Then where things go, each a single tap.
+      if (wants("gate")) {
+        if (!has(w.gateRun)) gaps.push({ key: "well_gate_run" });
+        if (!has(w.gateAt)) gaps.push({ key: "well_gate_at" });
+        if (!has(w.gateHinge)) gaps.push({ key: "well_gate_hinge" });
+        if (!has(w.gateSwing)) gaps.push({ key: "well_gate_swing" });
+      }
+      if (wants("ladder")) {
+        if (!has(w.ladderWall)) gaps.push({ key: "well_ladder_wall" });
+        if (!has(w.ladderAt)) gaps.push({ key: "well_ladder_at" });
+      }
+      if (wants("guard")) {
+        if (!has(w.returnLeft)) gaps.push({ key: "well_return_left" });
+        if (!has(w.returnRight)) gaps.push({ key: "well_return_right" });
+      }
+      if (wants("grate") && !has(w.grateBearing)) gaps.push({ key: "well_grate_bearing" });
+      // Then the numbers. The footprint sets every run; the wall top is where
+      // posts and a grate sit; the depth is the ladder's length.
+      if (!has(w.lengthAtHouse)) gaps.push({ key: "well_length" });
+      if (!has(w.projection)) gaps.push({ key: "well_projection" });
+      if ((wants("guard") || wants("grate")) && !has(w.wallThickness)) gaps.push({ key: "well_thickness" });
+      if (wants("ladder") && !has(w.depth)) gaps.push({ key: "well_depth" });
+      if (wants("guard")) {
         if (!has(w.guardHeight)) gaps.push({ key: "well_guard_height" });
-        // The wall profile is what makes the guard pass inspection.
-        if (!has(w.wallRef)) gaps.push({ key: "well_wall_ref" });
-        if (w.bands.length === 0) gaps.push({ key: "well_wall_bands" });
-        else {
-          const bad = w.bands.filter((b) => !has(b.label) || !has(b.setback)).length;
-          if (bad > 0) gaps.push({ key: "well_band_fields", detail: `${bad}` });
-        }
         if (!has(w.postToWall)) gaps.push({ key: "well_post_to_wall" });
       }
-      if (w.deliverables.includes("gate")) {
+      if (wants("gate")) {
         if (!has(w.gateWidth)) gaps.push({ key: "well_gate_width" });
-        if (!has(w.gateSwing)) gaps.push({ key: "well_gate_swing" });
-        if (!has(w.gateHinge)) gaps.push({ key: "well_gate_hinge" });
+        if (w.gateAt === "offset" && !has(w.gateOffset)) gaps.push({ key: "well_gate_offset" });
       }
-      if (w.deliverables.includes("ladder")) {
+      if (wants("ladder")) {
+        // The rung count follows from the depth and the spacing.
         for (const [k, v] of [
           ["well_ladder_width", w.ladderWidth],
-          ["well_ladder_rungs", w.ladderRungs],
           ["well_ladder_spacing", w.ladderSpacing],
           ["well_ladder_standoff", w.ladderStandoff],
         ] as const) if (!has(v)) gaps.push({ key: k });
+        if (w.ladderAt === "offset" && !has(w.ladderOffset)) gaps.push({ key: "well_ladder_offset" });
       }
-      if (w.deliverables.includes("grate")) {
-        if (!has(w.grateBearing)) gaps.push({ key: "well_grate_bearing" });
+      if (wants("grate")) {
         if (!has(w.grateInfill)) gaps.push({ key: "well_grate_infill" });
         if (!has(w.grateLoad)) gaps.push({ key: "well_grate_load" });
       }
@@ -1635,7 +1646,7 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if ((p.pointType === "concrete_wall" || p.pointType === "clip") && !has(p.anchor)) {
       gaps.push({ key: "existing_material", detail: tag });
     }
-    if (p.pointType === "clip" && !has(p.clipDetail)) gaps.push({ key: "clip_detail", detail: tag });
+    // A clip left without detail is the shop's usual clip (SHOP_DEFAULTS.wallClip).
     if (p.pointType !== "railing_post") return;
     if (!has(p.substrate)) gaps.push({ key: "post_substrate", detail: tag });
     if (p.mount === "Base plate") {
@@ -1668,7 +1679,8 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
 
   // Every rail piece: how long is it and how does EACH end attach? At least
   // one span, both terminations defined, methods valid for their substrate.
-  const skipSpans = (isWell && !wellGuard) || (isFire && !fireNew) || selfContained;
+  // A well guard is its footprint and its two returns: no stair-rail spans.
+  const skipSpans = isWell || (isFire && !fireNew) || selfContained;
   if (data.spans.length === 0 && !skipSpans) {
     gaps.push({ key: "span_missing" });
   }
@@ -1688,7 +1700,8 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   });
 
   // The worker records the site constraint; the shop decides splice method.
-  if ((!isFire || fireNew) && !has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
+  // A well is outdoors at grade: nothing has to fit through a door.
+  if (!isWell && (!isFire || fireNew) && !has(data.fab.maxPiece)) gaps.push({ key: "max_piece" });
 
   // required photo slots (+ the landing when there is one)
   const filled = new Set(data.photos.map((p) => p.slot));
@@ -1865,7 +1878,7 @@ function terminationGaps(
   if ((t.attachTo === "wall" || t.attachTo === "existing_post" || t.attachTo === "floor") && !has(t.material)) {
     gaps.push({ key: "term_material", detail: tag });
   }
-  if (t.attachTo === "wall" && !has(t.backing)) gaps.push({ key: "term_backing", detail: tag });
+  // A wall end's backing is the installer's call on site; the shop builds the same clip either way.
   if (t.attachTo === "floor" && t.material === "Wood" && !has(t.backing)) {
     gaps.push({ key: "term_backing", detail: tag });
   }
@@ -1880,7 +1893,7 @@ function terminationGaps(
       if (!has(hw.fastener)) gaps.push({ key: "term_fastener", detail: tag });
       if (!has(hw.qty)) gaps.push({ key: "term_qty", detail: tag });
     }
-    if (!has(hw.elevation)) gaps.push({ key: "term_elevation", detail: tag });
+    // The connection sits on the rail, whose height is already recorded: its own height is typed only when it differs.
     if (!has(hw.shopField)) gaps.push({ key: "term_shopfield", detail: tag });
     // the dimensions the shop needs to actually FABRICATE this connection
     for (const field of HW_REQUIRED[t.method] || []) {
