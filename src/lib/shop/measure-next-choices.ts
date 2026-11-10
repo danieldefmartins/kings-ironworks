@@ -30,7 +30,7 @@ export interface GapChoices {
   segment?: number;
 }
 
-const LANDING_SLOPE = { en: "Landing slope, per foot", pt: "Caimento do patamar, por pé", es: "Pendiente del descanso, por pie" };
+const LANDING_SLOPE = { en: "Landing slope, total drop", pt: "Caimento total do patamar", es: "Caída total del descanso" };
 const LEVEL = { en: "Level", pt: "Nivelado", es: "A nivel" };
 const LANDING_FALL = { en: "Which way does the landing fall?", pt: "Para que lado o patamar cai?", es: "¿Hacia dónde cae el descanso?" };
 const Q: Record<string, Record<string, string>> = {
@@ -196,7 +196,7 @@ export function gapChoices(gap: Pick<Gap, "key" | "detail">, lang: string, data?
     const landing = (d: MeasureData) => { const sg = d.segments[si]; return sg?.kind === "platform" ? sg : null; };
     if (gap.key === "landing_slope") return {
       question: tr(LANDING_SLOPE, lang), segment: si, cols: 4,
-      options: [{ value: "0", label: tr(LEVEL, lang) }, ...['1/8"', '1/4"', '1/2"'].map((v) => ({ value: `${v}/ft`, label: v }))],
+      options: [{ value: "0", label: tr(LEVEL, lang) }, ...['1/8"', '1/4"', '1/2"'].map((v) => ({ value: `${v} drop`, label: v }))],
       put: (d, v) => { const pl = landing(d); if (pl) { pl.slope = v; if (v === "0") pl.slopeDir = ""; } },
     };
     return {

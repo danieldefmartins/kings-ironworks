@@ -15,3 +15,13 @@ describe('rake on a stair with a platform', () => {
     expect(dimForSlot(sceneDims(d, 'stair_platform'), 'overall.rake')!.calc).toBeCloseTo(Math.hypot(21.75, 31.5));
   });
 });
+
+describe('landing slope as a total drop', () => {
+  it('reads the drop over the landing the way it falls', async () => {
+    const { landingGrade } = await import('./measure-geometry');
+    expect(landingGrade('1/4" drop', 48)).toBeCloseTo(0.25 / 48);
+    expect(landingGrade('0')).toBe(0);
+    expect(landingGrade('1/2" drop', null)).toBeNull();
+    expect(landingGrade('3/8"/ft')).toBeCloseTo(0.375 / 12);
+  });
+});

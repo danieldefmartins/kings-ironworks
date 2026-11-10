@@ -24,9 +24,22 @@ const point = (p: Pose, x: number, y: number, z = 0): Point3 => ({
 });
 const poseAt = (p: Pose, x: number, y: number, z = 0, turn = 0): Pose => ({ ...point(p,x,y,z), heading: p.heading + turn });
 
-/** Slope is degrees or inches per foot; free-text that cannot be resolved stays provisional. */
-export function landingGrade(s: string): number | null {
+/** The total drop across a landing, as the card records it: `1/4" drop`. */
+export const LANDING_DROP = /^(.*?)\s*drop$/i;
+
+/**
+ * Slope is a total drop across the landing (`1/4" drop`, over `span`: the
+ * landing's length or depth, whichever way it falls), degrees, or inches per
+ * foot; free-text that cannot be resolved stays provisional.
+ */
+export function landingGrade(s: string, span?: number | null): number | null {
   if (!s.trim()) return 0;
+  const drop = s.match(LANDING_DROP);
+  if (drop) {
+    const n = value(drop[1], true);
+    if (n === null) return null;
+    return n === 0 ? 0 : span && span > 0 ? n / span : null;
+  }
   const perFoot = s.match(/^(.*?)\s*\/\s*(?:ft|foot|12\s*["″]?)$/i);
   const n = value(perFoot ? perFoot[1] : s, true);
   if (n === null || (!perFoot && n >= 90)) return null;
@@ -96,8 +109,8 @@ export function stairGeometry(data: MeasureData, focusSeg?: number) {
       const run=value(segment.length), width=value(segment.depth);
       const layout=platformLayout(data,segIdx)!,d=layout.run,w=layout.across,nextWidth=layout.outgoingWidth;
       const entryOffset=layout.entry?.start??0;
-      const grade=landingGrade(segment.slope);
       const direction=segment.slopeDir;
+      const grade=landingGrade(segment.slope,direction==='Left'||direction==='Right'?width:run);
       const knownDirection=['Left','Right','Toward stairs','Away from stairs'].includes(direction);
       const gx=direction==='Toward stairs' ? grade??0 : direction==='Away from stairs' ? -(grade??0) : 0;
       const gy=direction==='Left' ? grade??0 : direction==='Right' ? -(grade??0) : 0;
