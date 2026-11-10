@@ -215,7 +215,7 @@ export function stairDims(data: MeasureData, model = stairGeometry(data)): Scene
     const end = v(last.corners[1].x, last.corners[1].y, bottom.z);
     const run = linearDim(bottom, end, add(mul(left, 0.55), mul(UP, -0.83)), 14);
     push({ key: 'totalRun', kind: 'totalRun', scope: 'overall', unit: 'len', value: num(data.overall.totalRun), calc: sumRuns(data), lines: run.lines, anchor: run.anchor });
-    if (flights.length === 1 && data.segments.length === 1) {
+    if (flights.length === 1) {
       const fl = flights[0].s, t = flightTotals(fl);
       out.push(rakeDim(data, 'rake', 'rake', 'overall', of(flights[0].i), num(data.overall.rakeLength), t ? t.rake : null));
     }

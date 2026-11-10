@@ -22,7 +22,7 @@ import { dimForSlot, sceneDims, type SceneDim } from "@/lib/shop/measure-dims";
 import { approveFlightAngle, approveJointAngle, flightAngleCalc, jointAngleCalc, type AngleSource } from "@/lib/shop/measure-angle";
 import { dimText } from "@/lib/shop/measure-dims";
 import { dimWord } from "@/lib/shop/measure-dims-i18n";
-import { calcCheck, calcState, DEG_TOL, type CalcSlot } from "@/lib/shop/measure-calc";
+import { calcCheck, calcState, calcText, DEG_TOL, LEN_TOL, type CalcSlot } from "@/lib/shop/measure-calc";
 import { slotCalc } from "@/lib/shop/measure-calc-registry";
 import { applyCopy, slotCopy } from "@/lib/shop/measure-copy";
 
@@ -80,6 +80,22 @@ export function slotFocus(item: NextItem | null, data: MeasureData, dims: readon
   const at = item.slot.segIdx;
   if (at !== undefined && item.slot.stepIdx === undefined && data.segments[at]?.kind === "platform") return { segmentIndex: at, stepIndex: null, part: "surface" };
   return null;
+}
+
+/**
+ * Any number the measurements already entered give (rake, total run, floor to
+ * floor, a landing's diagonal …): the line on the sketch carries the
+ * calculation, so the card offers it to approve instead of asking for it again.
+ */
+export function dimCalc(slot: Pick<NextSlot, "put">, dim: SceneDim | null, value: string): CalcSlot | null {
+  if (!dim || dim.calc === null || !(dim.calc > 0)) return null;
+  const text = calcText(dim.calc, dim.unit);
+  return {
+    calc: dim.calc, unit: dim.unit, tol: dim.unit === "deg" ? DEG_TOL : LEN_TOL,
+    source: value.trim() === text ? "calculated-approved" : "measured",
+    approve: (d) => slot.put(d, text),
+    read: (d, v) => slot.put(d, v),
+  };
 }
 
 export function slotLabel(slot: NextSlot, lang: string): string {
@@ -467,7 +483,7 @@ export default function NextMeasurement({
   const keep = (e: React.PointerEvent) => { if (document.activeElement === input.current) e.preventDefault(); };
   const angle = slotAngle(slot, data);
   // A stair angle, or any other work type's calculated number (leaf widths, fabricate-to size, fall …).
-  const calcSlot: CalcSlot | null = angle ? { ...angle, unit: "deg", tol: DEG_TOL } : slotCalc(slot.id, data);
+  const calcSlot: CalcSlot | null = angle ? { ...angle, unit: "deg", tol: DEG_TOL } : slotCalc(slot.id, data) ?? dimCalc(slot, dimForSlot(dims, slot.id), value);
   const approve = calcSlot && calcSlot.calc !== null ? calcSlot : null;
   const angleSt = approve ? calcState(value, approve.source, approve.calc, approve.unit) : "empty";
   const angleChk = approve && angleSt === "measured" ? calcCheck(approve.calc, parseMeas(value), approve.tol, approve.unit) : null;
