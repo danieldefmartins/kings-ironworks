@@ -73,3 +73,21 @@ export class PostDragGesture{
  up(id:number,x:number,y:number):'tap'|'drop'|null{if(this.start?.id!==id)return null;this.move(id,x,y);const result=this.moved?'drop':'tap';this.cancel();return result;}
  cancel(){this.start=null;this.moved=false;}
 }
+
+/** The top of a measured step or landing a post can stand on (corners 0–3: near-left, far-left, far-right, near-right). */
+export type TreadTop={mesh:SceneMesh;quad:[Point3,Point3,Point3,Point3]};
+export function treadTops(model:Pick<MeasureScene,'meshes'>|null|undefined):TreadTop[]{
+ return (model?.meshes||[]).filter(m=>m.kind==='surface'&&m.entity.segmentIndex!==undefined&&m.vertices.length>=4&&m.vertices.slice(0,4).every(p=>[p.x,p.y,p.z].every(Number.isFinite))).map(mesh=>({mesh,quad:[mesh.vertices[0],mesh.vertices[1],mesh.vertices[2],mesh.vertices[3]]}));
+}
+/** The point of a (rectangular) top closest to p: p dropped onto its plane, then held inside its edges. */
+export function closestOnTop(quad:TreadTop['quad'],p:Point3):Point3{
+ const [a,b,,d]=quad,axis=(to:Point3)=>{const e={x:to.x-a.x,y:to.y-a.y,z:to.z-a.z},len=e.x*e.x+e.y*e.y+e.z*e.z;return {e,t:len>1e-12?Math.max(0,Math.min(1,((p.x-a.x)*e.x+(p.y-a.y)*e.y+(p.z-a.z)*e.z)/len)):0};};
+ const u=axis(b),v=axis(d);
+ return {x:a.x+u.t*u.e.x+v.t*v.e.x,y:a.y+u.t*u.e.y+v.t*v.e.y,z:a.z+u.t*u.e.z+v.t*v.e.z};
+}
+/** A finger lands on a riser, a side or just off the stair: the nearest top it could have meant, or null when none is within `reach` inches. */
+export function nearestTop(tops:TreadTop[],p:Point3,reach=Infinity):{top:TreadTop;point:Point3;distance:number}|null{
+ let best:{top:TreadTop;point:Point3;distance:number}|null=null;
+ for(const top of tops){const point=closestOnTop(top.quad,p),distance=Math.hypot(point.x-p.x,point.y-p.y,point.z-p.z);if(distance<=reach&&(!best||distance<best.distance-1e-9))best={top,point,distance};}
+ return best;
+}
