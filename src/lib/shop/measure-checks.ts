@@ -1528,7 +1528,8 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
         ...flightGaps(fl, fi, {
           needRake: turns || flights.length > 1,
           multi: flights.length > 1,
-        })
+          // A handrail on a wall is the same piece however wide the stair is.
+        }).filter((g) => shape !== "wall_rail" || g.key !== "flight_width")
       );
     });
     // mixed-assembly curve and ramp segments must be measurable
@@ -1547,7 +1548,9 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
         }
       }
     });
-    if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise)) {
+    // Floor-to-floor is the risers added up, so it is only asked for while a
+    // flight's risers cannot supply it. The rake below stays the cross-check.
+    if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise) && (flights.length === 0 || flights.some((fl) => flightTotals(fl) === null))) {
       gaps.push({ key: "floor_to_floor" });
     }
     if (!turns && flights.length === 1) {
@@ -1572,14 +1575,19 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       gaps.push({key:'landing_entry_rise',detail:`#${si+1}`,...(previousFlight>=0?{flight:previousFlight}:{})});
     }
     if (!has(pl.length) && shape !== "level_run") gaps.push({ key: "landing_length", detail: tag });
+    // A level run is one straight rail: the floor's depth and diagonal build nothing.
+    if (shape === "level_run") return;
     if (!has(pl.depth)) gaps.push({ key: "landing_depth", detail: tag });
     if (!has(pl.diag)) gaps.push({ key: "landing_diag", detail: tag });
   });
 
-  if (!has(data.rail.height)) gaps.push({ key: "rail_height" });
+  // Gates, fences, decks, balconies and wells record their own height and
+  // their own ends; the stair-rail versions would ask for the same thing twice.
+  const ownRail = selfContained || isBalcony || isWell;
+  if (!ownRail && !has(data.rail.height)) gaps.push({ key: "rail_height" });
 
   // rail terminations
-  if (!has(data.rail.returns)) gaps.push({ key: "returns" });
+  if (!ownRail && !has(data.rail.returns)) gaps.push({ key: "returns" });
   if ((data.rail.kind === "Handrail" || data.rail.kind === "Both") && !has(data.rail.extensions)) {
     gaps.push({ key: "extensions" });
   }
