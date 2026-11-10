@@ -66,6 +66,7 @@ import PhotoCapture from "./overlays/PhotoCapture";
 import { BrandProvider } from "@/app/shop/brand/BrandContext";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
+import MeasureKeypad from "./overlays/MeasureKeypad";
 import RoutingCard from "./sections/RoutingCard";
 import SketchSections from "./sections/SketchSections";
 import StairSections from "./sections/StairSections";
@@ -208,6 +209,7 @@ export default function MeasureEditor({
   const [slotBusy, setSlotBusy] = useState<string | null>(null);
   const [slotErr, setSlotErr] = useState<string | null>(null);
   const [fracBar, setFracBar] = useState(false);
+  const [padActive, setPadActive] = useState(false);
   const [activeFlight, setActiveFlight] = useState(() => firstOpenFlight(sheet.data));
   const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
   const [workspace,setWorkspace]=useState<'design'|'review'>('design');
@@ -1355,7 +1357,8 @@ export default function MeasureEditor({
         onClose={() => setPhotoSlot(null)}
       />
       {/* Fraction quick-keys */}
-      <FractionBar show={fracBar} tokens={fracTokens} />
+      <FractionBar show={fracBar && !padActive} tokens={fracTokens} />
+      <MeasureKeypad lang={lang} feet={units === "ftin"} onActive={setPadActive} />
       </div>
       {/* Print-only branded sheet */}
       <PrintSheet
