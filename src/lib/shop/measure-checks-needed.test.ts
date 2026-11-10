@@ -28,9 +28,11 @@ describe("only what the shop needs to build the piece", () => {
     expect(k).not.toContain("landing_diag");
   });
 
-  it("a wall handrail is not asked the stair width", () => {
-    expect(keys("wall_rail", 4)).not.toContain("flight_width");
-    expect(keys("straight", 4)).toContain("flight_width");
+  it("numbers the shop can build without are never mandatory", () => {
+    const all = [...keys("straight", 4), ...keys("wall_rail", 4), ...keys("deck", 3), ...keys("fence", 2), ...keys("balcony")];
+    for (const k of ["flight_width", "deck_side_height", "deck_post_spacing_f", "fence_post_spacing", "fence_utilities", "bal_slab_thickness", "bal_embedment_f", "bal_edge_distance_f"]) expect(all).not.toContain(k);
+    expect(keys("deck", 3)).toContain("deck_side_length");
+    expect(keys("fence", 2)).toContain("fence_height");
   });
 
   it("floor-to-floor is asked only until the risers add up to it", () => {

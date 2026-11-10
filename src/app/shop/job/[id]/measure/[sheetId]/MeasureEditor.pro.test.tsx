@@ -68,12 +68,12 @@ describe('single professional measuring workspace',()=>{
   expect(screen.queryByLabelText('Typical rise')).toBeNull();
  });
  it('opens a missing measurement on the correct topic and flight',()=>{
-  const sheet=sheetWith(0),gap=sheetReadiness(sheet.data,sheet.shape).fabGaps.find(g=>g.key==='flight_width'&&g.flight===2)!;
+  const sheet=sheetWith(0),gap=sheetReadiness(sheet.data,sheet.shape).fabGaps.find(g=>g.key==='flight_angle'&&g.flight===2)!;
   render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);
   click(/^Shop package/);
-  const label=`${mt('en','gap_flight_width')} (${gap.detail})`;
+  const label=`${mt('en','gap_flight_angle')} (${gap.detail})`;
   fireEvent.click(screen.getByRole('button',{name:new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'))}));
-  expect((screen.getByRole('combobox',{name:'Tool'}) as HTMLSelectElement).value).toBe('structure');
+  expect((screen.getByRole('combobox',{name:'Tool'}) as HTMLSelectElement).value).toBe('connections');
   expect((screen.getByRole('combobox',{name:'Flight'}) as HTMLSelectElement).value).toBe('2');
  });
  it('retains owner approval controls in the sole shop review',()=>{

@@ -21,16 +21,9 @@ function Harness({ shape, steps = 1, init, lang = 'en' }: { shape: MeasureShape;
 const saved = () => JSON.parse(screen.getByTestId('data').textContent!) as MeasureData;
 
 describe('next card on railed runs', () => {
-  it('copies a deck side height to the other sides, with Undo', () => {
+  it('does not ask a deck for its height above grade', () => {
     render(<Harness shape="deck" steps={3} init={d => { d.deck!.sides[0].length = '192'; }} />);
-    const box = screen.getByRole('textbox', { name: /^Next:/ }) as HTMLInputElement;
-    expect(box.getAttribute('aria-label')).toMatch(/1 · .*height/i);
-    fireEvent.change(box, { target: { value: '36' } });
-    fireEvent.click(screen.getByRole('button', { name: /Same for all sides/ }));
-    expect(saved().deck!.sides.map(s => s.heightAboveGrade)).toEqual(['36', '36', '36']);
-    expect(screen.getByText(/Copied to 2 sides/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
-    expect(saved().deck!.sides.map(s => s.heightAboveGrade)).toEqual(['36', '', '']);
+    expect((screen.getByRole('textbox', { name: /^Next:/ }) as HTMLInputElement).getAttribute('aria-label')).not.toMatch(/height above grade/i);
   });
 
   it('offers a square deck corner to approve', () => {
@@ -52,7 +45,6 @@ describe('next card on railed runs', () => {
 
   it('says it in Portuguese', () => {
     render(<Harness shape="deck" steps={3} lang="pt" init={d => { d.deck!.sides[0].length = '192'; }} />);
-    fireEvent.change(screen.getByRole('textbox'), { target: { value: '30' } });
-    expect(screen.getAllByText(/Igual para todos os lados/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('textbox').getAttribute('aria-label')).toMatch(/^Próxim/);
   });
 });

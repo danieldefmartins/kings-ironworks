@@ -1185,8 +1185,20 @@ export function flightGaps(
 // one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // The pro shot list adds documentation shots on top (yellow, never blocking).
-  return [...baseRequiredGaps(data, shape), ...shotGaps(data, shape)];
+  return [...baseRequiredGaps(data, shape).filter((g) => !NOT_MANDATORY.has(g.key)), ...shotGaps(data, shape)];
 }
+// Numbers the shop can build without (owner, 2026-11-10). Their fields stay on
+// the sheet for whoever wants to record them; nothing asks for them or waits on them.
+const NOT_MANDATORY = new Set([
+  "flight_width",
+  "deck_side_height",
+  "deck_post_spacing_f",
+  "fence_post_spacing",
+  "fence_utilities",
+  "bal_slab_thickness",
+  "bal_embedment_f",
+  "bal_edge_distance_f",
+]);
 function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // An opening sheet carries its own frame, sizes and photo list.
   if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
@@ -1528,8 +1540,7 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
         ...flightGaps(fl, fi, {
           needRake: turns || flights.length > 1,
           multi: flights.length > 1,
-          // A handrail on a wall is the same piece however wide the stair is.
-        }).filter((g) => shape !== "wall_rail" || g.key !== "flight_width")
+        })
       );
     });
     // mixed-assembly curve and ramp segments must be measurable
