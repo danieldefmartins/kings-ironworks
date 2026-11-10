@@ -21,17 +21,23 @@ export function WorkspaceScene(props:SceneViewportProps){
  * left (sticky), controls and tool on the right. `wide` hides the scene (it
  * stays mounted) and gives the content full width.
  */
-export default function ProWorkspace({data,lang,shape,children,toolbar,lead,nav,wide=false,stacked=false,onSelect,onPostDrop,focus}:{/** The step face the Next card is on, lit in the 3D. */focus?:SceneViewportProps['focus'];/** One column with the scene on top (sheets whose own form needs the full width). */stacked?:boolean;onPostDrop?:SceneViewportProps['onPostDrop'];onSelect?:SceneViewportProps['onSelect'];data:MeasureData;shape?:MeasureShape;lang:string;children:ReactNode;toolbar?:ReactNode;lead?:ReactNode;nav?:ReactNode;wide?:boolean}){
+/** Fired by the editor when something needs the tools panel on screen (a detail opened from the card, a step picked on the drawing). */
+export const SHOW_TOOLS_EVENT='kiw:measure-show-tools';
+export const showMeasureTools=()=>{if(typeof window!=='undefined')window.dispatchEvent(new Event(SHOW_TOOLS_EVENT));};
+export default function ProWorkspace({data,lang,shape,children,toolbar,lead,nav,wide=false,stacked=false,onSelect,onPostDrop,focus,quiet=false}:{/** Phone: while the card is asking, only the drawing and the card show; the stage picker and tools wait behind one button. */quiet?:boolean;/** The step face the Next card is on, lit in the 3D. */focus?:SceneViewportProps['focus'];/** One column with the scene on top (sheets whose own form needs the full width). */stacked?:boolean;onPostDrop?:SceneViewportProps['onPostDrop'];onSelect?:SceneViewportProps['onSelect'];data:MeasureData;shape?:MeasureShape;lang:string;children:ReactNode;toolbar?:ReactNode;lead?:ReactNode;nav?:ReactNode;wide?:boolean}){
  const [active,setActive]=useState<Registration|null>(null),[reference,setReference]=useState(false),[zoom,setZoom]=useState(1);
  const register=useCallback((next:Registration|null,token:object)=>setActive(old=>next||(!old||old.token===token?null:old)),[]);
  const viewport=useRef<HTMLDivElement>(null),drawing=useRef<HTMLDivElement>(null);useDrawingPinch(viewport,drawing,zoom,setZoom,reference);
+ const [more,setMore]=useState(false);
+ useEffect(()=>{const show=()=>setMore(true);window.addEventListener(SHOW_TOOLS_EVENT,show);return()=>window.removeEventListener(SHOW_TOOLS_EVENT,show);},[]);
+ const tucked=quiet&&!more&&!wide;
  const props=active?.props,select=props?.onSelect||onSelect;
  const scene=useRef<HTMLDivElement>(null);
  const placement=props?.wallPlacement?'wall':props?.groundPick?'ground':props?.surfacePick?'surface':'';
  useEffect(()=>{if(placement)scene.current?.scrollIntoView?.({block:'start',behavior:'smooth'});},[placement]);
  const tx=(en:string,pt:string,es:string)=>lang==='pt'?pt:lang==='es'?es:en;
  return <SceneContext.Provider value={register}><section aria-label={tx('Measuring workspace','Área de medição','Área de medición')} className={wide||stacked?'space-y-3':'grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(340px,410px)] lg:grid-rows-[auto_1fr] lg:gap-4'}>
-  {(nav||toolbar)&&<div className={wide||stacked?'min-w-0 space-y-3':'min-w-0 space-y-3 lg:col-start-2 lg:row-start-1'}>{nav}{!wide&&toolbar}</div>}
+  {(nav||toolbar)&&<div className={wide||stacked?'min-w-0 space-y-3':'min-w-0 space-y-3 lg:col-start-2 lg:row-start-1'}>{nav}{!wide&&toolbar&&<div className={tucked?'max-lg:hidden':undefined}>{toolbar}</div>}</div>}
   <div className={stacked?'min-w-0 space-y-3':'min-w-0 space-y-3 lg:sticky lg:top-[72px] lg:col-start-1 lg:row-span-2 lg:row-start-1'}>
   <div ref={scene} hidden={wide} className="relative min-w-0 scroll-mt-16" role="region" aria-label={tx("Job scene", "Vista do projeto", "Vista del proyecto")}>
    {reference&&<div className="mb-2 flex justify-end"><button type="button" className="min-h-11 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700" onClick={()=>setReference(false)}>3D</button></div>}
@@ -39,7 +45,8 @@ export default function ProWorkspace({data,lang,shape,children,toolbar,lead,nav,
    {reference&&<div className="rounded-2xl border bg-white p-2">{props?.groundPick&&<p role="status" className="mb-2 text-sm text-slate-600">{tx('Top view: tap the ground to position. Check elevation in the dimensions.','Planta: toque no chão para posicionar. Confira a elevação nas medidas.','Planta: toque el suelo para ubicar. Verifique la elevación en las medidas.')}</p>}<SketchZoom zoom={zoom} onChange={setZoom} lang={lang} light/><div ref={viewport} className="max-h-[32dvh] overflow-auto lg:max-h-[60dvh]"><div ref={drawing} style={{width:`${zoom*100}%`}}><SiteDrawing data={data} view={props?.groundPick?'plan':'iso'} move={props?.groundPick} onMove={(x,y)=>select?.({point:{x,y,z:0}})} draftObjects lang={lang} selected={props?.selectedId?.replace(/^site:/,'')} wallPlacement={props?.wallPlacement} wallPlacementSegment={props?.wallPlacementSegment} onWallEdge={props?.onWallEdge} onSelect={siteId=>select?.({siteId})} onSurface={props?.groundPick?undefined:(segmentIndex,stepIndex)=>select?.({segmentIndex,stepIndex})} onMember={(railId,part,role)=>select?.({railId,part,role})}/></div></div></div>}
   </div>
   {lead}
+  {quiet&&!wide&&<button type="button" data-more-tools aria-expanded={more} className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-[15px] font-semibold text-slate-700 transition-transform active:scale-[.98] lg:hidden" onClick={()=>setMore(v=>!v)}>{more?tx('Hide tools','Ocultar ferramentas','Ocultar herramientas'):tx('More tools','Mais ferramentas','Más herramientas')}</button>}
   </div>
-  <div className={wide||stacked?'min-w-0':'min-w-0 rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 lg:col-start-2 lg:row-start-2'} data-selection-tools aria-label={tx("Selection tools", "Ferramentas de seleção", "Herramientas de selección")}>{children}</div>
+  <div className={`${wide||stacked?'min-w-0':'min-w-0 rounded-2xl border border-slate-200 bg-white p-3 text-slate-900 lg:col-start-2 lg:row-start-2'}${tucked?' max-lg:hidden':''}`} data-selection-tools aria-label={tx("Selection tools", "Ferramentas de seleção", "Herramientas de selección")}>{children}</div>
  </section></SceneContext.Provider>;
 }
