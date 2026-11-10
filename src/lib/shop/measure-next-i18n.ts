@@ -61,6 +61,7 @@ const ROWS: Row[] = [
   // Stairs — step by step, riser then tread
   ["nx_rise", "Rise", "Espelho", "Contrahuella"],
   ["nx_tread", "Tread depth", "Piso", "Huella"],
+  ["nx_entryRise", "Step up onto the landing", "Degrau até o patamar", "Escalón hasta el descanso"],
   ["nx_copyAll", "Same for all steps", "Igual para todos", "Igual en todos"],
   ["nx_copyMore", "More copy options", "Mais opções de cópia", "Más opciones de copia"],
   ["nx_copyEmpty", "Only empty", "Só vazios", "Solo vacíos"],

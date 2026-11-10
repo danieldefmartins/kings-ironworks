@@ -63,6 +63,14 @@ export function slotAngle(slot: Pick<NextSlot, "id">, data: MeasureData): { calc
 const nx = (lang: string, key: string, vars?: Record<string, string | number>) => nxText(lang, key, vars) ?? key;
 
 /** The face of the stair a slot is about, for lighting it on the 3D. */
+/** Fired by the editor when a step or landing is tapped on the drawing; cancelled when the card took it. */
+export const ASK_ON_CARD_EVENT = "kiw:measure-ask-on-card";
+/** True when the Next card brought that step's number up. */
+export function askOnCard(segmentIndex: number, stepIndex: number | null): boolean {
+  if (typeof window === "undefined") return false;
+  return !window.dispatchEvent(new CustomEvent(ASK_ON_CARD_EVENT, { detail: { segmentIndex, stepIndex }, cancelable: true }));
+}
+
 export function slotFocus(item: NextItem | null, data: MeasureData, dims: readonly SceneDim[] = []): SceneFocus | null {
   if (item?.type !== "slot") return null;
   const step = stepPart(item.slot);
@@ -290,6 +298,28 @@ export default function NextMeasurement({
     setDir(direction === 1 ? "fwd" : "back");
     setCurrentId(next ? next.id : null);
   }
+  // A step or landing tapped on the drawing: its number comes up here, in the
+  // same box it was first typed in, so it is changed with the drawing in view.
+  const queueRef = useRef(queue);
+  const dataRef = useRef(data);
+  useEffect(() => { queueRef.current = queue; dataRef.current = data; }, [queue, data]);
+  useEffect(() => {
+    const onAsk = (event: Event) => {
+      const at = (event as CustomEvent<{ segmentIndex: number; stepIndex: number | null }>).detail;
+      if (!at) return;
+      const mine = queueRef.current.slots.filter((s) => s.segIdx === at.segmentIndex && (s.stepIdx ?? null) === at.stepIndex);
+      const slot = mine.find((s) => !s.get(dataRef.current).trim()) ?? mine[0];
+      if (!slot) return;
+      event.preventDefault();
+      refocus.current = true;
+      setDetails(false);
+      setDir("");
+      setCurrentId(slot.id);
+      if (input.current && document.activeElement !== input.current) input.current.focus({ preventScroll: true });
+    };
+    window.addEventListener(ASK_ON_CARD_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_ON_CARD_EVENT, onAsk);
+  }, []);
   function backToLast() {
     const last = queue.slots[queue.slots.length - 1];
     setDetails(false);

@@ -134,7 +134,7 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
       if (single) return;
       const tag = data.segments.length > 2 ? `#${si}` : undefined;
       const at = { segIdx: si, tag: tag && `#${si + 1}` };
-      field(`s${si}.entryRise`, 'landing_entry_rise', 'segmentRise', seg(si), 'entryRise', { ...at, detail: `#${si + 1}` });
+      field(`s${si}.entryRise`, 'landing_entry_rise', 'nx_entryRise', seg(si), 'entryRise', { ...at, detail: `#${si + 1}` });
       if (shape === 'level_run') field(`s${si}.length`, 'run_length', 'length', seg(si), 'length', at);
       else field(`s${si}.length`, 'landing_length', 'length', seg(si), 'length', { ...at, detail: tag });
       field(`s${si}.depth`, 'landing_depth', 'depth', seg(si), 'depth', { ...at, detail: tag });
