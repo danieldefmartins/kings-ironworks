@@ -5,6 +5,7 @@
 // measurer on a porch never has to find the right card among thirty. Every
 // work type feeds it — a stair, a gate, an opening in a wall, a steel frame.
 
+import { gapChoices } from "@/lib/shop/measure-next-choices";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
@@ -335,18 +336,36 @@ export default function NextMeasurement({
   );
 
   if (item.type === "gap") {
+    // A pick (which side is the wall, which post) is answered right here in one tap.
+    const choices = gapChoices(item.gap, lang);
+    const answer = (value: string) => {
+      const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
+      set((d) => choices!.put(d, value));
+      setDir("fwd");
+      setCurrentId(next?.id ?? null);
+    };
     return (
       <section aria-label={label} data-next-measure className={`@container ${shell}`}>
         <style>{MOTION}</style>
         <div className="p-3.5 @2xl:flex @2xl:items-center @2xl:gap-6 @2xl:px-5"><div className="min-w-0 @2xl:flex-1">
           <div key={item.id} data-nx-anim={dir || undefined} className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{gapLabel(item.gap)}</p></div>
+            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{choices ? choices.question : gapLabel(item.gap)}</p></div>
             {progress}
           </div>
           {bar}
+          {choices && (
+            <div data-nx-choices role="group" aria-label={choices.question} className={`mt-3 grid gap-2 ${choices.options.length > 1 ? "grid-cols-2" : ""}`}>
+              {choices.options.map((o) => (
+                <button key={o.value} type="button" data-nx-choice={o.value} onClick={() => answer(o.value)}
+                  className="min-h-14 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 text-[16px] font-semibold leading-tight text-indigo-800 transition-transform active:scale-[.97]">
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           </div><div className="mt-2.5 flex items-center gap-2 @2xl:mt-0 @2xl:w-[440px] @2xl:shrink-0">
             <button type="button" aria-label={nx(lang, "nx_prev")} disabled={remaining < 2 && !queue.slots.length} onClick={() => (remaining < 2 ? backToLast() : go(-1))} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
-            <button type="button" onClick={() => onOpenGap(item.gap)} className="min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]">{nx(lang, "nx_open")}</button>
+            <button type="button" onClick={() => onOpenGap(item.gap)} className={choices ? "min-h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-transform active:scale-[.98]" : "min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]"}>{choices ? (lang === "pt" ? "Outro" : lang === "es" ? "Otro" : "Other") : nx(lang, "nx_open")}</button>
             <button type="button" aria-label={nx(lang, "nx_skip")} disabled={remaining < 2} onClick={() => go(1)} className={navBtn}><ChevronRight aria-hidden className="h-5 w-5" /></button>
           </div>
         </div>
