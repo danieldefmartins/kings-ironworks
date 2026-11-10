@@ -16,11 +16,15 @@ export function placeSiteObject(data:MeasureData,kind:PlaceableSiteKind,point:Po
  * Never insert this mesh into siteMeshes, anchors, quantities or fabrication.
  * Complete measured geometry is returned by siteMesh instead of this helper. */
 export function previewSiteObject(object:SiteObject):SiteMesh|null{
+ const draft=previewSiteDraft(object),mesh=draft&&siteMesh(draft);return mesh?{...mesh,provisional:true}:null;
+}
+/** The object as its preview draws it: blank sizes filled with display defaults. Display only. */
+export function previewSiteDraft(object:SiteObject):SiteObject|null{
  if(!isKind(object.kind)||object.wallAnchor||[object.x,object.y,object.z,object.riseX,object.riseY].some(v=>siteNumber(v)===null)||!Number.isFinite(object.rotation)||Math.abs(object.rotation)>360)return null;
  if(siteMesh(object))return null;
  const dimensions=(object.section==='round'?['length','height']:['length','depth','height']) as ('length'|'depth'|'height')[];
  if(!dimensions.some(key=>!object[key].trim()))return null;
  const draft={...object,verified:false},defaults=sizes[object.kind];
  for(const key of dimensions){const text=object[key].trim(),value=siteNumber(text);if(text&&(value===null||value<=0))return null;if(!text)draft[key]=String(defaults[key==='length'?0:key==='depth'?1:2]);}
- const mesh=siteMesh(draft);return mesh?{...mesh,provisional:true}:null;
+ return draft;
 }

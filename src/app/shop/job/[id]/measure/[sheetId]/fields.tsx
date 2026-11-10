@@ -1053,6 +1053,8 @@ export function TermEditor({
   onHw,
   onPhoto,
   substrate,
+  columns,
+  onColumn,
 }: {
   lang: string;
   title: string;
@@ -1067,7 +1069,11 @@ export function TermEditor({
   /** Shared substrate editor (measure-substrate.ts) for wall / column / floor ends;
    *  replaces the free-text material picker when given. */
   substrate?: React.ReactNode;
+  /** Columns drawn on the site: an end attached to one takes its size and base molding from it. */
+  columns?: [string, string][];
+  onColumn?: (id: string) => void;
 }) {
+  const linked = !!t.columnId && !!columns?.some(([id]) => id === t.columnId);
   const allowed = METHODS_BY_ATTACH[t.attachTo] || [];
   const needsHw = !!t.method && (HARDWARE_METHODS as string[]).includes(t.method);
   const needsFastener = !!t.method && (FASTENER_METHODS as string[]).includes(t.method);
@@ -1128,6 +1134,16 @@ export function TermEditor({
           />
         </div>
       )}
+      {isColumn && !!columns?.length && onColumn && (
+        <div className="mt-3" data-term-column>
+          <ChipRow
+            label={lang === "pt" ? "Coluna no desenho" : lang === "es" ? "Columna en el dibujo" : "Column on the drawing"}
+            value={linked ? t.columnId! : ""}
+            options={columns}
+            onChange={onColumn}
+          />
+        </div>
+      )}
       {(isWall || isColumn || t.attachTo === "floor") && substrate}
       {(isWall || isColumn || t.attachTo === "floor") && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -1140,7 +1156,7 @@ export function TermEditor({
               placeholder="—" value={t.backing}
               onChange={(v) => onField("backing", v)} />
           )}
-          {isColumn && (
+          {isColumn && !linked && (
             <>
               <MInput help="columnWLbl" label={mt(lang, "columnWLbl")} value={t.columnW}
                 onChange={(v) => onField("columnW", v)} />
@@ -1152,9 +1168,9 @@ export function TermEditor({
       )}
       {isColumn && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-          <MInput help="moldingLbl" label={mt(lang, "moldingLbl")} placeholder="—" value={t.molding}
-            onChange={(v) => onField("molding", v)} />
-          {t.molding.trim() !== "" && (
+          {!linked && <MInput help="moldingLbl" label={mt(lang, "moldingLbl")} placeholder="—" value={t.molding}
+            onChange={(v) => onField("molding", v)} />}
+          {!linked && t.molding.trim() !== "" && (
             <MInput help="moldingHeightLbl" label={mt(lang, "moldingHeightLbl")} value={t.moldingHeight}
               onChange={(v) => onField("moldingHeight", v)} />
           )}
@@ -1174,7 +1190,7 @@ export function TermEditor({
                   onChange={(v) => onHw("qty", v)} />
               </>
             )}
-            <MInput label={`${mt(lang, "hwElevation")} *`} value={t.hardware.elevation}
+            <MInput label={mt(lang, "hwElevation")} placeholder="—" value={t.hardware.elevation}
               onChange={(v) => onHw("elevation", v)} />
             <ChipRow
               label={`${mt(lang, "hwShopField")} *`}

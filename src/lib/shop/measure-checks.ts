@@ -1635,7 +1635,7 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if ((p.pointType === "concrete_wall" || p.pointType === "clip") && !has(p.anchor)) {
       gaps.push({ key: "existing_material", detail: tag });
     }
-    if (p.pointType === "clip" && !has(p.clipDetail)) gaps.push({ key: "clip_detail", detail: tag });
+    // A clip left without detail is the shop's usual clip (SHOP_DEFAULTS.wallClip).
     if (p.pointType !== "railing_post") return;
     if (!has(p.substrate)) gaps.push({ key: "post_substrate", detail: tag });
     if (p.mount === "Base plate") {
@@ -1865,7 +1865,7 @@ function terminationGaps(
   if ((t.attachTo === "wall" || t.attachTo === "existing_post" || t.attachTo === "floor") && !has(t.material)) {
     gaps.push({ key: "term_material", detail: tag });
   }
-  if (t.attachTo === "wall" && !has(t.backing)) gaps.push({ key: "term_backing", detail: tag });
+  // A wall end's backing is the installer's call on site; the shop builds the same clip either way.
   if (t.attachTo === "floor" && t.material === "Wood" && !has(t.backing)) {
     gaps.push({ key: "term_backing", detail: tag });
   }
@@ -1880,7 +1880,7 @@ function terminationGaps(
       if (!has(hw.fastener)) gaps.push({ key: "term_fastener", detail: tag });
       if (!has(hw.qty)) gaps.push({ key: "term_qty", detail: tag });
     }
-    if (!has(hw.elevation)) gaps.push({ key: "term_elevation", detail: tag });
+    // The connection sits on the rail, whose height is already recorded: its own height is typed only when it differs.
     if (!has(hw.shopField)) gaps.push({ key: "term_shopfield", detail: tag });
     // the dimensions the shop needs to actually FABRICATE this connection
     for (const field of HW_REQUIRED[t.method] || []) {

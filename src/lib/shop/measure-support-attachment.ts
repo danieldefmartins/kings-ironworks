@@ -8,14 +8,20 @@ import {railFaceSpan} from './measure-rail-end-position';
 export const SupportAttachmentSchema=SiteRailEndSchema.extend({gap:z.string().max(40)});
 export type SupportAttachment=z.infer<typeof SupportAttachmentSchema>;
 export type SupportTerminal={kind:'existing-support';hostId:string;facePoint:Point3;normal:Point3;gap:number;verified:boolean;faceClearance:number;bottomZ:number;topZ:number;rectangular:true};
-export function supportTerminal(data:MeasureData,site:SiteModel|undefined,post:PostMeasure):{base:Point3|null;top:Point3|null;provisional:boolean;terminal?:SupportTerminal}{
+/** What can keep a linked support from resolving; the editor names exactly these, nothing vaguer. */
+export type SupportOpenItem='support'|'size'|'shape'|'datum'|'gap'|'railHeight'|'square'|'verify'|'reference'|'detail'|'range';
+type Resolved={base:Point3|null;top:Point3|null;provisional:boolean;terminal?:SupportTerminal};
+export function supportTerminal(data:MeasureData,site:SiteModel|undefined,post:PostMeasure):Resolved{const {open:_open,...resolved}=resolveSupport(data,site,post);void _open;return resolved;}
+/** The open items behind an unresolved support connection, in the order the crew would fix them. */
+export function supportOpenItems(data:MeasureData,site:SiteModel|undefined,post:PostMeasure):SupportOpenItem[]{return resolveSupport(data,site,post).open;}
+function resolveSupport(data:MeasureData,site:SiteModel|undefined,post:PostMeasure):Resolved&{open:SupportOpenItem[]}{
  const attachment=post.supportAttachment;
  const segment=data.segments[post.segIdx];
- if(!segment||!['flight','platform'].includes(segment.kind)||post.pathId||(segment.kind==='flight'&&(post.stepIdx===null||!segment.steps[post.stepIdx])))return {base:null,top:null,provisional:true};
- if(!attachment||post.pointType==='railing_post')return {base:null,top:null,provisional:true};
+ if(!segment||!['flight','platform'].includes(segment.kind)||post.pathId||(segment.kind==='flight'&&(post.stepIdx===null||!segment.steps[post.stepIdx])))return {base:null,top:null,provisional:true,open:['support']};
+ if(!attachment||post.pointType==='railing_post')return {base:null,top:null,provisional:true,open:['support']};
  const host=railHosts(site).find(h=>h.id===attachment.objectId),span=railFaceSpan(host,attachment.face),height=siteNumber(data.rail.height),gap=siteNumber(attachment.gap);
  const base=resolveRailEnd(site,attachment);
- if(!host||!span||!base||height===null||height<=0||gap===null||gap<0||host.section==='round'||siteNumber(host.riseX)!==0||siteNumber(host.riseY)!==0)return {base:null,top:null,provisional:true};
+ if(!host||!span||!base||height===null||height<=0||gap===null||gap<0||host.section==='round'||siteNumber(host.riseX)!==0||siteNumber(host.riseY)!==0){const open:SupportOpenItem[]=[];if(!host)open.push('support');else{if(host.section==='round'||siteNumber(host.riseX)!==0||siteNumber(host.riseY)!==0)open.push('shape');else if(!span||siteNumber(host.x)===null||siteNumber(host.height)===null||!(siteNumber(host.height)!>0))open.push('size');if(siteNumber(attachment.elevation)===null)open.push('datum');else if(!base&&!open.length)open.push('size');}if(gap===null||gap<0)open.push('gap');if(height===null||height<=0)open.push('railHeight');return {base:null,top:null,provisional:true,open};}
  const top={...base,z:base.z+height},angle=host.rotation*Math.PI/180;
  const local=attachment.face==='left'?[-1,0]:attachment.face==='right'?[1,0]:attachment.face==='near'?[0,-1]:[0,1];
  const normal={x:local[0]*Math.cos(angle)-local[1]*Math.sin(angle),y:local[0]*Math.sin(angle)+local[1]*Math.cos(angle),z:0};
@@ -31,5 +37,6 @@ export function supportTerminal(data:MeasureData,site:SiteModel|undefined,post:P
  const next=neighbors[0],dx=next?next.x-base.x:0,dy=next?next.y-base.y:0,run=Math.hypot(dx,dy);
  const aligned=run>1/16&&(dx*normal.x+dy*normal.y)/run>1-1e-6;
  const verified=aligned&&host.verified&&host.source!=='unknown'&&!!site?.datum.trim()&&!!attachment.connection.trim()&&!!post.side&&base.z>=bottomZ&&top.z<=topZ;
- return {base,top,provisional:!verified,terminal:{kind:'existing-support',hostId:host.id,facePoint:base,normal,gap,verified,faceClearance:Math.min(attachment.along,1-attachment.along)*span.length,bottomZ,topZ,rectangular:true}};
+ const open:SupportOpenItem[]=[];if(!aligned)open.push('square');if(!host.verified||host.source==='unknown')open.push('verify');if(!site?.datum.trim())open.push('reference');if(!attachment.connection.trim())open.push('detail');if(base.z<bottomZ||top.z>topZ)open.push('range');
+ return {open,base,top,provisional:!verified,terminal:{kind:'existing-support',hostId:host.id,facePoint:base,normal,gap,verified,faceClearance:Math.min(attachment.along,1-attachment.along)*span.length,bottomZ,topZ,rectangular:true}};
 }
