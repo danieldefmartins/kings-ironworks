@@ -70,7 +70,7 @@ export default function RailSections({
             carried={carriedNote("rail.height", data.rail.height)}
             onClearCarried={() => set((d) => void (d.rail.height = ""))}
             onChange={(v) => { set((d) => void (d.rail.height = v)); }} />
-          {!isWallRail && (
+          {!isWallRail && !isWell && (
             <MSelect help="railSide" label={mt(lang, "railSide")} value={data.rail.side}
               options={[...RAIL_SIDE_OPTIONS]} lang={lang}
               onChange={(v) => set((d) => void (d.rail.side = v))} />

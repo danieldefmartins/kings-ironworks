@@ -3,6 +3,12 @@ import { linearDim, type SceneDim } from './measure-dims';
 import { finishDim, nonNeg, P3, pos, signedOf } from './measure-dims-gate';
 import { section } from './scene-shapes/build-kit';
 import { codeLimits, effectiveCodeSettings, effectiveOccupancy } from './measure-code';
+import { WELL_PREVIEW as PV, wellGuardLayout, wellLadderLayout } from './measure-well-layout';
+
+// One-tap questions the Next card asks about the gate and the ladder: not
+// numbers, but the drawing lights the same line while each is asked.
+export const WELL_GATE_ASKS = ['well.gateRun', 'well.gateAt', 'well.gateHinge', 'well.gateSwing'];
+export const WELL_LADDER_ASKS = ['well.ladderWall', 'well.ladderAt'];
 
 /**
  * Guard height above the top of the well wall that reaches the code guard
@@ -26,21 +32,22 @@ export function wellGuardCalc(data: MeasureData): number | null {
  *   length along the house · projection · depth · wall thickness · top of
  *   wall above (or below) grade · each wall band: its setback from the proud
  *   face and its top / bottom down from the top of the wall · and, for what
- *   KIW supplies: guard height, post off the wall, gate width, ladder width,
- *   rung spacing and standoff.
+ *   KIW supplies: guard height, post off the wall at each return, gate width
+ *   (on whichever run the gate is in), ladder width, rung spacing and standoff
+ *   (on whichever wall the ladder is on).
  */
 export function wellDims(data: MeasureData): SceneDim[] {
   const w = data.well;
   if (!w) return [];
   const out: SceneDim[] = [];
   const Lh = pos(w.lengthAtHouse), Pj = pos(w.projection);
-  const L = Lh ?? 60, Pr = Pj ?? 36;
-  const t = pos(w.wallThickness), tw = t ?? 6, depth = pos(w.depth), rise = signedOf(w.topToGrade);
-  const top = rise ?? 0, floor = top - (depth ?? 36);
+  const L = Lh ?? PV.length, Pr = Pj ?? PV.projection;
+  const t = pos(w.wallThickness), tw = t ?? PV.wall, depth = pos(w.depth), rise = signedOf(w.topToGrade);
+  const top = rise ?? 0, floor = top - (depth ?? PV.depth);
   const X = P3(1, 0, 0), NX = P3(-1, 0, 0), FRONT = P3(0, -1, 0), UP = P3(0, 0, 1);
-  const push = (key: string, slot: string | null, kind: string, a: ReturnType<typeof P3>, b: ReturnType<typeof P3>, n: ReturnType<typeof P3>, off: number, value: number | null, calc: number | null = null, scope: SceneDim['scope'] = 'overall', parts?: string[]) => {
+  const push = (key: string, slot: string | string[] | null, kind: string, a: ReturnType<typeof P3>, b: ReturnType<typeof P3>, n: ReturnType<typeof P3>, off: number, value: number | null, calc: number | null = null, scope: SceneDim['scope'] = 'overall', parts?: string[]) => {
     const d = linearDim(a, b, n, off);
-    out.push(finishDim({ key: `well:${key}`, kind, slots: slot ? [slot] : [], unit: 'len', value, calc, lines: d.lines, anchor: d.anchor, scope, parts }));
+    out.push(finishDim({ key: `well:${key}`, kind, slots: slot ? [slot].flat() : [], unit: 'len', value, calc, lines: d.lines, anchor: d.anchor, scope, parts }));
   };
   const has = (k: string) => w.deliverables.includes(k as never);
 
@@ -65,22 +72,28 @@ export function wellDims(data: MeasureData): SceneDim[] {
   });
 
   if (has('guard')) {
-    const post = section(data.materials.post), pw = post?.width ?? 0, gh = pos(w.guardHeight), gap = nonNeg(w.postToWall);
+    const pw = section(data.materials.post)?.width ?? PV.post, gh = pos(w.guardHeight), gap = nonNeg(w.postToWall), H = gh ?? PV.guardHeight;
     const c = tw / 2, yFront = -Pr + c;
-    push('guardHeight', 'well.guardHeight', 'wellGuardHeight', P3(c, yFront, top), P3(c, yFront, top + (gh ?? 36)), NX, 8 + pw, gh, wellGuardCalc(data), 'overall', ['well-guard']);
-    const zg = top + (gh ?? 36) * 0.5;
-    push('postToWall', 'well.postToWall', 'wellPostToWall', P3(c, 0, zg), P3(c, -(gap ?? 2), zg), NX, 6 + pw, gap, null, 'context', ['well-guard']);
+    push('guardHeight', 'well.guardHeight', 'wellGuardHeight', P3(c, yFront, top), P3(c, yFront, top + H), NX, 8 + pw, gh, wellGuardCalc(data), 'overall', ['well-guard']);
+    // Post face to the house, at the house end of each side run: where a return is clipped, posted or stops.
+    const zg = top + H * 0.5;
+    push('postToWall', ['well.postToWall', 'well.returnLeft'], 'wellPostToWall', P3(c, 0, zg), P3(c, -(gap ?? 2), zg), NX, 6 + pw, gap, null, 'context', ['well-guard', 'well-return']);
+    push('postToWallRight', ['well.postToWall', 'well.returnRight'], 'wellPostToWall', P3(L - c, 0, zg), P3(L - c, -(gap ?? 2), zg), X, 6 + pw, gap, null, 'context', ['well-return']);
     if (has('gate')) {
-      const gw = pos(w.gateWidth), frontL = L - tw, x0 = c + (frontL - (gw ?? 30)) / 2;
-      push('gateWidth', 'well.gateWidth', 'wellGateWidth', P3(x0, yFront, top + (gh ?? 36)), P3(x0 + (gw ?? 30), yFront, top + (gh ?? 36)), UP, 6, gw, null, 'context', ['well-gate', 'well-guard']);
+      const gw = pos(w.gateWidth);
+      const gate = wellGuardLayout({ length: L, projection: Pr, wall: tw, postWidth: pw, gapToWall: gap ?? 0, gate: { run: w.gateRun, at: w.gateAt, offset: pos(w.gateOffset), width: gw ?? PV.gateWidth } }).gate;
+      // Across the top of the gate, wherever it sits; the same line answers where it is and how it swings.
+      if (gate) push('gateWidth', ['well.gateWidth', ...WELL_GATE_ASKS], 'wellGateWidth', P3(gate.a.x, gate.a.y, top + H), P3(gate.b.x, gate.b.y, top + H), UP, 6, gw, null, 'context', ['well-gate', 'well-guard']);
     }
   }
   if (has('ladder')) {
-    const lw = pos(w.ladderWidth), sp = pos(w.ladderSpacing), so = nonNeg(w.ladderStandoff), cx = L / 2, y = -Pr + tw + (so ?? 3), parts = ['well-ladder'];
-    push('ladderWidth', 'well.ladderWidth', 'wellLadderWidth', P3(cx - (lw ?? 16) / 2, y, top), P3(cx + (lw ?? 16) / 2, y, top), UP, 6, lw, null, 'context', parts);
-    const z1 = floor + (sp ?? 12);
-    push('ladderSpacing', 'well.ladderSpacing', 'wellLadderSpacing', P3(cx + (lw ?? 16) / 2, y, floor + (sp ?? 12)), P3(cx + (lw ?? 16) / 2, y, z1 + (sp ?? 12)), X, 6, sp, null, 'context', parts);
-    push('ladderStandoff', 'well.ladderStandoff', 'wellLadderStandoff', P3(cx - (lw ?? 16) / 2, -Pr + tw, z1), P3(cx - (lw ?? 16) / 2, y, z1), NX, 6, so, null, 'context', parts);
+    const lw = pos(w.ladderWidth), sp = pos(w.ladderSpacing), so = nonNeg(w.ladderStandoff), S = sp ?? PV.ladderSpacing, parts = ['well-ladder'];
+    const lp = wellLadderLayout({ inside: { x0: tw, x1: L - tw, y0: -(Pr - tw), y1: 0 }, wall: w.ladderWall, at: w.ladderAt, offset: pos(w.ladderOffset), width: lw ?? PV.ladderWidth, standoff: so ?? PV.ladderStandoff });
+    const along = P3(lp.along.x, lp.along.y, 0), back = P3(-lp.along.x, -lp.along.y, 0), at = (p: { x: number; y: number }, z: number) => P3(p.x, p.y, z);
+    push('ladderWidth', ['well.ladderWidth', ...WELL_LADDER_ASKS], 'wellLadderWidth', at(lp.railA, top), at(lp.railB, top), UP, 6, lw, null, 'context', parts);
+    const z1 = floor + S;
+    push('ladderSpacing', 'well.ladderSpacing', 'wellLadderSpacing', at(lp.railB, z1), at(lp.railB, z1 + S), along, 6, sp, null, 'context', parts);
+    push('ladderStandoff', 'well.ladderStandoff', 'wellLadderStandoff', at(lp.wallA, z1), at(lp.railA, z1), back, 6, so, null, 'context', parts);
   }
   return out;
 }

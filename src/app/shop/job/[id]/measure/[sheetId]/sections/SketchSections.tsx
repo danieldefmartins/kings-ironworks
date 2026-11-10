@@ -220,7 +220,7 @@ export default function SketchSections({
         <div className="font-bold mb-1">{mt(lang, "sketch")}</div>
         {!isSpiral && !isWallRail && (
           <div className="text-xs text-neutral-500 mb-2">
-            {measuring ? mt(lang, "tapStepToMeasure") : mt(
+            {measuring && shape !== "window_well" ? mt(lang, "tapStepToMeasure") : mt(
               lang,
               isGate
                 ? "sketchHintGate"

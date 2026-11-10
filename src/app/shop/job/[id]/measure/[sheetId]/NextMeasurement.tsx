@@ -216,7 +216,10 @@ export default function NextMeasurement({
   // Light the step being asked about on the 3D, following Next and Previous.
   const dims = useMemo(() => sceneDims(data, shape), [data, shape]);
   const focusAt = finished ? null : slotFocus(item, data, dims);
-  const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : null;
+  // A one-tap question about something drawn (the gate, the ladder, a return) lights that thing too.
+  const asked = !finished && item?.type === "gap" ? gapChoices(item.gap, lang, data) : null;
+  const askedFocus: SceneFocus | null = asked?.dim && dimForSlot(dims, asked.dim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: asked.dim, label: asked.question.replace(/[¿?]/g, "").trim() } : null;
+  const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : askedFocus;
   const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}` : "";
   const focusRef = useRef(onFocus);
   focusRef.current = onFocus;
@@ -391,12 +394,21 @@ export default function NextMeasurement({
   if (item.type === "gap") {
     // A pick (which side is the wall, which post) is answered right here in one tap.
     const choices = gapChoices(item.gap, lang, data);
+    // Tick-several questions (what are we making) stay up until Done.
+    const multi = choices?.multi;
     // A required photo is taken from here: the saved photo closes the requirement,
     // the item leaves the open list and the card moves on by itself.
     const shot = isShot(item.gap);
     const answer = (value: string) => {
+      if (multi) { if (currentId !== item.id) setCurrentId(item.id); set((d) => choices!.put(d, value)); return; }
       const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
       set((d) => choices!.put(d, value));
+      setDir("fwd");
+      setCurrentId(next?.id ?? null);
+    };
+    const done = () => {
+      const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
+      set((d) => multi!.done(d));
       setDir("fwd");
       setCurrentId(next?.id ?? null);
     };
@@ -410,18 +422,22 @@ export default function NextMeasurement({
           </div>
           {bar}
           {choices && (
-            <div data-nx-choices role="group" aria-label={choices.question} className={`mt-3 grid gap-2 ${choices.options.length > 1 ? "grid-cols-2" : ""}`}>
-              {choices.options.map((o) => (
-                <button key={o.value} type="button" data-nx-choice={o.value} onClick={() => answer(o.value)}
-                  className="min-h-14 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 text-[16px] font-semibold leading-tight text-indigo-800 transition-transform active:scale-[.97]">
-                  {o.label}
-                </button>
-              ))}
+            <div data-nx-choices role="group" aria-label={choices.question} className={`mt-3 grid gap-2 ${choices.cols === 4 ? "grid-cols-4" : choices.cols === 3 ? "grid-cols-3" : choices.options.length > 1 ? "grid-cols-2" : ""}`}>
+              {choices.options.map((o) => {
+                const on = !!multi?.selected.includes(o.value);
+                return (
+                  <button key={o.value} type="button" data-nx-choice={o.value} aria-pressed={multi ? on : undefined} onClick={() => answer(o.value)}
+                    className={`min-h-14 rounded-2xl border font-semibold leading-tight ${choices.cols ? "px-1.5 text-[15px]" : "px-3 text-[16px]"} transition-[transform,background-color,color,border-color] duration-150 active:scale-[.97] ${on ? "border-indigo-600 bg-indigo-600 text-white" : multi ? "border-slate-200 bg-white text-slate-700" : "border-indigo-200 bg-indigo-50 text-indigo-800"}`}>
+                    {o.label}
+                  </button>
+                );
+              })}
             </div>
           )}
           </div><div className="mt-2.5 flex items-center gap-2 @2xl:mt-0 @2xl:w-[440px] @2xl:shrink-0">
             <button type="button" aria-label={nx(lang, "nx_prev")} disabled={remaining < 2 && !queue.slots.length} onClick={() => (remaining < 2 ? backToLast() : go(-1))} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
             {shot ? <button type="button" data-nx-shoot={item.gap.detail} onClick={() => onShootGap!(item.gap)} className="flex h-14 min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[17px] font-semibold text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)] transition-transform active:scale-[.98]"><Camera aria-hidden className="h-5 w-5" />{nx(lang, "nx_takePhoto")}</button>
+            : multi ? <button type="button" data-nx-done disabled={!multi.selected.length} onClick={done} className="flex h-14 min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[17px] font-semibold text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)] transition-transform active:scale-[.98] disabled:opacity-40"><Check aria-hidden className="h-5 w-5" strokeWidth={3} />{multi.doneLabel}</button>
             : <button type="button" onClick={() => onOpenGap(item.gap)} className={choices ? "min-h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-transform active:scale-[.98]" : "min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]"}>{choices ? (lang === "pt" ? "Outro" : lang === "es" ? "Otro" : "Other") : nx(lang, "nx_open")}</button>}
             <button type="button" aria-label={nx(lang, "nx_skip")} disabled={remaining < 2} onClick={() => go(1)} className={navBtn}><ChevronRight aria-hidden className="h-5 w-5" /></button>
           </div>

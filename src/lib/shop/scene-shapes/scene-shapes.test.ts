@@ -26,7 +26,8 @@ describe('shape registry',()=>{
  });
 });
 
-const blanks:[string,MeasureData,string][]=[['gate',newMeasureData('gate',1),'Gate · opening width'],['fence',newMeasureData('fence',2),'Fence segment 1 · length'],['deck',newMeasureData('deck',3),'Deck side 1 · length'],['balcony',newMeasureData('balcony',1),'Balcony · edge length'],['window_well',newMeasureData('window_well',1),'Well · length at house']];
+const blanks:[string,MeasureData,string][]=[['gate',newMeasureData('gate',1),'Gate · opening width'],['fence',newMeasureData('fence',2),'Fence segment 1 · length'],['deck',newMeasureData('deck',3),'Deck side 1 · length'],['balcony',newMeasureData('balcony',1),'Balcony · edge length']];
+// A blank well sheet opens on a preview guard instead: see measure-well-layout.test.ts.
 describe.each(blanks)('blank %s sheet',(_,data,first)=>{
  it('draws no steel and lists what is missing',()=>{const s=measureScene(data);expect(s.meshes.filter(m=>m.kind==='post'||m.kind==='attached')).toHaveLength(0);expect(s.pending).toContain(first);});
 });
@@ -112,14 +113,16 @@ describe('balcony',()=>{
 describe('window well',()=>{
  it('builds liner, banded house wall, window, guard with gate and ladder',()=>{
   const data=wellFixture(),s=measureScene(data);expect(finite(s)).toBe(true);expect(faceOk(s)).toBe(true);
-  expect(s.meshes.find(m=>m.id==='well:liner')!.vertices).toHaveLength(24);
+  // Three walls; with a ladder inside, the two nearest the opening view are drawn see-through.
+  expect(s.meshes.find(m=>m.id==='well:liner')!.vertices.length+s.meshes.find(m=>m.id==='well:liner-near')!.vertices.length).toBe(24);
   expect(Math.min(...s.meshes.find(m=>m.id==='well:floor')!.vertices.map(v=>v.z))).toBe(-44);
   expect(ids(s,'well:band:')).toHaveLength(3);
   const win=s.lines.find(l=>l.id==='well:window')!;expect(Math.min(...win.points.map(p=>p.z))).toBe(-32);expect(win.points[0].y).toBeCloseTo(3-.05);
   // End posts held off the proud face by the measured 2" gap (2x2 post → centre at −3).
   const posts=s.meshes.find(m=>m.id==='well:posts')!;expect(Math.max(...posts.vertices.map(v=>v.y))).toBeCloseTo(-2);expect(posts.vertices.length/8).toBe(6);
   expect(s.meshes.some(m=>m.id==='well:gate')).toBe(true);expect(s.lines.some(l=>l.id==='well:gate-swing')).toBe(true);
-  const ladder=s.lines.filter(l=>l.id==='well:ladder');expect(ladder).toHaveLength(2+2+4);
+  // Solid rails, standoffs and rungs (readable on a phone), never bare axis lines.
+  expect(s.meshes.find(m=>m.id==='well:ladder')!.vertices.length).toBeGreaterThan(8*8);expect(s.lines.some(l=>l.id==='well:ladder')).toBe(false);
   expect(s.pending).toEqual([]);
  });
  it('swaps the guard for a grate when that is what is supplied',()=>{const data=wellFixture();data.well!.deliverables=['grate'];data.well!.grateBearing='recessed';const s=measureScene(data);expect(s.meshes.some(m=>m.id==='well:grate')).toBe(true);expect(s.meshes.some(m=>m.id==='well:posts')).toBe(false);});
