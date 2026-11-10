@@ -26,7 +26,7 @@ export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailu
  function render(){frame=0;if(disposed)return;renderer.render(scene,camera);if(tag&&tagPoint){const p=tagPoint.clone().project(camera);tag.style.left=`${Math.max(8,Math.min(width-8,(p.x+1)*width/2))}px`;tag.style.top=`${Math.max(30,Math.min(height-8,(1-p.y)*height/2))}px`;tag.hidden=p.z< -1||p.z>1;}const projected=labels.map(label=>label.point.clone().project(camera)),positions=placeSceneTargets(projected.map(p=>({x:(p.x+1)*width/2,y:(1-p.y)*height/2})),width,height);labels.forEach((label,i)=>{label.button.style.left=`${positions[i].x}px`;label.button.style.top=`${positions[i].y}px`;label.button.hidden=projected[i].z< -1||projected[i].z>1;});placeDims();}
 
  // Dimension pills: at their anchor, nudged off one another (the asked one first, so it never moves).
- function placeDims(){const placed:{l:number;t:number;r:number;b:number}[]=[];for(const d of [...dimTags].sort((a,b)=>Number(b.focus)-Number(a.focus))){const p=d.point.clone().project(camera);d.tag.hidden=p.z< -1||p.z>1;if(d.tag.hidden)continue;const w=d.tag.offsetWidth||60,h=d.tag.offsetHeight||24,x0=(p.x+1)*width/2,y0=(1-p.y)*height/2;let best={x:x0,y:y0};
+ function placeDims(){const placed:{l:number;t:number;r:number;b:number}[]=[];for(const d of [...dimTags].sort((a,b)=>Number(b.focus)-Number(a.focus))){const p=d.point.clone().project(camera);d.tag.hidden=p.z< -1||p.z>1;if(d.tag.hidden)continue;const w=d.tag.offsetWidth||60,h=d.tag.offsetHeight||24,x0=(p.x+1)*width/2,y0=(1-p.y)*height/2-(d.focus?h/2+16:0);let best={x:x0,y:y0};
   for(const k of [0,1,-1,2,-2,3,-3]){const cand={x:Math.max(w/2+6,Math.min(width-w/2-6,x0)),y:Math.max(h/2+64,Math.min(height-h/2-6,y0+k*(h+4)))},box={l:cand.x-w/2-2,t:cand.y-h/2-2,r:cand.x+w/2+2,b:cand.y+h/2+2};if(!placed.some(q=>box.l<q.r&&box.r>q.l&&box.t<q.b&&box.b>q.t)){best=cand;break;}}
   placed.push({l:best.x-w/2-2,t:best.y-h/2-2,r:best.x+w/2+2,b:best.y+h/2+2});d.tag.style.left=`${best.x}px`;d.tag.style.top=`${best.y}px`;}}
  controls.addEventListener('change',schedule);
@@ -46,12 +46,12 @@ export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailu
  function addDim(line:SceneLine){const d=line.dim!,asked=askedDim(line),dark=options.dark;
   const col=asked?(dark?0x818cf8:0x4f46e5):d.state==='measured'?(dark?0xe2e8f0:0x1e293b):d.state==='calculated'?(dark?0x94a3b8:0x64748b):(dark?0xf6bf62:0xb45309);
   const local=localPositions(line.points);let object:THREE.Object3D;
-  if(asked){const geometry=new LineSegmentsGeometry();geometry.setPositions(Array.from(local.positions));const material=new LineMaterial({color:col,linewidth:line.dashed?2.4:3.4,depthTest:false,transparent:true,dashed:!!line.dashed,dashSize:3,gapSize:2});material.resolution.set(width,height);fat.push(material);const fatLine=new LineSegments2(geometry,material);if(line.dashed)fatLine.computeLineDistances();object=fatLine;}
+  if(asked){const geometry=new LineSegmentsGeometry();geometry.setPositions(Array.from(local.positions));const material=new LineMaterial({color:col,linewidth:line.dashed?3:5.5,depthTest:false,transparent:true,dashed:!!line.dashed,dashSize:3,gapSize:2});material.resolution.set(width,height);fat.push(material);const fatLine=new LineSegments2(geometry,material);if(line.dashed)fatLine.computeLineDistances();object=fatLine;}
   else{const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(local.positions,3));const opacity=d.state==='calculated'?.7:.9;const material=line.dashed?new THREE.LineDashedMaterial({color:col,dashSize:2.5,gapSize:1.8,depthTest:false,transparent:true,opacity}):new THREE.LineBasicMaterial({color:col,depthTest:false,transparent:true,opacity});const segs=new THREE.LineSegments(geometry,material);if(line.dashed)segs.computeLineDistances();object=segs;}
   object.position.set(local.origin.x,local.origin.y,local.origin.z);object.renderOrder=asked?8:6;object.userData.item=line;group.add(object);
   if(line.dashed)return;
   // The value pill: measured in ink, calculated in grey italics (≈), unknown in amber (?), the asked one in the accent.
-  const name=dimName(options.lang,d.kind)||d.label||'',fmt=(n:number)=>dimText(n,d.unit);
+  const said=asked?(options.focus?.label||'').split(' · ').pop():'';const name=said||dimName(options.lang,d.kind)||d.label||'',fmt=(n:number)=>dimText(n,d.unit);
   const offsets=d.offsets&&(d.offsets.v!==null||d.offsets.h!==null)?`${d.offsets.v!==null?` · ↕ ${fmt(d.offsets.v)}`:''}${d.offsets.h!==null?` · ↔ ${fmt(d.offsets.h)}`:''}`:'';
   const tag=document.createElement('div');tag.setAttribute('aria-hidden','true');tag.dataset.sceneDimension=d.key;tag.dataset.dimState=asked?'asked':d.state;
   const nameEl=document.createElement('span'),valueEl=document.createElement('span');nameEl.textContent=name;valueEl.textContent=d.value!==null?fmt(d.value)+offsets:asked?'?':d.calc!==null?`≈ ${fmt(d.calc)}`:'?';
@@ -62,11 +62,11 @@ export function createSceneViewport(host:HTMLElement,overlay:HTMLElement,onFailu
   if(name)tag.append(nameEl);tag.append(valueEl);
   // Asked and still empty: the number the other measurements point at, quietly, as a cross-check.
   if(asked&&d.value===null&&d.calc!==null){const hint=document.createElement('span');hint.textContent=`≈ ${fmt(d.calc)}`;hint.style.cssText='font-weight:500;font-style:italic;color:rgba(255,255,255,.75)';tag.append(hint);}
-  overlay.append(tag);const a=d.anchor;dimTags.push({tag,point:new THREE.Vector3(a.x,a.y,a.z),focus:asked});}
- function color(item:Item){if(item.kind==='dim')return 0x0ea5e9;if(item.kind==='surface'&&lit()?.mesh.id===item.id)return options.dark?0x94a3b8:0xdfe5ee;return isSceneSelected(item,options.selectedId)?0x3b82f6:item.provisional?0xd99a32:item.kind==='house'?0xa4adb9:item.kind==='attached'||item.kind==='post'?0x64748b:item.kind==='rail'?0x5684ad:options.dark?0x8492a6:0xcbd5e1;}
+  if(options.focus&&!asked){if(d.value===null)return;tag.style.opacity='.45';}overlay.append(tag);const a=d.anchor;dimTags.push({tag,point:new THREE.Vector3(a.x,a.y,a.z),focus:asked});}
+ function color(item:Item){if(item.kind==='dim')return 0x0ea5e9;if(item.kind==='surface'&&lit()?.mesh.id===item.id)return options.dark?0x94a3b8:0xdfe5ee;return !options.focus&&isSceneSelected(item,options.selectedId)?0x3b82f6:item.provisional?0xd99a32:item.kind==='house'?0xa4adb9:item.kind==='attached'||item.kind==='post'?0x64748b:item.kind==='rail'?0x5684ad:options.dark?0x8492a6:0xcbd5e1;}
  // Light the face being measured; keep the rest of the stair readable but quieter.
  function lit(){return model&&options.focus?focusFace(model,options.focus):null;}
- function dimmed(item:Item){const face=lit();return !!face&&item.kind==='surface'&&item.id!==face.mesh.id;}
+ function dimmed(item:Item){if(!options.focus||item.kind!=='surface')return false;const face=lit();return face?item.id!==face.mesh.id:options.focus.part==='dim';}
  function addFocus(){const face=lit();if(!face)return;const q=face.quad.map(p=>new THREE.Vector3(p.x,p.y,p.z));
   // Lift the patch a hair off its face (toward the camera side of the face) so it never z-fights.
   const normal=new THREE.Vector3().subVectors(q[1],q[0]).cross(new THREE.Vector3().subVectors(q[3],q[0])).normalize();if(normal.dot(new THREE.Vector3().subVectors(camera.position,controls.target))<0)normal.negate();

@@ -112,7 +112,7 @@ import VisualMeasureWorkspace from './VisualMeasureWorkspace';
 import SpecialtySteelBuilder from './SpecialtySteelBuilder';
 import type {SteelCatalogItem} from '@/lib/shop/measure-steel';
 import PanelWorkspace from './PanelWorkspace';
-import NextMeasurement from './NextMeasurement';
+import NextMeasurement,{askOnCard} from './NextMeasurement';
 import WallRailBrackets from "./WallRailBrackets";
 import { StairPostSuggest, POST_SUGGEST_SHAPES } from './PostSuggest';
 import { stairSuggestion, reconcileSuggestedPosts, withSuggestionGhosts } from '@/lib/shop/measure-post-suggest-stair';
@@ -246,7 +246,10 @@ export default function MeasureEditor({
   const ownForm=openingForm||structuralForm||canopyForm||wallCapForm||shopPieceForm;
   function saveAndClose(){requestSave();router.push(`/shop/job/${job.id}/measure`);}
   function openDetails(topic:ProDetailsTopic){setDetailTopic(topic);if(topic==='review'){setWorkspace('review');return;}setWorkspace('design');setDesignTool('details');}
-  function selectScene(target:SceneSelection){showMeasureTools();
+  function selectScene(target:SceneSelection,fromCard=false){
+    // A measured step or landing: its number opens on the card, above, with the drawing still in view.
+    const onCard=!fromCard&&!target.siteId&&!target.postId&&!target.railId&&target.segmentIndex!==undefined&&askOnCard(target.segmentIndex,target.stepIndex??null);
+    if(!onCard)showMeasureTools();
     setWorkspace('design');
     if(target.siteId){setVisualSite(target.siteId);setDesignTool('site');}
     else if(target.postId?.startsWith('sg-')){document.querySelector('[data-post-suggest]')?.scrollIntoView?.({block:'center',behavior:'smooth'});}
@@ -1300,7 +1303,7 @@ export default function MeasureEditor({
             // A required photo on the card opens the Photos stage's own camera on that shot. The request is ShotList's, narrowed to the photos the card is asking for: the camera walks those and closes, back on the card, instead of leading on through every recommended shot. A slot outside the shot list keeps the plain photo sheet.
             onShootGap={g=>{const slot=g.detail||'',label=mt(lang,`slot_${slot}`),shots=shotList(sheet.shape,data).filter(s=>s.slot===slot);const req:ShotRequest={slot,label,shots,filled:[]};setPhotoSlot(shots.some(s=>s.slot===slot)?req:{slot,label});}}
             onOpenGap={g=>{showMeasureTools();if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
-            onShow={slot=>{showMeasureTools();if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
+            onShow={slot=>{showMeasureTools();if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null},true);}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
           {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}
           {sheet.shape==='wall_rail'&&workspace!=='review'&&<WallRailBrackets lang={lang} data={data} set={set}/>}
