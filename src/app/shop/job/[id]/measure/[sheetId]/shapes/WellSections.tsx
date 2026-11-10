@@ -13,6 +13,7 @@ import {
 } from "@/lib/shop/measure";
 import { formatIn, type WellClearance } from "@/lib/shop/measure-checks";
 import { mt } from "@/lib/shop/measure-i18n";
+import { wellAlongKeys, wellHingeKeys } from "@/lib/shop/measure-well-i18n";
 import { Card, ChipRow, Grid, MInput, MSelect } from "../fields";
 import SubstrateEditor from "../SubstrateEditor";
 
@@ -33,6 +34,14 @@ export default function WellSections({
   setBand: (id: string, key: keyof WallBand, value: string) => void;
   wellWants: (k: WellDeliverable) => boolean;
 }) {
+  const t = (k: string) => mt(lang, k);
+  // The ends of a run or wall, named by what is there: left / right on the front, the house / the corner on a side.
+  const along = (side: boolean, what: "gate" | "ladder"): [string, string][] => {
+    const k = wellAlongKeys(side, what);
+    return [["start", t(k.start)], ["center", t(k.center)], ["end", t(k.end)], ["offset", t("wellAt_offset")]];
+  };
+  const hinge = wellHingeKeys(well.gateRun);
+  const returns: [string, string][] = [["clip", t("wellRet_clip")], ["post", t("wellRet_post")], ["short", t("wellRet_short")]];
   return (
     <>
     <Card stage="setup" title={`🪟 ${mt(lang, "wellTitle")}`}>
@@ -175,19 +184,40 @@ export default function WellSections({
       </Card>
     )}
 
-    {(wellWants("gate") || wellWants("ladder") || wellWants("grate")) && (
+    {(wellWants("guard") || wellWants("gate") || wellWants("ladder") || wellWants("grate")) && (
       <Card stage="specs" title={`🔧 ${mt(lang, "wellPartsTitle")}`}>
+        {wellWants("guard") && (
+          <div className="mb-4">
+            <div className="mb-2 text-sm font-bold text-neutral-300">{t("wellGuardTitle")}</div>
+            <Grid>
+              <ChipRow gap="well_return_left" label={t("wellReturnLeft")} value={well.returnLeft} options={returns}
+                onChange={(v) => setWell((w) => void (w.returnLeft = v as WellData["returnLeft"]))} />
+              <ChipRow gap="well_return_right" label={t("wellReturnRight")} value={well.returnRight} options={returns}
+                onChange={(v) => setWell((w) => void (w.returnRight = v as WellData["returnRight"]))} />
+            </Grid>
+          </div>
+        )}
         {wellWants("gate") && (
           <div className="mb-4">
             <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_gate")}</div>
             <Grid>
+              <ChipRow gap="well_gate_run" label={t("wellGateRun")} value={well.gateRun}
+                options={[["front", t("wellRun_front")], ["left", t("wellRun_left")], ["right", t("wellRun_right")]]}
+                onChange={(v) => setWell((w) => void (w.gateRun = v as WellData["gateRun"]))} />
+              <ChipRow gap="well_gate_at" label={t("wellGateAt")} value={well.gateAt}
+                options={along(well.gateRun === "left" || well.gateRun === "right", "gate")}
+                onChange={(v) => setWell((w) => void (w.gateAt = v as WellData["gateAt"]))} />
+              {well.gateAt === "offset" && (
+                <MInput gap="well_gate_offset" label={t("wellGateOffset")} value={well.gateOffset}
+                  onChange={(v) => setWell((w) => void (w.gateOffset = v))} />
+              )}
               <MInput help="wellGateWidth" label={mt(lang, "wellGateWidth")} value={well.gateWidth}
                 onChange={(v) => setWell((w) => void (w.gateWidth = v))} />
               <ChipRow help="wellGateSwing" label={mt(lang, "wellGateSwing")} value={well.gateSwing}
-                options={[["in", mt(lang, "wellSwingIn")], ["out", mt(lang, "wellSwingOut")]]}
+                options={[["out", t("wellGateOut")], ["in", t("wellGateIn")]]}
                 onChange={(v) => setWell((w) => void (w.gateSwing = v as WellData["gateSwing"]))} />
               <ChipRow help="wellGateHinge" label={mt(lang, "wellGateHinge")} value={well.gateHinge}
-                options={[["left", mt(lang, "leftLookingUp")], ["right", mt(lang, "rightLookingUp")]]}
+                options={[["left", t(hinge.left)], ["right", t(hinge.right)]]}
                 onChange={(v) => setWell((w) => void (w.gateHinge = v as WellData["gateHinge"]))} />
               <MInput help="wellGateLatch" label={mt(lang, "wellGateLatch")} placeholder="—" value={well.gateLatch}
                 onChange={(v) => setWell((w) => void (w.gateLatch = v))} />
@@ -198,6 +228,16 @@ export default function WellSections({
           <div className="mb-4">
             <div className="mb-2 text-sm font-bold text-neutral-300">{mt(lang, "wellD_ladder")}</div>
             <Grid>
+              <ChipRow gap="well_ladder_wall" label={t("wellLadderWall")} value={well.ladderWall}
+                options={[["far", t("wellWall_far")], ["left", t("wellWall_left")], ["right", t("wellWall_right")], ["house", t("wellWall_house")]]}
+                onChange={(v) => setWell((w) => void (w.ladderWall = v as WellData["ladderWall"]))} />
+              <ChipRow gap="well_ladder_at" label={t("wellLadderAt")} value={well.ladderAt}
+                options={along(well.ladderWall === "left" || well.ladderWall === "right", "ladder")}
+                onChange={(v) => setWell((w) => void (w.ladderAt = v as WellData["ladderAt"]))} />
+              {well.ladderAt === "offset" && (
+                <MInput gap="well_ladder_offset" label={t("wellLadderOffset")} value={well.ladderOffset}
+                  onChange={(v) => setWell((w) => void (w.ladderOffset = v))} />
+              )}
               <MInput help="wellLadderWidth" label={mt(lang, "wellLadderWidth")} value={well.ladderWidth}
                 onChange={(v) => setWell((w) => void (w.ladderWidth = v))} />
               <MInput help="wellLadderRungs" label={mt(lang, "wellLadderRungs")} value={well.ladderRungs}

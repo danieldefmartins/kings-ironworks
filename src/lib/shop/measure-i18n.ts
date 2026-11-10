@@ -1,4 +1,5 @@
 // Field Measure strings (EN/PT/ES), kept separate from the main shop dict.
+import { WELL_STR } from "./measure-well-i18n";
 import { asLang, type Lang } from "./i18n";
 import type { MeasureShape } from "./measure";
 import { OPENING_STR } from "./measure-opening-i18n";
@@ -4365,6 +4366,9 @@ for (const l of Object.keys(CANOPY_STR) as Lang[]) Object.assign(STR[l], CANOPY_
 for (const l of Object.keys(SHOTS_STR) as Lang[]) Object.assign(STR[l], SHOTS_STR[l]);
 // Wall-cap railings and shop pieces bring their own vocabulary too.
 for (const l of Object.keys(WALL_CAP_STR) as Lang[]) Object.assign(STR[l], WALL_CAP_STR[l], SHOP_PIECE_STR[l], POST_LAYOUT_STR[l]);
+
+// Window-well layout questions (what we are making, gate, ladder, returns).
+for (const l of ["en", "pt", "es"] as const) Object.assign(STR[l], WELL_STR[l]);
 
 export function mt(lang: string | undefined | null, key: string): string {
   const l = asLang(lang);

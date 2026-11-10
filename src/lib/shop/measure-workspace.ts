@@ -30,7 +30,7 @@ export function legacyStageForGap(key:string):LegacyMeasureStage {
       return "setup";
     }
     if (key.startsWith("well_")) {
-      if (key.startsWith("well_grate") || key.startsWith("well_ladder") || key.startsWith("well_gate")) return "specs";
+      if (key.startsWith("well_grate") || key.startsWith("well_ladder") || key.startsWith("well_gate") || key.startsWith("well_return")) return "specs";
       if (key.startsWith("well_wall") || key === "well_post_to_wall" || key === "well_band_fields") return "locations";
       return "setup";
     }

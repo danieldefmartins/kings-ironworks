@@ -233,6 +233,8 @@ export default function MeasureEditor({
   }
   const [panelStage,setPanelStage]=useState<PanelStage>('design');
   const toolLabels={site:tx('Existing site','Local existente','Sitio existente'),measure:tx('Dimensions & posts','Medidas e postes','Medidas y postes'),panels:tx('Railing panels','Painéis de corrimão','Paneles de barandilla'),specialty:tx('Grates & ladders','Grelhas e escadas','Rejillas y escaleras')} as const;
+  // A well sheet has its own grate and ladder (what the Next card asks about): the generic builder is offered only where one was already started.
+  const wellOwnLadder=sheet.shape==='window_well'&&!(data.specialtySteel||[]).length&&designTool!=='specialty';
   // Openings are measured on a form of their own; the scene has nothing to show yet.
   const openingForm=sheet.shape==='opening'&&!!data.opening&&designTool!=='materials';
   // Structural steel is a member list, not a stair scene: its own form is the primary content.
@@ -437,6 +439,8 @@ export default function MeasureEditor({
       w.deliverables = w.deliverables.includes(k)
         ? w.deliverables.filter((x) => x !== k)
         : [...w.deliverables, k];
+      // Ticked here, in the form: the card's "What are we making?" is answered.
+      w.scopeConfirmed = w.deliverables.length > 0;
     });
   }
 
@@ -1035,7 +1039,8 @@ export default function MeasureEditor({
         {/* The pieces this stair is made of, after the steps rather than before
             them: the flight count came from the sheet picker, and what shows up
             here is the curve or the extra landing nobody knew about. */}
-        {<SegmentsCard lang={lang} data={data} set={set} />}
+        {/* A well has no flights or landings to add. */}
+        {!isWell && <SegmentsCard lang={lang} data={data} set={set} />}
         <PostsSection
           lang={lang}
           data={data}
@@ -1314,7 +1319,7 @@ export default function MeasureEditor({
           toolbar={designTool==='materials'||ownForm?undefined:<label className="relative flex h-11 min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800">
             <span className="min-w-0 flex-1 truncate">{designTool==='details'?detailTopicLabel(detailTopic,lang,{landings:hasLandings}):toolLabels[designTool as keyof typeof toolLabels]}</span><ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-slate-500"/>
             <select aria-label={tx('Tool','Ferramenta','Herramienta')} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" value={designTool==='details'?detailTopic:designTool} onChange={e=>{const v=e.target.value;if(v in toolLabels){setDesignTool(v as keyof typeof toolLabels);}else openDetails(v as ProDetailsTopic);}}>
-              <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
+              <optgroup label={tx('Drawing','Desenho','Dibujo')}>{(Object.keys(toolLabels) as (keyof typeof toolLabels)[]).filter(tool=>tool!=='specialty'||!wellOwnLadder).map(tool=><option key={tool} value={tool}>{toolLabels[tool]}</option>)}</optgroup>
               <optgroup label={tx('Project controls','Controles do projeto','Controles del proyecto')}>{DETAIL_TOPICS.filter(topic=>topic!=='review').map(topic=><option key={topic} value={topic}>{detailTopicLabel(topic,lang,{landings:hasLandings})}</option>)}</optgroup>
             </select>
           </label>}>
