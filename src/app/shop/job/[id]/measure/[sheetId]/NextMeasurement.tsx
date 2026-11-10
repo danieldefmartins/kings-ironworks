@@ -177,8 +177,13 @@ export default function NextMeasurement({
   const [dir, setDir] = useState<"fwd" | "back" | "">("");
   const input = useRef<HTMLInputElement>(null);
   const refocus = useRef(false);
-  const item: NextItem | null = currentItem(queue, currentId);
   const openSlots = queue.open.filter((i) => i.type === "slot").length;
+  const pointed: NextItem | null = currentItem(queue, currentId);
+  // Once the numbers are in, every question that takes one tap comes before
+  // anything that has to be answered in its own panel.
+  const quick = openSlots === 0 && !details && pointed?.type === "gap" && !gapChoices(pointed.gap, lang)
+    ? queue.open.find((e) => e.type === "gap" && !!gapChoices(e.gap, lang)) ?? null : null;
+  const item: NextItem | null = quick ?? pointed;
   // After the last number the card flows straight into the one-tap questions; the
   // milestone only shows once what is left has to be answered in its own panel.
   const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details && !gapChoices(item.gap, lang)));

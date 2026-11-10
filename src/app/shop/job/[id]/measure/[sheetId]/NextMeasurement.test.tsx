@@ -86,6 +86,8 @@ describe('next measurement card', () => {
       fireEvent.change(box(), { target: { value: '36' } });
       fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     }
+    // The card flows straight into the one-tap questions, then reaches the milestone.
+    for (let guard = 0; guard < 20 && document.querySelector('[data-nx-choice]'); guard++) fireEvent.click(document.querySelector('[data-nx-choice]')!);
     expect(screen.getByText('All measurements in')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /Review/ }));
     expect(reviewed).toBe(1);
