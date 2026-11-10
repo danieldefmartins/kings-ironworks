@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { newMeasureData, normalizeMeasureData, type MeasureData, type MeasureShape } from '@/lib/shop/measure';
-import { sheetReadiness } from '@/lib/shop/measure-checks';
+import { sheetReadiness, type Gap } from '@/lib/shop/measure-checks';
 import NextMeasurement from './NextMeasurement';
 import type { SceneFocus } from '@/lib/shop/measure-scene';
 
@@ -140,6 +140,75 @@ describe('next measurement card', () => {
     fireEvent.click(screen.getByRole('button', { name: 'More copy options' }));
     fireEvent.click(screen.getByRole('button', { name: /Replace all/ }));
     expect((saved().segments[0] as { steps: { run: string }[] }).steps.map(s => s.run)).toEqual(['11', '11', '11']);
+  });
+
+  describe('a required photo', () => {
+    // A balcony with nothing typed: its slab-edge photo is the one the shop cannot build without.
+    function PhotoCard({ lang = 'en', onShootGap }: { lang?: string; onShootGap?: (g: Gap) => void }) {
+      const [data, setData] = useState<MeasureData>(() => normalizeMeasureData(newMeasureData('balcony', 0)));
+      const gaps = sheetReadiness(data, 'balcony').fabGaps.filter(g => g.key === 'photo');
+      return <>
+        <NextMeasurement data={data} shape="balcony" gaps={gaps} lang={lang} unitPlaceholder={'0"'} gapLabel={g => `Required photo missing: ${g.detail}`} onOpenGap={() => {}} onShootGap={onShootGap}
+          set={fn => setData(old => { const next = structuredClone(old); fn(next); return next; })} />
+        <button type="button" onClick={() => setData(old => ({ ...old, photos: [...old.photos, { slot: 'bal_slab_edge', path: 'p.jpg', takenAt: '2026-01-01T00:00:00.000Z' }] }))}>save photo</button>
+      </>;
+    }
+    // Skip past the numbers to the photo, the way the chevron does.
+    const toPhoto = (skip: string) => { for (let guard = 0; guard < 80 && screen.queryByRole('textbox'); guard++) fireEvent.click(screen.getByRole('button', { name: skip })); };
+
+    it('is taken from the card: named as the thing to photograph, one Take photo button, handed its slot', () => {
+      const shot: Gap[] = [];
+      render(<PhotoCard onShootGap={g => shot.push(g)} />);
+      toPhoto('Skip');
+      expect(screen.getByText('The slab edge, close up')).toBeTruthy();
+      expect(screen.queryByText(/Required photo missing/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Open' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: 'Take photo' }));
+      expect(shot).toHaveLength(1);
+      expect(shot[0]).toMatchObject({ key: 'photo', detail: 'bal_slab_edge' });
+      // The saved photo closes the requirement and the card leaves it by itself.
+      fireEvent.click(screen.getByRole('button', { name: 'save photo' }));
+      expect(screen.queryByRole('button', { name: 'Take photo' })).toBeNull();
+      expect(screen.queryByText('The slab edge, close up')).toBeNull();
+    });
+
+    it('says it in Portuguese and Spanish', () => {
+      render(<PhotoCard lang="pt" onShootGap={() => {}} />);
+      toPhoto('Pular');
+      expect(screen.getByRole('button', { name: 'Tirar foto' })).toBeTruthy();
+      cleanup();
+      render(<PhotoCard lang="es" onShootGap={() => {}} />);
+      toPhoto('Saltar');
+      expect(screen.getByRole('button', { name: 'Tomar foto' })).toBeTruthy();
+    });
+
+    it('is asked before the milestone once the numbers are in; without a camera the milestone comes first', () => {
+      const photo: Gap = { key: 'photo', detail: 'gate_opening', tier: 'fab' };
+      function Gate({ onShootGap }: { onShootGap?: (g: Gap) => void }) {
+        const [data, setData] = useState<MeasureData>(() => normalizeMeasureData(newMeasureData('gate', 0)));
+        return <NextMeasurement data={data} shape="gate" gaps={[...sheetReadiness(data, 'gate').fabGaps, photo]} lang="en" unitPlaceholder={'0"'} gapLabel={g => g.key} onOpenGap={() => {}} onShootGap={onShootGap}
+          set={fn => setData(old => { const next = structuredClone(old); fn(next); return next; })} />;
+      }
+      const typeAll = () => { for (let guard = 0; guard < 40 && screen.queryByRole('textbox', { name: /^Next:/ }); guard++) { fireEvent.change(box(), { target: { value: '36' } }); fireEvent.click(screen.getByRole('button', { name: 'Next' })); }
+        for (let guard = 0; guard < 20 && document.querySelector('[data-nx-choice]'); guard++) fireEvent.click(document.querySelector('[data-nx-choice]')!); };
+      render(<Gate onShootGap={() => {}} />);
+      typeAll();
+      expect(screen.getByRole('button', { name: 'Take photo' })).toBeTruthy();
+      expect(screen.queryByText('All measurements in')).toBeNull();
+      cleanup();
+      render(<Gate />);
+      typeAll();
+      expect(screen.getByText('All measurements in')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Take photo' })).toBeNull();
+    });
+
+    it('without a camera handler stays an Open item', () => {
+      render(<PhotoCard />);
+      toPhoto('Skip');
+      expect(screen.getByRole('button', { name: 'Open' })).toBeTruthy();
+      expect(screen.getByText('Required photo missing: bal_slab_edge')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Take photo' })).toBeNull();
+    });
   });
 
   it('speaks the trade in Spanish and Portuguese on a stair', () => {

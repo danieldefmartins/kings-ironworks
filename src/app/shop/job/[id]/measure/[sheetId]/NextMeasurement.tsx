@@ -8,7 +8,7 @@
 import { gapChoices } from "@/lib/shop/measure-next-choices";
 import { entryWarning } from "@/lib/shop/measure-entry-check";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
+import { AlertTriangle, Camera, Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import type { Gap } from "@/lib/shop/measure-checks";
 import { LASER_INPUT_EVENT, type LaserInputDetail } from '@/lib/shop/laser/field-input';
@@ -149,6 +149,7 @@ export default function NextMeasurement({
   set,
   gapLabel,
   onOpenGap,
+  onShootGap,
   onShow,
   onDone,
   onFocus,
@@ -163,6 +164,8 @@ export default function NextMeasurement({
   set: (fn: (d: MeasureData) => void) => void;
   gapLabel: (g: Gap) => string;
   onOpenGap: (g: Gap) => void;
+  /** Opens the camera on a required photo (gap.detail is its slot). Without it a photo stays an "Open" item like any other panel-only detail. */
+  onShootGap?: (g: Gap) => void;
   onShow?: (slot: NextSlot) => void;
   onDone?: () => void;
   /** The step face this card is on, for the 3D to light (null when it is on nothing drawable). */
@@ -181,12 +184,15 @@ export default function NextMeasurement({
   const pointed: NextItem | null = currentItem(queue, currentId);
   // Once the numbers are in, every question that takes one tap comes before
   // anything that has to be answered in its own panel.
-  const quick = openSlots === 0 && !details && pointed?.type === "gap" && !gapChoices(pointed.gap, lang)
-    ? queue.open.find((e) => e.type === "gap" && !!gapChoices(e.gap, lang)) ?? null : null;
+  // A required photo counts as one tap too, when the editor gave the card a camera to open.
+  const isShot = (g: Gap) => !!onShootGap && g.key === "photo" && !!g.detail;
+  const onCard = (g: Gap) => !!gapChoices(g, lang) || isShot(g);
+  const quick = openSlots === 0 && !details && pointed?.type === "gap" && !onCard(pointed.gap)
+    ? queue.open.find((e) => e.type === "gap" && onCard(e.gap)) ?? null : null;
   const item: NextItem | null = quick ?? pointed;
   // After the last number the card flows straight into the one-tap questions; the
   // milestone only shows once what is left has to be answered in its own panel.
-  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details && !gapChoices(item.gap, lang)));
+  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details && !onCard(item.gap)));
   // Copy a step's rise or tread to the rest of its flight: the choice sheet, then a short "Copied · Undo".
   const [copyMenu, setCopyMenu] = useState(false);
   // The angle slot whose calculated value is being overridden with a reading.
@@ -355,6 +361,9 @@ export default function NextMeasurement({
   if (item.type === "gap") {
     // A pick (which side is the wall, which post) is answered right here in one tap.
     const choices = gapChoices(item.gap, lang);
+    // A required photo is taken from here: the saved photo closes the requirement,
+    // the item leaves the open list and the card moves on by itself.
+    const shot = isShot(item.gap);
     const answer = (value: string) => {
       const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
       set((d) => choices!.put(d, value));
@@ -366,7 +375,7 @@ export default function NextMeasurement({
         <style>{MOTION}</style>
         <div className="p-3.5 @2xl:flex @2xl:items-center @2xl:gap-6 @2xl:px-5"><div className="min-w-0 @2xl:flex-1">
           <div key={item.id} data-nx-anim={dir || undefined} className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{choices ? choices.question : gapLabel(item.gap)}</p></div>
+            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{choices ? choices.question : shot ? mt(lang, `slot_${item.gap.detail}`) : gapLabel(item.gap)}</p></div>
             {progress}
           </div>
           {bar}
@@ -382,7 +391,8 @@ export default function NextMeasurement({
           )}
           </div><div className="mt-2.5 flex items-center gap-2 @2xl:mt-0 @2xl:w-[440px] @2xl:shrink-0">
             <button type="button" aria-label={nx(lang, "nx_prev")} disabled={remaining < 2 && !queue.slots.length} onClick={() => (remaining < 2 ? backToLast() : go(-1))} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
-            <button type="button" onClick={() => onOpenGap(item.gap)} className={choices ? "min-h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-transform active:scale-[.98]" : "min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]"}>{choices ? (lang === "pt" ? "Outro" : lang === "es" ? "Otro" : "Other") : nx(lang, "nx_open")}</button>
+            {shot ? <button type="button" data-nx-shoot={item.gap.detail} onClick={() => onShootGap!(item.gap)} className="flex h-14 min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[17px] font-semibold text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)] transition-transform active:scale-[.98]"><Camera aria-hidden className="h-5 w-5" />{nx(lang, "nx_takePhoto")}</button>
+            : <button type="button" onClick={() => onOpenGap(item.gap)} className={choices ? "min-h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-transform active:scale-[.98]" : "min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]"}>{choices ? (lang === "pt" ? "Outro" : lang === "es" ? "Otro" : "Other") : nx(lang, "nx_open")}</button>}
             <button type="button" aria-label={nx(lang, "nx_skip")} disabled={remaining < 2} onClick={() => go(1)} className={navBtn}><ChevronRight aria-hidden className="h-5 w-5" /></button>
           </div>
         </div>

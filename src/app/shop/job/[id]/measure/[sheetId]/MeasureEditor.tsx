@@ -63,6 +63,8 @@ import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
+import type { ShotRequest } from "./overlays/ShotCamera";
+import { shotList } from "@/lib/shop/measure-shots";
 import { BrandProvider } from "@/app/shop/brand/BrandContext";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
@@ -1293,6 +1295,8 @@ export default function MeasureEditor({
         )}
         <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
           lead={<>{workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?null:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
+            // A required photo on the card opens the Photos stage's own camera on that shot. The request is ShotList's, narrowed to the photos the card is asking for: the camera walks those and closes, back on the card, instead of leading on through every recommended shot. A slot outside the shot list keeps the plain photo sheet.
+            onShootGap={g=>{const slot=g.detail||'',label=mt(lang,`slot_${slot}`),shots=shotList(sheet.shape,data).filter(s=>gaps.some(x=>x.key==='photo'&&x.detail===s.slot));const req:ShotRequest={slot,label,shots,filled:[]};setPhotoSlot(shots.some(s=>s.slot===slot)?req:{slot,label});}}
             onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
             onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
