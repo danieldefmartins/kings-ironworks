@@ -86,10 +86,10 @@ describe('single professional measuring workspace',()=>{
 });
 
 it('moves a post directly from the site scene, retains its identity and details, and opens the moved post editor',()=>{
- const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.shape='stair_platform';const before=structuredClone(sheet.data.posts[0]);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);fireEvent.click(screen.getByRole('button',{name:'Drag post to second step'}));const data=JSON.parse(screen.getByTestId('scene-data').textContent!);expect(data.posts[0]).toEqual({...before,stepIdx:1,fromNosing:'4',fromEdge:'5',pos:'',side:'left'});expect(data.posts).toHaveLength(sheet.data.posts.length);expect(screen.getByRole('heading',{name:'Post position'})).toBeTruthy();
+ const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.shape='stair_platform';const before=structuredClone(sheet.data.posts[0]);render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);fireEvent.click(screen.getByRole('button',{name:'Drag post to second step'}));const data=JSON.parse(screen.getByTestId('scene-data').textContent!);expect(data.posts[0]).toEqual({...before,stepIdx:1});expect(data.posts).toHaveLength(sheet.data.posts.length);expect(screen.getByRole('heading',{name:'Post position'})).toBeTruthy();
 });
-it('shows a global direct-drop datum error without silently changing measurements',()=>{
- const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.data.datums.postRef='';sheet.shape='stair_platform';render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);const before=screen.getByTestId('scene-data').textContent;fireEvent.click(screen.getByRole('button',{name:'Drag post to second step'}));expect(screen.getByTestId('scene-data').textContent).toBe(before);expect(screen.getByRole('alert').textContent).toContain('centerline');expect(screen.getByRole('button',{name:'Use measurements to post centerlines'})).toBeTruthy();
+it('a direct drop on a sheet with no post reference just works: the post moves and centerlines are recorded',()=>{
+ const sheet=sheetWith(0);sheet.data=porchSiteFixture();sheet.data.datums.postRef='';sheet.shape='stair_platform';render(<MeasureEditor job={job} sheet={sheet} lang="en" workerName="Tester"/>);fireEvent.click(screen.getByRole('button',{name:'Drag post to second step'}));const data=JSON.parse(screen.getByTestId('scene-data').textContent!);expect(data.posts[0].stepIdx).toBe(1);expect(data.datums.postRef).toBe('centerline');expect(screen.queryByRole('alert')).toBeNull();
 });
 
 it('starts with existing structures before tread measurement without requiring them or changing saved data',()=>{
