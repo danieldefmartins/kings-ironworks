@@ -57,6 +57,29 @@ export function fenceChain(data: MeasureData): FenceChain | null {
   return { runs, ribbons, complete: runs.length === segs.length };
 }
 
+/** Sizes the sketch stands in for a number not read yet (drawn amber, never used to build). */
+export const FENCE_SKETCH = { length: 96, height: 72, footing: 36 };
+export interface FenceSketchRun { index: number; a: Point3; b: Point3; /** Its length is not measured yet. */ nominal: boolean }
+
+/**
+ * The run as the sketch draws it: every segment, an unmeasured one at a
+ * stand-in length, so the first question already has a line to point at.
+ * Display only — posts, panels and checks read fenceChain.
+ */
+export function fenceSketch(data: MeasureData): FenceSketchRun[] {
+  const f = data.fence;
+  if (!f) return [];
+  let x = 0, y = 0, z = 0, heading = 0;
+  return f.segments.map((sg, index) => {
+    const read = num(sg.length), L = read ?? FENCE_SKETCH.length;
+    const ux = Math.cos(heading), uy = Math.sin(heading), rise = signed(sg.gradeChange) ?? 0;
+    const a = { x, y, z }, b = { x: x + ux * L, y: y + uy * L, z: z + rise };
+    x = b.x; y = b.y; z = b.z;
+    heading += ((signed(sg.turnDeg) ?? 0) * Math.PI) / 180;
+    return { index, a, b, nominal: read === null };
+  });
+}
+
 /** The measurer's counts: panels + 1 where the segment has a panel count. */
 function fenceCounts(data: MeasureData): Record<string, number> {
   const out: Record<string, number> = {};

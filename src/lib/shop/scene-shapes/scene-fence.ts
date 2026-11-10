@@ -4,7 +4,7 @@
 // with the slope or step level between posts — the choice that changes every
 // panel on a hill. Layout: run starts at the origin heading +X; outside is −Y.
 import type {MeasureData} from '../measure';
-import {fenceSpacing} from '../measure-post-suggest-fence';
+import {FENCE_SKETCH,fenceSpacing} from '../measure-post-suggest-fence';
 import {Geo,Guard,SceneOut,emptyScene,guardBay,len,p3,section,signed,type ShapeSceneOutput} from './build-kit';
 
 export function fenceScene(data:MeasureData):ShapeSceneOutput{
@@ -17,8 +17,9 @@ export function fenceScene(data:MeasureData):ShapeSceneOutput{
  let x=0,y=0,z=0,heading=0;
  const ground=new Geo();
  for(const [i,seg] of f.segments.entries()){
-  const tag=seg.label||String(i+1),L=len(seg.length);
-  if(L===null){out.need(`Fence segment ${tag} · length`);break;}
+  // Not measured yet: a stand-in length, drawn amber, so the question has a line to point at (fenceSketch).
+  const tag=seg.label||String(i+1),read=len(seg.length),L=read??FENCE_SKETCH.length,nominal=read===null;
+  if(nominal)out.need(`Fence segment ${tag} · length`);
   const H=len(seg.height)??len(f.height),rise=signed(seg.gradeChange)??0,racked=seg.followsGrade!=='stepped';
   const unsure=rise!==0&&!seg.followsGrade;if(unsure)out.need(`Fence segment ${tag} · follows grade`);
   if(H===null)out.need(`Fence segment ${tag} · height`);
@@ -44,10 +45,13 @@ export function fenceScene(data:MeasureData):ShapeSceneOutput{
    if(footing)posts.add(p3(p.x,p.y,p.z),p3(p.x,p.y,p.z-footing),null);
   }
   const label=`Fence segment ${tag}`;
-  guard.emit(out,`fence:segment:${seg.id}`,label,{provisional:unsure,entity});
-  out.mesh(`fence:posts:${seg.id}`,`${label} · posts`,'post',posts.geo,{entity,provisional:!own});
-  posts.axes.forEach(points=>out.line(`fence:posts:${seg.id}`,`${label} · posts`,'post',points,{entity,provisional:!own}));
-  if(H===null)out.line(`fence:line:${seg.id}`,label,'rail',[start,end],{provisional:true,entity});
+  guard.emit(out,`fence:segment:${seg.id}`,label,{provisional:unsure||nominal,entity});
+  out.mesh(`fence:posts:${seg.id}`,`${label} · posts`,'post',posts.geo,{entity,provisional:!own||nominal});
+  posts.axes.forEach(points=>out.line(`fence:posts:${seg.id}`,`${label} · posts`,'post',points,{entity,provisional:!own||nominal}));
+  // No height yet: the outline of the panel at a stand-in height.
+  if(H===null){const h=FENCE_SKETCH.height;out.line(`fence:line:${seg.id}`,label,'rail',[start,end],{provisional:true,entity});out.line(`fence:outline:${seg.id}`,label,'rail',[start,p3(start.x,start.y,start.z+h),p3(end.x,end.y,end.z+h),end],{provisional:true,entity});}
+  // No footing depth yet: a stand-in below the first post.
+  if(i===0&&!footing)out.line('fence:footing','Footing','post',[start,p3(start.x,start.y,start.z-FENCE_SKETCH.footing)],{provisional:true,entity});
   x=end.x;y=end.y;z=end.z;
   const turn=signed(seg.turnDeg);heading+=((turn??0)*Math.PI)/180;
  }

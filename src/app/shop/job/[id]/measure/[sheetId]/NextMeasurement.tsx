@@ -6,6 +6,7 @@
 // work type feeds it — a stair, a gate, an opening in a wall, a steel frame.
 
 import { gapChoices } from "@/lib/shop/measure-next-choices";
+import { askSlot } from "@/lib/shop/measure-dims-asks";
 import { entryWarning } from "@/lib/shop/measure-entry-check";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Camera, Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
@@ -71,6 +72,12 @@ export function askOnCard(segmentIndex: number, stepIndex: number | null): boole
   return !window.dispatchEvent(new CustomEvent(ASK_ON_CARD_EVENT, { detail: { segmentIndex, stepIndex }, cancelable: true }));
 }
 
+/** What the pill on a lit place says: the question without its mark; nothing when it is too long to sit on the drawing. */
+export function askedLabel(question: string): string {
+  const text = question.replace(/[¿?:]/g, "").trim();
+  return text.length <= 34 ? text : "";
+}
+
 export function slotFocus(item: NextItem | null, data: MeasureData, dims: readonly SceneDim[] = []): SceneFocus | null {
   if (item?.type !== "slot") return null;
   const step = stepPart(item.slot);
@@ -88,7 +95,7 @@ export function slotFocus(item: NextItem | null, data: MeasureData, dims: readon
  * calculation, so the card offers it to approve instead of asking for it again.
  */
 export function dimCalc(slot: Pick<NextSlot, "put">, dim: SceneDim | null, value: string): CalcSlot | null {
-  if (!dim || dim.calc === null || !(dim.calc > 0)) return null;
+  if (!dim || dim.unit === "count" || dim.calc === null || !(dim.calc > 0)) return null;
   const text = calcText(dim.calc, dim.unit);
   return {
     calc: dim.calc, unit: dim.unit, tol: dim.unit === "deg" ? DEG_TOL : LEN_TOL,
@@ -234,7 +241,9 @@ export default function NextMeasurement({
   const focusAt = finished ? null : slotFocus(item, data, dims);
   // A one-tap question about something drawn (the gate, the ladder, a return) lights that thing too.
   const asked = !finished && item?.type === "gap" ? gapChoices(item.gap, lang, data) : null;
-  const askedFocus: SceneFocus | null = asked?.dim && dimForSlot(dims, asked.dim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: asked.dim, label: asked.question.replace(/[¿?]/g, "").trim() }
+  // Any other question about a place on the piece (a rail end, the posts, where it mounts) lights that place.
+  const askedDim = !finished && item?.type === "gap" && !isShot(item.gap) ? asked?.dim ?? askSlot(item.gap, data) : null;
+  const askedFocus: SceneFocus | null = askedDim && item?.type === "gap" && dimForSlot(dims, askedDim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: askedDim, label: askedLabel(asked ? asked.question : gapLabel(item.gap)) }
     : asked?.segment !== undefined ? { segmentIndex: asked.segment, stepIndex: null, part: "surface", label: asked.question.replace(/[¿?]/g, "").trim() } : null;
   const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : askedFocus;
   const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}` : "";

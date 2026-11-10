@@ -37,9 +37,17 @@ export function walkPath(path:PlanPath,scale:number,origin:Point3):WalkedPath{
  return out;
 }
 
+/** Nothing drawn yet: the stand-in run the sketch shows (amber) so the first questions have a rail to point at. */
+export const CUSTOM_SKETCH={length:96,height:36};
+
 export function customScene(data:MeasureData):ShapeScene{
  const out=emptyScene(),paths=planPaths(data.plan).filter(p=>p.points.length>1);
- if(!paths.length){out.pending.push('Plan drawing');return out;}
+ if(!paths.length){
+  out.pending.push('Plan drawing');
+  const H=num(data.rail.height)??CUSTOM_SKETCH.height,L=CUSTOM_SKETCH.length;
+  out.lines.push({id:'plan:sketch',label:'Run',kind:'rail',points:[P(0,0,0),P(L,0,0),P(L,0,H),P(0,0,H),P(0,0,0)],provisional:true,referenceOnly:true,entity:{part:'plan:sketch'}});
+  return out;
+ }
  const measured=drawingScale(paths),scale=measured??1.2;
  const h=num(data.rail.height),H=h??36;
  if(h===null)out.pending.push('Rail height');

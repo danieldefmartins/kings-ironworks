@@ -145,6 +145,10 @@ export function structuralDims(data: MeasureData): SceneDim[] {
     // The cut stands in front of the first piece, not over it.
     cutDim(push, s, m, P(0, y, base), P(0, y, underside), 14, FRONT);
   }
+  // "Longest piece that fits in": the longest piece on the sheet is the one that has to make it through.
+  const pieces = out.filter(d => /^st:(cut|spanA|h):/.test(d.key)), size = (d: SceneDim) => d.value ?? d.calc ?? 0;
+  const longest = pieces.reduce<SceneDim | null>((best, d) => (!best || size(d) > size(best) ? d : best), null);
+  if (longest) out.push({ key: 'st:maxLength', kind: 'stMaxLength', slots: ['st.access.maxLength'], scope: 'context', mark: 'number', unit: 'len', value: num(s.access.maxLength), calc: null, state: state(num(s.access.maxLength), null), lines: longest.lines, anchor: longest.anchor });
   return out;
 }
 

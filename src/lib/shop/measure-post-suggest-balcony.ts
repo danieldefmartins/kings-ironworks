@@ -20,12 +20,19 @@ export interface BalconyLines {
   returns: boolean;
 }
 
-/** The guard lines of the balcony, as the 3D draws them. Null until the edge is measured. */
-export function balconyLines(data: MeasureData): BalconyLines | null {
+/** Sizes the sketch stands in for a number not read yet (drawn amber, never used to build). */
+export const BALCONY_SKETCH = { length: 96, guard: 42 };
+
+/**
+ * The guard lines of the balcony, as the 3D draws them. Null until the edge is
+ * measured — unless `sketch` (the drawing and its dimension lines only), which
+ * stands an unmeasured edge in at a nominal length so its question has a line.
+ */
+export function balconyLines(data: MeasureData, sketch = false): BalconyLines | null {
   const b = data.balcony;
   if (!b) return null;
   const juliet = b.kind === "juliet";
-  const L = juliet ? num(b.doorOpening) ?? num(b.edgeLength) : num(b.edgeLength);
+  const L = (juliet ? num(b.doorOpening) ?? num(b.edgeLength) : num(b.edgeLength)) ?? (sketch ? BALCONY_SKETCH.length : null);
   if (L === null) return null;
   const pw = section(data.materials.post)?.width ?? 0;
   const p = (x: number, y: number): Point3 => ({ x, y, z: 0 });

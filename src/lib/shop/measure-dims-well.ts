@@ -83,6 +83,9 @@ export function wellDims(data: MeasureData): SceneDim[] {
       const gw = pos(w.gateWidth);
       const gate = wellGuardLayout({ length: L, projection: Pr, wall: tw, postWidth: pw, gapToWall: gap ?? 0, gate: { run: w.gateRun, at: w.gateAt, offset: pos(w.gateOffset), width: gw ?? PV.gateWidth } }).gate;
       // Across the top of the gate, wherever it sits; the same line answers where it is and how it swings.
+      // No run picked yet: the gate is drawn where the layout puts one by default, the middle of the front run.
+      const fallback = { a: { x: L / 2 - (gw ?? PV.gateWidth) / 2, y: yFront }, b: { x: L / 2 + (gw ?? PV.gateWidth) / 2, y: yFront } };
+      if (!gate) push('gateWidth', ['well.gateWidth', ...WELL_GATE_ASKS], 'wellGateWidth', P3(fallback.a.x, fallback.a.y, top + H), P3(fallback.b.x, fallback.b.y, top + H), UP, 6, gw, null, 'context', ['well-gate', 'well-guard']);
       if (gate) push('gateWidth', ['well.gateWidth', ...WELL_GATE_ASKS], 'wellGateWidth', P3(gate.a.x, gate.a.y, top + H), P3(gate.b.x, gate.b.y, top + H), UP, 6, gw, null, 'context', ['well-gate', 'well-guard']);
     }
   }

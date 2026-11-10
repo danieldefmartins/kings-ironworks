@@ -1,7 +1,7 @@
 import type { MeasureData } from './measure';
 import { linearDim, type SceneDim } from './measure-dims';
 import { finishDim, P3, pos, diagonal } from './measure-dims-gate';
-import { heightSpread, isFaceMount, openingFabSize, widthSpread, type OpeningData } from './measure-opening';
+import { heightSpread, isFaceMount, OPENING_DOOR_PRODUCTS, openingFabSize, widthSpread, type OpeningData, type OpeningProduct } from './measure-opening';
 import { openingLayout } from './scene-shapes/scene-opening';
 
 /**
@@ -63,6 +63,12 @@ export function openingDims(data: MeasureData): SceneDim[] {
       out.push(finishDim({ key: `op:${id}:fabW`, kind: 'op_fabW', slots: [`op.${id}.fabW`], unit: 'len', value: pos(u.fabW), calc: fab.width, lines: dw.lines, anchor: dw.anchor, parts, scope: 'context' }));
       const dh = linearDim(P3(x1, y, z0), P3(x1, y, z0 + fh), R, 16);
       out.push(finishDim({ key: `op:${id}:fabH`, kind: 'op_fabH', slots: [`op.${id}.fabH`], unit: 'len', value: pos(u.fabH), calc: fab.height, lines: dh.lines, anchor: dh.anchor, parts, scope: 'context' }));
+    }
+
+    // A door's threshold: up from the sill at the hinge-side jamb, where the leaf has to clear it.
+    if (o.product && OPENING_DOOR_PRODUCTS.includes(o.product as OpeningProduct) && i === 0) {
+      const t = pos(o.threshold), d = linearDim(BL, P3(BL.x, 0, BL.z + (t ?? 2)), L, 5);
+      out.push(finishDim({ key: 'op:threshold', kind: 'op_threshold', slots: ['op.threshold'], unit: 'len', value: t, calc: null, lines: [...d.lines, [BL, BR]], anchor: d.anchor, scope: 'context', mark: 'number' }));
     }
 
     // Juliet: the inside floor sits its sill height below the sill; the guard stands off the face.

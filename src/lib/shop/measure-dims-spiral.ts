@@ -71,6 +71,15 @@ export function spiralDims(data: MeasureData): SceneDim[] {
   const a2 = start + sign * step * 1.5, rr = R - 3, x = rr * Math.cos(a2), y = rr * Math.sin(a2);
   lin({ key: 'spiral:riser', kind: 'riser', slots: ['spiral.riser'], scope: 'context', unit: 'len', value: riserVal, calc: riserCalc },
     P(x, y, riser), P(x, y, 2 * riser), P(Math.cos(a2), Math.sin(a2), 0), 8);
+  // The treads being counted: the nose of every one, column to rim.
+  const noses: Seg3[] = Array.from({ length: n }, (_, i) => { const a = start + sign * step * i, z = riser * (i + 1) + 0.3; return [P(0, 0, z), P(R * Math.cos(a), R * Math.sin(a), z)] as Seg3; });
+  const mid = start + sign * step * Math.floor(n / 2);
+  out.push({ key: 'spiral:treads', kind: 'treads', slots: ['spiral.treads'], scope: 'context', mark: 'number', unit: 'count', value: count, calc: null, state: state(count, null), lines: noses,
+    anchor: P((R + 6) * Math.cos(mid), (R + 6) * Math.sin(mid), riser * (Math.floor(n / 2) + 1)) });
+  // Rail height: tread to the top of the rail, at the first baluster.
+  const ab = start + sign * step * 0.5, bx = P((R - 1.25) * Math.cos(ab), (R - 1.25) * Math.sin(ab), riser), railH = num(data.rail.height);
+  lin({ key: 'spiral:railHeight', kind: 'railHeight', slots: ['rail.height'], scope: 'context', unit: 'len', value: railH, calc: null },
+    bx, P(bx.x, bx.y, riser + (railH ?? 36)), P(Math.cos(ab), Math.sin(ab), 0), 7);
   return out;
 }
 

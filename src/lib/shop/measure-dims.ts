@@ -21,6 +21,7 @@ import { wallCapDims } from './measure-dims-wall-cap';
 import { balconyDims } from './measure-dims-balcony';
 import { levelRunDims, rampDims } from './measure-dims-ramp';
 import { customDims } from './measure-dims-custom';
+import { askDims } from './measure-dims-asks';
 
 /**
  * Architectural dimension lines for the sketch — every length, height or angle
@@ -47,6 +48,9 @@ import { customDims } from './measure-dims-custom';
  *   lines    the drawing as line pairs, inches, Z up. Build them with
  *            linearDim(from, to, offsetDirection, offset) for a length and
  *            arcDim(vertex, dir1, dir2, radius) for an angle.
+ *   mark     optional: a highlight rather than a dimension — shown only while
+ *            the card asks it ('number': a count or level with no line of its
+ *            own; 'place': what a tap question is about, no value on its pill)
  *   dashed   optional dashed pairs (a diagonal, a reference floor line)
  *   anchor   where the value pill sits
  *
@@ -80,7 +84,14 @@ export interface SceneDim {
   postIds?: string[];
   /** Scene parts (entity.part) whose selection reveals it: an opening, a gate leaf. */
   parts?: string[];
-  unit: 'len' | 'deg';
+  unit: 'len' | 'deg' | 'count';
+  /**
+   * A highlight rather than a dimension: what a question is about, drawn only
+   * while the Next card asks it (never with Layers › Dimensions). 'number' is a
+   * typed number with no line of its own (a count, a level); 'place' is a
+   * one-tap question about a spot on the piece — its pill carries no value.
+   */
+  mark?: 'number' | 'place';
   state: DimState;
   /** The measured number, when entered. */
   value: number | null;
@@ -376,10 +387,14 @@ export const DIM_ADAPTERS: Partial<Record<MeasureShape, (data: MeasureData) => S
   custom: d => preMirrorDims(customDims(d)),
 };
 
-/** The dimension lines for a sheet of this shape (none for a shape with no adapter yet). */
+/**
+ * The dimension lines for a sheet of this shape (none for a shape with no
+ * adapter yet), then the highlights of its questions that are not numbers
+ * (measure-dims-asks.ts — drawn only while the card asks them).
+ */
 export function sceneDims(data: MeasureData, shape: MeasureShape | null | undefined): SceneDim[] {
   const adapter = shape ? DIM_ADAPTERS[shape] : DIM_ADAPTERS.straight;
-  return adapter ? adapter(data) : [];
+  return [...(adapter ? adapter(data) : []), ...askDims(data, shape ?? 'straight')];
 }
 
 /** The dimension a Next-card slot lights, if any. */
@@ -388,7 +403,8 @@ export function dimForSlot(dims: readonly SceneDim[], slotId: string | null | un
 }
 
 /** Inches as the shop writes them; feet-and-inches once it is long enough to read that way. */
-export function dimText(n: number, unitKind: 'len' | 'deg'): string {
+export function dimText(n: number, unitKind: 'len' | 'deg' | 'count'): string {
+  if (unitKind === 'count') return `${Math.round(n)}`;
   if (unitKind === 'deg') return `${(Math.round(n * 10) / 10).toFixed(1)}°`;
   const sixteenths = Math.round(n * 16);
   const fmt = (s: number) => {

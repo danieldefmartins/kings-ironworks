@@ -5,7 +5,7 @@
 import type { MeasureData } from './measure';
 import { arcDim, linearDim, type SceneDim } from './measure-dims';
 import { dim, meas, UP, v3, vadd, vmul, type V } from './measure-dims-kit';
-import { postsOf } from './measure-wall-cap';
+import { postsOf, signedMeas } from './measure-wall-cap';
 import { wallCapLayout } from './scene-shapes/scene-wall-cap';
 
 export function wallCapDims(data: MeasureData): SceneDim[] {
@@ -46,7 +46,25 @@ export function wallCapDims(data: MeasureData): SceneDim[] {
       const lo = linearDim(loFace, vadd(loFace, vmul(high, el ?? cw / 2)), vmul(along, -1), 4);
       out.push(dim({ key: `wcEdgeLow:${m.p.id}`, kind: 'edgeLow', slots: [`wc.${m.p.id}.edgeLow`], scope: 'context', unit: 'len', value: el, calc: eh !== null && meas(m.p.capWidth) !== null ? Math.max(0, meas(m.p.capWidth)! - eh) : null, lines: lo.lines, anchor: lo.anchor }));
     }
+    // Top of cap ±: this post's cap against the datum (the level the first post sits at), across the cap where the tape reads it.
+    const topV = signedMeas(m.p.top), level: [V, V] = [vadd(hiFace, vmul(high, 3)), vadd(loFace, vmul(high, -3))];
+    const rise = Math.abs(lp.top) >= 0.5 ? linearDim(v3(lp.at.x, lp.at.y, 0), v3(lp.at.x, lp.at.y, lp.top), high, cw / 2 + 5).lines : [];
+    out.push(dim({ key: `wcTop:${m.p.id}`, kind: 'wcTop', slots: [`wc.${m.p.id}.top`], scope: 'context', mark: 'number', unit: 'len', value: topV === null ? null : Math.abs(topV), calc: null, lines: [level, ...rise], anchor: vadd(c, vmul(UP, 6)) }));
     if (k === 0) {
+      // The core at the first post: across its mouth, and down into the wall.
+      if (w.mount === 'core') {
+        const dia = meas(w.coreDia), depth = meas(w.coreDepth), r = (dia ?? 4) / 2;
+        const cd = linearDim(vadd(c, vmul(along, -r)), vadd(c, vmul(along, r)), high, cw / 2 + 4);
+        out.push(dim({ key: 'wcCoreDia', kind: 'wcCoreDia', slots: ['wc.coreDia'], scope: 'context', mark: 'number', unit: 'len', value: dia, calc: null, lines: cd.lines, anchor: cd.anchor }));
+        const dp = linearDim(hiFace, vadd(hiFace, vmul(UP, -(depth ?? 6))), high, 6);
+        out.push(dim({ key: 'wcCoreDepth', kind: 'wcCoreDepth', slots: ['wc.coreDepth'], scope: 'context', mark: 'number', unit: 'len', value: depth, calc: null, lines: dp.lines, anchor: dp.anchor }));
+      }
+      // Side mounted: the solid face below the cap the brackets bolt into, on the side they go.
+      if (w.mount === 'side_high' || w.mount === 'side_low') {
+        const fd = meas(w.faceDepth), face = w.mount === 'side_high' ? hiFace : loFace, away = vmul(high, w.mount === 'side_high' ? 1 : -1);
+        const f = linearDim(face, vadd(face, vmul(UP, -(fd ?? 8))), away, 6);
+        out.push(dim({ key: 'wcFaceDepth', kind: 'wcFaceDepth', slots: ['wc.faceDepth'], scope: 'context', mark: 'number', unit: 'len', value: fd, calc: null, lines: f.lines, anchor: f.anchor }));
+      }
       const railH = meas(w.railHeight), dropH = meas(w.drop);
       const rh = linearDim(c, vadd(c, vmul(UP, railH ?? 36)), vmul(along, -1), 6);
       out.push(dim({ key: 'wcRail', kind: 'railHeight', slots: ['wc.railHeight'], scope: 'context', unit: 'len', value: railH, calc: null, lines: rh.lines, anchor: rh.anchor }));
