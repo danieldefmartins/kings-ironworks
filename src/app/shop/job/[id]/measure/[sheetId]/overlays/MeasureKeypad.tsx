@@ -79,6 +79,8 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
   const pad = useRef<HTMLDivElement>(null);
   const targetRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => { targetRef.current = target; }, [target]);
+  /** When a key was last pressed: a blur right after one is the browser's doing, not the measurer's. */
+  const pressedAt = useRef(0);
 
   useEffect(() => {
     const mq = window.matchMedia?.("(pointer: coarse)");
@@ -100,8 +102,25 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
       const active = document.activeElement;
       if (isMeasureInput(active) && active.getAttribute("inputmode") === "none" && el?.closest?.("[data-next-measure] button")) e.preventDefault();
     };
+    // iOS Safari ignores preventDefault on pointerdown for focus: the mouse
+    // events it synthesises after the touch still blur the field, which
+    // dropped the pad after every key. Stopping mousedown is what holds it.
+    const onMouseDown = (e: MouseEvent) => {
+      const el = e.target as Element | null;
+      const active = document.activeElement;
+      if (!isMeasureInput(active) || active.getAttribute("inputmode") !== "none") return;
+      if (el?.closest?.("[data-measure-keypad], [data-next-measure] button")) e.preventDefault();
+    };
     const sync = () => {
       const el = document.activeElement;
+      const held = targetRef.current;
+      // The field lost focus to a key press: give it back and keep the pad up.
+      const leaving = held?.dataset.padLeave === "1";
+      if (held) delete held.dataset.padLeave;
+      if (!leaving && !isMeasureInput(el) && held && held.isConnected && !held.disabled && Date.now() - pressedAt.current < 700) {
+        held.focus({ preventScroll: true });
+        return;
+      }
       if (isMeasureInput(el) && coarse.current && system.current !== el) { claim(el); setTarget(el); }
       else {
         if (system.current && system.current !== el) system.current = null;
@@ -110,6 +129,7 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
     };
     const onFocusOut = () => requestAnimationFrame(sync);
     document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("mousedown", onMouseDown, true);
     window.addEventListener("focusin", sync);
     window.addEventListener("focusout", onFocusOut);
     // A focused field can be unmounted without a blur (the card moved on to an Approve step).
@@ -117,6 +137,7 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
     return () => {
       mq?.removeEventListener?.("change", onMq);
       document.removeEventListener("pointerdown", onPointerDown, true);
+      document.removeEventListener("mousedown", onMouseDown, true);
       window.removeEventListener("focusin", sync);
       window.removeEventListener("focusout", onFocusOut);
       window.clearInterval(poll);
@@ -125,6 +146,18 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
 
   const active = !!target;
   useEffect(() => { onActive?.(active); }, [active, onActive]);
+
+  // The keys act on pointerdown, so the rest of the touch has nothing left to
+  // do — and on iOS what it does next is move the focus off the field. React's
+  // touch handlers are passive, so this has to be a native listener.
+  useEffect(() => {
+    const el = pad.current;
+    if (!active || !el) return;
+    const stop = (e: TouchEvent) => { if (e.cancelable) e.preventDefault(); };
+    el.addEventListener("touchstart", stop, { passive: false });
+    el.addEventListener("touchend", stop, { passive: false });
+    return () => { el.removeEventListener("touchstart", stop); el.removeEventListener("touchend", stop); };
+  }, [active]);
 
   // Make room: pin the Next card above the pad and size the drawing to what is left.
   const targetId = target?.id ?? "";
@@ -173,6 +206,8 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
     e.preventDefault();
     const el = targetRef.current;
     if (!el || !el.isConnected) return;
+    pressedAt.current = Date.now();
+    if (document.activeElement !== el) el.focus({ preventScroll: true });
     try { navigator.vibrate?.(6); } catch { /* not on iOS */ }
     fn(el);
     bump((n) => n + 1);
@@ -189,12 +224,13 @@ export default function MeasureKeypad({ lang, feet, onActive }: { lang: string; 
     }
     const fields = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-m="1"]')).filter((f) => f.offsetParent !== null && !f.disabled);
     const following = fields[fields.indexOf(el) + 1];
-    if (following) following.focus(); else el.blur();
+    if (following) following.focus(); else { el.dataset.padLeave = "1"; el.blur(); }
   });
   function toSystem(e: React.PointerEvent) {
     e.preventDefault();
     const el = targetRef.current;
     if (!el || !el.isConnected) return;
+    pressedAt.current = 0;
     system.current = el;
     const before = el.dataset.padMode;
     if (before) el.setAttribute("inputmode", before); else el.removeAttribute("inputmode");
