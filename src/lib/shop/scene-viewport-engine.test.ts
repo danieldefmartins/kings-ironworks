@@ -38,3 +38,30 @@ it.each(['canopy','structural'] as const)('fits the first %s template after an e
   expect(camera.zoom).toBe(2);
  }finally{viewport.dispose();}
 });
+it('frames what the card asks, leaves a hand-set view alone, and returns to the fitted view when nothing is asked',()=>{
+ const frames:FrameRequestCallback[]=[];
+ vi.stubGlobal('requestAnimationFrame',(fn:FrameRequestCallback)=>{frames.push(fn);return frames.length;});
+ vi.stubGlobal('cancelAnimationFrame',vi.fn());
+ vi.stubGlobal('ResizeObserver',class {observe(){} disconnect(){}});
+ // Run every queued frame far enough in the future that a glide has finished.
+ const settle=()=>{for(let i=0;i<8&&frames.length;i++)frames.splice(0).forEach(fn=>fn(performance.now()+5000));};
+ const host=document.createElement('div'),overlay=document.createElement('div');
+ Object.defineProperties(host,{clientWidth:{value:390},clientHeight:{value:456}});
+ const viewport=createSceneViewport(host,overlay,vi.fn());
+ try {
+  const data=newMeasureData('straight',4),scene=measureScene(data,'straight'),base={dark:false,site:true,rails:true,lang:'en'};
+  const rise=(stepIndex:number)=>({...base,focus:{segmentIndex:0,stepIndex,part:'rise' as const}});
+  viewport.update(scene,base);settle();
+  const camera=render.mock.calls.at(-1)![1] as OrthographicCamera;
+  expect(camera.zoom).toBe(1);
+  viewport.update(scene,rise(0));settle();
+  const asked=camera.zoom;expect(asked).toBeGreaterThan(1.5);expect(asked).toBeLessThanOrEqual(4);
+  // The worker zooms by hand: the same question no longer moves the camera, the next one does.
+  viewport.zoom(.5);const mine=camera.zoom;viewport.update(scene,rise(0));settle();expect(camera.zoom).toBe(mine);
+  viewport.update(scene,rise(1));settle();expect(camera.zoom).toBeCloseTo(asked,5);
+  // Fit is the worker's too, until the question changes; nothing asked returns to the fitted view.
+  viewport.fit(undefined,true);settle();expect(camera.zoom).toBe(1);viewport.update(scene,rise(1));settle();expect(camera.zoom).toBe(1);
+  viewport.update(scene,rise(2));settle();expect(camera.zoom).toBeCloseTo(asked,5);
+  viewport.update(scene,base);settle();expect(camera.zoom).toBeCloseTo(1,5);
+ }finally{viewport.dispose();}
+});
