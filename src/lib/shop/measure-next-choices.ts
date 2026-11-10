@@ -20,9 +20,17 @@ const Q: Record<string, Record<string, string>> = {
   orientation: { en: "Looking up the stairs, where is the wall?", pt: "Olhando escada acima, onde fica a parede?", es: "Mirando hacia arriba, ¿dónde está la pared?" },
   mat_post: { en: "Post material", pt: "Material do poste", es: "Material del poste" },
   mat_toprail: { en: "Top rail material", pt: "Material do corrimão superior", es: "Material del pasamanos superior" },
+  returns: { en: "How does the rail end?", pt: "Como o corrimão termina?", es: "¿Cómo termina el pasamanos?" },
+  mat_picket: { en: "Picket / infill material", pt: "Material do balaústre / preenchimento", es: "Material del barrote / relleno" },
   max_piece: { en: "Largest piece that fits through the access", pt: "Maior peça que passa pelo acesso", es: "Pieza más grande que pasa por el acceso" },
 };
 const FITS: Record<string, string> = { en: "No limit — it fits", pt: "Sem limite — passa", es: "Sin límite — pasa" };
+// Stored in English, like the material presets: the shop reads one vocabulary.
+const RETURNS: [string, Record<string, string>][] = [
+  ["Return into the wall", { en: "Return into the wall", pt: "Retorno na parede", es: "Retorno al muro" }],
+  ["Loop end", { en: "Loop end", pt: "Ponta em laço", es: "Extremo en lazo" }],
+  ["Open end", { en: "Open end", pt: "Ponta aberta", es: "Extremo abierto" }],
+];
 const q = (key: string, lang: string) => Q[key]?.[lang] ?? Q[key]?.en ?? "";
 
 export function gapChoices(gap: Pick<Gap, "key" | "detail">, lang: string): GapChoices | null {
@@ -45,6 +53,10 @@ export function gapChoices(gap: Pick<Gap, "key" | "detail">, lang: string): GapC
       return { question: q("mat_post", lang), options: MATERIAL_PRESETS.post.map((value) => ({ value, label: value })), put: (d, v) => { d.materials.post = v; } };
     case "mat_toprail":
       return { question: q("mat_toprail", lang), options: MATERIAL_PRESETS.topRail.map((value) => ({ value, label: value })), put: (d, v) => { d.materials.topRail = v; } };
+    case "returns":
+      return { question: q("returns", lang), options: RETURNS.map(([value, label]) => ({ value, label: label[lang] ?? label.en })), put: (d, v) => { d.rail.returns = v; } };
+    case "mat_picket":
+      return { question: q("mat_picket", lang), options: MATERIAL_PRESETS.picket.map((value) => ({ value, label: value })), put: (d, v) => { d.materials.picket = v; } };
     case "max_piece":
       return { question: q("max_piece", lang), options: [{ value: "fits", label: FITS[lang] ?? FITS.en }], put: (d, v) => { d.fab.maxPiece = v; } };
     default:

@@ -6,8 +6,9 @@
 // work type feeds it — a stair, a gate, an opening in a wall, a steel frame.
 
 import { gapChoices } from "@/lib/shop/measure-next-choices";
+import { entryWarning } from "@/lib/shop/measure-entry-check";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import type { Gap } from "@/lib/shop/measure-checks";
 import { LASER_INPUT_EVENT, type LaserInputDetail } from '@/lib/shop/laser/field-input';
@@ -117,6 +118,15 @@ export function readback(slot: Pick<NextSlot, "unit">, value: string): { ok: boo
   return { ok: true, text: feet ? `${inches} · ${feet}` : inches };
 }
 
+/** The readback, or — once the measurer pauses on a number that does not sit with the other steps — a second look. */
+function EntryHint({ slot, data, value, lang, fallback }: { slot: NextSlot; data: MeasureData; value: string; lang: string; fallback: React.ReactNode }) {
+  const [settled, setSettled] = useState("");
+  useEffect(() => { const id = window.setTimeout(() => setSettled(value), 700); return () => window.clearTimeout(id); }, [value]);
+  const warning = settled === value ? entryWarning(slot, data, value, lang) : null;
+  if (!warning) return <>{fallback}</>;
+  return <span data-entry-warning={warning.kind} role="status" className="flex items-center gap-1.5 text-amber-700"><AlertTriangle aria-hidden className="h-3.5 w-3.5 shrink-0" />{warning.text}</span>;
+}
+
 // Advance animation: the new number slides in from the side it came from.
 const MOTION = `
 @keyframes nx-in-fwd { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
@@ -169,7 +179,9 @@ export default function NextMeasurement({
   const refocus = useRef(false);
   const item: NextItem | null = currentItem(queue, currentId);
   const openSlots = queue.open.filter((i) => i.type === "slot").length;
-  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details));
+  // After the last number the card flows straight into the one-tap questions; the
+  // milestone only shows once what is left has to be answered in its own panel.
+  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details && !gapChoices(item.gap, lang)));
   // Copy a step's rise or tread to the rest of its flight: the choice sheet, then a short "Copied · Undo".
   const [copyMenu, setCopyMenu] = useState(false);
   // The angle slot whose calculated value is being overridden with a reading.
@@ -540,7 +552,7 @@ export default function NextMeasurement({
         {/* Read back what will be saved, in the shop's own notation. */}
         {!approve && <p aria-live="polite" className={`mt-1.5 flex min-h-5 items-center gap-1.5 pl-[52px] text-[13px] font-semibold tabular-nums ${rb.ok ? "text-slate-500" : "text-amber-700"}`}>
           {rb.text
-            ? rb.ok ? <><Check aria-hidden className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />{rb.text}</> : nx(lang, "nx_notNumber")
+            ? rb.ok ? <EntryHint slot={slot} data={data} value={value} lang={lang} fallback={<><Check aria-hidden className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />{rb.text}</>} /> : nx(lang, "nx_notNumber")
             : slot.unit === "len" && <span aria-hidden className="whitespace-pre font-medium text-slate-400">{`3' 4-1/2"  ·  40.5  ·  40 1/2`}</span>}
         </p>}
         </div>

@@ -6,7 +6,7 @@ import { gapChoices } from "./measure-next-choices";
 describe("one-tap answers on the Next card", () => {
   it("each answer closes the requirement it belongs to", () => {
     const data = newMeasureData("straight", 3);
-    for (const key of ["orientation", "floor_change", "mat_post", "mat_toprail", "max_piece"]) {
+    for (const key of ["orientation", "floor_change", "mat_post", "mat_toprail", "returns", "mat_picket", "max_piece"]) {
       expect(fabGaps(data, "straight").some((g) => g.key === key), `${key} open before`).toBe(true);
       const c = gapChoices({ key }, "en")!;
       expect(c.question).not.toBe("");
