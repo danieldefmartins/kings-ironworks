@@ -194,7 +194,7 @@ export default function NextMeasurement({
   // anything that has to be answered in its own panel.
   // A required photo counts as one tap too, when the editor gave the card a camera to open.
   const isShot = (g: Gap) => !!onShootGap && g.key === "photo" && !!g.detail;
-  const onCard = (g: Gap) => !!gapChoices(g, lang) || isShot(g);
+  const onCard = (g: Gap) => !!gapChoices(g, lang, data) || isShot(g);
   const quick = openSlots === 0 && !details && pointed?.type === "gap" && !onCard(pointed.gap)
     ? queue.open.find((e) => e.type === "gap" && onCard(e.gap)) ?? null : null;
   const item: NextItem | null = quick ?? pointed;
@@ -390,7 +390,7 @@ export default function NextMeasurement({
 
   if (item.type === "gap") {
     // A pick (which side is the wall, which post) is answered right here in one tap.
-    const choices = gapChoices(item.gap, lang);
+    const choices = gapChoices(item.gap, lang, data);
     // A required photo is taken from here: the saved photo closes the requirement,
     // the item leaves the open list and the card moves on by itself.
     const shot = isShot(item.gap);

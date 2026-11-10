@@ -4,7 +4,7 @@ import type {MeasureData} from './measure';
 import type {CatalogItem} from './shared';
 import {attachedCuts} from './measure-attached-fab';
 import {siteRailLayout,siteRailSignature} from './measure-site-rails';
-import {siteNumber} from './measure-site';
+import {siteNumber,newColumnParts} from './measure-site';
 import type {AttachedProfile} from './measure-site-rails-schema';
 import {specialtySteelSources} from './measure-specialty-steel';
 import {structuralSteelSources} from './measure-structural';
@@ -72,7 +72,9 @@ export function steelSources(data:MeasureData):SteelSource[]{
   const result=attachedCuts(site,r,siteRailLayout(site,r));
   return result.parts.map(p=>({key:`${r.id}:${p.mark.split('-').at(-1)}`,label:`${r.label} · ${p.mark}`,role:p.kind==='top'?'toprail':p.kind==='secondTop'?'second_toprail':p.kind==='bottom'?'bottomrail':'picket',length:p.stockLength,profile:p.profile,signature:siteRailSignature(site,r),section:p.kind==='secondTop'?r.fabrication?.secondTop?.profile:r.fabrication?.[p.kind]}));
  });
- return [...attached,...specialtySteelSources(data.specialtySteel),...structuralSteelSources(data.structural),...(data.nativeSteel?.signature===nativeGeometrySignature(data)?data.nativeSteel.sources:[])];
+ // Columns the shop makes: shaft, base block and cap block, each a length of its own section.
+ const columns:SteelSource[]=newColumnParts(site).map(p=>({key:p.key,label:p.label,role:'post',length:p.length,profile:p.round?`Ø ${p.width}`:`${p.width} x ${p.depth}`,signature:p.signature,envelope:{width:p.width,depth:p.depth,round:p.round}}));
+ return [...attached,...columns,...specialtySteelSources(data.specialtySteel),...structuralSteelSources(data.structural),...(data.nativeSteel?.signature===nativeGeometrySignature(data)?data.nativeSteel.sources:[])];
 }
 export function steelCoverage(data:MeasureData,sources=steelSources(data)){
  const assigned=new Set(data.steelPlan?.rows.map(r=>r.source)||[]);

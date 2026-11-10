@@ -21,15 +21,16 @@ it('separates draft walls and illustrative houses from actual site meshes and su
  expect(scene.meshes.find(m=>m.kind==='house')?.referenceOnly).toBe(true);expect(scene.lines.filter(l=>l.entity.segmentId==='legacy-segment-1'&&l.entity.side)).toHaveLength(4);
  for(const p of [...scene.meshes.flatMap(m=>m.vertices),...scene.lines.flatMap(l=>l.points)])for(const k of ['x','y','z'] as const){expect(p[k]).toBeGreaterThanOrEqual(scene.bounds.min[k]);expect(p[k]).toBeLessThanOrEqual(scene.bounds.max[k]);}
 });
-it('does not invent a steel section when a post material is unresolved',()=>{const data=porchSiteFixture();data.materials.post='custom ornamental unknown';const scene=measureScene(data);expect(scene.meshes.some(m=>m.kind==='post')).toBe(false);expect(scene.lines.filter(m=>m.kind==='post')).toHaveLength(data.posts.length);});
+it('draws a post as a post at the shop size when its material does not read as a section',()=>{const data=porchSiteFixture();data.materials.post='custom ornamental unknown';const scene=measureScene(data),posts=scene.meshes.filter(m=>m.kind==='post');expect(posts).toHaveLength(data.posts.length);expect(scene.lines.some(m=>m.kind==='post')).toBe(false);const xs=posts[0].vertices.map(v=>v.x);expect(Math.max(...xs)-Math.min(...xs)).toBeCloseTo(1.5);});
 
 it('ends native rail references at linked support faces without inventing a second structural post',()=>{
  const data=porchSiteFixture(),post=data.posts[1];post.pointType='existing_post';post.existingW='8';post.existingD='8';post.supportAttachment={objectId:'column-1',face:'left',along:.5,angle:0,elevation:'0',connection:'Measured clip',gap:'1/8'};
  const before=JSON.stringify(data),scene=measureScene(data),terminal=drawingPosts(data,stairGeometry(data)!).find(p=>p.post.id===post.id)!;
- expect(scene.meshes.some(mesh=>mesh.entity.postId===post.id)).toBe(false);expect(scene.meshes.filter(mesh=>mesh.entity.siteId==='column-1')).toHaveLength(1);const marker=scene.lines.find(line=>line.entity.postId===post.id)!;expect(marker.referenceOnly).toBe(true);expect(marker.points).toContainEqual(terminal.top);expect(Math.max(...marker.points.map(p=>p.z))-Math.min(...marker.points.map(p=>p.z))).toBe(2);
+ expect(scene.lines.some(line=>line.kind==='post'&&line.entity.postId===post.id)).toBe(false);expect(scene.meshes.filter(mesh=>mesh.entity.siteId==='column-1')).toHaveLength(1);const marker=scene.meshes.find(mesh=>mesh.entity.postId===post.id)!;expect(marker.kind).toBe('post');expect(marker.referenceOnly).toBe(true);const zs=marker.vertices.map(p=>p.z);expect((Math.max(...zs)+Math.min(...zs))/2).toBeCloseTo(terminal.top!.z);expect(Math.max(...zs)-Math.min(...zs)).toBe(3);
  const rail=scene.lines.find(line=>line.kind==='rail'&&line.id.includes(post.id))!;expect(rail.points).toContainEqual(terminal.top);expect(JSON.stringify(data)).toBe(before);
  data.site!.objects.find(o=>o.id==='column-1')!.x='50';expect(measureScene(data).lines.find(line=>line.id===rail.id)!.points).toContainEqual({...terminal.top!,x:50});
- data.site!.objects=[];const unresolved=measureScene(data);expect(unresolved.lines.some(line=>line.entity.postId===post.id)).toBe(false);expect(unresolved.pending.some(label=>label.includes('support connection'))).toBe(true);
+ // A support that no longer resolves stays on the drawing, amber, where the point's own step measurements put it.
+ data.site!.objects=[];const unresolved=measureScene(data),ghost=unresolved.meshes.find(mesh=>mesh.entity.postId===post.id)!;expect(ghost.provisional).toBe(true);expect(unresolved.pending.some(label=>label.includes('support connection'))).toBe(true);
 });
 
 it('lights just the riser for a rise and just the tread for a tread depth on the step asked about',()=>{

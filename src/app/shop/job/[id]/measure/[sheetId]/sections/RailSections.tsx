@@ -12,6 +12,7 @@ import {
   RAIL_SIDE_OPTIONS,
 } from "@/lib/shop/measure";
 import { mt } from "@/lib/shop/measure-i18n";
+import { applyShopHardware, linkColumn, siteColumns, syncLinkedColumns } from "@/lib/shop/measure-shop-defaults";
 import SubstrateEditor, { MATERIALS_WALL } from "../SubstrateEditor";
 import {
   Card,
@@ -133,7 +134,17 @@ export default function RailSections({
                     .map((other, oi) => [other.id, `${mt(lang, "spanLabel")} #${oi + 1}${other.label ? ` — ${other.label}` : ""}`] as [string, string])
                     .filter(([oid]) => oid !== sp.id)}
                   hasPhoto={data.photos.some((ph) => ph.slot === `term_${sp.id}_${endKey}`)}
-                  onField={(k, v) => setTerm(si, endKey, k, v)}
+                  onField={(k, v) => {
+                    setTerm(si, endKey, k, v);
+                    // A clip or plate starts as the shop's usual one; a drawn column stays linked only to a column end.
+                    if (k === "method" || k === "attachTo") set((d) => { const t = d.spans[si]?.[endKey]; if (t) applyShopHardware(t); syncLinkedColumns(d); });
+                  }}
+                  columns={siteColumns(data).map((o) => [o.id, o.label] as [string, string])}
+                  onColumn={(id) => set((d) => {
+                    const t = d.spans[si]?.[endKey], column = siteColumns(d).find((o) => o.id === id);
+                    if (!t) return;
+                    if (column) linkColumn(t, column); else delete t.columnId;
+                  })}
                   onHw={(k, v) => setHw(si, endKey, k, v)}
                   substrate={<SubstrateEditor locKey={`term:${sp.id}:${endKey}`} hide={["mount", "photo"]}
                     materials={sp[endKey].attachTo === "wall" ? MATERIALS_WALL : undefined} />}

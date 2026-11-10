@@ -76,7 +76,7 @@ describe('site builder field workflow',()=>{
     fireEvent.click(screen.getByText('Position & more details',{selector:'summary'}));
     expect(screen.getByRole('button',{name:/House wall.*Verified/})).toBeTruthy();
     expect(screen.getByRole('button',{name:/Column 3.*Needs verification/})).toBeTruthy();
-    expect((screen.getByLabelText('Length') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Width') as HTMLInputElement).value).toBe('');
     expect((screen.getByRole('checkbox',{name:/Field measurements verified/}) as HTMLInputElement).disabled).toBe(true);
   });
   it('inserts a new flight and directs measuring to that flight',()=>{

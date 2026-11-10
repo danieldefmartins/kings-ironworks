@@ -1191,6 +1191,8 @@ export interface Termination {
   backing: string; // wall: structural backing behind finish; wood floor: blocking/through-bolt detail
   columnW: string; // existing column width facing the rail (at attachment elevation)
   columnD: string; // existing column depth
+  /** The drawn site column this end attaches to; its size and base molding are read from it. */
+  columnId?: string;
   molding: string; // molding projection at this end; "" = none
   moldingHeight: string; // how high the molding runs
   plumb: string; // square/plumb condition

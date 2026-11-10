@@ -4,8 +4,10 @@ import {drawingPosts} from './measure-drawing';
 import {orderedPosts} from './measure-checks';
 import {postLayout} from './measure-post-layout';
 import {formatIn} from './measure-parse';
-import {previewSiteObject} from './measure-site-placement';
-import {siteMeshes,siteNumber} from './measure-site';
+import {previewSiteObject,previewSiteDraft} from './measure-site-placement';
+import {siteMeshes,siteNumber,withSiteTrim} from './measure-site';
+import {basePlate,clipSolid,plateSolid,wallPatch,skirtBlock,join,treadPoint,inward,nearestOnHost,railEndParts,type Host} from './measure-scene-parts';
+import {SHOP_DEFAULTS} from './measure-shop-defaults';
 import {resolveSite,previewWall,wallPlacementEdges} from './measure-wall-placement';
 import {siteRailLayout,siteRailFabReviewed} from './measure-site-rails';
 import {attachedCuts} from './measure-attached-fab';
@@ -60,10 +62,13 @@ function postEnvelope(base:Point3,top:Point3,section:{width:number;depth:number;
 export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureScene{
  const meshes:SceneMesh[]=[],lines:SceneLine[]=[],pending:string[]=[],model=stairGeometry(data),site=resolveSite(data);
  const realSite=siteMeshes(site),realIds=new Set(realSite.map(m=>m.id));
- for(const m of realSite)meshes.push({...m,id:`site:${m.id}`,kind:'site',referenceOnly:false,entity:{siteId:m.id}});
+ // What a rail end can land on: measured walls and columns, and the ones still drawn as previews.
+ const hosts:Host[]=realSite.filter(m=>['wall','column','post'].includes(m.kind)).map(m=>({id:m.id,kind:m.kind,vertices:m.vertices,ring:m.vertices.length/2}));
+ // A column is drawn with its base molding and cap; measured anchors and cuts keep the plain shaft.
+ for(const m of realSite){const object=site?.objects.find(o=>o.id===m.id);meshes.push({...(object?withSiteTrim(m,object):m),id:`site:${m.id}`,kind:'site',referenceOnly:false,entity:{siteId:m.id}});}
  for(const object of data.site?.objects||[])if(!realIds.has(object.id)){
-  pending.push(object.label);const preview=object.wallAnchor?previewWall(data,object):previewSiteObject(object);
-  if(preview)meshes.push({...preview,id:`wall-preview:${object.id}`,kind:'wall-preview',provisional:true,referenceOnly:true,entity:{siteId:object.id}});
+  pending.push(object.label);const preview=object.wallAnchor?previewWall(data,object):previewSiteObject(object),draft=object.wallAnchor?null:previewSiteDraft(object);
+  if(preview){if(['wall','column','post'].includes(preview.kind))hosts.push({id:object.id,kind:preview.kind,vertices:preview.vertices,ring:preview.vertices.length/2});meshes.push({...(draft?withSiteTrim(preview,draft):preview),id:`wall-preview:${object.id}`,kind:'wall-preview',provisional:true,referenceOnly:true,entity:{siteId:object.id}});}
  }
  if(model){
   const surfaceCounts=new Map<number,number>();
@@ -78,16 +83,39 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
    const seg=data.segments[t.segIdx],override=seg.kind==='flight'&&t.stepIdx!==null?seg.steps[t.stepIdx].wallSide:undefined,walls=override?{left:override==='left'||override==='both',right:override==='right'||override==='both'}:flightWalls(seg,data.datums.orientation);
    for(const side of ['left','right'] as const)if(walls[side])lines.push({id:`wall-edge:${id}:${side}`,label:`${side} wall boundary`,kind:'wall-edge',provisional:t.provisional,referenceOnly:true,entity,points:(side==='left'?[t.corners[0],t.corners[1]]:[t.corners[3],t.corners[2]]).map(p=>({...p}))});
   });
-  const resolvedPosts=drawingPosts(data,model);for(const p of resolvedPosts)if(p.post.supportAttachment&&(!p.base||!p.top))pending.push(`${p.label} · support connection`);
+  const railH=siteNumber(data.rail.height),clipRise=railH!==null&&railH>0?railH:SHOP_DEFAULTS.draw.post.previewHeight;
+  // No measured wall or column within a few inches: the clip is drawn on its own small piece of wall.
+  const bare=(at:Point3)=>!hosts.some(h=>{const n=nearestOnHost(h,at);return !!n&&n.distance<4;});
+  // A point turned into a clip whose support does not resolve yet is still drawn (amber): on the
+  // chosen wall or column when one is picked, otherwise where its own step measurements put it.
+  const clipFace=new Map<string,{x:number;y:number}>();
+  const resolvedPosts=drawingPosts(data,model).map(p=>{
+   const clip=p.post.pointType==='clip'||(!!p.post.supportAttachment&&p.post.pointType!=='railing_post'),open=!p.base||!p.top;
+   if(p.post.supportAttachment&&open)pending.push(`${p.label} · support connection`);
+   if(!clip||('terminal' in p&&p.terminal&&!open))return p;
+   const own=treadPoint(model,p.post);if(!own)return p;
+   const host=hosts.find(h=>h.id===p.post.supportAttachment?.objectId),top={...own.base,z:own.base.z+clipRise},near=host?nearestOnHost(host,top):null;
+   if(near){clipFace.set(p.post.id,near.normal);return {...p,base:{x:near.point.x,y:near.point.y,z:own.base.z},top:{x:near.point.x,y:near.point.y,z:top.z},provisional:true};}
+   clipFace.set(p.post.id,inward(own.tread,p.post.side as 'left'|'right'));
+   return open?{...p,base:own.base,top,provisional:true}:p;
+  });
   const posts=resolvedPosts.filter(p=>p.base&&p.top),groups=new Map<string,typeof posts>();
   for(const p of posts){
    const entity={postId:p.post.id,segmentIndex:p.post.segIdx,segmentId:segmentIdAt(data.segments[p.post.segIdx],p.post.segIdx),stepIndex:p.post.stepIdx},item={id:`post:${p.post.id}`,label:p.label,kind:'post' as const,/* a suggested post not yet accepted shows as an amber ghost */provisional:p.provisional||p.post.suggested==='ghost',referenceOnly:true,entity};
    const terminal='terminal' in p?p.terminal:undefined;
    const w=siteNumber(p.post.existingW),d=siteNumber(p.post.existingD);
-   const section=p.post.pointType==='railing_post'?postSection(data.materials.post):p.post.pointType==='existing_post'&&w!==null&&d!==null&&w>0&&d>0?{width:w,depth:d,round:false}:null;
-   if(terminal){const center=p.top!,tangent={x:-terminal.normal.y,y:terminal.normal.x};lines.push({...item,label:`${p.label} · support connection`,points:[{x:center.x-tangent.x,y:center.y-tangent.y,z:center.z},{x:center.x+tangent.x,y:center.y+tangent.y,z:center.z},{...center},{...center,z:center.z-1},{...center,z:center.z+1}]});}
-   else if(section)meshes.push({...item,...postEnvelope(p.base!,p.top!,section)});else lines.push({...item,points:[{...p.base!},{...p.top!}]});
-   if(p.post.pointType==='railing_post'||terminal){const key=`${p.post.segIdx}:${p.post.side}`;groups.set(key,[...(groups.get(key)||[]),p]);}
+   // A railing post is always drawn as a post: its material's section when that reads as one, the shop's usual size otherwise.
+   const usual=SHOP_DEFAULTS.draw.post.size,section=p.post.pointType==='railing_post'?postSection(data.materials.post)??{width:usual,depth:usual,round:false}:p.post.pointType==='existing_post'&&w!==null&&d!==null&&w>0&&d>0?{width:w,depth:d,round:false}:null;
+   const face=terminal?terminal.normal:clipFace.get(p.post.id);
+   if(face){
+    // The clip on the wall or column face at the rail line, on a piece of wall when none is measured there.
+    const at=p.top!;meshes.push({...item,label:`${p.label} · wall clip`,...join(clipSolid(at,face),!terminal&&bare(at)?wallPatch(at,face):null)});
+   }
+   else if(section){
+    const skirt=siteNumber(p.post.skirtProjection),skirtH=siteNumber(p.post.skirtHeight);
+    meshes.push({...item,...join(postEnvelope(p.base!,p.top!,section),p.post.pointType==='railing_post'&&p.post.mount==='Base plate'?basePlate(p.base!,p.post.plate):null,p.post.pointType==='existing_post'&&skirt!==null&&skirt>0&&skirtH!==null&&skirtH>0?skirtBlock(p.base!,section.width,section.depth,skirt,skirtH):null)});
+   }else lines.push({...item,points:[{...p.base!},{...p.top!}]});
+   if(p.post.pointType==='railing_post'||face){const key=`${p.post.segIdx}:${p.post.side}`;groups.set(key,[...(groups.get(key)||[]),p]);}
   }
   // Rail lines from the post layout: post to post along each side, following the rail height up the
   // flight, the knee onto a landing, any turn corner and level across a platform (not just within a segment).
@@ -97,6 +125,13 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
   for(const sp of layout?.spans||[]){
    const a=sp.from.post,b=sp.to.post;if(drawnConnections.has(`${a.id}:${b.id}`)||drawnConnections.has(`${b.id}:${a.id}`))continue;
    lines.push({id:`rail:${a.id}:${b.id}`,label:`Railing ${b.segIdx}:${sp.side}`,kind:'rail',provisional:sp.provisional||ghost(a)||ghost(b),referenceOnly:true,entity:{segmentId:segmentIdAt(data.segments[b.segIdx],b.segIdx),segmentIndex:b.segIdx},points:sp.path.map(p=>({...p}))});
+  }
+  // Rail ends that fasten to a wall or column: the rail carried to the face, and the clip or plate on it.
+  for(const part of railEndParts(data,model,layout,hosts)){
+   const assumed=part.hostId===null,entity={part:`term:${part.spanId}:${part.end}`},name=part.method==='clip'?'Wall clip':'Wall plate';
+   const item={label:`${name} · #${part.spanIndex+1} ${part.end}`,provisional:assumed,referenceOnly:true,entity};
+   meshes.push({...item,id:`clip:${part.spanId}:${part.end}`,kind:'attached',...join(part.method==='clip'?clipSolid(part.at,part.normal):plateSolid(part.at,part.normal),assumed?wallPatch(part.at,part.normal):null)});
+   lines.push({...item,id:`rail-end:${part.spanId}:${part.end}`,kind:'rail',points:[{...part.from},{...part.at}]});
   }
   for(const [group,list] of groups){
    const tread=model.treads.find(t=>t.segIdx===list[0].post.segIdx);if(!tread)continue;const [a,b]=tread.corners,dx=b.x-a.x,dy=b.y-a.y;

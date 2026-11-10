@@ -462,6 +462,7 @@ const TerminationSchema = z.object({
   backing: z.string().max(300),
   columnW: meas,
   columnD: meas,
+  columnId: z.string().max(60).optional(),
   molding: meas,
   moldingHeight: meas,
   plumb: z.string().max(120),
