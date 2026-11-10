@@ -4,6 +4,7 @@
 // the pitch, the winder walkline, every rise and run, and the landings, ramps
 // and curves between them. This is the part a tape measure produces.
 
+import { noseToNose } from "@/lib/shop/measure-derive";
 import {
   type MeasureData,
   type FlightSegment,
@@ -352,6 +353,7 @@ export default function StairSections({
               </div>
               <DerivedRake
                 seg={seg}
+                calc={noseToNose(data, i)?.rake ?? null}
                 lang={lang}
                 onUse={(v) => set((d) => void ((d.segments[i] as FlightSegment).rake = v))}
               />
@@ -488,25 +490,17 @@ function autoOf(n: number | undefined | null): string {
 // but taking it is a decision the measurer makes and the sheet records.
 function DerivedRake({
   seg,
+  calc,
   lang,
   onUse,
 }: {
   seg: FlightSegment;
+  /** Nose to nose, from the steps (noseToNose). */
+  calc: number | null;
   lang: string;
   onUse: (v: string) => void;
 }) {
-  let rise = 0;
-  let run = 0;
-  let complete = seg.steps.length > 0;
-  for (const st of seg.steps) {
-    const r = parseMeas(st.rise);
-    const u = parseMeas(st.run);
-    if (r === null || u === null) { complete = false; break; }
-    rise += r;
-    run += u;
-  }
-  if (!complete || (rise <= 0 && run <= 0)) return null;
-  const calc = Math.hypot(rise, run);
+  if (calc === null) return null;
   const shown = formatIn(calc);
   const meas = parseMeas(seg.rake);
   const off = meas === null ? null : Math.abs(calc - meas);
@@ -525,7 +519,7 @@ function DerivedRake({
     <div className="mt-3 rounded-lg border border-neutral-700 bg-neutral-950/50 p-2.5">
       <div className="text-xs text-neutral-300">
         {mt(lang, "derivedRake")}: <b className="tabular-nums">{shown}</b>
-        <span className="text-neutral-500"> · {mt(lang, "fromSteps")} {formatIn(rise)} / {formatIn(run)}</span>
+        <span className="text-neutral-500"> · {mt(lang, "fromSteps")}</span>
       </div>
       {off !== null ? (
         <div className={`mt-1 text-xs font-semibold ${tone}`}>

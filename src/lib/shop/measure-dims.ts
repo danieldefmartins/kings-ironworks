@@ -1,6 +1,6 @@
 import type { FlightSegment, MeasureData, MeasureShape, PlatformSegment } from './measure';
 import { stairGeometry, type MeasuredTread, type Point3 } from './measure-geometry';
-import { flightTotals, measuredAssemblyRise } from './measure-derive';
+import { flightTotals, measuredAssemblyRise, noseToNose } from './measure-derive';
 import { flightAngleCalc, jointAngleCalc } from './measure-angle';
 import { platformEntryRise } from './measure-platform-rise';
 import { drawingPosts } from './measure-drawing';
@@ -227,8 +227,8 @@ export function stairDims(data: MeasureData, model = stairGeometry(data)): Scene
     const run = linearDim(bottom, end, add(mul(left, 0.55), mul(UP, -0.83)), 14);
     push({ key: 'totalRun', kind: 'totalRun', scope: 'overall', unit: 'len', value: num(data.overall.totalRun), calc: sumRuns(data), lines: run.lines, anchor: run.anchor });
     if (flights.length === 1) {
-      const fl = flights[0].s, t = flightTotals(fl);
-      out.push(rakeDim(data, 'rake', 'rake', 'overall', of(flights[0].i), num(data.overall.rakeLength), t ? t.rake : null));
+      const t = noseToNose(data, flights[0].i);
+      out.push(rakeDim(data, 'rake', 'rake', 'overall', of(flights[0].i), num(data.overall.rakeLength), t ? t.rake : null, undefined, flights[0].i));
     }
   }
 
@@ -243,7 +243,7 @@ export function stairDims(data: MeasureData, model = stairGeometry(data)): Scene
       push({ key: `flightRise:${i}`, kind: 'flightRise', scope: 'context', segs: [i], unit: 'len', value: num(fl.ctrlRise), calc: totals?.rise ?? null, lines: rise.lines, anchor: rise.anchor });
       const run = linearDim(b, foot, add(mul(left, 0.55), mul(UP, -0.83)), 12);
       push({ key: `flightRun:${i}`, kind: 'flightRun', scope: 'context', segs: [i], unit: 'len', value: num(fl.ctrlRun), calc: totals?.run ?? null, lines: run.lines, anchor: run.anchor });
-      out.push(rakeDim(data, `flightRake:${i}`, 'flightRake', 'context', ft, num(fl.rake), totals ? totals.rake : null, [i]));
+      { const n2n = noseToNose(data, i); out.push(rakeDim(data, `flightRake:${i}`, 'flightRake', 'context', ft, num(fl.rake), n2n ? n2n.rake : null, [i], i)); }
     }
     const w = linearDim(f0.corners[0], f0.corners[3], mul(along, -1), 9);
     push({ key: `width:${i}`, kind: 'width', scope: 'context', segs: [i], unit: 'len', value: num(fl.width), calc: null, lines: w.lines, anchor: w.anchor });
@@ -341,12 +341,15 @@ export function stairDims(data: MeasureData, model = stairGeometry(data)): Scene
  * just above it. Its length is the flight's rise and run in a right triangle —
  * the same number the rake check holds the tape against.
  */
-function rakeDim(data: MeasureData, key: string, kind: DimKind, scope: SceneDim['scope'], ft: MeasuredTread[], value: number | null, calc: number | null, segs?: number[]): SceneDim {
+function rakeDim(data: MeasureData, key: string, kind: DimKind, scope: SceneDim['scope'], ft: MeasuredTread[], value: number | null, calc: number | null, segs?: number[], segIdx?: number): SceneDim {
+  // On the step edges themselves: the first step's nose to the last nose (the landing's edge when one follows).
   const steps = ft.filter(t => t.stepIdx !== null), f0 = steps[0] ?? ft[0], fl = steps[steps.length - 1] ?? ft[ft.length - 1];
-  const b = v(f0.corners[0].x, f0.corners[0].y, f0.corners[0].z - f0.rise), T = fl.corners[1];
-  const s = unit(sub(T, b)), n = unit(sub(UP, mul(s, dot(UP, s))));
-  const cos = Math.sqrt(Math.max(0, 1 - s.z * s.z));
-  const dim = linearDim(b, T, n, f0.rise * cos + 7);
+  const next = segIdx === undefined ? undefined : data.segments[segIdx + 1], prev = segIdx === undefined ? undefined : data.segments[segIdx];
+  const landing = next?.kind === 'platform' && prev?.kind === 'flight' ? platformEntryRise(next, prev) : null;
+  const toLanding = !!landing && !landing.provisional && landing.rise > 0 && steps.length > 0;
+  const a = f0.corners[0], T = toLanding ? v(fl.corners[1].x, fl.corners[1].y, fl.corners[1].z + landing!.rise) : fl.corners[0];
+  const s = unit(sub(T, a)), n = unit(sub(UP, mul(s, dot(UP, s))));
+  const dim = linearDim(a, T, n, 1.5);
   return { key, kind, scope, segs, slots: stairSlotsForKey(key), unit: 'len', value, calc, state: stateOf(value, calc), lines: dim.lines, anchor: dim.anchor };
 }
 

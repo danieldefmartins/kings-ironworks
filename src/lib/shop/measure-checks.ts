@@ -13,7 +13,7 @@ import { postLayout, calculatedFromFirst, POST_CHECK_TOL } from "./measure-post-
 import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
 import {platformLayout} from "./measure-platform-placement";
-import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise } from "./measure-derive";
+import { deckPerimeter, fenceRun, flightTotals, measuredAssemblyRise, noseToNose } from "./measure-derive";
 import { structuralChecks, structuralGaps } from "./measure-structural";
 import { finishChecks, mountingChecks } from "./measure-substrate";
 import { canopyChecks, canopyGaps } from "./measure-canopy";
@@ -862,8 +862,9 @@ function shapeChecks(
     out.push(compare("run_sum", runExpected, totalRun, tol.runSum, "in"));
 
     const rake = parseMeas(data.overall.rakeLength);
-    const riseF = sums[0]?.r ?? null;
-    const diag = riseF !== null && runSum !== null ? Math.hypot(riseF, runSum) : null;
+    // Nose to nose, as it is taped (see noseToNose).
+    const firstFlight = data.segments.findIndex((sg) => sg.kind === "flight");
+    const diag = firstFlight >= 0 ? noseToNose(data, firstFlight)?.rake ?? null : null;
     out.push(compare("rake", diag, rake, tol.rake, "in"));
   } else {
     // flights turn: verify each flight against ITS OWN controls
@@ -872,7 +873,7 @@ function shapeChecks(
       const { r, u } = sums[i];
       out.push(compare("flight_rise", r, parseMeas(fl.ctrlRise), tol.riseSum, "in", tag));
       out.push(compare("flight_run", u, parseMeas(fl.ctrlRun), tol.runSum, "in", tag));
-      const diag = r !== null && u !== null ? Math.hypot(r, u) : null;
+      const diag = noseToNose(data, data.segments.indexOf(fl))?.rake ?? null;
       out.push(compare("flight_rake", diag, parseMeas(fl.rake), tol.rake, "in", tag));
     });
   }

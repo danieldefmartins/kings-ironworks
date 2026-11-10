@@ -77,6 +77,26 @@ export function flightTotals(fl: FlightSegment): FlightTotals | null {
   return { rise, run, rake: Math.hypot(rise, run) };
 }
 
+/**
+ * Rake as the shop tapes it: nose to nose, from the edge of the first step to
+ * the edge where the pitch ends. That is the last step's edge, or the
+ * landing's edge when a landing follows the flight. Rises after the first
+ * step, runs before the last edge.
+ */
+export function noseToNose(data: MeasureData, segIdx: number): FlightTotals | null {
+  const fl = data.segments[segIdx];
+  if (!fl || fl.kind !== "flight" || fl.steps.length === 0) return null;
+  const next = data.segments[segIdx + 1];
+  const landing = next?.kind === "platform" ? platformEntryRise(next, fl) : null;
+  const toLanding = !!landing && !landing.provisional && landing.rise > 0;
+  const rises = fl.steps.slice(1).map((s) => s.rise), runs = fl.steps.slice(0, toLanding ? undefined : -1).map((s) => s.run);
+  const rise = rises.length ? sumAll(rises) : 0, run = runs.length ? sumAll(runs) : 0;
+  if (rise === null || run === null) return null;
+  const r = rise + (toLanding ? landing!.rise : 0);
+  if (r <= 0 && run <= 0) return null;
+  return { rise: r, run, rake: Math.hypot(r, run) };
+}
+
 /** Measured elevation along the assembly; branches restart from their shared landing.
  * Preview risers never participate in checks or derived fabrication values. */
 export function measuredAssemblyRise(data:MeasureData):number|null{

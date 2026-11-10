@@ -41,11 +41,11 @@ describe('dimension lines: measured vs calculated vs unknown', () => {
     expect(byKey(d).get('f2f')!.state).toBe('unknown');
   });
 
-  it('total run and rake on a straight flight follow the steps (rake = rise and run in a right triangle)', () => {
+  it('total run follows the steps; rake is nose to nose: the rises after the first step and the runs before the last nose', () => {
     const d = straight(4, '7', '11');
     const m = byKey(d);
     expect(m.get('totalRun')!.calc).toBe(44);
-    expect(m.get('rake')!.calc).toBeCloseTo(Math.hypot(28, 44), 6);
+    expect(m.get('rake')!.calc).toBeCloseTo(Math.hypot(21, 33), 6);
     d.overall.rakeLength = '52';
     expect(byKey(d).get('rake')!.state).toBe('measured');
   });
