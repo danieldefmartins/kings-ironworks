@@ -19,26 +19,12 @@ vi.stubGlobal("React", React);
 afterEach(cleanup);
 beforeEach(() => { vi.clearAllMocks(); m.sheets.mockResolvedValue([]); });
 
-it("shows crew the Start job time gate and never loads the job's sheets", async () => {
+// Owner, 2026-11-09: measuring is open to the whole crew without starting job time.
+it("opens the measure sheets for crew who are not timing the job", async () => {
   m.worker.mockResolvedValue({ id: "crew", name: "Crew", lang: "en", is_admin: false });
   m.gate.mockResolvedValue({ locked: true, runningElsewhere: { jobId: "j2", label: "Other Job" } });
   render(await Page({ params: Promise.resolve({ id: "j1" }) }));
-  expect(screen.getByRole("button", { name: /Start job time/ })).toBeTruthy();
-  expect(screen.getByText("Stops time on Other Job")).toBeTruthy();
-  expect(screen.queryByText("Sheets list")).toBeNull();
-  expect(m.sheets).not.toHaveBeenCalled();
-});
-
-it("opens the job when its time is running", async () => {
-  m.worker.mockResolvedValue({ id: "crew", name: "Crew", lang: "en", is_admin: false });
-  m.gate.mockResolvedValue({ locked: false, runningElsewhere: null });
-  render(await Page({ params: Promise.resolve({ id: "j1" }) }));
   expect(screen.getByText("Sheets list")).toBeTruthy();
-});
-
-it("shows the gate in Portuguese", async () => {
-  m.worker.mockResolvedValue({ id: "crew", name: "Crew", lang: "pt", is_admin: false });
-  m.gate.mockResolvedValue({ locked: true, runningElsewhere: null });
-  render(await Page({ params: Promise.resolve({ id: "j1" }) }));
-  expect(screen.getByRole("button", { name: /Iniciar tempo da obra/ })).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /Start job time/ })).toBeNull();
+  expect(m.gate).not.toHaveBeenCalled();
 });

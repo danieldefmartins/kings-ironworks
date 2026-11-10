@@ -18,7 +18,7 @@ describe('drawing photo references',()=>{
   it('never substitutes live photos for an absent locked revision',async()=>{m.revision.mockResolvedValue(null);expect((await request('&rev=2')).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 });
 
-it('refuses crew who are not timing the photo\'s job (job gate)',async()=>{m.gate.mockResolvedValue({locked:true,runningElsewhere:null});expect((await request()).status).toBe(403);expect(m.sign).not.toHaveBeenCalled();});
+it('serves measurement photos to crew who are not timing the job',async()=>{m.gate.mockResolvedValue({locked:true,runningElsewhere:null});expect((await request()).status).toBe(307);});
 it('never signs a PDF disguised as a measurement photo',async()=>{m.photos.mockResolvedValue([{url:'job/photo.jpg',kind:'document',category:'Original Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 it('blocks operational admins from signing financial images',async()=>{m.worker.mockResolvedValue({is_admin:true,can_see_prices:false});m.photos.mockResolvedValue([{url:'job/photo.jpg',category:'Approved Estimate'}]);expect((await request()).status).toBe(404);expect(m.sign).not.toHaveBeenCalled();});
 
