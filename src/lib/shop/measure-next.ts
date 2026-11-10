@@ -1,6 +1,6 @@
 import type { MeasureData, MeasureShape } from './measure';
 import { parseMeas } from './measure-parse';
-import type { Gap } from './measure-checks';
+import { jointBetweenFlights, type Gap } from './measure-checks';
 import { legacyStageForGap, type LegacyMeasureStage } from './measure-workspace';
 import { isFaceMount, OPENING_DOOR_PRODUCTS, openingFabSize, unitTag, type OpeningProduct } from './measure-opening';
 import { gateLeafCalc } from './measure-dims-gate';
@@ -167,11 +167,12 @@ function slotsFor(data: MeasureData, shape: MeasureShape): NextSlot[] {
     field('overall.totalRun', 'total_run', 'totalRun', ov, 'totalRun');
     field('overall.rake', 'rake', 'rakeLength', ov, 'rakeLength');
   }
+  const flightCount = data.segments.filter(sg => sg.kind === 'flight').length;
   if (!single) (data.joints || []).forEach((j, n) => {
     const tag = `J${j.afterSegment + 1}`;
     const jo = (d: MeasureData) => (d.joints || [])[n] as unknown as Bag | undefined;
-    field(`j${n}.gap`, 'joint_gap', 'jointGap', jo, 'gap', { detail: tag, tag });
-    field(`j${n}.angle`, 'joint_angle_change', 'jointAngleChange', jo, 'angleChange', { detail: tag, tag, unit: 'deg' });
+    if (flightCount > 1) field(`j${n}.gap`, 'joint_gap', 'jointGap', jo, 'gap', { detail: tag, tag });
+    if (jointBetweenFlights(data, j.afterSegment)) field(`j${n}.angle`, 'joint_angle_change', 'jointAngleChange', jo, 'angleChange', { detail: tag, tag, unit: 'deg' });
   });
   const fin = (d: MeasureData) => d.finish as unknown as Bag;
   field('finish.bottom', 'bottom_adjustment', 'bottomAdjustment', fin, 'bottomAdjustment');

@@ -234,7 +234,8 @@ export default function NextMeasurement({
   const focusAt = finished ? null : slotFocus(item, data, dims);
   // A one-tap question about something drawn (the gate, the ladder, a return) lights that thing too.
   const asked = !finished && item?.type === "gap" ? gapChoices(item.gap, lang, data) : null;
-  const askedFocus: SceneFocus | null = asked?.dim && dimForSlot(dims, asked.dim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: asked.dim, label: asked.question.replace(/[¿?]/g, "").trim() } : null;
+  const askedFocus: SceneFocus | null = asked?.dim && dimForSlot(dims, asked.dim) ? { segmentIndex: -1, stepIndex: null, part: "dim", dim: asked.dim, label: asked.question.replace(/[¿?]/g, "").trim() }
+    : asked?.segment !== undefined ? { segmentIndex: asked.segment, stepIndex: null, part: "surface", label: asked.question.replace(/[¿?]/g, "").trim() } : null;
   const focus = focusAt && item?.type === "slot" ? { ...focusAt, label: [slotContext(item.slot, data, lang), slotLabel(item.slot, lang)].filter(Boolean).join(" · ") } : askedFocus;
   const focusKey = focus ? `${focus.segmentIndex}:${focus.stepIndex}:${focus.part}:${focus.dim ?? ""}:${focus.label}` : "";
   const focusRef = useRef(onFocus);

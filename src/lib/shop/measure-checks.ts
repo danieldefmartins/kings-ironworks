@@ -8,6 +8,7 @@ import {resolveSite} from './measure-wall-placement';
 
 import { landingConnections, landingConnectionMeasured } from "./measure-landings";
 import { parseMeas } from "./measure-parse";
+import { landingGrade } from "./measure-geometry";
 import { postLayout, calculatedFromFirst, POST_CHECK_TOL } from "./measure-post-layout";
 import { openingChecks, openingGaps } from "./measure-opening";
 import {platformEntryRise} from "./measure-platform-rise";
@@ -1257,12 +1258,15 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // Every boundary between two segments is a place two fabricated pieces have
   // to meet. A blank joint is not a small omission: it is the shop guessing how
   // the flights connect, and guessing wrong is a return trip.
+  const flightCount = data.segments.filter((sg) => sg.kind === "flight").length;
   (data.joints || []).forEach((j) => {
     const tag = `J${j.afterSegment + 1}`;
     if (j.method === "one_piece") return;
     if (!j.method) gaps.push({ key: "joint_method", detail: tag });
-    if (!has(j.gap)) gaps.push({ key: "joint_gap", detail: tag });
-    if (!has(j.angleChange)) gaps.push({ key: "joint_angle_change", detail: tag });
+    // Two flights meeting is where two rail pieces meet: only then is there a gap or a change of pitch to record.
+    // Where a flight meets a landing the change is the stair angle itself, and the landing's own slope is asked instead.
+    if (!has(j.gap) && flightCount > 1) gaps.push({ key: "joint_gap", detail: tag });
+    if (!has(j.angleChange) && jointBetweenFlights(data, j.afterSegment)) gaps.push({ key: "joint_angle_change", detail: tag });
     if (j.method === "post" && !j.carriedBy) gaps.push({ key: "joint_carried_by", detail: tag });
   });
 
@@ -1601,6 +1605,9 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
     if (shape === "level_run") return;
     if (!has(pl.depth)) gaps.push({ key: "landing_depth", detail: tag });
     if (!has(pl.diag)) gaps.push({ key: "landing_diag", detail: tag });
+    // The rail follows the landing: level, or pitched to drain. One tap on the card.
+    if (!has(pl.slope)) gaps.push({ key: "landing_slope", detail: `#${si + 1}` });
+    else if (landingGrade(pl.slope) !== 0 && !has(pl.slopeDir)) gaps.push({ key: "landing_slope_dir", detail: `#${si + 1}` });
   });
 
   // Gates, fences, decks, balconies and wells record their own height and
@@ -1902,4 +1909,9 @@ function terminationGaps(
     if (!photoSlots.has(photoSlot)) gaps.push({ key: "term_photo", detail: tag, tier: "doc" });
   }
   return gaps;
+}
+
+/** A joint with a flight on both sides: the only place the rail's pitch changes from one measured pitch to another. */
+export function jointBetweenFlights(data: MeasureData, afterSegment: number): boolean {
+  return data.segments[afterSegment]?.kind === "flight" && data.segments[afterSegment + 1]?.kind === "flight";
 }

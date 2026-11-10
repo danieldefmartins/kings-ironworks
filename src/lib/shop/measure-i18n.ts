@@ -1393,6 +1393,8 @@ const STR: Record<Lang, Dict> = {
     gap_landing_length: "Landing length missing",
     gap_landing_depth: "Landing depth missing",
     gap_landing_diag: "Landing diagonal missing",
+    gap_landing_slope: "Landing slope missing",
+    gap_landing_slope_dir: "Landing fall direction missing",
     gap_plan_open: "Drawing must be CLOSED so lengths can be verified (close along the wall)",
     check_molding_span: "Top span − lower span vs sum of molding projections",
 
@@ -2840,6 +2842,8 @@ const STR: Record<Lang, Dict> = {
     gap_landing_length: "Falta comprimento do patamar",
     gap_landing_depth: "Falta profundidade do patamar",
     gap_landing_diag: "Falta diagonal do patamar",
+    gap_landing_slope: "Falta caimento do patamar",
+    gap_landing_slope_dir: "Falta direção do caimento do patamar",
     gap_plan_open: "O desenho precisa estar FECHADO para conferir as medidas (feche pela parede)",
     check_molding_span: "Vão topo − vão baixo vs soma das molduras",
 
@@ -4285,6 +4289,8 @@ const STR: Record<Lang, Dict> = {
     gap_landing_length: "Falta largo del descanso",
     gap_landing_depth: "Falta fondo del descanso",
     gap_landing_diag: "Falta diagonal del descanso",
+    gap_landing_slope: "Falta pendiente del descanso",
+    gap_landing_slope_dir: "Falta dirección de la pendiente del descanso",
     gap_plan_open: "El dibujo debe estar CERRADO para verificar medidas (ciérralo por la pared)",
     check_molding_span: "Luz arriba − luz abajo vs suma de molduras",
 

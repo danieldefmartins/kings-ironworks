@@ -26,8 +26,13 @@ export interface GapChoices {
   cols?: 3 | 4;
   /** Slot id of the dimension line the drawing lights while this is asked. */
   dim?: string;
+  /** Segment (a landing) the drawing lights while this is asked. */
+  segment?: number;
 }
 
+const LANDING_SLOPE = { en: "Landing slope, per foot", pt: "Caimento do patamar, por pé", es: "Pendiente del descanso, por pie" };
+const LEVEL = { en: "Level", pt: "Nivelado", es: "A nivel" };
+const LANDING_FALL = { en: "Which way does the landing fall?", pt: "Para que lado o patamar cai?", es: "¿Hacia dónde cae el descanso?" };
 const Q: Record<string, Record<string, string>> = {
   orientation: { en: "Looking up the stairs, where is the wall?", pt: "Olhando escada acima, onde fica a parede?", es: "Mirando hacia arriba, ¿dónde está la pared?" },
   mat_post: { en: "Post material", pt: "Material do poste", es: "Material del poste" },
@@ -184,6 +189,20 @@ export function gapChoices(gap: Pick<Gap, "key" | "detail">, lang: string, data?
         if (material) setSub(d, key, { ...(getSub(d, key) ?? blankSubstrate()), material });
         if (!t.material.trim()) t.material = v;
       },
+    };
+  }
+  if (gap.key === "landing_slope" || gap.key === "landing_slope_dir") {
+    const si = Number((gap.detail || "").replace("#", "")) - 1;
+    const landing = (d: MeasureData) => { const sg = d.segments[si]; return sg?.kind === "platform" ? sg : null; };
+    if (gap.key === "landing_slope") return {
+      question: tr(LANDING_SLOPE, lang), segment: si, cols: 4,
+      options: [{ value: "0", label: tr(LEVEL, lang) }, ...['1/8"', '1/4"', '1/2"'].map((v) => ({ value: `${v}/ft`, label: v }))],
+      put: (d, v) => { const pl = landing(d); if (pl) { pl.slope = v; if (v === "0") pl.slopeDir = ""; } },
+    };
+    return {
+      question: tr(LANDING_FALL, lang), segment: si,
+      options: ([["Left", "choiceLeft"], ["Right", "choiceRight"], ["Toward stairs", "choiceTowardStairs"], ["Away from stairs", "choiceAwayStairs"]] as const).map(([value, key]) => ({ value, label: mt(lang, key) })),
+      put: (d, v) => { const pl = landing(d); if (pl) pl.slopeDir = v; },
     };
   }
   // Any other requirement about one flight, joint or span is answered where that thing is.

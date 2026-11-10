@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
@@ -8,18 +8,19 @@ import StickyMobileCTA from "@/components/StickyMobileCTA";
 import ChromeGate from "@/components/ChromeGate";
 import ChatWidget from "@/components/ChatWidget";
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
+// Hosted with the site: a build must not depend on reaching Google Fonts.
+const spaceGrotesk = localFont({
+  src: "./fonts/space-grotesk-latin.woff2",
   variable: "--font-display",
   display: "swap",
-  weight: ["400", "600", "700"],
+  weight: "400 700",
 });
 
-const inter = Inter({
-  subsets: ["latin"],
+const inter = localFont({
+  src: "./fonts/inter-latin.woff2",
   variable: "--font-body",
   display: "swap",
-  weight: ["400", "500", "700"],
+  weight: "400 700",
 });
 
 export const viewport: Viewport = {
