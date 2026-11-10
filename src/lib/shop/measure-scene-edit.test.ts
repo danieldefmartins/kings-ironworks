@@ -1,7 +1,7 @@
 import {expect,it} from 'vitest';
 import {newMeasureData,newPost} from './measure';
 import {stairGeometry,surfacePoint} from './measure-geometry';
-import {resolvePostPoint,applyPostPoint} from './measure-scene-edit';
+import {resolvePostPoint,resolvePostMove,applyPostPoint} from './measure-scene-edit';
 function fixture(rotation=0){const d=newMeasureData('straight',2),s=d.segments[0];if(s.kind!=='flight')throw Error();s.width='36';s.steps.forEach(t=>{t.rise='7';t.run='10';});d.datums.postRef='centerline';d.sceneSetup={environment:'exterior',projectType:'stairs',placement:{x:'120',y:'-24',z:'12',rotation}};return d;}
 it.each([0,90,37])('inverts the measured support at rotation %s and snaps intrinsic offsets',rotation=>{
  const d=fixture(rotation),surface=stairGeometry(d)!.treads[1],point=surfacePoint(surface,3.14,33.12),before=JSON.stringify(d),result=resolvePostPoint(d,{segmentIndex:0,stepIndex:1,worldPoint:point});
@@ -19,6 +19,24 @@ it('creates or moves one post while preserving fabrication fields, notes, and ot
  const d=fixture(),surface=stairGeometry(d)!.treads[0],p=Object.assign(newPost(0,0),{mount:'Base plate',anchor:'Concrete',plate:'4 x 4',notes:'keep',fromEdge:'2'}),other=newPost(0,1);d.posts=[p,other];const before=JSON.stringify(other),result=applyPostPoint(d,p.id,{segmentIndex:0,stepIndex:0,worldPoint:surfacePoint(surface,4,3)});expect(result.ok).toBe(true);expect(p).toMatchObject({mount:'Base plate',anchor:'Concrete',plate:'4 x 4',notes:'keep',fromEdge:'3',fromNosing:'4'});expect(JSON.stringify(other)).toBe(before);
  expect(applyPostPoint(d,null,{segmentIndex:0,stepIndex:0,worldPoint:surfacePoint(surface,5,5)}).ok).toBe(true);expect(d.posts).toHaveLength(3);
 });
-it('refuses unknown dimensions, unconfirmed datum, winders, missing posts and invalid grid without mutation',()=>{
- for(const invalid of ['datum','dimensions','winder','post','grid']){const d=fixture(),surface=stairGeometry(d)!.treads[0],worldPoint=surfacePoint(surface,4,3);if(invalid==='datum')d.datums.postRef='face';if(invalid==='dimensions'&&d.segments[0].kind==='flight')d.segments[0].width='';if(invalid==='winder'&&d.segments[0].kind==='flight')d.segments[0].steps[0].winder=true;const before=JSON.stringify(d);expect(applyPostPoint(d,invalid==='post'?'missing':null,{segmentIndex:0,stepIndex:0,worldPoint,grid:invalid==='grid'?0:undefined}).ok).toBe(false);expect(JSON.stringify(d)).toBe(before);}
+it('refuses a face datum, winders, missing posts and invalid grid without mutation',()=>{
+ for(const invalid of ['datum','winder','post','grid']){const d=fixture(),surface=stairGeometry(d)!.treads[0],worldPoint=surfacePoint(surface,4,3);if(invalid==='datum')d.datums.postRef='face';if(invalid==='winder'&&d.segments[0].kind==='flight')d.segments[0].steps[0].winder=true;const before=JSON.stringify(d);expect(applyPostPoint(d,invalid==='post'?'missing':null,{segmentIndex:0,stepIndex:0,worldPoint,grid:invalid==='grid'?0:undefined}).ok).toBe(false);expect(JSON.stringify(d)).toBe(before);}
+});
+it('a moved post keeps its side and typed setbacks: another step changes only the step, the same step only the nosing distance',()=>{
+ const d=fixture(),treads=stairGeometry(d)!.treads,p=Object.assign(newPost(0,0),{side:'right' as const,fromNosing:'2 1/2',fromEdge:'1 1/2'});d.posts=[p];
+ const other=resolvePostMove(d,p.id,{segmentIndex:0,stepIndex:1,worldPoint:surfacePoint(treads[1],7,4)});expect(other.ok).toBe(true);if(!other.ok)throw Error();
+ expect(other.position).toEqual({segIdx:0,stepIdx:1,side:'right',fromNosing:'2 1/2',fromEdge:'1 1/2',pos:''});expect(other.point).toEqual(surfacePoint(treads[1],2.5,34.5));
+ const same=resolvePostMove(d,p.id,{segmentIndex:0,stepIndex:0,worldPoint:surfacePoint(treads[0],7,4)});expect(same.ok).toBe(true);if(!same.ok)throw Error();
+ expect(same.position).toMatchObject({stepIdx:0,side:'right',fromNosing:'7',fromEdge:'1 1/2'});expect(same.point).toEqual(surfacePoint(treads[0],7,34.5));
+ expect(p).toMatchObject({stepIdx:0,fromNosing:'2 1/2'});
+});
+it('a new post takes the tapped step and side with the usual setbacks, and a blank reference becomes centerline',()=>{
+ const d=fixture(),treads=stairGeometry(d)!.treads;d.datums.postRef='';
+ const result=applyPostPoint(d,null,{segmentIndex:0,stepIndex:1,worldPoint:surfacePoint(treads[1],8.3,30.7)});expect(result.ok).toBe(true);
+ expect(d.datums.postRef).toBe('centerline');expect(d.posts).toHaveLength(1);expect(d.posts[0]).toMatchObject({segIdx:0,stepIdx:1,side:'right',fromEdge:'1 1/2',fromNosing:'5'});
+});
+it('places on a step whose width is not measured yet without recording a distance read off the assumed size',()=>{
+ const d=fixture(),s=d.segments[0];if(s.kind!=='flight')throw Error();s.width='';const tread=stairGeometry(d)!.treads[0];expect(tread.provisional).toBe(true);
+ const worldPoint=surfacePoint(tread,4,tread.width-3);expect(resolvePostPoint(d,{segmentIndex:0,stepIndex:0,worldPoint}).ok).toBe(false);
+ const result=applyPostPoint(d,null,{segmentIndex:0,stepIndex:0,worldPoint});expect(result.ok).toBe(true);expect(d.posts[0]).toMatchObject({stepIdx:0,side:'right',fromEdge:'1 1/2'});
 });
