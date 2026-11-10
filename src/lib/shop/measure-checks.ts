@@ -1185,8 +1185,20 @@ export function flightGaps(
 // one; a guardrail needs infill information a wall rail does not.
 export function requiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // The pro shot list adds documentation shots on top (yellow, never blocking).
-  return [...baseRequiredGaps(data, shape), ...shotGaps(data, shape)];
+  return [...baseRequiredGaps(data, shape).filter((g) => !NOT_MANDATORY.has(g.key)), ...shotGaps(data, shape)];
 }
+// Numbers the shop can build without (owner, 2026-11-10). Their fields stay on
+// the sheet for whoever wants to record them; nothing asks for them or waits on them.
+const NOT_MANDATORY = new Set([
+  "flight_width",
+  "deck_side_height",
+  "deck_post_spacing_f",
+  "fence_post_spacing",
+  "fence_utilities",
+  "bal_slab_thickness",
+  "bal_embedment_f",
+  "bal_edge_distance_f",
+]);
 function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
   // An opening sheet carries its own frame, sizes and photo list.
   if (shape === "opening") return [...openingGaps(data.opening, data.photos), ...(data.materials.finish?.trim() ? [] : [{ key: "mat_finish" }])];
@@ -1547,7 +1559,9 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
         }
       }
     });
-    if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise)) {
+    // Floor-to-floor is the risers added up, so it is only asked for while a
+    // flight's risers cannot supply it. The rake below stays the cross-check.
+    if (!has(data.overall.floorToFloor) && !has(data.overall.totalRise) && (flights.length === 0 || flights.some((fl) => flightTotals(fl) === null))) {
       gaps.push({ key: "floor_to_floor" });
     }
     if (!turns && flights.length === 1) {
@@ -1572,14 +1586,19 @@ function baseRequiredGaps(data: MeasureData, shape: MeasureShape): Gap[] {
       gaps.push({key:'landing_entry_rise',detail:`#${si+1}`,...(previousFlight>=0?{flight:previousFlight}:{})});
     }
     if (!has(pl.length) && shape !== "level_run") gaps.push({ key: "landing_length", detail: tag });
+    // A level run is one straight rail: the floor's depth and diagonal build nothing.
+    if (shape === "level_run") return;
     if (!has(pl.depth)) gaps.push({ key: "landing_depth", detail: tag });
     if (!has(pl.diag)) gaps.push({ key: "landing_diag", detail: tag });
   });
 
-  if (!has(data.rail.height)) gaps.push({ key: "rail_height" });
+  // Gates, fences, decks, balconies and wells record their own height and
+  // their own ends; the stair-rail versions would ask for the same thing twice.
+  const ownRail = selfContained || isBalcony || isWell;
+  if (!ownRail && !has(data.rail.height)) gaps.push({ key: "rail_height" });
 
   // rail terminations
-  if (!has(data.rail.returns)) gaps.push({ key: "returns" });
+  if (!ownRail && !has(data.rail.returns)) gaps.push({ key: "returns" });
   if ((data.rail.kind === "Handrail" || data.rail.kind === "Both") && !has(data.rail.extensions)) {
     gaps.push({ key: "extensions" });
   }

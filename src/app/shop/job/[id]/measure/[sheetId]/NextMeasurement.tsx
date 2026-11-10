@@ -5,8 +5,10 @@
 // measurer on a porch never has to find the right card among thirty. Every
 // work type feeds it — a stair, a gate, an opening in a wall, a steel frame.
 
+import { gapChoices } from "@/lib/shop/measure-next-choices";
+import { entryWarning } from "@/lib/shop/measure-entry-check";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
+import { AlertTriangle, Camera, Check, ChevronLeft, ChevronRight, Copy, Crosshair, MoreHorizontal, X } from "lucide-react";
 import type { MeasureData, MeasureShape } from "@/lib/shop/measure";
 import type { Gap } from "@/lib/shop/measure-checks";
 import { LASER_INPUT_EVENT, type LaserInputDetail } from '@/lib/shop/laser/field-input';
@@ -116,6 +118,15 @@ export function readback(slot: Pick<NextSlot, "unit">, value: string): { ok: boo
   return { ok: true, text: feet ? `${inches} · ${feet}` : inches };
 }
 
+/** The readback, or — once the measurer pauses on a number that does not sit with the other steps — a second look. */
+function EntryHint({ slot, data, value, lang, fallback }: { slot: NextSlot; data: MeasureData; value: string; lang: string; fallback: React.ReactNode }) {
+  const [settled, setSettled] = useState("");
+  useEffect(() => { const id = window.setTimeout(() => setSettled(value), 700); return () => window.clearTimeout(id); }, [value]);
+  const warning = settled === value ? entryWarning(slot, data, value, lang) : null;
+  if (!warning) return <>{fallback}</>;
+  return <span data-entry-warning={warning.kind} role="status" className="flex items-center gap-1.5 text-amber-700"><AlertTriangle aria-hidden className="h-3.5 w-3.5 shrink-0" />{warning.text}</span>;
+}
+
 // Advance animation: the new number slides in from the side it came from.
 const MOTION = `
 @keyframes nx-in-fwd { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
@@ -138,6 +149,7 @@ export default function NextMeasurement({
   set,
   gapLabel,
   onOpenGap,
+  onShootGap,
   onShow,
   onDone,
   onFocus,
@@ -152,6 +164,8 @@ export default function NextMeasurement({
   set: (fn: (d: MeasureData) => void) => void;
   gapLabel: (g: Gap) => string;
   onOpenGap: (g: Gap) => void;
+  /** Opens the camera on a required photo (gap.detail is its slot). Without it a photo stays an "Open" item like any other panel-only detail. */
+  onShootGap?: (g: Gap) => void;
   onShow?: (slot: NextSlot) => void;
   onDone?: () => void;
   /** The step face this card is on, for the 3D to light (null when it is on nothing drawable). */
@@ -166,9 +180,19 @@ export default function NextMeasurement({
   const [dir, setDir] = useState<"fwd" | "back" | "">("");
   const input = useRef<HTMLInputElement>(null);
   const refocus = useRef(false);
-  const item: NextItem | null = currentItem(queue, currentId);
   const openSlots = queue.open.filter((i) => i.type === "slot").length;
-  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details));
+  const pointed: NextItem | null = currentItem(queue, currentId);
+  // Once the numbers are in, every question that takes one tap comes before
+  // anything that has to be answered in its own panel.
+  // A required photo counts as one tap too, when the editor gave the card a camera to open.
+  const isShot = (g: Gap) => !!onShootGap && g.key === "photo" && !!g.detail;
+  const onCard = (g: Gap) => !!gapChoices(g, lang) || isShot(g);
+  const quick = openSlots === 0 && !details && pointed?.type === "gap" && !onCard(pointed.gap)
+    ? queue.open.find((e) => e.type === "gap" && onCard(e.gap)) ?? null : null;
+  const item: NextItem | null = quick ?? pointed;
+  // After the last number the card flows straight into the one-tap questions; the
+  // milestone only shows once what is left has to be answered in its own panel.
+  const finished = queue.total > 0 && openSlots === 0 && (item === null || (item.type === "gap" && !details && !onCard(item.gap)));
   // Copy a step's rise or tread to the rest of its flight: the choice sheet, then a short "Copied · Undo".
   const [copyMenu, setCopyMenu] = useState(false);
   // The angle slot whose calculated value is being overridden with a reading.
@@ -335,18 +359,40 @@ export default function NextMeasurement({
   );
 
   if (item.type === "gap") {
+    // A pick (which side is the wall, which post) is answered right here in one tap.
+    const choices = gapChoices(item.gap, lang);
+    // A required photo is taken from here: the saved photo closes the requirement,
+    // the item leaves the open list and the card moves on by itself.
+    const shot = isShot(item.gap);
+    const answer = (value: string) => {
+      const next = nextOpenItem({ ...queue, open: queue.open.filter((e) => e.id !== item.id) }, item.id);
+      set((d) => choices!.put(d, value));
+      setDir("fwd");
+      setCurrentId(next?.id ?? null);
+    };
     return (
       <section aria-label={label} data-next-measure className={`@container ${shell}`}>
         <style>{MOTION}</style>
         <div className="p-3.5 @2xl:flex @2xl:items-center @2xl:gap-6 @2xl:px-5"><div className="min-w-0 @2xl:flex-1">
           <div key={item.id} data-nx-anim={dir || undefined} className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{gapLabel(item.gap)}</p></div>
+            <div className="min-w-0 flex-1">{kicker()}<p className="text-lg font-semibold leading-snug">{choices ? choices.question : shot ? mt(lang, `slot_${item.gap.detail}`) : gapLabel(item.gap)}</p></div>
             {progress}
           </div>
           {bar}
+          {choices && (
+            <div data-nx-choices role="group" aria-label={choices.question} className={`mt-3 grid gap-2 ${choices.options.length > 1 ? "grid-cols-2" : ""}`}>
+              {choices.options.map((o) => (
+                <button key={o.value} type="button" data-nx-choice={o.value} onClick={() => answer(o.value)}
+                  className="min-h-14 rounded-2xl border border-indigo-200 bg-indigo-50 px-3 text-[16px] font-semibold leading-tight text-indigo-800 transition-transform active:scale-[.97]">
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           </div><div className="mt-2.5 flex items-center gap-2 @2xl:mt-0 @2xl:w-[440px] @2xl:shrink-0">
             <button type="button" aria-label={nx(lang, "nx_prev")} disabled={remaining < 2 && !queue.slots.length} onClick={() => (remaining < 2 ? backToLast() : go(-1))} className={navBtn}><ChevronLeft aria-hidden className="h-5 w-5" /></button>
-            <button type="button" onClick={() => onOpenGap(item.gap)} className="min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]">{nx(lang, "nx_open")}</button>
+            {shot ? <button type="button" data-nx-shoot={item.gap.detail} onClick={() => onShootGap!(item.gap)} className="flex h-14 min-h-14 flex-1 items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-4 text-[17px] font-semibold text-white shadow-[0_6px_14px_-8px_rgba(79,70,229,.9)] transition-transform active:scale-[.98]"><Camera aria-hidden className="h-5 w-5" />{nx(lang, "nx_takePhoto")}</button>
+            : <button type="button" onClick={() => onOpenGap(item.gap)} className={choices ? "min-h-14 flex-1 rounded-2xl border border-slate-200 bg-white px-4 font-semibold text-slate-700 transition-transform active:scale-[.98]" : "min-h-14 flex-1 rounded-2xl bg-indigo-600 px-4 font-semibold text-white transition-transform active:scale-[.98]"}>{choices ? (lang === "pt" ? "Outro" : lang === "es" ? "Otro" : "Other") : nx(lang, "nx_open")}</button>}
             <button type="button" aria-label={nx(lang, "nx_skip")} disabled={remaining < 2} onClick={() => go(1)} className={navBtn}><ChevronRight aria-hidden className="h-5 w-5" /></button>
           </div>
         </div>
@@ -521,7 +567,7 @@ export default function NextMeasurement({
         {/* Read back what will be saved, in the shop's own notation. */}
         {!approve && <p aria-live="polite" className={`mt-1.5 flex min-h-5 items-center gap-1.5 pl-[52px] text-[13px] font-semibold tabular-nums ${rb.ok ? "text-slate-500" : "text-amber-700"}`}>
           {rb.text
-            ? rb.ok ? <><Check aria-hidden className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />{rb.text}</> : nx(lang, "nx_notNumber")
+            ? rb.ok ? <EntryHint slot={slot} data={data} value={value} lang={lang} fallback={<><Check aria-hidden className="h-3.5 w-3.5 text-emerald-600" strokeWidth={3} />{rb.text}</>} /> : nx(lang, "nx_notNumber")
             : slot.unit === "len" && <span aria-hidden className="whitespace-pre font-medium text-slate-400">{`3' 4-1/2"  ·  40.5  ·  40 1/2`}</span>}
         </p>}
         </div>

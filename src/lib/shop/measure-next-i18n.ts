@@ -76,6 +76,7 @@ const ROWS: Row[] = [
   ["nx_skip", "Skip", "Pular", "Saltar"],
   ["nx_prev", "Previous", "Anterior", "Anterior"],
   ["nx_open", "Open", "Abrir", "Abrir"],
+  ["nx_takePhoto", "Take photo", "Tirar foto", "Tomar foto"],
   ["nx_show", "Show on drawing", "Mostrar no desenho", "Mostrar en el dibujo"],
   ["nx_card", "Next measurement", "Próxima medida", "Siguiente medida"],
   ["nx_of", "{a} of {b}", "{a} de {b}", "{a} de {b}"],

@@ -65,11 +65,11 @@ describe('measuring queue', () => {
   it('writes through to the multi-flight sheet a slot belongs to', () => {
     const { shape, data } = newPresetMeasureData('multi_flight', 2, 2);
     const q = queueOf(data, shape);
-    const slot = q.slots.find(s => s.flight === 1 && s.gap === 'flight_width')!;
+    const slot = q.slots.find(s => s.flight === 1 && s.gap === 'flight_angle')!;
     slot.put(data, '36');
     const flights = data.segments.filter(s => s.kind === 'flight') as FlightSegment[];
-    expect(flights[1].width).toBe('36');
-    expect(flights[0].width).toBe('');
+    expect(flights[1].angleDeg).toBe('36');
+    expect(flights[0].angleDeg).toBe('');
   });
 
   it('turns a gate sheet into its tape measurements', () => {

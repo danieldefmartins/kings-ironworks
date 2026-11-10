@@ -63,6 +63,8 @@ import FireEscapeSections from "./shapes/FireEscapeSections";
 import WellSections from "./shapes/WellSections";
 import PointMenus from "./overlays/PointMenus";
 import PhotoCapture from "./overlays/PhotoCapture";
+import type { ShotRequest } from "./overlays/ShotCamera";
+import { shotList } from "@/lib/shop/measure-shots";
 import { BrandProvider } from "@/app/shop/brand/BrandContext";
 import StepEditor, { type StepTarget } from "./overlays/StepEditor";
 import FractionBar from "./overlays/FractionBar";
@@ -100,7 +102,7 @@ import FinishedSurfaces from './FinishedSurfaces';
 import { mountLocations, surfacesFor } from '@/lib/shop/measure-substrate';
 import ShopAppearance from '../../../../ShopAppearance';
 import SteelWorkspace from './SteelWorkspace';
-import ProWorkspace from './ProWorkspace';
+import ProWorkspace,{showMeasureTools} from './ProWorkspace';
 import type {PostDropTarget} from './SceneViewport';
 import {applyPostPoint} from '@/lib/shop/measure-scene-edit';
 import {WorkspaceScene} from './ProWorkspace';
@@ -244,7 +246,7 @@ export default function MeasureEditor({
   const ownForm=openingForm||structuralForm||canopyForm||wallCapForm||shopPieceForm;
   function saveAndClose(){requestSave();router.push(`/shop/job/${job.id}/measure`);}
   function openDetails(topic:ProDetailsTopic){setDetailTopic(topic);if(topic==='review'){setWorkspace('review');return;}setWorkspace('design');setDesignTool('details');}
-  function selectScene(target:SceneSelection){
+  function selectScene(target:SceneSelection){showMeasureTools();
     setWorkspace('design');
     if(target.siteId){setVisualSite(target.siteId);setDesignTool('site');}
     else if(target.postId?.startsWith('sg-')){document.querySelector('[data-post-suggest]')?.scrollIntoView?.({block:'center',behavior:'smooth'});}
@@ -625,6 +627,8 @@ export default function MeasureEditor({
   const checks = ready.checks;
   const gaps = ready.fabGaps;
   const docGaps = ready.docGaps;
+  // The card walks the photos the shop asks for too (they never block submitting), after what fabrication needs.
+  const cardGaps = [...gaps, ...docGaps.filter((g) => g.key === "photo")];
   const redChecks = ready.redChecks;
   const canSubmit = ready.ready;
   const gapStage=(key:string):EditorStage=>(sheet.shape==='custom'||sheet.shape==='deck')&&key.startsWith('post')&&key!=='post_photo'?'steps':legacyStageForGap(key);
@@ -1291,10 +1295,12 @@ export default function MeasureEditor({
             📝 {mt(lang, "reviewComment")}: {reviewComment}
           </div>
         )}
-        <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm}
-          lead={<>{workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?null:<NextMeasurement data={data} shape={sheet.shape} gaps={gaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
-            onOpenGap={g=>{if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
-            onShow={slot=>{if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
+        <ProWorkspace data={sceneData} shape={sheet.shape} lang={lang} focus={sceneFocus} onSelect={selectScene} onPostDrop={dropScenePost} wide={workspace==='review'||(canopyForm&&!data.canopy?.kind)} stacked={ownForm} quiet={workspace==='design'&&designTool!=='materials'&&!ownForm&&status==='in_progress'&&cardGaps.length>0}
+          lead={<>{workspace==='review'||(structuralForm&&!data.structural?.members.length)||(canopyForm&&!data.canopy?.kind)?null:<NextMeasurement data={data} shape={sheet.shape} gaps={cardGaps} lang={lang} unitPlaceholder={unitPh} set={set} gapLabel={gapLabel} onFocus={setSceneFocus} onUndo={undo}
+            // A required photo on the card opens the Photos stage's own camera on that shot. The request is ShotList's, narrowed to the photos the card is asking for: the camera walks those and closes, back on the card, instead of leading on through every recommended shot. A slot outside the shot list keeps the plain photo sheet.
+            onShootGap={g=>{const slot=g.detail||'',label=mt(lang,`slot_${slot}`),shots=shotList(sheet.shape,data).filter(s=>s.slot===slot);const req:ShotRequest={slot,label,shots,filled:[]};setPhotoSlot(shots.some(s=>s.slot===slot)?req:{slot,label});}}
+            onOpenGap={g=>{showMeasureTools();if(ownForm){locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true});return;}jumpToGap(gapStage(g.key),g.flight);if(g.key.startsWith('sub_')){window.setTimeout(()=>locateMeasure({gap:g.key,gapDetail:g.detail,scroll:true}),350);return;}requestAnimationFrame(()=>document.querySelector('[data-selection-tools]')?.scrollIntoView?.({block:'start',behavior:'smooth'}));}}
+            onShow={slot=>{showMeasureTools();if(ownForm){locateMeasure({groupId:slot.group?.id,groupKind:slot.group?.kind,part:slot.part,scroll:true});return;}if(slot.segIdx!==undefined)selectScene({segmentIndex:slot.segIdx,stepIndex:slot.stepIdx??null});}}
             onDone={()=>{setWorkspace('review');requestAnimationFrame(()=>window.scrollTo?.({top:0,behavior:'smooth'}));}}/>}
           {postSuggestion&&workspace!=='review'&&<StairPostSuggest mode="suggest" lang={lang} data={data} set={set} orgMaxSpacing={orgMaxSpacing} onUndo={undo}/>}
           {sheet.shape==='wall_rail'&&workspace!=='review'&&<WallRailBrackets lang={lang} data={data} set={set}/>}
