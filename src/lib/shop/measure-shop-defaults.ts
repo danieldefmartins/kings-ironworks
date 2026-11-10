@@ -10,15 +10,15 @@ import type { SiteObject } from "./measure-site";
 type HardwareDefaults = Pick<TermHardware, "profile" | "thickness" | "holeDia" | "holeSpacing" | "orientation" | "fastener" | "qty" | "shopField">;
 
 export const SHOP_DEFAULTS = {
-  /** Rail end to a wall or column: angle clip, shop-welded to the rail, two anchors into the wall. */
+  /** Rail end to a wall or column: 1-1/2" x 1/4" flat bar folded into a clip. A 1" tab screws to the wall; the rail sits 1-1/2" off it. */
   wallClip: {
-    profile: 'L 2" x 2" x 1/4" angle, 3" long',
+    profile: 'Flat bar 1 1/2" x 1/4", folded: 1" tab on the wall, 1 1/2" off the wall',
     thickness: "1/4",
-    holeDia: "7/16",
-    holeSpacing: "1 1/2",
-    orientation: "One leg flat on the wall, rail welded to the other leg",
-    fastener: '3/8" x 3" anchor',
-    qty: "2",
+    holeDia: "",
+    holeSpacing: "",
+    orientation: '1" tab flat on the wall, rail welded to the 1 1/2" leg',
+    fastener: "Screw",
+    qty: "1",
     shopField: "shop_weld",
   } satisfies HardwareDefaults,
   /** Rail end to a wall: flat plate, four anchors. */
@@ -34,7 +34,8 @@ export const SHOP_DEFAULTS = {
   } satisfies HardwareDefaults,
   /** Sizes the drawing uses, in inches. */
   draw: {
-    clip: { leg: 2, length: 3, thickness: 0.25 },
+    /** `tab` lies on the wall, `standoff` is the gap it holds the rail off the wall, `width` is the flat bar. */
+    clip: { tab: 1, standoff: 1.5, width: 1.5, thickness: 0.25 },
     plate: { width: 4, height: 4, thickness: 0.25 },
     /** A post whose material is not chosen yet is still drawn as a post. */
     post: { size: 1.5, previewHeight: 36 },
@@ -60,7 +61,7 @@ export function applyShopHardware(t: Termination): void {
 /** One line a fabricator can read: the usual clip, its holes and fasteners. */
 export function shopClipText(): string {
   const c = SHOP_DEFAULTS.wallClip;
-  return `${c.profile} · ${c.qty} x ${c.fastener} · ${c.holeDia}" holes at ${c.holeSpacing}"`;
+  return `${c.profile} · ${c.qty} x ${c.fastener.toLowerCase()}`;
 }
 
 /** A rail end that attaches to a drawn column takes the column's numbers: they are entered once. */

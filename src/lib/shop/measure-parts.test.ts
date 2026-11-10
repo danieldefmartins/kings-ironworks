@@ -46,7 +46,7 @@ describe("a rail end on a wall", () => {
     ask.put(data, "wall_clip");
     const t = data.spans[0].end;
     expect(t).toMatchObject({ attachTo: "wall", method: "clip" });
-    expect(t.hardware).toMatchObject({ profile: SHOP_DEFAULTS.wallClip.profile, qty: "2", shopField: "shop_weld" });
+    expect(t.hardware).toMatchObject({ profile: SHOP_DEFAULTS.wallClip.profile, qty: "1", shopField: "shop_weld" });
     // Only what the wall is made of is still asked, and that is one tap too.
     const open = requiredGaps(data, "stair_platform").filter((g) => g.detail === "#1 end" && g.tier !== "doc").map((g) => g.key);
     expect(open).toEqual(["term_material"]);
@@ -82,8 +82,9 @@ describe("a rail end on a wall", () => {
     expect(clip.provisional).toBe(false);
     // The house wall's near face is at x = 116.
     expect(Math.max(...clip.vertices.map((v) => v.x))).toBeCloseTo(116);
-    expect(rail.points[1].x).toBeCloseTo(116);
-    expect(span(clip.vertices.map((v) => v.z))).toBe(SHOP_DEFAULTS.draw.clip.length);
+    // The rail stops on the clip, 1 1/2" off the wall.
+    expect(rail.points[1].x).toBeCloseTo(116 - SHOP_DEFAULTS.draw.clip.standoff);
+    expect(span(clip.vertices.map((v) => v.z))).toBe(SHOP_DEFAULTS.draw.clip.width);
   });
   it("with no wall measured there, draws it amber on a piece of wall at the end of the stair", () => {
     const data = sheet();

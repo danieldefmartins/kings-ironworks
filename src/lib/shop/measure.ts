@@ -1194,7 +1194,8 @@ export interface TermHardware {
 // beyond the base set. A record saying "clip, two lags, 34 in" cannot be
 // manufactured — the clip itself needs dimensions.
 export const HW_REQUIRED: Record<string, (keyof TermHardware)[]> = {
-  clip: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
+  // The shop folds and drills its own clip: one screw, so no hole pattern to record.
+  clip: ["profile", "thickness", "orientation"],
   wall_plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
   plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],
   base_plate: ["profile", "thickness", "holeDia", "holeSpacing", "orientation"],

@@ -6,7 +6,7 @@ import {postLayout} from './measure-post-layout';
 import {formatIn} from './measure-parse';
 import {previewSiteObject,previewSiteDraft} from './measure-site-placement';
 import {siteMeshes,siteNumber,withSiteTrim} from './measure-site';
-import {basePlate,clipSolid,plateSolid,wallPatch,skirtBlock,join,treadPoint,inward,nearestOnHost,railEndParts,type Host} from './measure-scene-parts';
+import {basePlate,clipSolid,plateSolid,wallPatch,skirtBlock,join,treadPoint,inward,nearestOnHost,railEndParts,railEnd,type Host} from './measure-scene-parts';
 import {SHOP_DEFAULTS} from './measure-shop-defaults';
 import {resolveSite,previewWall,wallPlacementEdges} from './measure-wall-placement';
 import {siteRailLayout,siteRailFabReviewed} from './measure-site-rails';
@@ -131,7 +131,7 @@ export function measureScene(data:MeasureData,shape?:MeasureShape|null):MeasureS
    const assumed=part.hostId===null,entity={part:`term:${part.spanId}:${part.end}`},name=part.method==='clip'?'Wall clip':'Wall plate';
    const item={label:`${name} · #${part.spanIndex+1} ${part.end}`,provisional:assumed,referenceOnly:true,entity};
    meshes.push({...item,id:`clip:${part.spanId}:${part.end}`,kind:'attached',...join(part.method==='clip'?clipSolid(part.at,part.normal):plateSolid(part.at,part.normal),assumed?wallPatch(part.at,part.normal):null)});
-   lines.push({...item,id:`rail-end:${part.spanId}:${part.end}`,kind:'rail',points:[{...part.from},{...part.at}]});
+   lines.push({...item,id:`rail-end:${part.spanId}:${part.end}`,kind:'rail',points:[{...part.from},railEnd(part)]});
   }
   for(const [group,list] of groups){
    const tread=model.treads.find(t=>t.segIdx===list[0].post.segIdx);if(!tread)continue;const [a,b]=tread.corners,dx=b.x-a.x,dy=b.y-a.y;

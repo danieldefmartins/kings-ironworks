@@ -81,12 +81,12 @@ export function windowWellScene(data:MeasureData):ShapeSceneOutput{
   for(const [a,b] of lay.bays)guardBay(guard,{a:z(a,top),b:z(b,top),bottomA:top+clear,bottomB:top+clear,height:H-clear,topRail,bottomRail,picket,gap,postWidth:pw});
   guard.emit(out,'well:guard','Well guard',{provisional:soft,entity});
   out.mesh('well:posts','Well guard · posts','post',posts.geo,{provisional:soft,entity});
-  // A side run clipped to the house: a stub off the top rail to a plate on the wall.
+  // A side run clipped to the house: the top rail stops short of the wall on the shop's folded clip.
   const clip=SHOP_DEFAULTS.draw.clip,zc=top+H-topRail.depth/2,face=faceAt(zc);
   for(const [side,mode,p] of [['left',w.returnLeft,lay.runs[0].a],['right',w.returnRight,lay.runs[2].a]] as const){
    if(mode!=='clip')continue;
-   // One leg of the angle on the wall, the other out under the stub.
-   const hl=clip.length/2,geo=new Geo().member(z(p,zc),p3(p.x,face,zc),topRail).box(p3(p.x-hl,face-clip.thickness,zc-clip.leg/2),p3(p.x+hl,face,zc+clip.leg/2)).box(p3(p.x-hl,face-clip.leg,zc-clip.leg/2-clip.thickness),p3(p.x+hl,face,zc-clip.leg/2));
+   // The tab lies on the wall; the leg holds the rail off it.
+   const x0=p.x-clip.thickness/2,z0=zc-clip.width/2,z1=zc+clip.width/2,geo=new Geo().member(z(p,zc),p3(p.x,face-clip.standoff,zc),topRail).box(p3(x0,face-clip.thickness,z0),p3(x0+clip.tab,face,z1)).box(p3(x0,face-clip.standoff,z0),p3(x0+clip.thickness,face,z1));
    out.mesh(`well:return-clip:${side}`,'Well guard · wall clip','attached',geo,{provisional:soft,entity:{part:'well-return'}});
   }
   if(lay.gate){
