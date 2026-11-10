@@ -74,7 +74,7 @@ export function askOnCard(segmentIndex: number, stepIndex: number | null): boole
 
 /** What the pill on a lit place says: the question without its mark; nothing when it is too long to sit on the drawing. */
 export function askedLabel(question: string): string {
-  const text = question.replace(/[¿?:]/g, "").trim();
+  const text = question.replace(/[¿?]/g, "").trim();
   return text.length <= 36 ? text : "";
 }
 
