@@ -58,6 +58,10 @@ export function fireDims(data: MeasureData): SceneDim[] {
   };
   push({ key: 'fire:total', kind: 'fireTotal', slots: ['fire.totalHeight'], scope: 'overall', unit: 'len', value: num(f.totalHeight), calc: fireStackCalc(data),
     a: P(maxL + 30, -2, 0), b: P(maxL + 30, -2, top), nv: RIGHT, off: 18 });
+  // The sheet's rail height: the guard of the top platform, at its near corner.
+  const rail = num(data.rail.height);
+  push({ key: 'fire:rail', kind: 'railHeight', slots: ['rail.height'], scope: 'context', mark: 'number', unit: 'len', value: rail, calc: null,
+    a: P(0, -dims[0].W, heights[0].z), b: P(0, -dims[0].W, heights[0].z + (rail ?? num(f.levels[0].guardHeight) ?? 42)), nv: FRONT, off: 6 });
   f.levels.forEach((l, i) => {
     const { z } = heights[i], { L, W } = dims[i], at = `fire.l${i}`;
     // Grade to this platform, stepped out so the lines of a tall stack do not sit on each other.

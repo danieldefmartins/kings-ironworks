@@ -9,6 +9,7 @@
 import type { DeckSide, MeasureData } from "./measure";
 import { parseMeas } from "./measure-parse";
 import { siteNumber } from "./measure-site";
+import { deckTurnCalc } from "./measure-run-calc";
 
 export type XY = { x: number; y: number };
 export interface DeckEdge {
@@ -17,6 +18,8 @@ export interface DeckEdge {
   index: number;
   a: XY;
   b: XY;
+  /** Sketch only: this side's length is a stand-in, not a measurement. */
+  nominal?: boolean;
 }
 export interface DeckPlan {
   edges: DeckEdge[];
@@ -49,28 +52,47 @@ export function outwardOf(plan: Pick<DeckPlan, "ccw">, e: Pick<DeckEdge, "a" | "
   return plan.ccw ? { x: dy / l, y: -dx / l } : { x: -dy / l, y: dx / l };
 }
 
-export function deckPlan(data: MeasureData): DeckPlan | null {
+/** Sizes the sketch stands in for a number not read yet (drawn amber, never used to build). */
+export const DECK_SKETCH = { length: 120, guard: 36 };
+// A deck with nothing read yet: out from the house, along the front, back to the house.
+const SKETCH_SIDES = [1, 1.5, 1, 0.75, 0.5];
+
+/**
+ * `sketch`: for the drawing and its dimension lines only — a side with no
+ * length yet is drawn at a stand-in length (flagged `nominal`) and a corner
+ * with no angle yet at the angle the other corners imply, else square, so the
+ * first question already has an outline to point at. Post plans and checks
+ * read the measured plan (no `sketch`).
+ */
+export function deckPlan(data: MeasureData, sketch = false): DeckPlan | null {
   const d = data.deck;
   if (!d) return null;
-  const pts: XY[] = [{ x: 0, y: 0 }], used: DeckSide[] = [], turns: number[] = [];
+  const pts: XY[] = [{ x: 0, y: 0 }], used: DeckSide[] = [], turns: number[] = [], stand: boolean[] = [];
   let heading = 0;
-  for (const sd of d.sides) {
-    const L = len(sd.length);
-    if (L === null) break;
+  const n = d.sides.length, read = d.sides.map((sd) => signed(sd.turnDeg)).filter((t): t is number => t !== null);
+  const hand = read.reduce((a, b) => a + b, 0) < 0 ? -1 : 1, blank = d.sides.every((sd) => len(sd.length) === null);
+  // Square while the stand-in outline stays simple; more sides share the turn evenly.
+  const assumed = n <= SKETCH_SIDES.length ? 90 : d.closedLoop ? 360 / n : 180 / (n - 1);
+  for (const [i, sd] of d.sides.entries()) {
+    const own = len(sd.length);
+    if (own === null && !sketch) break;
+    const L = own ?? DECK_SKETCH.length * (blank ? SKETCH_SIDES[i] ?? 1 : 1);
     const last = pts[pts.length - 1];
     pts.push({ x: last.x + Math.cos(heading) * L, y: last.y + Math.sin(heading) * L });
     used.push(sd);
-    const t = signed(sd.turnDeg) ?? 0;
+    stand.push(own === null);
+    const corner = d.closedLoop || i < n - 1;
+    const t = signed(sd.turnDeg) ?? (sketch && corner ? deckTurnCalc(data, i) ?? assumed * hand : 0);
     turns.push(t);
     heading += (t * Math.PI) / 180;
   }
   if (!used.length) return null;
-  const complete = used.length === d.sides.length;
+  const complete = used.length === d.sides.length && !stand.some(Boolean);
   const closeGap = Math.hypot(pts[pts.length - 1].x - pts[0].x, pts[pts.length - 1].y - pts[0].y);
   const closed = d.closedLoop && complete && closeGap <= 1;
   if (closed) pts.pop();
-  const edges: DeckEdge[] = used.map((side, i) => ({ side, a: pts[i], b: pts[(i + 1) % pts.length], index: i }));
-  if (!closed && pts.length > 2) edges.push({ side: null, a: pts[pts.length - 1], b: pts[0], index: edges.length });
+  const edges: DeckEdge[] = used.map((side, i) => ({ side, a: pts[i], b: pts[(i + 1) % pts.length], index: i, ...(stand[i] ? { nominal: true } : {}) }));
+  if (!closed && pts.length > 2 && (!sketch || closeGap > 1)) edges.push({ side: null, a: pts[pts.length - 1], b: pts[0], index: edges.length });
   let area = 0;
   for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; area += a.x * b.y - b.x * a.y; }
   const ccw = area >= 0;

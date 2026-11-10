@@ -48,8 +48,12 @@ describe("fence dimension lines", () => {
     expect(dimForSlot(dims, "fence.postSpacing")!.value).toBe(72);
     expect(dimForSlot(dims, "fence.postSpacing")!.calc).toBeCloseTo(64);
     expect(dimForSlot(dims, "fence.footingDepth")!.value).toBe(36);
-    // A turning run has no single end-to-end line.
-    expect(dimForSlot(dims, "fence.totalRun")).toBeNull();
+    // A turning run has no single end-to-end line: nothing stands on the drawing, and
+    // while the card asks for the total every segment lights (a highlight, no sum to approve).
+    const total = dimForSlot(dims, "fence.totalRun")!;
+    expect(total.mark).toBe("number");
+    expect(total.calc).toBeNull();
+    expect(total.lines.length).toBe(5 * d.fence!.segments.length);
   });
   it("a straight run shows the total against the sum of its segments", () => {
     const d = fenceFixture();
