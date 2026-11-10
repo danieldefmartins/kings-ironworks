@@ -84,7 +84,7 @@ describe("a rail end on a wall", () => {
     expect(Math.max(...clip.vertices.map((v) => v.x))).toBeCloseTo(116);
     // The rail stops on the clip, 1 1/2" off the wall.
     expect(rail.points[1].x).toBeCloseTo(116 - SHOP_DEFAULTS.draw.clip.standoff);
-    expect(span(clip.vertices.map((v) => v.z))).toBe(SHOP_DEFAULTS.draw.clip.width);
+    expect(span(clip.vertices.map((v) => v.z))).toBe(SHOP_DEFAULTS.draw.clip.up + SHOP_DEFAULTS.draw.clip.thickness + SHOP_DEFAULTS.draw.clip.tab);
   });
   it("with no wall measured there, draws it amber on a piece of wall at the end of the stair", () => {
     const data = sheet();

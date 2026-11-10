@@ -10,13 +10,14 @@ import type { SiteObject } from "./measure-site";
 type HardwareDefaults = Pick<TermHardware, "profile" | "thickness" | "holeDia" | "holeSpacing" | "orientation" | "fastener" | "qty" | "shopField">;
 
 export const SHOP_DEFAULTS = {
-  /** Rail end to a wall or column: 1-1/2" x 1/4" flat bar folded into a clip. A 1" tab screws to the wall; the rail sits 1-1/2" off it. */
+  /** The shop's wall clip, under a wall handrail and at a rail end alike: 1-1/2" x 1/4" flat bar folded in three.
+   *  1-1/2" up to the rail, 2" across to the wall, 1" tab on the wall with one screw. The rail sits 1-1/2" clear of the wall. */
   wallClip: {
-    profile: 'Flat bar 1 1/2" x 1/4", folded: 1" tab on the wall, 1 1/2" off the wall',
+    profile: 'Flat bar 1 1/2" x 1/4", folded: 1 1/2" up to the rail, 2" across, 1" tab on the wall',
     thickness: "1/4",
     holeDia: "",
     holeSpacing: "",
-    orientation: '1" tab flat on the wall, rail welded to the 1 1/2" leg',
+    orientation: '1" tab flat on the wall, rail welded on the 1 1/2" leg, 1 1/2" clear of the wall',
     fastener: "Screw",
     qty: "1",
     shopField: "shop_weld",
@@ -34,8 +35,8 @@ export const SHOP_DEFAULTS = {
   } satisfies HardwareDefaults,
   /** Sizes the drawing uses, in inches. */
   draw: {
-    /** `tab` lies on the wall, `standoff` is the gap it holds the rail off the wall, `width` is the flat bar. */
-    clip: { tab: 1, standoff: 1.5, width: 1.5, thickness: 0.25 },
+    /** Folded clip: `up` to the rail, `across` to the wall, `tab` on the wall; `standoff` is the clear gap rail to wall, `width` the flat bar. */
+    clip: { up: 1.5, across: 2, tab: 1, standoff: 1.5, width: 1.5, thickness: 0.25 },
     plate: { width: 4, height: 4, thickness: 0.25 },
     /** A post whose material is not chosen yet is still drawn as a post. */
     post: { size: 1.5, previewHeight: 36 },

@@ -33,10 +33,10 @@ export function basePlate(base:Point3,spec:string):Solid{
 export function skirtBlock(base:Point3,width:number,depth:number,projection:number,height:number):Solid{
  return box({x:base.x-width/2-projection,y:base.y-depth/2-projection,z:base.z},{x:1,y:0},width+2*projection,{x:0,y:1},depth+2*projection,height);
 }
-/** Folded flat-bar clip on a wall face: `at` is on the face at the rail line, `normal` points out of the wall toward the rail. */
+/** The shop's folded clip under a rail: `at` is on the wall face at the rail line, `normal` points out of the wall. Up to the rail, across to the wall, tab down the wall. */
 export function clipSolid(at:Point3,normal:Vec):Solid{
- const c=SHOP_DEFAULTS.draw.clip,n=unit(normal),t={x:-n.y,y:n.x},o={x:at.x-t.x*c.thickness/2,y:at.y-t.y*c.thickness/2,z:at.z-c.width/2};
- return join(box(o,t,c.tab,n,c.thickness,c.width),box(o,t,c.thickness,n,c.standoff,c.width));
+ const c=SHOP_DEFAULTS.draw.clip,n=unit(normal),t={x:-n.y,y:n.x},th=c.thickness,o={x:at.x-t.x*c.width/2,y:at.y-t.y*c.width/2},zb=at.z-c.up;
+ return join(box({x:o.x+n.x*(c.across-th),y:o.y+n.y*(c.across-th),z:zb},t,c.width,n,th,c.up),box({...o,z:zb-th},t,c.width,n,c.across,th),box({...o,z:zb-th-c.tab},t,c.width,n,th,c.tab));
 }
 /** Where the rail stops: on the clip's leg, off the wall; a plate takes it to the face. */
 export function railEnd(part:{at:Point3;normal:Vec;method:'clip'|'wall_plate'}):Point3{

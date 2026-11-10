@@ -85,8 +85,8 @@ export function windowWellScene(data:MeasureData):ShapeSceneOutput{
   const clip=SHOP_DEFAULTS.draw.clip,zc=top+H-topRail.depth/2,face=faceAt(zc);
   for(const [side,mode,p] of [['left',w.returnLeft,lay.runs[0].a],['right',w.returnRight,lay.runs[2].a]] as const){
    if(mode!=='clip')continue;
-   // The tab lies on the wall; the leg holds the rail off it.
-   const x0=p.x-clip.thickness/2,z0=zc-clip.width/2,z1=zc+clip.width/2,geo=new Geo().member(z(p,zc),p3(p.x,face-clip.standoff,zc),topRail).box(p3(x0,face-clip.thickness,z0),p3(x0+clip.tab,face,z1)).box(p3(x0,face-clip.standoff,z0),p3(x0+clip.thickness,face,z1));
+   // Up to the rail, across to the wall, tab down the wall.
+   const th=clip.thickness,x0=p.x-clip.width/2,x1=p.x+clip.width/2,zb=zc-clip.up,geo=new Geo().member(z(p,zc),p3(p.x,face-clip.standoff,zc),topRail).box(p3(x0,face-clip.across,zb),p3(x1,face-clip.across+th,zc)).box(p3(x0,face-clip.across,zb-th),p3(x1,face,zb)).box(p3(x0,face-th,zb-th-clip.tab),p3(x1,face,zb-th));
    out.mesh(`well:return-clip:${side}`,'Well guard · wall clip','attached',geo,{provisional:soft,entity:{part:'well-return'}});
   }
   if(lay.gate){
