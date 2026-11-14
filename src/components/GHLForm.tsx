@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SMS_CONSENT_TEXT } from "@/lib/crm360";
+import { SMS_NOTICE_TEXT } from "@/lib/crm360";
 
 
 
@@ -45,7 +45,6 @@ export default function GHLForm() {
     projectDescription: "",
     timeline: "",
     source: "",
-    consent: false,
   });
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
 
@@ -70,7 +69,6 @@ export default function GHLForm() {
           preferredContact: form.preferredContact,
           phone: form.preferredContact === "phone" ? form.phone : "",
           email: form.preferredContact === "email" ? form.email : "",
-          consent: form.preferredContact === "phone" && form.consent,
           serviceType: form.serviceType,
           projectAddress: form.projectAddress,
           projectDescription: form.projectDescription,
@@ -85,7 +83,7 @@ export default function GHLForm() {
         setForm({
           name: "", preferredContact: "phone", phone: "", email: "",
           serviceType: "", projectAddress: "", projectDescription: "",
-          timeline: "", source: "", consent: false,
+          timeline: "", source: "",
         });
       } else {
         setStatus("error");
@@ -242,23 +240,15 @@ export default function GHLForm() {
           </select>
         </div>
 
-        {/* Optional SMS permission, independent of requesting a phone call. */}
-        {form.preferredContact === "phone" && <div className="flex items-start gap-3">
-          <input
-            id="consent" name="consent" type="checkbox"
-            checked={form.consent} onChange={handleChange}
-            className="mt-1 w-4 h-4 accent-[oklch(0.66_0.12_75)]"
-          />
-          <label htmlFor="consent" className="text-xs text-muted-foreground leading-relaxed">
-            {SMS_CONSENT_TEXT}
-          </label>
-        </div>
-
-        }
+        {/* Text-message notice: no checkbox, sending the form is the agreement. */}
+        <p id="sms-notice" className="text-xs text-muted-foreground leading-relaxed">
+          {SMS_NOTICE_TEXT}
+        </p>
 
         {/* Submit */}
         <button
           type="submit"
+          aria-describedby="sms-notice"
           disabled={status === "sending"}
           className="w-full bg-accent text-sidebar font-bold text-lg py-4 px-8 hover:opacity-90 transition-opacity disabled:opacity-50 tracking-wide uppercase"
         >

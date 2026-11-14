@@ -60,23 +60,33 @@ export async function POST(request: NextRequest) {
   if (data.timeline) answers.timeline = data.timeline;
   if (data.source) answers.source = data.source;
   try {
-    const submit = async () => fetch(`${CRM_API}/direct-submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token: await formToken(),
-        key: randomUUID(),
-        answers,
-        attribution: {},
-        // Text permission only when the visitor asked to be called and ticked the box.
-        smsConsent: data.preferredContact === "phone" && data.consent,
-        emailConsent: false,
-        consent: false,
-        website: data.website,
-        turnstileToken: "",
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
+    // Evidence for 360: the page that showed the notice (no query string).
+    const attribution: Record<string, string> = {};
+    try {
+      const page = new URL(request.headers.get("referer") ?? "");
+      if (/^https?:$/.test(page.protocol)) attribution.landing_page = page.origin + page.pathname;
+    } catch { /* no page address */ }
+    const submit = async () => {
+      const form = await formToken();
+      return fetch(`${CRM_API}/direct-submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: form.token,
+          key: randomUUID(),
+          answers,
+          attribution,
+          // The notice above the Submit button: sending the form with a phone number is the
+          // agreement to get texts. Sent only while the 360 form holds that same notice.
+          consent: form.notice && !!data.phone,
+          smsConsent: false,
+          emailConsent: false,
+          website: data.website,
+          turnstileToken: "",
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+    };
     let res = await submit();
     if (res.status === 401 || res.status === 403) {
       // The form was republished or its token expired early: fetch a fresh token once.

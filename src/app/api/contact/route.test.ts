@@ -2,16 +2,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "./route";
-import { resetFormCache, SMS_CONSENT_TEXT } from "@/lib/crm360";
+import { resetFormCache, SMS_NOTICE_TEXT } from "@/lib/crm360";
 
 const fetchMock = vi.fn();
 const base = { name: "Alex de Silva", preferredContact: "email", email: "alex@example.com", serviceType: "Railings", projectDescription: "Replace porch railing" };
-const request = (body: unknown) => new NextRequest("http://localhost/api/contact", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
+const request = (body: unknown, headers: Record<string, string> = {}) => new NextRequest("http://localhost/api/contact", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json", ...headers } });
 const b64 = (v: object) => Buffer.from(JSON.stringify(v)).toString("base64url");
 const token = (claims: object = {}) => `${b64({ ws: "8e40794c-055a-49a8-a190-7baea0587ba3", kind: "form", issuedAt: Date.now() - 10_000, exp: Date.now() + 3_600_000, ...claims })}.sig`;
 const submits = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/direct-submit"));
 const payload = () => JSON.parse(submits()[0][1].body);
-const formReply = (t = token()) => Response.json({ token: t, config: { requireCaptcha: false } });
+const formReply = (t = token(), config: object = {}) => Response.json({ token: t, config: { requireCaptcha: false, ...config } });
+const noticeForm = { consentMode: "notice", consentText: SMS_NOTICE_TEXT };
 
 beforeEach(() => {
   resetFormCache();
@@ -30,19 +31,31 @@ describe("quote submission to 360", () => {
     expect(payload()).toMatchObject({ smsConsent: false, website: "", turnstileToken: "" });
     expect(payload().key).toMatch(/^[0-9a-f-]{36}$/);
   });
-  it("accepts a single name and a US phone without SMS permission", async () => {
+  it("accepts a single name and a US phone", async () => {
     const res = await POST(request({ ...base, name: "Alex", preferredContact: "phone", email: "", phone: "617-555-0100" }));
     expect(res.status).toBe(200);
     expect(payload().answers).toMatchObject({ first_name: "Alex", phone: "+16175550100", preferred: "Phone call" });
     expect(payload().answers).not.toHaveProperty("last_name");
-    expect(payload().smsConsent).toBe(false);
   });
-  it("records SMS permission only for phone leads that ticked the box", async () => {
-    await POST(request({ ...base, preferredContact: "phone", email: "", phone: "6175550100", consent: true }));
-    expect(payload().smsConsent).toBe(true);
+  it("tells 360 the notice was shown for a phone lead, with the page, once the 360 form holds the notice", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url.includes("/forms/") ? formReply(token(), noticeForm) : Response.json({ thankYou: "ok" }));
+    await POST(request({ ...base, preferredContact: "phone", email: "", phone: "6175550100" }, { referer: "https://kingsironworks.com/contact?utm_source=x" }));
+    expect(payload()).toMatchObject({ consent: true, smsConsent: false, attribution: { landing_page: "https://kingsironworks.com/contact" } });
     fetchMock.mockClear();
-    await POST(request({ ...base, consent: true }));
-    expect(payload().smsConsent).toBe(false);
+    // No phone number, no text permission.
+    await POST(request(base));
+    expect(payload().consent).toBe(false);
+  });
+  it("gives no text permission while the 360 form still holds other wording", async () => {
+    await POST(request({ ...base, preferredContact: "phone", email: "", phone: "6175550100", consent: true }));
+    expect(payload()).toMatchObject({ consent: false, smsConsent: false });
+    resetFormCache();
+    fetchMock.mockClear();
+    fetchMock.mockImplementation(async (url: string) =>
+      url.includes("/forms/") ? formReply(token(), { consentMode: "notice", consentText: "Other words about text messages" }) : Response.json({ thankYou: "ok" }));
+    await POST(request({ ...base, preferredContact: "phone", email: "", phone: "6175550100" }));
+    expect(payload().consent).toBe(false);
   });
   it("sends address, timeline and source when given", async () => {
     await POST(request({ ...base, projectAddress: "1 Main St, Everett, MA", timeline: "ASAP", source: "Google" }));
@@ -93,8 +106,7 @@ describe("quote submission to 360", () => {
     fetchMock.mockRejectedValue(new Error("timeout"));
     expect((await POST(request(base))).status).toBe(502);
   });
-  it("keeps the consent wording the visitor sees", () => {
-    expect(SMS_CONSENT_TEXT).toContain("King Iron Works LLC");
-    expect(SMS_CONSENT_TEXT).toContain("Reply STOP to opt out");
+  it("keeps the notice the visitor sees", () => {
+    expect(SMS_NOTICE_TEXT).toBe("By submitting this form, you agree to receive text messages from King Iron Works about your request (quotes, scheduling, project updates). Message frequency varies. Msg & data rates may apply. Reply STOP to opt out. We will never sell or share your information.");
   });
 });
