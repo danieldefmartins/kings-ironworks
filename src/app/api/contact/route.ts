@@ -88,8 +88,8 @@ export async function POST(request: NextRequest) {
       });
     };
     let res = await submit();
-    if (res.status === 401 || res.status === 403) {
-      // The form was republished or its token expired early: fetch a fresh token once.
+    if ([401, 403, 404, 409].includes(res.status)) {
+      // The form was republished or changed, or its token expired early: fetch a fresh token once.
       resetFormCache();
       res = await submit();
     }
