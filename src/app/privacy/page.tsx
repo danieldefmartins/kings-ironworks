@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SMS_NOTICE_TEXT } from "@/lib/crm360";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -86,12 +87,12 @@ export default function PrivacyPolicy() {
           <section>
             <h2 className="text-heading text-2xl mb-4">3. SMS Opt-In Details and Consent</h2>
             <p>
-              When you provide your phone number and consent to receive text messages from King Iron Works LLC, you agree to the following:
+              When you submit a form on this website with your phone number, you agree to receive text messages from King Iron Works about your request (quotes, scheduling, project updates). The form shows this notice above the Submit button: &ldquo;{SMS_NOTICE_TEXT}&rdquo; You agree to the following:
             </p>
 
             <h3 className="text-heading text-xl mb-3 mt-4">What You&apos;re Consenting To</h3>
             <p>
-              By checking the opt-in box and providing your phone number, you expressly consent to receive:
+              By submitting the form with your phone number, you expressly consent to receive:
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Transactional SMS:</strong> Appointment reminders, project updates, service notifications, account alerts, and other non-marketing messages related to your service request</li>

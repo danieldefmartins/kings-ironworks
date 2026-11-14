@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SMS_NOTICE_TEXT } from "@/lib/crm360";
 
 export const metadata: Metadata = {
   title: "Terms of Service",
@@ -48,7 +49,7 @@ export default function TermsOfService() {
           <section>
             <h2 className="text-heading text-2xl mb-4">3. SMS Communication Terms &amp; Use Cases</h2>
             <p>
-              By providing your phone number and opting in to receive text messages from King Iron Works LLC, you agree to the following SMS communication terms:
+              When you submit a form on this website with your phone number, you agree to receive text messages from King Iron Works about your request (quotes, scheduling, project updates). The form shows this notice above the Submit button: &ldquo;{SMS_NOTICE_TEXT}&rdquo; You also agree to the following SMS communication terms:
             </p>
 
             <h3 className="text-heading text-xl mb-3 mt-4">3.1 Message Type Disclosure</h3>
@@ -60,7 +61,7 @@ export default function TermsOfService() {
             </p>
             <ul className="list-disc pl-6 space-y-2 my-3">
               <li><strong>Transactional/Service Messages:</strong> Non-marketing messages related to your service requests, appointments, project updates, and account notifications</li>
-              <li><strong>Marketing/Promotional Messages:</strong> Optional promotional offers, company updates, and educational content (you can opt out of these while still receiving transactional messages)</li>
+              <li><strong>Marketing/Promotional Messages:</strong> Optional promotional offers, company updates, and educational content, only if you separately opt in to marketing messages (you can opt out of these while still receiving transactional messages)</li>
             </ul>
             <p>
               <strong>Message Content Examples:</strong> &ldquo;Your fire escape inspection is scheduled for tomorrow at 10 AM&rdquo; (transactional) or &ldquo;Special offer: 10% off structural steel fabrication this month&rdquo; (marketing).
