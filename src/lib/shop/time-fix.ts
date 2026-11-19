@@ -178,7 +178,16 @@ export interface FixCard {
   reviewedBy?: string | null;
   reviewedAt?: string | null;
   reviewNote?: string | null;
+  /** A day with no clock record that the worker asked to add (see NEW_DAY_NOTE). */
+  newDay?: boolean;
 }
+
+/** manager_note of a shift created from a "forgot to clock in" request for a
+ *  day with no record. The shift is saved REJECTED (never paid) until the
+ *  office approves the request, which sets it to submitted like any fix. */
+export const NEW_DAY_NOTE = "Day added from a worker's time-fix request — not paid until approved.";
+export const isNewDayShift = (s: { status?: string | null; manager_note?: string | null }) =>
+  s.status === "rejected" && (s.manager_note || "").startsWith(NEW_DAY_NOTE);
 
 export interface FixLine { edge: "in" | "out"; before: string | null; after: string }
 
@@ -186,8 +195,13 @@ const sameMinute = (a: string | null, b: string | null) =>
   !!a && !!b && Math.floor(Date.parse(a) / MIN) === Math.floor(Date.parse(b) / MIN);
 
 /** The lines that actually change: "Entrada: 9:15 → 7:34", "Saída: sem saída → 19:14". */
-export function fixLines(c: Pick<FixCard, "shiftStart" | "shiftEnd" | "askStart" | "askEnd">): FixLine[] {
+export function fixLines(c: Pick<FixCard, "shiftStart" | "shiftEnd" | "askStart" | "askEnd" | "newDay">): FixLine[] {
   const out: FixLine[] = [];
+  if (c.newDay) {
+    if (c.askStart) out.push({ edge: "in", before: null, after: c.askStart });
+    if (c.askEnd) out.push({ edge: "out", before: null, after: c.askEnd });
+    return out;
+  }
   if (c.askStart && !sameMinute(c.askStart, c.shiftStart)) out.push({ edge: "in", before: c.shiftStart, after: c.askStart });
   if (c.askEnd && !sameMinute(c.askEnd, c.shiftEnd)) out.push({ edge: "out", before: c.shiftEnd, after: c.askEnd });
   return out;

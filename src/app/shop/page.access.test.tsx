@@ -4,7 +4,9 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({ worker: vi.fn(), money: vi.fn(), jobs: vi.fn(), shifts: vi.fn() }));
 vi.mock("@/lib/shop/session", () => ({ getSessionWorker: m.worker }));
 vi.mock("@/lib/shop/project-money-db", () => ({ loadProjectMoney: m.money }));
-vi.mock("@/lib/shop/db", () => ({ listJobs: m.jobs, getRunningEntry: async () => null, listOpenShifts: m.shifts, listWorkers: async () => [], listRunningEntries: async () => [] }));
+vi.mock("@/lib/shop/db", () => ({ listJobs: m.jobs, getRunningEntry: async () => null, listOpenShifts: m.shifts, listWorkers: async () => [], listRunningEntries: async () => [], listWorkerShifts: async () => [] }));
+vi.mock("@/lib/shop/time-fix-db", () => ({ listWorkerFixes: async () => [], approverFirstName: async () => "Giulia" }));
+vi.mock("@/lib/shop/work-hours-db", () => ({ getWorkHours: async () => ({ start: "07:30", end: "17:00" }) }));
 vi.mock("next/navigation", () => ({ redirect: () => { throw new Error("redirect"); } }));
 vi.mock("./ShopTopBar", () => ({ default: () => null }));
 vi.mock("./OnTheClock", () => ({ default: () => <div>Crew activity</div> }));
@@ -26,8 +28,10 @@ it.each([{is_admin:false,can_see_prices:false},{is_admin:true,can_see_prices:fal
   expect(screen.queryByText("Subcontractor job")).toBeNull();
   const favorites = within(screen.getByRole("navigation", { name: "Quick access" }));
   expect(favorites.getByRole("link", { name: "All tools" }).getAttribute("href")).toBe("/shop/more");
-  expect(favorites.getByRole("link", { name: "My hours" }).getAttribute("href")).toBe("/shop/time");
-  expect(favorites.getAllByRole("link")).toHaveLength(3);
+  // "My hours" moved onto the big clock card ("My week"); Inventory + All tools stay.
+  expect(favorites.getByRole("link", { name: "Inventory" }).getAttribute("href")).toBe("/shop/inventory");
+  expect(favorites.getAllByRole("link")).toHaveLength(2);
+  expect(favorites.queryByRole("link", { name: "Clock" })).toBeNull();
   expect(screen.queryByRole("link", { name: "Payroll" })).toBeNull();
 });
 it.each(["Daniel Martins", "Kayky"])("puts Project Money first on Today for %s", async name => {
@@ -39,7 +43,9 @@ it.each(["Daniel Martins", "Kayky"])("puts Project Money first on Today for %s",
   const favorites = within(screen.getByRole("navigation", { name: "Quick access" }));
   expect(favorites.getByRole("link", { name: "Payroll" }).getAttribute("href")).toBe("/shop/admin/payroll");
   expect(favorites.getByRole("link", { name: "All tools" }).getAttribute("href")).toBe("/shop/more");
-  expect(favorites.getAllByRole("link")).toHaveLength(3);
+  // The office clock screen sits first for the owners (and the office admin).
+  expect(favorites.getByRole("link", { name: "Clock" }).getAttribute("href")).toBe("/shop/ponto");
+  expect(favorites.getAllByRole("link")).toHaveLength(4);
 });
 it("shows a load error instead of false zero balances", async () => {
   m.worker.mockResolvedValue({id:"owner",name:"Daniel",is_admin:true,can_see_prices:true});

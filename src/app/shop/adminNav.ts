@@ -10,6 +10,7 @@ import {
   HardHat,
   Landmark,
   Settings,
+  Timer,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +32,8 @@ export interface AdminDest {
 }
 
 export const ADMIN_DESTS: AdminDest[] = [
+  // The office's one clock screen (simplicity pass, 11/19).
+  { group: "payroll", href: "/shop/ponto", key: "pontoNav", hintKey: "pontoNavHint", icon: Timer, tone: "text-emerald-300" },
   { group: "payroll", href: "/shop/admin/applications", key: "workerApplications", hintKey: "workerApplicationsHint", icon: Users, tone: "text-sky-400" },
   { group: "payroll", href: "/shop/admin/applications?status=approved", key: "teamW9", hintKey: "teamW9Hint", icon: FileText, tone: "text-emerald-300" },
   { group: "business", href: "/shop/admin/actions", key: "actionsTitle", hintKey: "actionsNavHint", icon: LayoutDashboard, tone: "text-amber-400" },

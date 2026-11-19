@@ -34,7 +34,9 @@ import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, pinOwner
 import { MAX_SHIFT_HOURS, isMissedClockOut } from "@/lib/shop/clock-rules";
 import { resolveWorkHours } from "@/lib/shop/work-hours";
 import { reportClockInBlocked } from "@/lib/shop/clock-block";
-import { fixMissedOut, openShiftIsForgotten, reviewFix, submitFixRequest } from "@/lib/shop/time-fix-db";
+import { fixMissedOut, openShiftIsForgotten, reviewFix, submitFixRequest, submitNewDayRequest } from "@/lib/shop/time-fix-db";
+import { approveWeek, askWorker } from "@/lib/shop/ponto-db";
+import { pf } from "@/lib/shop/ponto";
 import { canApproveTime, longDay, tf } from "@/lib/shop/time-fix";
 
 export const runtime = "nodejs";
@@ -86,7 +88,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
-    if (canViewOwnerFinancials(worker) && ["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request", "shift_missed_out_fix"].includes(type)) {
+    if (canViewOwnerFinancials(worker) && ["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request", "time_fix_new_day", "shift_missed_out_fix"].includes(type)) {
       return NextResponse.json({ error: "Owners are not enrolled in employee payroll.", final: true }, { status: 403 });
     }
     // Old browser queues have no worker identity and can belong to someone
@@ -682,6 +684,22 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // "Esqueci a entrada" for a day with no clock record: both times. The
+      // shift is saved rejected (never paid) until the office approves.
+      case "time_fix_new_day": {
+        const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
+        if (typeof body.startedAt !== "string" || typeof body.endedAt !== "string" || reason.length < 3) {
+          return NextResponse.json({ error: pf(worker.lang, "errFailed") }, { status: 400 });
+        }
+        const saved = await submitNewDayRequest(worker, { startedAt: body.startedAt, endedAt: body.endedAt, reason });
+        if ("error" in saved) {
+          const key = saved.error === "future" ? "errFuture" : saved.error === "bad_times" ? "errOrder" : saved.error === "overlap" ? "errOverlap" : "errFailed";
+          return NextResponse.json({ error: pf(worker.lang, key), code: saved.error }, { status: 400 });
+        }
+        result = { correctionId: saved.id, shiftId: saved.shiftId, created: saved.created, notified: saved.notified };
+        break;
+      }
+
       // The worker answers "what time did you leave?" for a forgotten
       // clock-out. Ends the old shift at that time (same day, after the
       // clock-in); the phone then clocks in for today if that was the tap.
@@ -836,7 +854,9 @@ export async function POST(req: NextRequest) {
       // rather than assumed: "now" on a forgotten punch is whatever hour the
       // owner happened to notice, which is not when the person went home.
       case "shift_force_stop": {
-        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        // Owners, and the office admin who approves time (Ponto › Corrigir);
+        // never your own clock.
+        if (!canApproveTime(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
         const { shiftId, endedAt, note } = body;
         if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
         const end = typeof endedAt === "string" ? new Date(endedAt) : null;
@@ -847,6 +867,7 @@ export async function POST(req: NextRequest) {
         );
         const started = rows[0]?.started_at;
         if (!started) return NextResponse.json({ error: "Shift not found or already closed" }, { status: 404 });
+        if (rows[0].worker_id === worker.id) return NextResponse.json({ error: "You cannot close your own clock here" }, { status: 403 });
         if (end.getTime() <= new Date(started).getTime()) return NextResponse.json({ error: "End must be after the clock-in" }, { status: 400 });
         { const refused = longShiftRefusal(started, end.toISOString(), body.confirmLong, worker.lang || "en"); if (refused) return refused; }
         // Close any break still open, exactly as clocking out does.
@@ -870,9 +891,15 @@ export async function POST(req: NextRequest) {
       // Edit a closed shift's times directly. Distinct from a correction
       // REQUEST, which is the worker asking; this is the owner deciding.
       case "shift_edit": {
-        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        // Owners, and the office admin (Ponto › Corrigir); never your own clock.
+        if (!canApproveTime(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
         const { shiftId, startedAt, endedAt, note } = body;
         if (typeof shiftId !== "string" || !UUID_RE.test(shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
+        if (!canViewOwnerFinancials(worker)) {
+          const [own] = await sbSelect<{ worker_id: string }[]>("kiw_shop_shifts", `select=worker_id&org_id=eq.${ORG_ID}&id=eq.${shiftId}&limit=1`);
+          if (!own) return NextResponse.json({ error: "Shift not found" }, { status: 404 });
+          if (own.worker_id === worker.id) return NextResponse.json({ error: "You cannot edit your own clock" }, { status: 403 });
+        }
         const st = typeof startedAt === "string" ? new Date(startedAt) : null;
         const en = typeof endedAt === "string" ? new Date(endedAt) : null;
         if (!st || !en || Number.isNaN(st.getTime()) || Number.isNaN(en.getTime())) return NextResponse.json({ error: "Bad times" }, { status: 400 });
@@ -894,6 +921,29 @@ export async function POST(req: NextRequest) {
         // answer/review cannot put the old tap time back.
         try { await pinOwnerTimes(worker.id, shiftId, st.toISOString(), en.toISOString()); }
         catch (err) { console.error("[work-hours] pin owner times failed:", err); }
+        break;
+      }
+
+      // Ponto › "Aprovar semana": every closed, unheld shift of one worker's
+      // week (this week or last). Office admin + owners; never your own.
+      case "week_approve": {
+        if (!canApproveTime(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        if (typeof body.workerId !== "string" || !UUID_RE.test(body.workerId) || typeof body.week !== "string") {
+          return NextResponse.json({ error: "Bad week" }, { status: 400 });
+        }
+        const done = await approveWeek(worker, body.workerId, body.week);
+        if (!done.ok) return NextResponse.json({ error: done.error }, { status: done.status });
+        result = { approved: done.approved, held: done.held };
+        break;
+      }
+
+      // Ponto › "Perguntar ao funcionário": one text about a missing clock-out.
+      case "shift_ask_worker": {
+        if (!canApproveTime(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        if (typeof body.shiftId !== "string" || !UUID_RE.test(body.shiftId)) return NextResponse.json({ error: "Bad shift" }, { status: 400 });
+        const asked = await askWorker(worker, body.shiftId);
+        if (!asked.ok) return NextResponse.json({ error: asked.error, at: asked.at }, { status: asked.status });
+        result = { sent: asked.sent, at: asked.at };
         break;
       }
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, Banknote, LayoutGrid, Clock3, MapPin, ClipboardList } from "lucide-react";
+import { ArrowRight, Banknote, LayoutGrid, MapPin, ClipboardList, Timer } from "lucide-react";
 import { getSessionWorker } from "@/lib/shop/session";
 import { canViewOwnerFinancials, isInFabrication } from "@/lib/shop/shared";
 import {
@@ -20,6 +20,14 @@ import ProjectMoney from "./jobs/ProjectMoney";
 import { loadProjectMoney } from "@/lib/shop/project-money-db";
 import type { Job } from "@/lib/shop/shared";
 import { stageLabel, t } from "@/lib/shop/i18n";
+import ClockHome from "./ClockHome";
+import FixRequestButton from "./FixRequest";
+import HomeRequests from "./HomeRequests";
+import { listWorkerShifts } from "@/lib/shop/db";
+import { approverFirstName, listWorkerFixes } from "@/lib/shop/time-fix-db";
+import { canApproveTime, type FixCard } from "@/lib/shop/time-fix";
+import { homeRequests, pf } from "@/lib/shop/ponto";
+import { getWorkHours } from "@/lib/shop/work-hours-db";
 
 export const dynamic = "force-dynamic";
 
@@ -84,17 +92,33 @@ export default async function ShopToday() {
   // While a crew member's job time runs he sees that job only (job gate).
   const focusedOnJob = !!current && !worker.is_admin;
   const onClock = isOwner ? await buildOnClockRows(jobs) : [];
+  // Employee home: the big clock button, the 3-step request, request status.
+  // Best-effort extras: the clock itself comes from the layout and never waits.
+  // eslint-disable-next-line react-hooks/purity -- dynamic server request: one timestamp for this response
+  const now = Date.now();
+  const [recentShifts, myFixes, approver, work] = isOwner ? [[], [] as FixCard[], "", null] : await Promise.all([
+    listWorkerShifts(worker.id, new Date(now - 8 * 86400_000).toISOString()).catch(() => []),
+    listWorkerFixes(worker.id).catch(() => []),
+    approverFirstName(),
+    getWorkHours().catch(() => null),
+  ]);
+  const workTimes = { start: work?.start || "07:30", end: work?.end || "17:00" };
+  const fixShifts = recentShifts.map((s) => ({ id: s.id, startedAt: s.started_at, endedAt: s.ended_at, status: s.status }));
+  const approverName = approver === worker.name.split(" ")[0] ? "" : approver;
+  const office = canApproveTime(worker);
   let financialJobs: Awaited<ReturnType<typeof loadProjectMoney>> | null = null;
   if (isOwner) {
     try { financialJobs = await loadProjectMoney(); } catch { /* ProjectMoney shows an explicit load error. */ }
   }
 
   const favorites = [
+    // The office clock screen: who's working, requests, approve the week.
+    ...(office ? [{ href: "/shop/ponto", title: pf(lang, "ponto"), icon: Timer }] : []),
     ...(isOwner ? [
       { href: "/shop/admin/payroll", title: label("Payroll", "Pagamentos", "Nómina"), icon: Banknote },
       { href: "/shop/admin/actions", title: label("Needs attention", "Precisa de atenção", "Necesita atención"), icon: ClipboardList },
     ] : [
-      { href: "/shop/time", title: label("My hours", "Minhas horas", "Mis horas"), icon: Clock3 },
+      // "My hours" is now "Minha semana" on the clock card above.
       { href: "/shop/inventory", title: t(lang, "tileInventory"), icon: ClipboardList },
     ]),
     { href: "/shop/more", title: label("All tools", "Ferramentas", "Herramientas"), icon: LayoutGrid },
@@ -126,12 +150,18 @@ export default async function ShopToday() {
         {isOwner && <ProjectMoney jobs={financialJobs} lang={lang} layout="stacked" />}
         <header>
           <p className="text-sm text-neutral-400">{t(lang, "welcomeBack", { name: worker.name.split(" ")[0] })}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">{label(isOwner ? "Your shop at a glance" : "Your work today", isOwner ? "Sua oficina em resumo" : "Seu trabalho hoje", isOwner ? "Tu taller de un vistazo" : "Tu trabajo de hoy")}</h1>
+          {isOwner && <h1 className="mt-1 text-2xl font-semibold tracking-tight">{label(isOwner ? "Your shop at a glance" : "Your work today", isOwner ? "Sua oficina em resumo" : "Seu trabalho hoje", isOwner ? "Tu taller de un vistazo" : "Tu trabajo de hoy")}</h1>}
 
         </header>
+        {!isOwner && <>
+          <ClockHome lang={lang} workEnd={workTimes.end}>
+            <FixRequestButton shifts={fixShifts} lang={lang} approver={approverName} work={workTimes} />
+          </ClockHome>
+          <HomeRequests fixes={homeRequests(myFixes, now)} approver={approverName} lang={lang} />
+        </>}
         <PinBanner record={profileRecord} lang={lang} />
         <ProfileBanner record={profileRecord} lang={lang} />
-        <nav aria-label={label("Quick access", "Acesso rápido", "Acceso rápido")} className="grid grid-cols-3 gap-2">
+        <nav aria-label={label("Quick access", "Acesso rápido", "Acceso rápido")} className={`grid gap-2 ${favorites.length === 4 ? "grid-cols-2 sm:grid-cols-4" : favorites.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
           {favorites.map(({ href, title, icon: Icon }) => <Link key={href} href={href} className="flex min-h-16 min-w-0 flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.025] px-2 py-3 text-center transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-amber-400 sm:flex-row sm:gap-3"><Icon aria-hidden className="h-5 w-5 shrink-0 text-amber-300" strokeWidth={1.8} /><span className="text-xs font-medium leading-snug text-neutral-200 sm:text-sm">{title}</span></Link>)}
         </nav>
         <dl className="grid grid-cols-3 divide-x divide-neutral-800 rounded-2xl border border-neutral-800 bg-neutral-900/40 py-4">

@@ -13,7 +13,7 @@ import { applyEndWindow, pinOwnerTimes } from "./work-hours-db";
 import { endJobTimeOnClockOut } from "./job-timer-db";
 import { SHOP_TZ, fromShopInput, shopDateKey, type TimeCorrection, type TimeShift } from "./shared";
 import {
-  TIME_APPROVER_ROLE, firstName, fixLines, lineText, missedOutError, missedOutFor, requestText,
+  NEW_DAY_NOTE, TIME_APPROVER_ROLE, firstName, isNewDayShift, fixLines, lineText, missedOutError, missedOutFor, requestText,
   reviewTimesError, waitingText, type FixCard, type MissedOut,
 } from "./time-fix";
 
@@ -44,7 +44,7 @@ export async function approverFirstName(): Promise<string> {
 async function toCards(rows: TimeCorrection[]): Promise<FixCard[]> {
   if (!rows.length) return [];
   const [shifts, workers] = await Promise.all([
-    sbSelect<Pick<TimeShift, "id" | "started_at" | "ended_at">[]>("kiw_shop_shifts", `select=id,started_at,ended_at&org_id=eq.${ORG_ID}&id=in.${inList(rows.map((r) => r.shift_id))}`),
+    sbSelect<Pick<TimeShift, "id" | "started_at" | "ended_at" | "status" | "manager_note">[]>("kiw_shop_shifts", `select=id,started_at,ended_at,status,manager_note&org_id=eq.${ORG_ID}&id=in.${inList(rows.map((r) => r.shift_id))}`),
     sbSelect<{ id: string; name: string }[]>("kiw_shop_workers", `select=id,name&org_id=eq.${ORG_ID}&id=in.${inList(rows.flatMap((r) => [r.worker_id, ...(r.reviewed_by ? [r.reviewed_by] : [])]))}`),
   ]);
   const shift = new Map(shifts.map((s) => [s.id, s]));
@@ -56,6 +56,7 @@ async function toCards(rows: TimeCorrection[]): Promise<FixCard[]> {
       createdAt: r.created_at, shiftStart: s.started_at, shiftEnd: s.ended_at,
       askStart: r.requested_started_at, askEnd: r.requested_ended_at, reason: r.reason, status: r.status,
       reviewedBy: r.reviewed_by ? firstName(name.get(r.reviewed_by)) || null : null, reviewedAt: r.reviewed_at, reviewNote: r.review_note,
+      ...(r.status === "pending" && isNewDayShift(s) ? { newDay: true } : {}),
     };
   });
 }
@@ -133,11 +134,61 @@ export async function submitFixRequest(
   return { id: row?.id ?? "", created: true, notified };
 }
 
+/**
+ * "Esqueci a entrada" for a day with NO clock record: the worker gives both
+ * times. The shift is saved REJECTED (never counted in pay) with NEW_DAY_NOTE,
+ * plus a pending request with the same times; approving it (Aprovar or Mudar)
+ * sets the shift to submitted exactly like any other fix, refusing leaves it
+ * rejected. Last 7 days only, no overlap with another record, never in the
+ * future, never longer than the long-shift limit.
+ */
+export async function submitNewDayRequest(
+  worker: { id: string; name: string },
+  input: { startedAt: string; endedAt: string; reason: string },
+  now = Date.now(),
+): Promise<{ id: string; shiftId: string; created: boolean; notified: boolean } | { error: "bad_times" | "too_old" | "overlap" | "future" | "too_long" }> {
+  const start = Date.parse(input.startedAt), end = Date.parse(input.endedAt);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return { error: "bad_times" };
+  if (end > now + 60_000) return { error: "future" };
+  if (start < now - 8 * 86400_000) return { error: "too_old" };
+  if (end - start > 16 * 3600_000) return { error: "too_long" };
+  const startedAt = new Date(start).toISOString(), endedAt = new Date(end).toISOString();
+  const overlap = await sbSelect<{ id: string; manager_note: string | null; status: string; started_at: string; ended_at: string | null }[]>(
+    "kiw_shop_shifts",
+    `select=id,manager_note,status,started_at,ended_at&org_id=eq.${ORG_ID}&worker_id=eq.${worker.id}&started_at=lt.${encodeURIComponent(endedAt)}&or=(ended_at.is.null,ended_at.gt.${encodeURIComponent(startedAt)})&limit=5`);
+  // The same day sent twice (a double tap): answer with the first request.
+  const twin = overlap.find((s) => isNewDayShift(s) && Date.parse(s.started_at) === start && s.ended_at && Date.parse(s.ended_at) === end);
+  if (twin) {
+    const [c] = await sbSelect<TimeCorrection[]>("kiw_shop_time_corrections", `select=*&org_id=eq.${ORG_ID}&shift_id=eq.${twin.id}&status=eq.pending&limit=1`);
+    if (c) return { id: c.id, shiftId: twin.id, created: false, notified: false };
+  }
+  if (overlap.length) return { error: "overlap" };
+  const rate = await sbSelect<{ hourly_rate: number | null }[]>("kiw_shop_workers", `select=hourly_rate&org_id=eq.${ORG_ID}&id=eq.${worker.id}&limit=1`).catch(() => []);
+  const [shift] = await sbInsert<TimeShift[]>("kiw_shop_shifts", {
+    org_id: ORG_ID, worker_id: worker.id, pay_rate: rate[0]?.hourly_rate ?? null,
+    started_at: startedAt, ended_at: endedAt,
+    start_location_status: "unavailable", end_location_status: "unavailable",
+    status: "rejected", manager_note: NEW_DAY_NOTE, employee_note: input.reason,
+  });
+  if (!shift?.id) return { error: "bad_times" };
+  const [row] = await sbInsert<TimeCorrection[]>("kiw_shop_time_corrections", {
+    org_id: ORG_ID, shift_id: shift.id, worker_id: worker.id,
+    requested_started_at: startedAt, requested_ended_at: endedAt, reason: input.reason, status: "pending",
+  });
+  await audit("time_correction_requested", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: { reason: input.reason, correctionId: row?.id, newDay: true, startedAt, endedAt } });
+  let notified = false;
+  if (row?.id) {
+    try { notified = await notifyFixRequest(worker, row, { started_at: startedAt, ended_at: endedAt, newDay: true }); }
+    catch (err) { console.error("[time-fix] notify failed:", err); }
+  }
+  return { id: row?.id ?? "", shiftId: shift.id, created: true, notified };
+}
+
 /** Text the approvers (in their language) + the Telegram copy. Once per request. */
 export async function notifyFixRequest(
   worker: { id: string; name: string },
   c: Pick<TimeCorrection, "id" | "requested_started_at" | "requested_ended_at" | "reason">,
-  shift: Pick<TimeShift, "started_at" | "ended_at">,
+  shift: Pick<TimeShift, "started_at" | "ended_at"> & { newDay?: boolean },
 ): Promise<boolean> {
   const done = await sbSelect<{ id: string }[]>(
     "kiw_shop_audit", `select=id&org_id=eq.${ORG_ID}&action=eq.time_correction_notify&entity_id=eq.${c.id}&limit=1`).catch(() => []);
@@ -149,7 +200,7 @@ export async function notifyFixRequest(
     .filter((r) => r.phone);
   // Nobody holds the approver role (or no phone on file): the owners' contacts.
   if (!recipients.length) recipients = resolveWorkHours(org.workHours).contacts.map((x) => ({ phone: x.phone, lang: x.lang }));
-  const card = { shiftStart: shift.started_at, shiftEnd: shift.ended_at, askStart: c.requested_started_at, askEnd: c.requested_ended_at };
+  const card = { shiftStart: shift.started_at, shiftEnd: shift.ended_at, askStart: c.requested_started_at, askEnd: c.requested_ended_at, newDay: !!shift.newDay };
   const prefix = orgPrefix(org.branding?.name);
   const link = `${shopLink()}/time-fixes`;
   const result = await sendSmsGroup(recipients, (lang) => requestText(lang, {

@@ -22,6 +22,8 @@ import type { MissedOut } from "@/lib/shop/time-fix";
 import { longDay, tf } from "@/lib/shop/time-fix";
 import MissedClockOut from "./MissedClockOut";
 import TimeFixPopup from "./TimeFixPopup";
+import { ClockContext, type ClockApi } from "./ClockContext";
+import { addPayrollDays, payrollMidnight } from "@/lib/shop/payroll";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
   return new Promise((resolve) => {
@@ -42,7 +44,7 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 import { readOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, queueTap, queueBlockedReport, flushBlockedReports } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady, runningJob = null, windowQuestions: initialQuestions = [], missedOut: initialMissedOut = null, timeFixes = null,
+  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, todayHoursBeforeShift: initialTodayHours = 0, weekEarningsBeforeShift: initialWeekEarnings, clockReady, runningJob = null, windowQuestions: initialQuestions = [], missedOut: initialMissedOut = null, timeFixes = null,
 }: {
   children: React.ReactNode;
   isOwner?: boolean;
@@ -54,6 +56,8 @@ export default function ShopShell({
   breaks: TimeBreak[];
   hourlyRate: number | null;
   weekHoursBeforeShift: number;
+  /** Closed shifts today, for the home button's "today" total. */
+  todayHoursBeforeShift?: number;
   weekEarningsBeforeShift: number | null;
   runningJob?: JobTimerEventDetail["running"];
   windowQuestions?: WindowQuestion[];
@@ -65,7 +69,7 @@ export default function ShopShell({
   const appearance = useShopAppearance();
   const router = useRouter();
   const [, transition] = useTransition();
-  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, windowQuestions: initialQuestions, missedOut: initialMissedOut as MissedOut | null });
+  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, todayHoursBeforeShift: initialTodayHours, weekEarningsBeforeShift: initialWeekEarnings, windowQuestions: initialQuestions, missedOut: initialMissedOut as MissedOut | null });
   const missedOut = clock.missedOut ?? null;
   // An open shift from an earlier day: today's queued clock-in waits for the
   // "what time did you leave?" answer instead of being sent into it.
@@ -416,6 +420,15 @@ export default function ShopShell({
   // because "what have I earned this week" is asked most often on the way home.
   const currentWeek = calculatePayroll([], shift ? [shift] : [], breaks, payrollWeek(undefined, now), now)[0];
   const weekHours = weekHoursBeforeShift + (currentWeek?.hours ?? 0);
+  const today = shopDateKey(now);
+  const todayRun = shift ? calculatePayroll([], [shift], breaks, { ...payrollWeek(undefined, now), start: payrollMidnight(today), end: payrollMidnight(addPayrollDays(today, 1)) }, now)[0] : undefined;
+  const todayHours = (clock.todayHoursBeforeShift ?? 0) + (todayRun?.hours ?? 0);
+  const clockApi: ClockApi = {
+    shift, breaks, onBreak, hours, todayHours, weekHours, ready, busy, needsLogin, pendingType, unconfirmed, error,
+    clockIn: () => void clockIn(), clockOut: () => void clockOut(),
+    breakStart: () => void act("time_break_start"), breakEnd: () => void act("time_break_end"),
+    openDetails: () => setOpen(true),
+  };
   const weekEarnings = clock.weekEarningsBeforeShift == null || currentWeek?.missingRateHours
     ? null : clock.weekEarningsBeforeShift + (currentWeek?.basePay ?? 0);
 
@@ -437,7 +450,7 @@ export default function ShopShell({
       {!isOwner && allowCard && !shift && (
         <AllowLocationCard lang={lang} busy={locating} onAllow={() => void allowLocation()} onLater={dismissAllowCard} />
       )}
-      {children}
+      <ClockContext.Provider value={isOwner ? null : clockApi}>{children}</ClockContext.Provider>
       <JobTimerBar initial={runningJob} lang={lang} clockedIn={!!shift} payrollEnrolled={!isOwner} onClockIn={() => void clockIn()} hidden={focus} />
 
       {!isOwner && locating && <LocatingOverlay lang={lang} />}

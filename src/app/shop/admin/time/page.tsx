@@ -74,7 +74,7 @@ export default async function TeamTimePage() {
         <WindowChecks lang={lang} rows={toCheck(windowRecords).map((r) => ({ shiftId: r.shiftId, edge: r.edge, worker: names.get(r.workerId) || "Unknown", punchedAt: r.punchedAt, edgeAt: r.edgeAt }))} />
         <TimesheetClient shifts={rows} pendingFixes={pendingFixes} admin lang={lang} />
 
-        <section className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
+        <section id="locations" className="mt-8 scroll-mt-20 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
           <h2 className="text-xl font-semibold">{t(lang, "locHistoryTitle")}</h2>
           <p className="mt-1 text-sm text-neutral-500">
             {t(lang, "locHistoryHint", { days: LOCATION_HISTORY_DAYS })}

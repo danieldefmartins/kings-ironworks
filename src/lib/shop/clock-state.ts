@@ -1,6 +1,6 @@
 import { getOpenShift, getShiftBreaks, getWorkerRate, listWorkerBreaks, listWorkerShifts } from "@/lib/shop/db";
-import { canViewOwnerFinancials } from "./shared";
-import { calculatePayroll, payrollWeek } from "@/lib/shop/payroll";
+import { canViewOwnerFinancials, shopDateKey } from "./shared";
+import { addPayrollDays, calculatePayroll, payrollMidnight, payrollWeek } from "@/lib/shop/payroll";
 import { pendingQuestions, type WindowQuestion } from "./work-hours";
 import { QUESTION_DAYS, listWindowRecords } from "./work-hours-db";
 import { findMissedOut } from "./time-fix-db";
@@ -27,7 +27,7 @@ async function loadWindowQuestions(workerId: string): Promise<WindowQuestion[]> 
 }
 
 export async function loadClockState(worker: { id: string; is_admin?: boolean | null; can_see_prices?: boolean | null } | null, now = Date.now()) {
-  if (!worker || canViewOwnerFinancials(worker)) return { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: 0, windowQuestions: [] as WindowQuestion[], missedOut: null as MissedOut | null };
+  if (!worker || canViewOwnerFinancials(worker)) return { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, todayHoursBeforeShift: 0, weekEarningsBeforeShift: 0, windowQuestions: [] as WindowQuestion[], missedOut: null as MissedOut | null };
   const week = payrollWeek(undefined, now);
   const [shift, rate, weekShifts, weekBreaks, windowQuestions] = await Promise.all([
     getOpenShift(worker.id), getWorkerRate(worker.id),
@@ -37,11 +37,18 @@ export async function loadClockState(worker: { id: string; is_admin?: boolean | 
   // Use the same rules as owner payroll: rejected records remain in history,
   // but never contribute to pay; shifts and breaks stop at week boundaries.
   const closed = calculatePayroll([], weekShifts.filter(s => s.id !== shift?.id), weekBreaks, week, now).find(row => row.id === worker.id);
+  // Today's closed shifts (the big home button adds the running one). Same
+  // rules as payroll; a day that started before Monday is still today.
+  const today = shopDateKey(now);
+  const todayWindow = { ...week, start: payrollMidnight(today), end: payrollMidnight(addPayrollDays(today, 1)) };
+  const todayShifts = today < week.key ? [] : weekShifts.filter(s => s.id !== shift?.id);
+  const closedToday = calculatePayroll([], todayShifts, weekBreaks, todayWindow, now).find(row => row.id === worker.id);
   const [breaks, missedOut] = await Promise.all([shift ? getShiftBreaks(shift.id) : Promise.resolve([]), loadMissedOut(worker.id, shift, now)]);
   return {
     shift, breaks,
     hourlyRate: shift?.pay_rate == null ? rate : Number(shift.pay_rate),
     weekHoursBeforeShift: closed?.hours ?? 0,
+    todayHoursBeforeShift: closedToday?.hours ?? 0,
     weekEarningsBeforeShift: closed?.missingRateHours ? null : closed?.basePay ?? 0,
     windowQuestions,
     missedOut,

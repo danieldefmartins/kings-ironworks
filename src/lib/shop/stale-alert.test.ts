@@ -33,18 +33,24 @@ beforeEach(() => {
   });
 });
 
-it("texts the worker in their language 30 min after the work day ends — once", async () => {
-  const at = Date.parse("2026-10-10T21:31:00Z"); // 5:31 PM EDT
+it("texts the worker in their language at 4:55 PM, with a link that lands on Marcar saída — once", async () => {
+  const at = Date.parse("2026-10-10T20:55:00Z"); // 4:55 PM EDT
   expect(await runClockChecks(at, { force: true })).toMatchObject({ stillIn: 1, stale: 0 });
-  expect(m.sms).toHaveBeenCalledWith("+16175550100", expect.stringContaining("Oi André, seu ponto ainda está aberto desde as 7:35"));
-  expect(m.sms.mock.calls[0][1]).toContain("/shop");
+  expect(m.sms).toHaveBeenCalledWith("+16175550100", expect.stringContaining("Oi André, já são quase 17:00. Antes de ir embora, toque aqui para marcar a saída"));
+  expect(m.sms.mock.calls[0][1]).toMatch(/\/shop\?saida=1$/);
   expect(m.telegram).toHaveBeenCalledWith(expect.stringContaining("still clocked in"));
   await runClockChecks(at + 10 * 60_000, { force: true });
   expect(m.sms).toHaveBeenCalledTimes(1);
 });
 
-it("does not text before the grace period, for evening work, or days later", async () => {
-  expect((await runClockChecks(Date.parse("2026-10-10T21:20:00Z"), { force: true })).stillIn).toBe(0);
+it("a late check (5:31 PM) still texts once, saying the clock is still open", async () => {
+  const at = Date.parse("2026-10-10T21:31:00Z");
+  expect((await runClockChecks(at, { force: true })).stillIn).toBe(1);
+  expect(m.sms).toHaveBeenCalledWith("+16175550100", expect.stringContaining("Oi André, seu ponto ainda está aberto desde as 7:35"));
+});
+
+it("does not text before 4:55 PM, for evening work, or days later", async () => {
+  expect((await runClockChecks(Date.parse("2026-10-10T20:50:00Z"), { force: true })).stillIn).toBe(0);
   shifts = [{ ...andre, started_at: "2026-10-10T22:30:00Z" }]; // started 6:30 PM
   expect((await runClockChecks(Date.parse("2026-10-10T23:30:00Z"), { force: true })).stillIn).toBe(0);
   shifts = [andre];
@@ -75,4 +81,7 @@ it("reminder wording in each language", () => {
   const since = "2026-10-10T11:35:00Z";
   expect(stillClockedInMessage("en", "André Souza", since, "https://x/shop")).toBe("KIW: Hi André, you're still clocked in since 7:35 AM. Open the app and clock out: https://x/shop");
   expect(stillClockedInMessage("es", "Jairo", since, "https://x/shop")).toMatch(/^KIW: Hola Jairo, sigues marcado desde las 7:35.*Abre la app y marca tu salida: https:\/\/x\/shop$/);
+  const endAt = "2026-10-10T21:00:00Z", now = Date.parse("2026-10-10T20:55:00Z");
+  expect(stillClockedInMessage("pt", "Kaio", since, "https://x/shop?saida=1", { endAt, now })).toBe("KIW: Oi Kaio, já são quase 17:00. Antes de ir embora, toque aqui para marcar a saída: https://x/shop?saida=1");
+  expect(stillClockedInMessage("en", "Daniel", since, "L", { endAt, now })).toBe("KIW: Hi Daniel, it's almost 5:00 PM. Before you leave, tap here to clock out: L");
 });
