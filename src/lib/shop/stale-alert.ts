@@ -25,6 +25,7 @@ import { fmtDateTime, fmtTime, type TimeShift } from "./shared";
 import { STALE_SHIFT_HOURS } from "./punch";
 import { sendSms, smsLang, type SmsLang } from "./sms";
 import { recordFromAudit, resolveWorkHours, toE164, windowFor } from "./work-hours";
+import { alertWaitingFixes } from "./time-fix-db";
 
 const THROTTLE_MS = 10 * 60 * 1000;
 /** Minutes after the work-hours end before "you're still clocked in". */
@@ -135,24 +136,29 @@ async function alertStale(open: OpenShift[], now: number): Promise<number> {
  * Run both checks. Throttled per process unless `force` (the cron endpoint).
  * Never throws.
  */
-export async function runClockChecks(now = Date.now(), opts: { force?: boolean } = {}): Promise<{ ran: boolean; stillIn: number; stale: number }> {
+export async function runClockChecks(now = Date.now(), opts: { force?: boolean } = {}): Promise<{ ran: boolean; stillIn: number; stale: number; waitingFixes?: number }> {
   if (!opts.force && now - lastRun < THROTTLE_MS) return { ran: false, stillIn: 0, stale: 0 };
   lastRun = now;
   let stillIn = 0;
   let stale = 0;
+  // 3. Time fixes waiting more than 24 h → one short note a day to the
+  //    supervisors (Kayky pt, Daniel en) + Telegram. Deduped in the audit log.
+  let waitingFixes = 0;
+  try { waitingFixes = (await alertWaitingFixes(now)).count; }
+  catch (err) { console.error("[clock-check] waiting time fixes failed:", err); }
   try {
     const open = await sbSelect<OpenShift[]>(
       "kiw_shop_shifts",
       `select=id,worker_id,started_at&org_id=eq.${ORG_ID}&ended_at=is.null`
     );
-    if (!open.length) return { ran: true, stillIn, stale };
+    if (!open.length) return { ran: true, stillIn, stale, waitingFixes };
     try { stillIn = await alertStillClockedIn(open, now); }
     catch (err) { console.error("[clock-check] still-in failed:", err); }
     stale = await alertStale(open, now);
   } catch (err) {
     console.error("[stale-alert] failed:", err);
   }
-  return { ran: true, stillIn, stale };
+  return { ran: true, stillIn, stale, waitingFixes };
 }
 
 /** Kept for existing callers: the opportunistic, throttled run. */

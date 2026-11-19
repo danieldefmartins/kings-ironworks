@@ -7,6 +7,8 @@ import { getOrgSettings } from "@/lib/shop/db";
 import { resolveBrand } from "@/lib/shop/org-brand";
 import { BrandProvider } from "./brand/BrandContext";
 import { getRunningJob } from "@/lib/shop/job-timer-db";
+import { canApproveTime, isTimeApprover } from "@/lib/shop/time-fix";
+import { countPendingFixes } from "@/lib/shop/time-fix-db";
 
 // The tab title carries the organization's name (white-label); KIW's by default.
 export async function generateMetadata(): Promise<Metadata> {
@@ -31,14 +33,19 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   let clock;
   let clockReady = true;
   try { clock = await loadClockState(worker); }
-  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null, windowQuestions: [] }; }
+  catch { clockReady = false; clock = { shift: null, breaks: [], hourlyRate: null, weekHoursBeforeShift: 0, weekEarningsBeforeShift: null, windowQuestions: [], missedOut: null }; }
   const { branding } = await getOrgSettings();
   // The running job feeds the persistent job-time bar; never blocks the shell.
   const runningJob = worker ? await getRunningJob(worker.id).catch(() => null) : null;
+  // Time fixes waiting for review: the office admin (Giulia) gets the popup
+  // and the badge; the owners see the badge only (no interruption).
+  const timeFixes = worker && canApproveTime(worker)
+    ? { pending: await countPendingFixes(worker.id).catch(() => 0), popup: isTimeApprover(worker) }
+    : null;
   return (
     <div className="min-h-screen bg-[#09090b] text-neutral-100 font-body select-none">
       <BrandProvider branding={branding}>
-      <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock} runningJob={runningJob}>
+      <ShopShell isOwner={worker ? canViewOwnerFinancials(worker) : false} key={worker?.id || "signed-out"} workerId={worker?.id || null} clockReady={clockReady} workerName={worker?.name || null} lang={worker?.lang || "en"} {...clock} runningJob={runningJob} timeFixes={timeFixes}>
         {children}
       </ShopShell>
       </BrandProvider>

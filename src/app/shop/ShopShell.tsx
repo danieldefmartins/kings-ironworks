@@ -18,6 +18,10 @@ import WorkHoursQuestion from "./WorkHoursQuestion";
 import LocationHelp, { AllowLocationCard, LocatingOverlay, LocationRequiredLine } from "./LocationHelp";
 import { locate, locationPermission } from "@/lib/shop/geo";
 import type { WindowQuestion } from "@/lib/shop/work-hours";
+import type { MissedOut } from "@/lib/shop/time-fix";
+import { longDay, tf } from "@/lib/shop/time-fix";
+import MissedClockOut from "./MissedClockOut";
+import TimeFixPopup from "./TimeFixPopup";
 
 function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locationStatus: string }> {
   return new Promise((resolve) => {
@@ -38,7 +42,7 @@ function gps(): Promise<{ lat?: number; lng?: number; accuracy?: number; locatio
 import { readOutbox, removeFromOutbox, flagPunch, pendingPunches, sendPunch, queueTap, queueBlockedReport, flushBlockedReports } from "@/lib/shop/punch-outbox";
 
 export default function ShopShell({
-  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady, runningJob = null, windowQuestions: initialQuestions = [],
+  children, isOwner = false, workerId, workerName, lang, shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, clockReady, runningJob = null, windowQuestions: initialQuestions = [], missedOut: initialMissedOut = null, timeFixes = null,
 }: {
   children: React.ReactNode;
   isOwner?: boolean;
@@ -53,12 +57,26 @@ export default function ShopShell({
   weekEarningsBeforeShift: number | null;
   runningJob?: JobTimerEventDetail["running"];
   windowQuestions?: WindowQuestion[];
+  missedOut?: MissedOut | null;
+  /** Office admin + owners: pending count; popup only for the office admin. */
+  timeFixes?: { pending: number; popup: boolean } | null;
 }) {
   const path = usePathname();
   const appearance = useShopAppearance();
   const router = useRouter();
   const [, transition] = useTransition();
-  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, windowQuestions: initialQuestions });
+  const [clock, setClock] = useState({ shift: initialShift, breaks: initialBreaks, hourlyRate: initialRate, weekHoursBeforeShift: initialWeekHours, weekEarningsBeforeShift: initialWeekEarnings, windowQuestions: initialQuestions, missedOut: initialMissedOut as MissedOut | null });
+  const missedOut = clock.missedOut ?? null;
+  // An open shift from an earlier day: today's queued clock-in waits for the
+  // "what time did you leave?" answer instead of being sent into it.
+  const missedOpenRef = useRef(false);
+  useEffect(() => { missedOpenRef.current = missedOut?.mode === "open"; }, [missedOut]);
+  // Waiting time fixes: the server's count, lowered locally as the popup
+  // clears cards, and replaced again when a refresh brings a new count.
+  const serverFixCount = timeFixes?.pending ?? 0;
+  const [fixState, setFixState] = useState({ base: serverFixCount, left: serverFixCount });
+  const fixCount = fixState.base === serverFixCount ? fixState.left : serverFixCount;
+  const setFixCount = (left: number) => setFixState({ base: serverFixCount, left });
   const { shift, breaks, hourlyRate, weekHoursBeforeShift } = clock;
   const windowQuestions = clock.windowQuestions ?? [];
   const [ready, setReady] = useState(clockReady);
@@ -234,7 +252,7 @@ export default function ShopShell({
       if (!response.ok) return;
       const data = await response.json();
       if (version !== clockVersion.current || data.workerId !== workerId) return;
-      setClock({ ...data, windowQuestions: Array.isArray(data.windowQuestions) ? data.windowQuestions : [] }); setReady(true); setNeedsLogin(false); setNow(Date.now());
+      setClock({ ...data, windowQuestions: Array.isArray(data.windowQuestions) ? data.windowQuestions : [], missedOut: data.missedOut ?? null }); setReady(true); setNeedsLogin(false); setNow(Date.now());
     } catch { /* Keep the last confirmed clock; the queue remains visible. */ }
   }, [workerId]);
 
@@ -253,9 +271,16 @@ export default function ShopShell({
     if (pendingPunches(workerId).length) setBusy(true);
     try {
       for (const p of pendingPunches(workerId)) {
+        if (p.type === "shift_start" && missedOpenRef.current) break;
         try {
           const result = await sendPunch(p);
           if (!result.ok) {
+            if (result.missedOut) {
+              // A shift from an earlier day is still open: keep this tap (and
+              // its time) and ask what time they left — see MissedClockOut.
+              missedOpenRef.current = true;
+              break;
+            }
             if (result.locationRequired) {
               // A clock-in without a location (an older queued tap) is not a
               // punch: drop it and show how to allow location.
@@ -270,11 +295,8 @@ export default function ShopShell({
           setError("");
           confirmPunch(p.type, result.at, result.late);
           // A clock-out tapped the next morning: the shift is held out of pay
-          // until the real time is in. Tell the worker exactly what to do.
-          if (p.type === "shift_stop" && result.missedClockOut) setError(
-            lang === "pt" ? "Você esqueceu de bater a saída. Esse turno ficou em revisão e não entra no pagamento até corrigir: abra Horas › Pedir correção e coloque a hora real que saiu."
-            : lang === "es" ? "Olvidaste marcar la salida. Ese turno quedó en revisión y no entra en el pago hasta corregirlo: abre Horas › Pedir corrección y pon la hora real en que saliste."
-            : "You forgot to clock out. That shift is on hold and won't be paid until it's fixed: open Time › Request correction and enter the real time you left.");
+          // until the real time is in. The reload below brings the
+          // "what time did you leave?" question (MissedClockOut).
           if (result.shiftId && (p.type === "shift_stop" || p.lat == null)) attachLocation(p.type, result.shiftId);
           transition(() => router.refresh());
         } catch {
@@ -429,6 +451,36 @@ export default function ShopShell({
           onClose={() => setLocHelp(null)}
         />
       )}
+      {!isOwner && missedOut && ready && pendingType !== "shift_stop" && (
+        <MissedClockOut
+          key={`${missedOut.shiftId}:${missedOut.mode}`}
+          question={missedOut}
+          lang={lang}
+          canClockIn={missedOut.mode === "open" || !shift}
+          onSaved={(endedAt, wantsIn) => {
+            const queuedStart = workerId ? pendingPunches(workerId).find((p) => p.type === "shift_start") : undefined;
+            missedOpenRef.current = false;
+            setClock((c) => ({ ...c, missedOut: null, shift: missedOut.mode === "open" ? null : c.shift, breaks: missedOut.mode === "open" ? [] : c.breaks }));
+            setOpen(false);
+            setToast(tf(lang, "missedDone", { day: longDay(missedOut.startedAt, lang), time: fmtTime(endedAt, lang) }));
+            window.clearTimeout(toastTimer.current);
+            toastTimer.current = window.setTimeout(() => setToast(null), 6000);
+            if (wantsIn) {
+              // A tap already waiting keeps its original time; otherwise clock in now.
+              if (queuedStart) void flushOutbox(); else void punchNow("shift_start");
+            } else {
+              if (queuedStart) removeFromOutbox(queuedStart.punchId);
+              setQueued(workerId ? pendingPunches(workerId).length : 0);
+              setPendingType(null);
+              void reloadClock();
+            }
+            transition(() => router.refresh());
+          }}
+        />
+      )}
+      {timeFixes?.popup && workerId && fixCount > 0 && (
+        <TimeFixPopup workerId={workerId} lang={lang} onChange={(left) => { setFixCount(left); transition(() => router.refresh()); }} />
+      )}
       {!isOwner && windowQuestions.length > 0 && (
         <WorkHoursQuestion
           key={`${windowQuestions[0].shiftId}:${windowQuestions[0].edge}`}
@@ -469,8 +521,10 @@ export default function ShopShell({
             const { href, exact } = tab;
             const shownPath = pendingPath || path;
             const active = exact ? shownPath === href : shownPath.startsWith(href);
+            // Time fixes waiting: on Payroll for the owners, on More for the office admin.
+            const badge = fixCount > 0 && timeFixes && (href === "/shop/admin/payroll" || (href === "/shop/more" && !isOwner)) ? fixCount : 0;
             return <Link prefetch href={href} key={label} aria-current={active ? "page" : undefined} onPointerDown={() => setPendingPath(href)} onClick={() => window.setTimeout(() => setPendingPath(null), 800)} className={`relative z-10 flex h-full touch-manipulation flex-col items-center justify-center gap-0.5 text-[11px] ${active ? "text-amber-300" : "text-neutral-500"}`}>
-              <span className={`grid h-10 w-12 place-items-center rounded-2xl ${active ? "bg-amber-400/15" : ""}`}><Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.4 : 1.9} /></span>
+              <span className={`relative grid h-10 w-12 place-items-center rounded-2xl ${active ? "bg-amber-400/15" : ""}`}><Icon className="h-[27px] w-[27px]" strokeWidth={active ? 2.4 : 1.9} />{badge > 0 && <span data-testid="time-fix-badge" aria-label={`${tf(lang, "navBadge")}: ${badge}`} className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white tabular-nums">{badge > 99 ? "99+" : badge}</span>}</span>
               <span className={active ? "font-semibold" : ""}>{label}</span>
             </Link>;
           })}

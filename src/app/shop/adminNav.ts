@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Banknote,
   Boxes,
+  ClipboardClock,
   Clock3,
   DollarSign,
   FileText,
@@ -41,6 +42,14 @@ export const ADMIN_DESTS: AdminDest[] = [
     hintKey: "admNavPayrollHint",
     icon: Clock3,
     tone: "text-emerald-400",
+  },
+  {
+    group: "payroll",
+    href: "/shop/time-fixes",
+    key: "timeFixesNav",
+    hintKey: "timeFixesNavHint",
+    icon: ClipboardClock,
+    tone: "text-amber-300",
   },
   {
     group: "payroll",

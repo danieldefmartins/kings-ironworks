@@ -3,7 +3,6 @@ import { getSessionWorker } from "@/lib/shop/session";
 import {
   LOCATION_HISTORY_DAYS,
   listBreaks,
-  listCorrections,
   listShiftLocations,
   listShifts,
   listWorkersWithRates,
@@ -15,6 +14,7 @@ import { listWindowRecords } from "@/lib/shop/work-hours-db";
 import { toCheck } from "@/lib/shop/work-hours";
 import TimesheetClient, { type ShiftRow } from "../../time/TimesheetClient";
 import { t } from "@/lib/shop/i18n";
+import { countPendingFixes } from "@/lib/shop/time-fix-db";
 import { canViewOwnerFinancials, fmtDateTime, shopWeekKey } from "@/lib/shop/shared";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +25,11 @@ export default async function TeamTimePage() {
   if (!canViewOwnerFinancials(worker)) redirect("/shop");
   const lang = worker.lang || "en";
 
-  const [shifts, breaks, workers, corrections, locations, windowRecords] = await Promise.all([
+  const [shifts, breaks, workers, pendingFixes, locations, windowRecords] = await Promise.all([
     listShifts(),
     listBreaks(),
     listWorkersWithRates(),
-    listCorrections(),
+    countPendingFixes(worker.id).catch(() => 0),
     listShiftLocations(),
     // Best-effort: the page must load even if this lookup fails.
     listWindowRecords({ sinceDays: 45 }).catch(() => []),
@@ -62,14 +62,6 @@ export default async function TeamTimePage() {
       };
     })
     .reverse();
-  const correctionRows = corrections.filter(c => !excludedWorkers.has(c.worker_id)).map((c) => ({
-    id: c.id,
-    shiftId: c.shift_id,
-    worker: names.get(c.worker_id) || "Unknown",
-    reason: c.reason,
-    status: c.status,
-    createdAt: c.created_at,
-  }));
 
   return (
     <div>
@@ -80,7 +72,7 @@ export default async function TeamTimePage() {
           <p className="mt-1 text-sm text-neutral-500">{t(lang, "timeReviewHint")}</p>
         </div>
         <WindowChecks lang={lang} rows={toCheck(windowRecords).map((r) => ({ shiftId: r.shiftId, edge: r.edge, worker: names.get(r.workerId) || "Unknown", punchedAt: r.punchedAt, edgeAt: r.edgeAt }))} />
-        <TimesheetClient shifts={rows} corrections={correctionRows} admin lang={lang} />
+        <TimesheetClient shifts={rows} pendingFixes={pendingFixes} admin lang={lang} />
 
         <section className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-900/60 p-4">
           <h2 className="text-xl font-semibold">{t(lang, "locHistoryTitle")}</h2>

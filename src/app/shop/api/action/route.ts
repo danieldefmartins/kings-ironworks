@@ -34,6 +34,8 @@ import { actualStartOf, answerWindow, applyEndWindow, applyStartWindow, pinOwner
 import { MAX_SHIFT_HOURS, isMissedClockOut } from "@/lib/shop/clock-rules";
 import { resolveWorkHours } from "@/lib/shop/work-hours";
 import { reportClockInBlocked } from "@/lib/shop/clock-block";
+import { fixMissedOut, openShiftIsForgotten, reviewFix, submitFixRequest } from "@/lib/shop/time-fix-db";
+import { canApproveTime, longDay, tf } from "@/lib/shop/time-fix";
 
 export const runtime = "nodejs";
 
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const type = body.type as string;
     const now = new Date().toISOString();
-    if (canViewOwnerFinancials(worker) && ["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request"].includes(type)) {
+    if (canViewOwnerFinancials(worker) && ["shift_start", "shift_stop", "shift_start_location", "shift_stop_location", "shift_location", "time_break_start", "time_break_end", "time_correction_request", "shift_missed_out_fix"].includes(type)) {
       return NextResponse.json({ error: "Owners are not enrolled in employee payroll.", final: true }, { status: 403 });
     }
     // Old browser queues have no worker identity and can belong to someone
@@ -444,6 +446,17 @@ export async function POST(req: NextRequest) {
         if (!loc) {
           return NextResponse.json({ error: "Location is required to clock in. Turn on Location for this app and try again.", locationRequired: true, final: true }, { status: 400 });
         }
+        // A shift from an earlier day is still open (a forgotten clock-out).
+        // Never fold today's clock-in into it, and never close it at "now":
+        // the phone asks the worker what time they left (shift_missed_out_fix)
+        // and then sends this clock-in again. Not final — the queued tap and
+        // its original time are kept on the phone until then.
+        {
+          const current = await getOpenShift(worker.id);
+          if (current && openShiftIsForgotten(current)) {
+            return NextResponse.json({ error: tf(worker.lang, "missedBlocked", { day: longDay(current.started_at, worker.lang) }), missedOut: true, shiftId: current.id }, { status: 409 });
+          }
+        }
         const receivedAt = Date.now();
         const punch = resolvePunchAt(body.clientAt, receivedAt, { kind: "start" });
         if (punch.reason === "too_old") {
@@ -655,18 +668,34 @@ export async function POST(req: NextRequest) {
 
       case "time_correction_request": {
         const reason = typeof body.reason === "string" ? body.reason.trim().slice(0, 500) : "";
-        if (!body.shiftId || reason.length < 3) {
+        if (typeof body.shiftId !== "string" || !UUID_RE.test(body.shiftId) || reason.length < 3) {
           return NextResponse.json({ error: "Explain the correction" }, { status: 400 });
         }
-        const own = await sbSelect<{ id: string }[]>("kiw_shop_shifts",
-          `select=id&org_id=eq.${ORG_ID}&id=eq.${body.shiftId}&worker_id=eq.${worker.id}&limit=1`);
-        if (!own[0]) return NextResponse.json({ error: "Shift not found" }, { status: 404 });
-        await sbInsert("kiw_shop_time_corrections", {
-          org_id: ORG_ID, shift_id: body.shiftId, worker_id: worker.id,
-          requested_started_at: body.startedAt || null, requested_ended_at: body.endedAt || null,
-          reason, status: "pending",
-        });
-        await audit("time_correction_requested", { workerId: worker.id, entity: "shift", entityId: body.shiftId, detail: { reason } });
+        const iso = (v: unknown) => typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : null;
+        const saved = await submitFixRequest(worker, { shiftId: body.shiftId, startedAt: iso(body.startedAt), endedAt: iso(body.endedAt), reason });
+        if ("error" in saved) {
+          return saved.error === "not_found"
+            ? NextResponse.json({ error: "Shift not found" }, { status: 404 })
+            : NextResponse.json({ error: tf(worker.lang, "errOrder") }, { status: 400 });
+        }
+        result = { correctionId: saved.id, created: saved.created, notified: saved.notified };
+        break;
+      }
+
+      // The worker answers "what time did you leave?" for a forgotten
+      // clock-out. Ends the old shift at that time (same day, after the
+      // clock-in); the phone then clocks in for today if that was the tap.
+      case "shift_missed_out_fix": {
+        const { shiftId, endedAt } = body;
+        if (typeof shiftId !== "string" || !UUID_RE.test(shiftId) || typeof endedAt !== "string") {
+          return NextResponse.json({ error: tf(worker.lang, "missedFailed") }, { status: 400 });
+        }
+        const fixed = await fixMissedOut(worker, { shiftId, endedAt });
+        if (!fixed.ok) {
+          const error = fixed.error === "before" || fixed.error === "after" ? tf(worker.lang, fixed.error === "before" ? "errOrder" : "missedFailed") : tf(worker.lang, "missedFailed");
+          return NextResponse.json({ error, code: fixed.error }, { status: fixed.status });
+        }
+        result = { shiftId, at: fixed.endedAt, ask: fixed.ask };
         break;
       }
 
@@ -882,40 +911,29 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      // Approve / change / refuse a worker's time fix. The office admin
+      // (Giulia) and the owners; never your own request. Payroll clock only.
       case "correction_review": {
-        if (!canViewOwnerFinancials(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
-        if (!body.id || !["approved", "rejected"].includes(body.status)) {
+        if (!canApproveTime(worker)) return NextResponse.json({ error: "Owner only" }, { status: 403 });
+        if (typeof body.id !== "string" || !UUID_RE.test(body.id) || !["approved", "rejected"].includes(body.status)) {
           return NextResponse.json({ error: "Bad review" }, { status: 400 });
         }
-        const rows = await sbSelect<{ id: string; shift_id: string; requested_started_at: string | null; requested_ended_at: string | null }[]>(
-          "kiw_shop_time_corrections", `select=*&org_id=eq.${ORG_ID}&id=eq.${body.id}&status=eq.pending&limit=1`);
-        const correction = rows[0];
-        if (!correction) return NextResponse.json({ error: "Request not found" }, { status: 404 });
-        let pinned: { start: string; end: string } | null = null;
-        if (body.status === "approved") {
-          const [shiftRow] = await sbSelect<{ started_at: string; ended_at: string | null }[]>(
-            "kiw_shop_shifts", `select=started_at,ended_at&org_id=eq.${ORG_ID}&id=eq.${correction.shift_id}&limit=1`);
-          const start = correction.requested_started_at ?? shiftRow?.started_at;
-          const end = correction.requested_ended_at ?? shiftRow?.ended_at ?? null;
-          if (start && end) {
-            const refused = longShiftRefusal(start, end, body.confirmLong, worker.lang || "en");
-            if (refused) return refused;
-            pinned = { start, end };
-          }
-          const patch: Record<string, unknown> = { updated_at: now, status: "submitted" };
-          if (correction.requested_started_at) patch.started_at = correction.requested_started_at;
-          if (correction.requested_ended_at) patch.ended_at = correction.requested_ended_at;
-          await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${correction.shift_id}`, patch);
+        const iso = (v: unknown) => v == null || v === "" ? null : typeof v === "string" && Number.isFinite(Date.parse(v)) ? new Date(v).toISOString() : undefined;
+        const change = body.startedAt !== undefined || body.endedAt !== undefined;
+        const startedAt = change ? iso(body.startedAt) : undefined;
+        const endedAt = change ? iso(body.endedAt) : undefined;
+        if (change && (startedAt === undefined || endedAt === undefined)) return NextResponse.json({ error: "Bad times" }, { status: 400 });
+        const lang = worker.lang || "en";
+        const reviewed = await reviewFix(worker, {
+          id: body.id, decision: body.status, note: typeof body.note === "string" ? body.note : null,
+          ...(change ? { startedAt, endedAt } : {}),
+        }, (start, end) => !!longShiftRefusal(start, end, body.confirmLong, lang));
+        if (!reviewed.ok) {
+          if (reviewed.code === "long") return longShiftRefusal(reviewed.start!, reviewed.end!, false, lang)!;
+          if (reviewed.code === "order") return NextResponse.json({ error: tf(lang, "errOrder") }, { status: 400 });
+          return NextResponse.json({ error: reviewed.error }, { status: reviewed.status });
         }
-        await sbUpdate("kiw_shop_time_corrections", `org_id=eq.${ORG_ID}&id=eq.${body.id}`, {
-          status: body.status, reviewed_by: worker.id, reviewed_at: now,
-          review_note: typeof body.note === "string" ? body.note.slice(0, 500) : null,
-        });
-        await audit("time_correction_review", { workerId: worker.id, entity: "shift", entityId: correction.shift_id, detail: { status: body.status } });
-        if (pinned) {
-          try { await pinOwnerTimes(worker.id, correction.shift_id, pinned.start, pinned.end); }
-          catch (err) { console.error("[work-hours] pin correction times failed:", err); }
-        }
+        result = { superseded: reviewed.superseded };
         break;
       }
 

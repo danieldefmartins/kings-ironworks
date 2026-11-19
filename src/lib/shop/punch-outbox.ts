@@ -7,7 +7,7 @@ export type QueuedPunch = {
 };
 export type PunchResult =
   | { ok: true; shiftId: string | null; at: string | null; late: boolean; missedClockOut?: boolean }
-  | { ok: false; error: string; final: boolean; signIn: boolean; locationRequired?: boolean };
+  | { ok: false; error: string; final: boolean; signIn: boolean; locationRequired?: boolean; missedOut?: boolean };
 const KEY = "kiw-punch-outbox";
 export function readOutbox(): QueuedPunch[] {
   try {
@@ -84,6 +84,6 @@ export async function sendPunch(p: QueuedPunch): Promise<PunchResult> {
     const data = await res.json(); // A proxy/invalid response is never a receipt.
     if (res.ok && data.ok === true) return { ok: true, shiftId: typeof data.shiftId === "string" ? data.shiftId : null, at: typeof data.at === "string" ? data.at : null, late: !!data.late, missedClockOut: data.missedClockOut === true };
     if (res.ok || res.status >= 500 || res.status === 408 || res.status === 429) throw new Error("Clock connection interrupted");
-    return { ok: false, error: data.error || "Could not update the clock", final: data.final === true, signIn: res.status === 401, locationRequired: data.locationRequired === true };
+    return { ok: false, error: data.error || "Could not update the clock", final: data.final === true, signIn: res.status === 401, locationRequired: data.locationRequired === true, missedOut: data.missedOut === true };
   } finally { clearTimeout(timer); }
 }
