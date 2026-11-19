@@ -96,7 +96,7 @@ export function FixCardView({ card, lang, onDone }: { card: FixCard; lang: strin
       ) : (
         <div className="mt-4 grid grid-cols-3 gap-2">
           <button type="button" disabled={!!busy} onClick={() => act("approve")} className="flex min-h-14 flex-col items-center justify-center rounded-2xl bg-emerald-500 text-[15px] font-bold text-black disabled:opacity-50"><Check aria-hidden className="mb-0.5 h-5 w-5" strokeWidth={2.6} />{busy === "approve" ? "…" : tf(lang, "approve")}</button>
-          <button type="button" disabled={!!busy} onClick={() => setEditing(true)} className="flex min-h-14 flex-col items-center justify-center rounded-2xl bg-neutral-700 text-[15px] font-semibold text-neutral-100 disabled:opacity-50"><PencilLine aria-hidden className="mb-0.5 h-5 w-5" />{tf(lang, "change")}</button>
+          <button type="button" disabled={!!busy} onClick={() => setEditing(true)} className="flex min-h-14 flex-col items-center justify-center rounded-2xl border border-white/15 bg-neutral-700 text-[15px] font-semibold text-neutral-100 disabled:opacity-50"><PencilLine aria-hidden className="mb-0.5 h-5 w-5" />{tf(lang, "change")}</button>
           <button type="button" disabled={!!busy} onClick={() => act("refuse")} className="flex min-h-14 flex-col items-center justify-center rounded-2xl border border-red-500/40 bg-red-950/40 text-[15px] font-semibold text-red-300 disabled:opacity-50"><X aria-hidden className="mb-0.5 h-5 w-5" />{busy === "refuse" ? "…" : tf(lang, "refuse")}</button>
         </div>
       )}
