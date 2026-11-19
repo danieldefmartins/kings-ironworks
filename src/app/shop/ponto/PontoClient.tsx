@@ -53,7 +53,7 @@ function MissedCard({ row, lang, now, onFix, onAsked }: { row: MissedRow; lang: 
     else if (r.data.error === "already_asked" && typeof r.data.at === "string") onAsked(row.shiftId, r.data.at);
     else setMsg(String(r.data.error || pf(lang, "errFailedOffice")));
   }
-  return <article data-testid="missed-card" className="rounded-[22px] border border-red-500/35 bg-red-950/25 p-4">
+  return <article data-testid="missed-card" className="rounded-[22px] border border-red-500/40 bg-red-500/10 p-4">
     <div className="flex items-baseline justify-between gap-3">
       <h3 className="min-w-0 truncate text-[19px] font-semibold">{row.name}</h3>
       <span className="shrink-0 text-[15px] font-semibold tabular-nums text-red-300">{hm(row.hours)}</span>
@@ -147,8 +147,9 @@ function WeekCard({ row, lang, weekKey, selfId, money, onApproved }: { row: Week
     {error && <p role="alert" className="mt-2 rounded-xl bg-red-950/60 p-2.5 text-sm text-red-300">{error}</p>}
     {own ? <p className="mt-3 text-[14px] text-neutral-500">{pf(lang, "ownWeek")}</p>
       : allDone ? <p className="mt-3 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-emerald-500/10 text-[16px] font-semibold text-emerald-300"><Check aria-hidden className="h-5 w-5" />{pf(lang, "weekApproved")}</p>
-      : <button type="button" disabled={busy || row.approve === 0} onClick={approve} className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-[17px] font-bold text-black disabled:bg-neutral-800 disabled:text-neutral-500">
-          <Check aria-hidden className="h-5 w-5" strokeWidth={2.6} />{busy ? "…" : row.approve === 0 ? pf(lang, "nothingToApprove") : pf(lang, "approveWeek")}
+      : row.approve === 0 ? <p className="mt-3 text-center text-[15px] text-neutral-500">{pf(lang, "nothingToApprove")}</p>
+      : <button type="button" disabled={busy} onClick={approve} className="mt-3 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 text-[17px] font-bold text-black disabled:opacity-50">
+          <Check aria-hidden className="h-5 w-5" strokeWidth={2.6} />{busy ? "…" : pf(lang, "approveWeek")}
         </button>}
   </article>;
 }
@@ -214,7 +215,7 @@ export default function PontoClient({ data, pending, lang, owner, selfId, childr
 
     <Section title={pf(lang, "weekSummary")} icon={Check} tone="text-emerald-400" testId="ponto-week">
       <div className="mb-3 grid grid-cols-2 gap-2" role="tablist">
-        {data.weeks.map((w) => <Link key={w.key} role="tab" aria-selected={w.key === data.weekKey} href={w.label === "thisWeek" ? "/shop/ponto" : `/shop/ponto?week=${w.key}`} replace scroll={false} className={`flex min-h-12 items-center justify-center rounded-2xl text-[15px] font-semibold ${w.key === data.weekKey ? "bg-neutral-100 text-black" : "border border-white/10 bg-neutral-900/60 text-neutral-300"}`}>{pf(lang, w.label)}</Link>)}
+        {data.weeks.map((w) => <Link key={w.key} role="tab" aria-selected={w.key === data.weekKey} href={w.label === "thisWeek" ? "/shop/ponto" : `/shop/ponto?week=${w.key}`} replace scroll={false} style={w.key === data.weekKey ? { background: "#fbbf24", color: "#111" } : undefined} className={`flex min-h-12 items-center justify-center rounded-2xl text-[15px] font-semibold ${w.key === data.weekKey ? "" : "border border-white/10 bg-neutral-900/60 text-neutral-300"}`}>{pf(lang, w.label)}</Link>)}
       </div>
       {data.week.length ? <div className="space-y-3">{data.week.map((r) => <WeekCard key={r.workerId} row={r} lang={lang} weekKey={data.weekKey} selfId={selfId} money={data.money} onApproved={(msg) => { say(msg); refresh(); }} />)}</div>
         : <Empty text={pf(lang, "nobodyToday")} />}

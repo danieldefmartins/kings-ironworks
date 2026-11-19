@@ -120,7 +120,7 @@ export async function loadPonto(viewer: { id: string; is_admin?: boolean | null;
   })).sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 
   const roster = people.map((p) => ({ id: p.id, name: p.name, active: p.active }));
-  const todayRows = calculatePayroll(roster, mine, breaks, todayWin, now, pending);
+  const todayRows = calculatePayroll(roster, mine.filter((s) => !missedIds.has(s.id)), breaks, todayWin, now, pending);
   const todayList: TodayRow[] = todayRows.filter((r) => r.shifts > 0).map((r) => ({
     workerId: r.id, name: r.name, hours: r.hours, open: r.openShifts > 0, held: (r.reviewShifts ?? 0) > 0,
   }));

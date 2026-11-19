@@ -134,8 +134,8 @@ export default function ClockHome({ lang, workEnd = "17:00", children }: { lang:
       </dl>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/shop/time" className="flex min-h-16 items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-neutral-900/60 px-3 text-[17px] font-semibold active:bg-neutral-800">
-          <CalendarDays aria-hidden className="h-6 w-6 text-sky-300" />{pf(lang, "myWeek")}
+        <Link href="/shop/time" className="flex min-h-16 items-center justify-center gap-2 whitespace-nowrap rounded-[22px] border border-white/10 bg-neutral-900/60 px-3 text-[16px] font-semibold active:bg-neutral-800">
+          <CalendarDays aria-hidden className="h-5 w-5 shrink-0 text-sky-300" />{pf(lang, "myWeek")}
         </Link>
         {children ?? (
           <Link href="/shop/time?fix=1" className="flex min-h-16 items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-neutral-900/60 px-3 text-[17px] font-semibold active:bg-neutral-800">

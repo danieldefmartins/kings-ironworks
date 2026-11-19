@@ -8,7 +8,7 @@ import TimesheetClient from "./TimesheetClient";
 import { canViewOwnerFinancials, fmtTime, fromShopInput, shopDateKey } from "@/lib/shop/shared";
 import { addPayrollDays, calculatePayroll, payrollMidnight, payrollWeek } from "@/lib/shop/payroll";
 import { hm, pf } from "@/lib/shop/ponto";
-import { shortDay } from "@/lib/shop/time-fix";
+import { shortDay, tf } from "@/lib/shop/time-fix";
 import { getWorkHours } from "@/lib/shop/work-hours-db";
 import FixRequestButton from "../FixRequest";
 import { ChevronDown } from "lucide-react";
@@ -55,7 +55,7 @@ export default async function MyTimePage({ searchParams }: { searchParams: Promi
     <main className="mx-auto max-w-2xl space-y-5 px-4 pb-28 pt-5">
       <div className="grid grid-cols-2 gap-2" role="tablist">
         {[{ key: thisWeek.key, label: "thisWeek", href: "/shop/time" }, { key: lastKey, label: "lastWeek", href: `/shop/time?week=${lastKey}` }].map((w) =>
-          <Link key={w.key} role="tab" aria-selected={w.key === week.key} href={w.href} replace className={`flex min-h-14 items-center justify-center rounded-2xl text-[17px] font-semibold ${w.key === week.key ? "bg-neutral-100 text-black" : "border border-white/10 bg-neutral-900/60 text-neutral-300"}`}>{pf(lang, w.label)}</Link>)}
+          <Link key={w.key} role="tab" aria-selected={w.key === week.key} href={w.href} replace style={w.key === week.key ? { background: "#fbbf24", color: "#111" } : undefined} className={`flex min-h-14 items-center justify-center rounded-2xl text-[17px] font-semibold ${w.key === week.key ? "" : "border border-white/10 bg-neutral-900/60 text-neutral-300"}`}>{pf(lang, w.label)}</Link>)}
       </div>
 
       <section className="rounded-[22px] border border-emerald-500/25 bg-emerald-500/[0.07] px-5 py-4" data-testid="week-total">
@@ -68,7 +68,13 @@ export default async function MyTimePage({ searchParams }: { searchParams: Promi
           <span className="min-w-0 flex-1">
             <span className="block text-[18px] font-semibold">{r.day === today ? pf(lang, "today") : shortDay(fromShopInput(`${r.day}T12:00`), lang)}</span>
             <span className="block text-[14px] tabular-nums text-neutral-400">
-              {r.list.length ? r.list.map((s) => `${fmtTime(s.started_at, lang)} → ${s.ended_at ? fmtTime(s.ended_at, lang) : pf(lang, "running")}`).join(" · ") : pf(lang, "noShiftDay")}
+              {r.list.length ? r.list.map((s) => {
+                const times = `${fmtTime(s.started_at, lang)} → ${s.ended_at ? fmtTime(s.ended_at, lang) : pf(lang, "running")}`;
+                // A rejected record is not paid: say whether a request is still waiting.
+                if (s.status !== "rejected") return times;
+                const fix = myFixes.find((f) => f.shiftId === s.id);
+                return `${times} (${fix?.status === "pending" ? tf(lang, "pending") : tf(lang, "refused")})`.toLowerCase();
+              }).join(" · ") : pf(lang, "noShiftDay")}
             </span>
           </span>
           {r.held && <span className="shrink-0 rounded-full bg-amber-400/15 px-2.5 py-1 text-[13px] font-semibold text-amber-300">{pf(lang, "held")}</span>}

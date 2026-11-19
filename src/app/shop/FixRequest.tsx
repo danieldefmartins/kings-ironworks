@@ -134,7 +134,7 @@ export function FixRequestSheet({ shifts, lang, approver, work, onClose }: {
         {step === 3 && kind && (
           <div className="space-y-4">
             <p className="text-center text-[15px] text-neutral-400">{dayChip(day!, now, lang).top} {dayChip(day!, now, lang).bottom} · {kindReason(kind, lang)}</p>
-            <div className={twoTimes ? "grid grid-cols-2 gap-3" : ""}>
+            <div className={twoTimes ? "space-y-3" : ""}>
               {(twoTimes || kind === "in") && (
                 <label className="block">
                   <span className="text-[15px] text-neutral-400">{pf(lang, "timeIn")}</span>
@@ -165,8 +165,8 @@ export default function FixRequestButton({ shifts, lang, approver, work, startOp
 }) {
   const [open, setOpen] = useState(startOpen);
   return <>
-    <button type="button" onClick={() => setOpen(true)} className={className ?? "flex min-h-16 items-center justify-center gap-2 rounded-[22px] border border-white/10 bg-neutral-900/60 px-3 text-[17px] font-semibold active:bg-neutral-800"}>
-      <PencilLine aria-hidden className="h-6 w-6 text-amber-300" />{pf(lang, "askFix")}
+    <button type="button" onClick={() => setOpen(true)} className={className ?? "flex min-h-16 items-center justify-center gap-2 whitespace-nowrap rounded-[22px] border border-white/10 bg-neutral-900/60 px-3 text-[16px] font-semibold active:bg-neutral-800"}>
+      <PencilLine aria-hidden className="h-5 w-5 shrink-0 text-amber-300" />{pf(lang, "askFix")}
     </button>
     {open && <FixRequestSheet shifts={shifts} lang={lang} approver={approver} work={work} onClose={() => setOpen(false)} />}
   </>;

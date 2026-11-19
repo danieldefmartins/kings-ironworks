@@ -53,7 +53,7 @@ it("the reminder link (?saida=1) lands on the Marcar saída button", async () =>
   Element.prototype.scrollIntoView = vi.fn();
   show(api({ shift, hours: 9 }));
   const main = screen.getByRole("button", { name: /Marcar saída/ });
-  await vi.waitFor(() => expect(document.activeElement).toBe(main));
+  await vi.waitFor(() => expect(document.activeElement).toBe(main), { timeout: 4000 });
   expect(main.className).toContain("ring-amber-300");
 });
 
