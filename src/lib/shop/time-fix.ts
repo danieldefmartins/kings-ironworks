@@ -124,7 +124,8 @@ const L = (lang?: string | null) => (lang === "pt" || lang === "es" ? lang : "en
 function parts(iso: string | number, lang: string, weekday: "short" | "long", tz: string) {
   const p = new Intl.DateTimeFormat(LOCALE[lang], { timeZone: tz, weekday, day: "numeric", month: "numeric" }).formatToParts(new Date(iso));
   const get = (t: string) => p.find((x) => x.type === t)?.value ?? "";
-  return { wd: get("weekday").replace(/\.$/, "").replace(/-feira$/, "").toLowerCase(), d: get("day"), m: get("month") };
+  const n = (v: string) => String(Number(v) || v);
+  return { wd: get("weekday").replace(/\.$/, "").replace(/-feira$/, "").toLowerCase(), d: n(get("day")), m: n(get("month")) };
 }
 
 /** "qui 5/11" · "jue 5/11" · "Thu 11/5" */

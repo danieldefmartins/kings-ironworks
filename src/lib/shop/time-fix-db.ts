@@ -204,16 +204,17 @@ export async function reviewFix(
     review_note: changed ? `Changed by ${firstName(reviewer.name)}: in ${start}${end ? `, out ${end}` : ""}` : (input.note?.slice(0, 500) || null),
   });
   if (!claimed.length) return { ok: false, status: 404, error: "Request not found or already reviewed", code: "not_found" };
+  const before = { start: shift.started_at, end: shift.ended_at };
   const patch: Record<string, unknown> = { started_at: start, updated_at: now };
   if (end) { patch.ended_at = end; patch.status = "submitted"; }
   await sbUpdate("kiw_shop_shifts", `org_id=eq.${ORG_ID}&id=eq.${shift.id}`, patch);
-  if (end && !shift.ended_at) await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: end });
+  if (end && !before.end) await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: end });
   // Other pending requests on the same shift are answered by this one.
   const others = await sbUpdate<TimeCorrection[]>("kiw_shop_time_corrections", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&status=eq.pending&id=neq.${c.id}`, {
     status: "rejected", reviewed_by: reviewer.id, reviewed_at: now, review_note: "Replaced by the approved request for this shift",
   });
   await audit("time_correction_review", { workerId: reviewer.id, entity: "shift", entityId: shift.id, detail: {
-    status: "approved", correctionId: c.id, changed, before: { start: shift.started_at, end: shift.ended_at },
+    status: "approved", correctionId: c.id, changed, before,
     asked: { start: c.requested_started_at, end: c.requested_ended_at }, applied: { start, end }, superseded: others.map((o) => o.id),
   } });
   if (end) {
@@ -267,24 +268,25 @@ export async function fixMissedOut(
   const bad = missedOutError(q, input.endedAt);
   if (bad) return { ok: false, status: 400, error: bad };
   const endedAt = new Date(input.endedAt).toISOString();
+  const previousEnd = shift.ended_at;
   const updated = await sbUpdate<TimeShift[]>(
     "kiw_shop_shifts",
     // Conditional on the shift still being in the state we validated, so a
     // retry or an office edit in between is never overwritten.
-    `org_id=eq.${ORG_ID}&id=eq.${shift.id}&worker_id=eq.${worker.id}&${shift.ended_at ? `ended_at=eq.${encodeURIComponent(shift.ended_at)}` : "ended_at=is.null"}`,
+    `org_id=eq.${ORG_ID}&id=eq.${shift.id}&worker_id=eq.${worker.id}&${previousEnd ? `ended_at=eq.${encodeURIComponent(previousEnd)}` : "ended_at=is.null"}`,
     {
       ended_at: endedAt, status: "submitted", updated_at: new Date(now).toISOString(),
-      ...(shift.ended_at ? {} : { end_location_status: "unavailable" }),
+      ...(previousEnd ? {} : { end_location_status: "unavailable" }),
     }
   );
   if (!updated.length) return { ok: false, status: 409, error: "not_missed" };
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=is.null`, { ended_at: endedAt });
   await sbUpdate("kiw_shop_breaks", `org_id=eq.${ORG_ID}&shift_id=eq.${shift.id}&ended_at=gt.${encodeURIComponent(endedAt)}`, { ended_at: endedAt });
   // Same rule as any clock-out: running job time ends too, at that time.
-  if (!shift.ended_at) await endJobTimeOnClockOut(worker.id, endedAt);
+  if (!previousEnd) await endJobTimeOnClockOut(worker.id, endedAt);
   await audit("shift_missed_out_fixed", { workerId: worker.id, entity: "shift", entityId: shift.id, detail: {
     answer: endedAt, answerLocal: new Date(endedAt).toLocaleString("en-US", { timeZone: tz }),
-    startedAt: shift.started_at, previousEnd: shift.ended_at, mode: q.mode,
+    startedAt: shift.started_at, previousEnd, mode: q.mode,
   } });
   // The 7:30–5:00 window applies as to any clock-out (a 7 PM answer asks
   // "did your team leader ask you to stay?").
